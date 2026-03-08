@@ -88,10 +88,38 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement MultiExerciseSession {
+        id: FR_005
+        text: "1回のセッション内で複数の種目を連続して追加・記録できる"
+        risk: high
+        verifymethod: test
+    }
+
+    functionalRequirement AutoFillPreviousSet {
+        id: FR_006
+        text: "2セット目以降は直前のセットの重量・回数を初期値として自動入力する"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement AutoFocusAfterExercise {
+        id: FR_007
+        text: "種目選択後、最初のセット入力フィールドに自動フォーカスを移す"
+        risk: low
+        verifymethod: test
+    }
+
     WorkoutManagement - contains -> WorkoutCRUD
     WorkoutManagement - contains -> WorkoutList
     WorkoutManagement - contains -> SetManagement
     WorkoutManagement - contains -> WorkoutMemo
+    WorkoutManagement - contains -> MultiExerciseSession
+    WorkoutManagement - contains -> AutoFillPreviousSet
+    WorkoutManagement - contains -> AutoFocusAfterExercise
+    MultiExerciseSession - derives -> WorkoutCRUD
+    MultiExerciseSession - derives -> SetManagement
+    AutoFillPreviousSet - derives -> SetManagement
+    AutoFocusAfterExercise - derives -> SetManagement
 ```
 
 ---
@@ -122,5 +150,23 @@ requirementDiagram
 ### FR_004: ワークアウト全体のメモ
 
 ワークアウト単位で自由記述のメモを記録できる。体調やトレーニング環境などの補足情報を残すための機能。
+
+**検証方法:** テストによる検証
+
+### FR_005: 複数種目の連続記録（セッション形式）
+
+1回のワークアウトセッション内で、複数の種目を中断なく連続して追加・記録できる。セッション中はすべてのデータをメモリ内の下書きとして保持し、最後にまとめて保存する。
+
+**検証方法:** テストによる検証
+
+### FR_006: 前セットの値を自動入力
+
+「セット追加」後、新しいセットの入力欄に直前のセットの重量と回数を初期値として自動入力する（メモは引き継がない）。ユーザーが値を変更しない場合はそのまま追加できる。
+
+**検証方法:** テストによる検証
+
+### FR_007: 種目選択後の自動フォーカス
+
+種目を選択した直後、最初のセット入力フィールド（重量）に自動フォーカスを移す。モバイル環境でキーボードが自動表示され、即座に入力を開始できる。
 
 **検証方法:** テストによる検証
