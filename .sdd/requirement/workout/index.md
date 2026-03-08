@@ -120,6 +120,16 @@ requirementDiagram
     MultiExerciseSession - derives -> SetManagement
     AutoFillPreviousSet - derives -> SetManagement
     AutoFocusAfterExercise - derives -> SetManagement
+
+    functionalRequirement InlineSetEdit {
+        id: FR_008
+        text: "確定済みセットの重量・回数・メモをインラインで編集できる"
+        risk: low
+        verifymethod: test
+    }
+
+    WorkoutManagement - contains -> InlineSetEdit
+    InlineSetEdit - derives -> SetManagement
 ```
 
 ---
@@ -162,6 +172,12 @@ requirementDiagram
 ### FR_006: 前セットの値を自動入力
 
 「セット追加」後、新しいセットの入力欄に直前のセットの重量と回数を初期値として自動入力する（メモは引き継がない）。ユーザーが値を変更しない場合はそのまま追加できる。
+
+**検証方法:** テストによる検証
+
+### FR_008: 確定済みセットのインライン編集
+
+セッション記録中、すでに確定したセット行の重量・回数・メモを直接タップして編集できる。編集中は該当セット行が入力可能状態になり、変更を確定すると即座に反映される。
 
 **検証方法:** テストによる検証
 

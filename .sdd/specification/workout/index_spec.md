@@ -45,9 +45,10 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 | FR-002 | ワークアウト一覧を日付降順で表示する | 必須 | FR_002 |
 | FR-003 | セット単位で重量(kg)・回数・メモを管理する | 必須 | FR_003 |
 | FR-004 | ワークアウト全体のメモを記録できる | 任意 | FR_004 |
-| FR-005 | 1回のセッション内で複数の種目を連続して追加・記録できる | 必須 | FR_001, FR_003 |
+| FR-005 | 1回のセッション内で複数の種目を連続して追加・記録できる | 必須 | FR_005 |
 | FR-006 | 2セット目以降は直前のセットの重量・回数を初期値として自動入力する | 必須 | FR_003 |
 | FR-007 | 種目選択後、最初のセット入力フィールドに自動フォーカスを移す | 推奨 | FR_003 |
+| FR-008 | 確定済みセットの重量・回数・メモをインラインで編集できる | 推奨 | FR_003 |
 
 ## 3.2. 非機能要件
 
@@ -63,7 +64,7 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 | モジュール | インターフェース | メンバー | 概要 |
 |---------|--------------|--------|------|
 | workout | WorkoutRepository | create(data) | 新規ワークアウトを保存する |
-| workout | WorkoutRepository | update(id, data) | 既存ワークアウトを更新する |
+| workout | WorkoutRepository | update(id, data) | 既存ワークアウトを更新する（インライン編集後の保存を含む）（FR-008） |
 | workout | WorkoutRepository | remove(id) | ワークアウトを削除する（`delete` はJS予約語のため `remove` を使用） |
 | workout | WorkoutRepository | getById(id) | IDでワークアウトを取得する |
 | workout | WorkoutRepository | listByDateDesc() | 日付降順で全ワークアウトを取得する |
@@ -98,6 +99,16 @@ type WorkoutSet = {
 
 // 作成・更新時の入力型
 type WorkoutInput = Omit<Workout, 'id' | 'createdAt' | 'updatedAt'>
+
+// セッション記録中の1種目（未保存の下書き状態）
+// FR-005〜FR-008 のセッション形式UXを実現する中間状態。
+// 実装詳細（Hook Layer）に属するが、外部から参照される概念として定義する。
+type DraftExercise = {
+  exerciseId: string
+  exerciseName: string
+  sets: WorkoutSet[]      // 確定済みセット
+  pendingSet: WorkoutSet  // 現在入力中のセット（前セットから重量・回数を自動入力）
+}
 ```
 
 # 5. 用語集
@@ -184,43 +195,36 @@ sequenceDiagram
 ```mermaid
 sequenceDiagram
     participant User
-    participant WorkoutListPage
-    participant useWorkoutList
-    participant useWorkoutSession
+    participant WorkoutUI as ワークアウト機能
     participant WorkoutRepository
 
-    User->>WorkoutListPage: 記録タブを開く
-    WorkoutListPage->>useWorkoutList: workouts を購読
-    useWorkoutList->>WorkoutRepository: listByDateDesc()
-    WorkoutRepository-->>useWorkoutList: Workout[]
-    useWorkoutList-->>WorkoutListPage: workouts
-    WorkoutListPage-->>User: 一覧表示
+    User->>WorkoutUI: 記録タブを開く
+    WorkoutUI->>WorkoutRepository: listByDateDesc()
+    WorkoutRepository-->>WorkoutUI: Workout[]
+    WorkoutUI-->>User: 一覧表示
 
     alt 編集
-        User->>WorkoutListPage: 記録をタップ
-        WorkoutListPage->>useWorkoutSession: startEditSession(workout)
-        useWorkoutSession-->>WorkoutListPage: 編集セッション開始
-        WorkoutListPage-->>User: 編集フォーム表示（下書き読み込み済み）
-        User->>WorkoutListPage: 変更して保存
-        WorkoutListPage->>useWorkoutSession: saveSession()
-        useWorkoutSession->>WorkoutRepository: update(id, input)
+        User->>WorkoutUI: 記録をタップ
+        WorkoutUI-->>User: 編集フォーム表示（既存データ読み込み済み）
+        User->>WorkoutUI: 変更して保存
+        WorkoutUI->>WorkoutRepository: update(id, input)
+    else インライン編集（FR-008）
+        User->>WorkoutUI: 確定済みセットをタップして値を変更
+        WorkoutUI-->>User: 該当セット行が編集可能状態になる
+        User->>WorkoutUI: 変更を確定
+        WorkoutUI->>WorkoutRepository: update(id, input)
     else 削除
-        User->>WorkoutListPage: 削除ボタンタップ
-        WorkoutListPage->>useWorkoutList: deleteWorkout(id)
-        useWorkoutList->>WorkoutRepository: remove(id)
+        User->>WorkoutUI: 削除ボタンタップ
+        WorkoutUI->>WorkoutRepository: remove(id)
     end
 ```
-
-> **注**: UIレイヤー（`WorkoutListPage`）は Hook Layer（`useWorkoutList`, `useWorkoutSession`）のみを参照する。`WorkoutRepository` への直接アクセスは行わない。Repositoryの呼び出しはすべて hooks の内部実装に隠蔽される。
 
 # 8. 制約事項
 
 - 種目選択はExerciseRepositoryモジュールのインターフェースに依存する（直接種目データを持たない）
 - `exerciseName` はワークアウト保存時の種目名スナップショットを保持する（後から種目名が変わっても記録は影響を受けない）
 - `exerciseId` が種目マスターに存在しない場合（種目が削除された場合）、WorkoutExercise の表示は `exerciseName` にフォールバックする。存在確認は行わない。
-- ワークアウトデータはブラウザのローカルストレージに保存される（DC_003）
-- UIレイヤーはReactで実装する（DC_001）
-- UIはスマートフォンファーストで設計する（DC_004）
+- ワークアウトデータはブラウザにローカル永続化される（技術選択の詳細は [index_design.md](index_design.md) を参照）
 - 同一日付に複数のワークアウトを登録可能
 
 ---
@@ -236,5 +240,6 @@ sequenceDiagram
 | FR_005 | 1回のセッション内で複数の種目を連続して追加・記録 | FR-005, Section 6 使用例（セッションフロー） |
 | FR_006 | 2セット目以降は前セットの重量・回数を自動入力 | FR-006, Section 6 使用例（2セット目以降） |
 | FR_007 | 種目選択後に最初のセット入力フィールドへ自動フォーカス | FR-007, Section 6 使用例（自動フォーカス） |
+| FR_008 | 確定済みセットのインライン編集 | FR-008, WorkoutRepository.update(id, data), Section 7 振る舞い図（インライン編集） |
 
 > **Note**: CONSTITUTION.md が存在しないため原則準拠チェックはスキップしました。`/sdd-init` で作成を推奨します。

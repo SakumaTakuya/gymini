@@ -238,6 +238,8 @@ const workoutStore = {
   //     省略時は draftWorkoutId = null（新規作成モード）
   addExercise: (exercise) => void,
   addSet: (exerciseIndex, set) => void,
+  updateSet: (exerciseIndex, setIndex, set) => void,
+  // updateSet: 確定済みセットをインライン編集する。pendingSet ではなく sets[] の既存要素を更新する。
   removeSet: (exerciseIndex, setIndex) => void,
   setDraftMemo: (memo) => void,
   saveSession: () => void,
@@ -247,6 +249,10 @@ const workoutStore = {
   //   完了後、draftWorkoutId を null に戻し、workouts を再読み込みする
   cancelSession: () => void,
   updateWorkout: (id, input) => void,
+  // updateWorkout: セッションを経由せず既存ワークアウトを直接更新する。
+  //   saveSession() は draftWorkoutId を参照して新規/更新を自動判別するのに対し、
+  //   updateWorkout は編集セッションなしで id と input を直接指定して更新する。
+  //   用途例: WorkoutListPage から個別フィールド（メモ等）のクイック更新。
 }
 
 // DraftExercise: セッション記録中の1種目（未保存）
@@ -285,6 +291,7 @@ function useWorkoutSession() {
   //   startEditSession: (workout: Workout) => void,    // 既存ワークアウトを編集モードで開始
   //   addExercise: (exercise) => void,
   //   addSet: (exerciseIndex, set) => void,
+  //   updateSet: (exerciseIndex, setIndex, set) => void,  // 確定済みセットのインライン編集
   //   removeSet: (exerciseIndex, setIndex) => void,
   //   setDraftMemo: (memo) => void,
   //   saveSession: () => void,    // 新規作成 or 更新を自動判別（store の draftWorkoutId を参照）
@@ -325,7 +332,7 @@ function useWorkoutSession() {
 |-----------|------|------------|
 | ユニットテスト | WorkoutRepository（各CRUD関数） | 全関数 |
 | ユニットテスト | useWorkoutList（一覧取得・削除） | 全アクション |
-| ユニットテスト | useWorkoutSession（startSession, addExercise, addSet, saveSession） | 全アクション |
+| ユニットテスト | useWorkoutSession（startSession, addExercise, addSet, updateSet, saveSession） | 全アクション |
 | コンポーネントテスト | SetRowInput（自動入力・自動フォーカス） | FR-006, FR-007 |
 | コンポーネントテスト | ExerciseSection（セット追加フロー） | 主要インタラクション |
 | 統合テスト | WorkoutFormPage（hooks をモック → 複数種目セッション → 保存） | FR-005 完全フロー |
