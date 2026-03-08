@@ -1,0 +1,104 @@
+---
+id: "prd-api-key"
+title: "APIキー設定"
+type: "prd"
+status: "draft"
+created: "2026-03-08"
+updated: "2026-03-08"
+depends-on: ["prd-gymini"]
+tags: ["api-key", "byok", "settings", "phase-2"]
+category: "settings"
+priority: "medium"
+risk: "medium"
+---
+
+# APIキー設定 要求仕様書
+
+**親要求:** [index.md](../index.md) - REQ_004
+
+## 概要
+
+Gemini APIキーの管理機能。BYOKモデル（DC_002）に基づき、ユーザーが自身のAPIキーをブラウザに保存して利用する。
+
+---
+
+## 1. ユースケース図
+
+```mermaid
+graph TB
+    subgraph "APIキー設定"
+        User((ユーザー))
+        InputKey[APIキー入力]
+        SaveKey[APIキー保存]
+        DeleteKey[APIキー削除]
+        ToggleVisibility[表示/非表示切替]
+        Warning[未設定警告表示]
+    end
+
+    User --- InputKey
+    User --- ToggleVisibility
+    User --- DeleteKey
+    InputKey --> SaveKey
+    Warning -.->|"<<自動>>"| User
+```
+
+---
+
+## 2. 要求図（SysML Requirements Diagram）
+
+```mermaid
+requirementDiagram
+    requirement APIKeyManagement {
+        id: REQ_004
+        text: "Gemini APIキーの管理機能"
+        risk: medium
+        verifymethod: demonstration
+    }
+
+    functionalRequirement APIKeyInputSave {
+        id: FR_008
+        text: "APIキーの入力・保存・削除"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement APIKeyVisibilityToggle {
+        id: FR_009
+        text: "APIキーの表示/非表示トグル"
+        risk: low
+        verifymethod: test
+    }
+
+    functionalRequirement APIKeyWarning {
+        id: FR_010
+        text: "未設定時にヘッダーに警告を表示"
+        risk: low
+        verifymethod: test
+    }
+
+    APIKeyManagement - contains -> APIKeyInputSave
+    APIKeyManagement - contains -> APIKeyVisibilityToggle
+    APIKeyManagement - contains -> APIKeyWarning
+```
+
+---
+
+## 3. 機能要求の詳細
+
+### FR_008: APIキーの入力・保存・削除
+
+Gemini APIキーの入力フォームを提供し、ブラウザにローカル保存する。保存済みキーの削除も可能。
+
+**検証方法:** テストによる検証
+
+### FR_009: APIキーの表示/非表示トグル
+
+保存済みAPIキーの表示をマスク（●●●●）し、トグルボタンで表示/非表示を切り替えられる。
+
+**検証方法:** テストによる検証
+
+### FR_010: APIキー未設定時の警告
+
+APIキーが未設定の場合、ヘッダー部分に警告バナーを表示し、設定画面への導線を提供する。
+
+**検証方法:** テストによる検証

@@ -1,0 +1,183 @@
+---
+id: "prd-ai-chat"
+title: "AIチャット × Function Calling"
+type: "prd"
+status: "draft"
+created: "2026-03-08"
+updated: "2026-03-08"
+depends-on: ["prd-gymini", "prd-api-key", "prd-workout", "prd-exercise-master"]
+tags: ["ai", "chat", "function-calling", "gemini", "phase-3"]
+category: "ai"
+priority: "high"
+risk: "high"
+---
+
+# AIチャット × Function Calling 要求仕様書
+
+**親要求:** [index.md](../index.md) - REQ_005
+
+## 概要
+
+Gemini APIを用いたチャットインターフェースを提供し、AIが会話の文脈からワークアウトデータを参照・操作するFunction Callingツールを自律的に呼び出す。書き込み操作にはユーザー確認を必須とする（REQ_008）。
+
+---
+
+## 1. ユースケース図
+
+```mermaid
+graph TB
+    subgraph "AIチャット"
+        User((ユーザー))
+        SendMessage[メッセージ送信]
+        ReceiveAdvice[アドバイス受信]
+
+        subgraph "Function Calling"
+            GetRecent[最新ワークアウト取得]
+            GetByExercise[種目別ワークアウト取得]
+            GetByDate[日付別ワークアウト取得]
+            GetSummary[集計取得]
+            SaveWorkout[会話から記録保存]
+            GetExercises[種目一覧取得]
+            AddExercise[種目追加]
+        end
+    end
+
+    User --- SendMessage
+    User --- ReceiveAdvice
+    SendMessage -.->|"<<包含>>"| GetRecent
+    SendMessage -.->|"<<包含>>"| GetByExercise
+    SendMessage -.->|"<<包含>>"| GetByDate
+    SendMessage -.->|"<<包含>>"| GetSummary
+    SendMessage -.->|"<<包含>>"| SaveWorkout
+    SendMessage -.->|"<<包含>>"| GetExercises
+    SendMessage -.->|"<<包含>>"| AddExercise
+```
+
+---
+
+## 2. 要求図（SysML Requirements Diagram）
+
+```mermaid
+requirementDiagram
+    requirement AIChatCoaching {
+        id: REQ_005
+        text: "AIチャットによるコーチング機能"
+        risk: high
+        verifymethod: demonstration
+    }
+
+    functionalRequirement ChatConversation {
+        id: FR_011
+        text: "Gemini APIを用いたチャット会話"
+        risk: high
+        verifymethod: test
+    }
+
+    functionalRequirement FunctionCalling {
+        id: FR_012
+        text: "AIが会話の文脈から必要なツールを自律的に呼び出す"
+        risk: high
+        verifymethod: test
+    }
+
+    functionalRequirement ToolGetRecentWorkouts {
+        id: FR_012_01
+        text: "最新n件のワークアウトを取得するツール"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement ToolGetByExercise {
+        id: FR_012_02
+        text: "種目名で部分一致絞り込みするツール"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement ToolGetByDate {
+        id: FR_012_03
+        text: "日付指定でワークアウトを取得するツール"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement ToolGetSummary {
+        id: FR_012_04
+        text: "週・月単位のワークアウト集計ツール"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement ToolSaveWorkout {
+        id: FR_012_05
+        text: "会話からワークアウト記録を保存するツール（ユーザー確認必須）"
+        risk: high
+        verifymethod: test
+    }
+
+    functionalRequirement ToolGetExercises {
+        id: FR_012_06
+        text: "登録済み種目一覧を取得するツール"
+        risk: low
+        verifymethod: test
+    }
+
+    functionalRequirement ToolAddExercise {
+        id: FR_012_07
+        text: "種目マスターに新規追加するツール（ユーザー確認必須）"
+        risk: low
+        verifymethod: test
+    }
+
+    requirement AIWriteConfirmation {
+        id: REQ_008
+        text: "AIが書き込み操作を実行する前にユーザー確認を求める"
+        risk: high
+        verifymethod: test
+    }
+
+    AIChatCoaching - contains -> ChatConversation
+    AIChatCoaching - contains -> FunctionCalling
+    AIChatCoaching - contains -> AIWriteConfirmation
+    FunctionCalling - contains -> ToolGetRecentWorkouts
+    FunctionCalling - contains -> ToolGetByExercise
+    FunctionCalling - contains -> ToolGetByDate
+    FunctionCalling - contains -> ToolGetSummary
+    FunctionCalling - contains -> ToolSaveWorkout
+    FunctionCalling - contains -> ToolGetExercises
+    FunctionCalling - contains -> ToolAddExercise
+```
+
+---
+
+## 3. 機能要求の詳細
+
+### FR_011: AIチャット会話
+
+Gemini APIを用いたチャットインターフェースを提供する。ユーザーのBYOK APIキーを使ってGemini APIに接続する。
+
+**検証方法:** テストによる検証
+
+### FR_012: Function Calling
+
+AIが会話の文脈を解析し、必要に応じて以下のツールを自律的に呼び出す。
+
+**含まれるツール:**
+
+| ツール | 説明 | 操作種別 |
+|--------|------|----------|
+| 最新ワークアウト取得 | 最新n件のワークアウトを取得 | 読み取り |
+| 種目別ワークアウト取得 | 種目名で部分一致絞り込み | 読み取り |
+| 日付別ワークアウト取得 | 日付指定で取得 | 読み取り |
+| ワークアウト集計 | 週・月単位の集計 | 読み取り |
+| ワークアウト保存 | 会話から記録を保存 | 書き込み（要確認） |
+| 種目一覧取得 | 登録済み種目一覧を取得 | 読み取り |
+| 種目追加 | 種目マスターに追加 | 書き込み（要確認） |
+
+**検証方法:** テストによる検証
+
+### REQ_008: AI書き込み操作のユーザー確認
+
+AIが書き込み操作（ワークアウト保存・種目追加）を実行する際、実行前にユーザーに確認を求める。読み取り操作（データ取得・集計）はユーザー確認なしで自律的に実行できる。
+
+**検証方法:** テストによる検証
