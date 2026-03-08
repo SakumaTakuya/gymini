@@ -249,6 +249,10 @@ const workoutStore = {
   //   完了後、draftWorkoutId を null に戻し、workouts を再読み込みする
   cancelSession: () => void,
   updateWorkout: (id, input) => void,
+  // updateWorkout: セッションを経由せず既存ワークアウトを直接更新する。
+  //   saveSession() は draftWorkoutId を参照して新規/更新を自動判別するのに対し、
+  //   updateWorkout は編集セッションなしで id と input を直接指定して更新する。
+  //   用途例: WorkoutListPage から個別フィールド（メモ等）のクイック更新。
 }
 
 // DraftExercise: セッション記録中の1種目（未保存）
