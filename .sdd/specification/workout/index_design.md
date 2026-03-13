@@ -2,11 +2,11 @@
 id: "design-workout"
 title: "ワークアウト記録管理"
 type: "design"
-status: "draft"
-sdd-phase: "plan"
-impl-status: "not-implemented"
+status: "active"
+sdd-phase: "implement"
+impl-status: "implemented"
 created: "2026-03-08"
-updated: "2026-03-08"
+updated: "2026-03-13"
 depends-on: ["spec-workout"]
 tags: ["workout", "crud", "phase-1", "react", "zustand", "localstorage"]
 category: "core"
@@ -23,19 +23,19 @@ risk: "high"
 
 # 1. 実装ステータス
 
-**ステータス:** 🔴 未実装
+**ステータス:** 🟢 実装済み
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| WorkoutRepository | 🔴 未実装 | Data Layer: localStorage CRUD |
-| workoutStore (Zustand) | 🔴 未実装 | State Layer: Hook の実装詳細 |
-| useWorkoutList | 🔴 未実装 | Hook Layer: 一覧ユースケース |
-| useWorkoutSession | 🔴 未実装 | Hook Layer: 記録セッションユースケース |
-| WorkoutListPage | 🔴 未実装 | UI Layer: 一覧画面 |
-| WorkoutFormPage | 🔴 未実装 | UI Layer: セッション形式の記録フォーム |
-| ExerciseSection | 🔴 未実装 | UI Layer: 1種目セクション |
-| SetRowInput | 🔴 未実装 | UI Layer: セット入力（自動入力・自動フォーカス） |
-| WorkoutCard | 🔴 未実装 | UI Layer: 一覧表示カード |
+| WorkoutRepository | 🟢 実装済み | Data Layer: localStorage CRUD |
+| workoutStore (Zustand) | 🟢 実装済み | State Layer: Hook の実装詳細 |
+| useWorkoutList | 🟢 実装済み | Hook Layer: 一覧ユースケース |
+| useWorkoutSession | 🟢 実装済み | Hook Layer: 記録セッションユースケース |
+| WorkoutListPage | 🟢 実装済み | UI Layer: 一覧画面 |
+| WorkoutFormPage | 🟢 実装済み | UI Layer: セッション形式の記録フォーム |
+| ExerciseSection | 🟢 実装済み | UI Layer: 1種目セクション |
+| SetRowInput | 🟢 実装済み | UI Layer: セット入力（自動入力・自動フォーカス） |
+| WorkoutCard | 🟢 実装済み | UI Layer: 一覧表示カード |
 
 ---
 
