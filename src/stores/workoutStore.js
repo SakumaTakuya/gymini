@@ -1,9 +1,9 @@
 import { create } from 'zustand'
 import {
   listByDateDesc,
-  create as createWorkout,
-  update as updateWorkout,
-  remove as removeWorkout,
+  create as repoCreateWorkout,
+  update as repoUpdateWorkout,
+  remove as repoRemoveWorkout,
 } from '../lib/workoutRepository'
 
 const emptyPendingSet = () => ({ weight: 0, reps: 0, memo: '' })
@@ -20,7 +20,7 @@ const useWorkoutStore = create((set, get) => ({
   },
 
   deleteWorkout: (id) => {
-    removeWorkout(id)
+    repoRemoveWorkout(id)
     set({ workouts: listByDateDesc() })
   },
 
@@ -117,9 +117,9 @@ const useWorkoutStore = create((set, get) => ({
       memo: draftMemo,
     }
     if (draftWorkoutId === null) {
-      createWorkout(input)
+      repoCreateWorkout(input)
     } else {
-      updateWorkout(draftWorkoutId, input)
+      repoUpdateWorkout(draftWorkoutId, input)
     }
     set({ draftWorkoutId: null, workouts: listByDateDesc() })
   },
@@ -134,7 +134,7 @@ const useWorkoutStore = create((set, get) => ({
   },
 
   updateWorkout: (id, input) => {
-    updateWorkout(id, input)
+    repoUpdateWorkout(id, input)
     set({ workouts: listByDateDesc() })
   },
 }))

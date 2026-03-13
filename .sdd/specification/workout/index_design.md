@@ -60,6 +60,47 @@ risk: "high"
 | スタイリング | Tailwind CSS | DC_004: スマホファースト。ユーティリティクラスで迅速なモバイルUI構築 |
 | 日付処理 | ネイティブ Date API | 外部ライブラリ不使用。YYYY-MM-DD形式のみ扱うため十分 |
 
+## 3.1. UI デザインシステム
+
+**参照ファイル（正）**: `/Users/sakumatakuya/src/github.com/SakumaTakuya/design/system.pen`
+
+UIコンポーネントのスタイルは `design-system.pen` を正とする。実装は以下の Tailwind CSS クラスマッピングに従う。
+
+### カラーパレット
+
+| 用途 | 値 | Tailwind クラス |
+|:---|:---|:---|
+| Primary（ボタン背景） | `#000000` | `bg-black` |
+| Secondary（背景・入力フィールド） | `#F4F4F5` | `bg-zinc-100` |
+| Destructive | `#EF4444` | `bg-red-500` |
+| Success バッジ | `#22C55E` | `bg-green-500` |
+| テキスト primary | `#000000` | `text-black` |
+| テキスト muted | `#71717A` | `text-zinc-500` |
+| テキスト placeholder / SetNumber | `#A1A1AA` | `text-zinc-400` |
+| ボーダー（SetRowInput） | `#E4E4E7` | `border-zinc-200` |
+| セパレーター（NavBar/TabBar） | `#F4F4F5` | `border-zinc-100` |
+
+### タイポグラフィ
+
+| フォント | 用途 |
+|:---|:---|
+| `Outfit` | 見出し・ボタン・ラベル（font-weight 600/700/800） |
+| `Inter` | ボディ・メタ情報・入力値（font-weight 500） |
+
+### コンポーネント Tailwind クラスマッピング
+
+| コンポーネント | 主要 Tailwind クラス |
+|:---|:---|
+| **Button/Primary** | `h-[52px] rounded-2xl bg-black text-white font-outfit font-bold text-base px-6` |
+| **Button/Secondary** | `h-[52px] rounded-2xl bg-zinc-100 text-black font-outfit font-bold text-base px-6` |
+| **Button/Destructive** | `h-[52px] rounded-2xl bg-red-500 text-white font-outfit font-bold text-base px-6` |
+| **Button/Ghost** | `h-11 rounded-xl bg-transparent text-black font-outfit font-semibold text-base px-4` |
+| **Input/Text** | Label: `font-outfit font-semibold text-[13px]` / Field: `h-[52px] rounded-2xl bg-zinc-100 px-4 text-base font-inter` |
+| **WorkoutCard** | `h-20 rounded-[20px] bg-zinc-100 px-5 flex items-center gap-3` / Name: `font-outfit font-bold text-base` / Meta: `font-inter text-[13px] text-zinc-500` |
+| **SetRowInput** | `h-[52px] rounded-2xl bg-white border border-zinc-200 px-4 flex items-center gap-3` / SetNumber: `font-outfit font-bold text-base text-zinc-400` / Fields: `rounded-[10px] bg-zinc-100 h-9 px-3 font-inter font-medium text-[15px]` |
+| **NavBar** | `h-[103px] bg-white border-b border-zinc-100 px-6 pt-[59px] pb-4 flex items-center justify-between` / Title: `font-outfit font-extrabold text-[28px] tracking-[-1px]` |
+| **TabBar** | `h-[83px] bg-white border-t border-zinc-100 px-5 pt-3 flex justify-between` |
+
 ---
 
 # 4. アーキテクチャ

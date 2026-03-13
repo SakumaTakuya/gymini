@@ -50,7 +50,7 @@ export default function SetRowInput({
           >
             <span className="font-outfit font-bold text-base text-zinc-400 w-5">{i + 1}</span>
             <input
-              className="rounded-xl bg-zinc-100 h-9 px-3 font-inter font-medium text-[15px] w-16 text-center"
+              className="rounded-[10px] bg-zinc-100 h-9 px-3 font-inter font-medium text-[15px] w-16 text-center"
               type="number"
               value={editValues.weight}
               onChange={(e) => handleEditChange('weight', e.target.value)}
@@ -58,7 +58,7 @@ export default function SetRowInput({
             />
             <span className="font-inter text-zinc-400 text-sm">kg</span>
             <input
-              className="rounded-xl bg-zinc-100 h-9 px-3 font-inter font-medium text-[15px] w-16 text-center"
+              className="rounded-[10px] bg-zinc-100 h-9 px-3 font-inter font-medium text-[15px] w-16 text-center"
               type="number"
               value={editValues.reps}
               onChange={(e) => handleEditChange('reps', e.target.value)}
@@ -95,7 +95,7 @@ export default function SetRowInput({
         </span>
         <input
           ref={weightRef}
-          className="rounded-xl bg-zinc-100 h-9 px-3 font-inter font-medium text-[15px] w-16 text-center"
+          className="rounded-[10px] bg-zinc-100 h-9 px-3 font-inter font-medium text-[15px] w-16 text-center"
           type="number"
           value={pendingSet.weight}
           onChange={(e) => handlePendingChange('weight', e.target.value)}
@@ -103,7 +103,7 @@ export default function SetRowInput({
         />
         <span className="font-inter text-zinc-400 text-sm">kg</span>
         <input
-          className="rounded-xl bg-zinc-100 h-9 px-3 font-inter font-medium text-[15px] w-16 text-center"
+          className="rounded-[10px] bg-zinc-100 h-9 px-3 font-inter font-medium text-[15px] w-16 text-center"
           type="number"
           value={pendingSet.reps}
           onChange={(e) => handlePendingChange('reps', e.target.value)}
@@ -111,7 +111,7 @@ export default function SetRowInput({
         />
         <span className="font-inter text-zinc-400 text-sm">回</span>
         <input
-          className="rounded-xl bg-zinc-100 h-9 px-3 font-inter font-medium text-[15px] flex-1 min-w-0"
+          className="rounded-[10px] bg-zinc-100 h-9 px-3 font-inter font-medium text-[15px] flex-1 min-w-0"
           type="text"
           value={pendingSet.memo}
           onChange={(e) => handlePendingChange('memo', e.target.value)}

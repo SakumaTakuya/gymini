@@ -69,7 +69,7 @@ export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }
     <div className="flex flex-col min-h-screen bg-white">
       {/* NavBar */}
       <div className="h-[103px] bg-white border-b border-zinc-100 px-6 pt-[59px] pb-4 flex items-center justify-between">
-        <h1 className="font-outfit font-extrabold text-[28px] tracking-tight">
+        <h1 className="font-outfit font-extrabold text-[28px] tracking-[-1px]">
           {editWorkout ? '編集' : '記録'}
         </h1>
         <button
