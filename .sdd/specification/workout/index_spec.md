@@ -2,8 +2,8 @@
 id: "spec-workout"
 title: "ワークアウト記録管理"
 type: "spec"
-status: "draft"
-sdd-phase: "specify"
+status: "active"
+sdd-phase: "implement"
 created: "2026-03-08"
 updated: "2026-03-08"
 depends-on: ["prd-workout"]
