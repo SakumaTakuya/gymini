@@ -8,7 +8,6 @@ export default function SetRowInput({
   autoFocus = false,
   confirmedSets = [],
   onUpdateSet,
-  setNumber,
 }) {
   const weightRef = useRef(null)
   const [editingIndex, setEditingIndex] = useState(null)

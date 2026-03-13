@@ -28,7 +28,7 @@ export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }
     } else {
       startSession()
     }
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleExerciseSearch(query) {
     setExerciseQuery(query)
@@ -42,9 +42,8 @@ export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }
     setSearchResults([])
   }
 
-  function handlePendingSetChange(exerciseIndex, pendingSet) {
-    // Update pendingSet in store via updatePendingSet_internal is not exposed,
-    // so we handle this locally in ExerciseSection/SetRowInput and pass to addSet
+  function handlePendingSetChange() {
+    // pendingSet changes are handled locally in SetRowInput; addSet captures the final value
   }
 
   function handleAddSet(exerciseIndex, pendingSet) {

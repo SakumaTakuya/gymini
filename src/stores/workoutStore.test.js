@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { act } from '@testing-library/react'
 import useWorkoutStore from './workoutStore'
+import { create as createWorkout, getById } from '../lib/workoutRepository'
 
 beforeEach(() => {
   localStorage.clear()
@@ -17,8 +18,7 @@ beforeEach(() => {
 
 describe('loadWorkouts', () => {
   it('loads workouts into state', () => {
-    const { create } = require('../lib/workoutRepository')
-    const w = create({ date: '2026-03-08', exercises: [] })
+    const w = createWorkout({ date: '2026-03-08', exercises: [] })
     act(() => useWorkoutStore.getState().loadWorkouts())
     expect(useWorkoutStore.getState().workouts).toHaveLength(1)
     expect(useWorkoutStore.getState().workouts[0].id).toBe(w.id)
@@ -27,8 +27,7 @@ describe('loadWorkouts', () => {
 
 describe('deleteWorkout', () => {
   it('removes workout from state and storage', () => {
-    const { create } = require('../lib/workoutRepository')
-    const w = create({ date: '2026-03-08', exercises: [] })
+    const w = createWorkout({ date: '2026-03-08', exercises: [] })
     act(() => useWorkoutStore.getState().loadWorkouts())
     act(() => useWorkoutStore.getState().deleteWorkout(w.id))
     expect(useWorkoutStore.getState().workouts).toHaveLength(0)
@@ -75,10 +74,6 @@ describe('addExercise', () => {
 describe('addSet', () => {
   it('moves pendingSet to sets and copies weight/reps to next pendingSet (memo empty)', () => {
     act(() => useWorkoutStore.getState().addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' }))
-    act(() => {
-      const state = useWorkoutStore.getState()
-      state.updateSet(0, -1, { weight: 60, reps: 10, memo: 'first' })
-    })
     // Use addSet which confirms pendingSet
     act(() => {
       useWorkoutStore.getState().addSet(0, { weight: 60, reps: 10, memo: 'first' })
@@ -115,12 +110,10 @@ describe('saveSession', () => {
   })
 
   it('calls update when draftWorkoutId is a string', () => {
-    const { create } = require('../lib/workoutRepository')
-    const w = create({ date: '2026-03-08', exercises: [] })
+    const w = createWorkout({ date: '2026-03-08', exercises: [] })
     act(() => useWorkoutStore.getState().startSession(w.date, w))
     act(() => useWorkoutStore.getState().setDraftMemo('updated memo'))
     act(() => useWorkoutStore.getState().saveSession())
-    const { getById } = require('../lib/workoutRepository')
     const saved = getById(w.id)
     expect(saved.memo).toBe('updated memo')
   })

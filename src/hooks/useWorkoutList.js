@@ -8,7 +8,7 @@ export default function useWorkoutList() {
 
   useEffect(() => {
     loadWorkouts()
-  }, [])
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   return { workouts, deleteWorkout }
 }
