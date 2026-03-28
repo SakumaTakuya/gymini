@@ -54,6 +54,7 @@ risk: "medium"
 | ルーティング | Zustand（状態ベース） | 既にプロジェクトで使用中。外部ルーターライブラリ不要で依存を増やさない |
 | セッション永続化 | Zustand persist + localStorage | 既存 workoutStore に persist ミドルウェアを追加するだけで実現可能 |
 | BottomNav スタイリング | Tailwind CSS | 既存デザインシステムのTabBarクラスを活用 |
+| アイコン | lucide-react | SVGのAI生成は著作権リスクがあるため、OSSアイコンライブラリを採用 |
 | FAB | Tailwind CSS | デザインシステムに準拠した丸型ボタン |
 
 ---
@@ -200,10 +201,9 @@ function useNavigation() {
 //
 // 内部タブ定義（静的）:
 // const NAV_TABS = [
-//   { route: 'training', label: 'Training', icon: <TrainingIcon /> },
-//   { route: 'history',  label: 'History',  icon: <HistoryIcon /> },
+//   { route: 'training', label: 'Training', icon: <Dumbbell /> },  // lucide-react
+//   { route: 'history',  label: 'History',  icon: <Calendar /> },  // lucide-react
 // ]
-// ※ アイコンコンポーネントは実装時に決定（Section 9.2 参照）
 
 // -------------------------------------------------------
 // FAB (src/components/FAB.jsx)
@@ -323,5 +323,5 @@ function useNavigation() {
 |------|--------|--------|
 | カレンダーUIライブラリの選定 | 中 | HistoryPage 実装時に決定。自前実装 vs 軽量ライブラリ（例: react-day-picker）を比較 |
 | 進捗グラフモーダルの実装方式 | 低 | HistoryPage 実装時に決定。Chart.js / Recharts 等の選定が必要 |
-| ボトムナビのアイコン選定 | 低 | 実装時に決定。SVGアイコンの自前実装 or アイコンライブラリ（lucide-react 等）を比較 |
+| ボトムナビのアイコン選定 | - | **決定済み**: lucide-react を採用。SVGのAI生成は著作権リスクがあるためライブラリを使用 |
 | Phase 3 でのChat タブ追加方式 | 低 | Phase 3 着手時にナビゲーション拡張方法を設計 |
