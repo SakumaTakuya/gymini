@@ -25,14 +25,15 @@ gyminiは、筋トレ記録とAIコーチングを組み合わせたWebアプリ
 
 ### フェーズ構成
 
-段階的にリリースする。各フェーズは以下の画面構成に対応する。
+段階的にリリースする。各フェーズは以下の構成に対応する。ページ導線は [navigation.md](navigation.md) で定義する。
 
-| タブ | 内容 | Phase | 要求仕様書 |
+| ページ / モーダル | 内容 | Phase | 要求仕様書 |
 |------|------|-------|-----------|
-| 📋 記録 | ワークアウトCRUD | 1 | [workout](workout/index.md), [exercise-master](exercise-master/index.md) |
-| ⚙️ 設定 | APIキー・種目マスター管理 | 1〜2 | [exercise-master](exercise-master/index.md), [api-key](api-key/index.md) |
+| 🏠 ホーム | 挨拶・トレーニング開始 | 1 | [navigation.md](navigation.md) |
+| 🏋️ トレーニング | ワークアウトセッション記録 | 1 | [workout](workout/index.md), [exercise-master](exercise-master/index.md), [navigation.md](navigation.md) |
+| 📅 履歴 | カレンダー表示・記録確認 | 1 | [calendar](calendar/index.md), [navigation.md](navigation.md) |
+| ⚙️ 設定（モーダル） | APIキー・種目マスター管理 | 1〜2 | [exercise-master](exercise-master/index.md), [api-key](api-key/index.md) |
 | 💬 チャット | AIとの会話 | 3 | [ai-chat](ai-chat/index.md) |
-| 📅 カレンダー | 月表示・記録確認 | 4 | [calendar](calendar/index.md) |
 
 ---
 
@@ -181,9 +182,9 @@ requirementDiagram
         verifymethod: inspection
     }
 
-    interfaceRequirement TabNavigation {
+    interfaceRequirement DynamicBottomNav {
         id: IR_001
-        text: "4つのタブによるメインナビゲーションをスマホ画面下部に固定配置"
+        text: "セッション状態に応じて動的に変化するボトムナビゲーション（2タブ + コンテキストFAB）"
         risk: medium
         verifymethod: inspection
     }
@@ -228,9 +229,9 @@ Reactで開発し、クライアントサイドのみで動作する。
 
 スマートフォンでの利用を最優先としたUI設計を行う。
 
-### IR_001: タブベースナビゲーション
+### IR_001: 動的ボトムナビゲーション
 
-4つのタブ（チャット・記録・カレンダー・設定）によるメインナビゲーションを提供する。スマホ画面下部に固定配置する。
+セッション状態に応じて動的に変化するボトムナビゲーション（2タブ + コンテキストFAB）を提供する。スマホ画面下部に固定配置する。詳細は [navigation.md](navigation.md) を参照。
 
 ---
 
