@@ -31,7 +31,7 @@ risk: "medium"
 | BottomNav コンポーネント | 🔴 未実装 | 静的2タブ + FAB領域 |
 | FAB コンポーネント | 🔴 未実装 | コンテキストFAB |
 | TrainingPage | 🔴 未実装 | 待機/アクティブの二面表示（既存WorkoutFormPageを統合） |
-| HistoryPage | 🔴 未実装 | カレンダー表示（既存WorkoutListPageを置換）。カレンダーUIライブラリ選定が前提（Section 9.2 参照） |
+| HistoryPage | 🔴 未実装 | プレースホルダー空ページ（中身は別spec/designで定義） |
 | App.jsx リファクタリング | 🔴 未実装 | useState ルーティング → useNavigation へ移行 |
 | workoutStore persist | 🔴 未実装 | Zustand persist ミドルウェア追加 |
 
@@ -101,7 +101,7 @@ graph TD
     TP --> ASV
     ASV --> AEM
 
-    HP --> HWL
+    HP -.- HWL
 
     UN --> NS
     HWS --> WS
@@ -120,7 +120,7 @@ graph TD
 | FAB | コンテキストFAB（セッション中のみ表示） | なし（props） | `src/components/FAB.jsx` |
 | TrainingPage | トレーニングページ（待機/アクティブ切り替え） | useWorkoutSession | `src/pages/TrainingPage.jsx` |
 | IdleView | 待機画面（挨拶・開始ボタン・設定） | useWorkoutSession | `src/components/IdleView.jsx` |
-| HistoryPage | 履歴ページ（カレンダー表示） | useWorkoutList | `src/pages/HistoryPage.jsx` |
+| HistoryPage | 履歴ページ（プレースホルダー。中身は別specで定義・実装） | なし | `src/pages/HistoryPage.jsx` |
 | AddExerciseModal | 種目追加モーダル | useWorkoutSession | `src/components/AddExerciseModal.jsx` |
 
 ### 既存モジュールの変更
@@ -242,8 +242,10 @@ function useNavigation() {
 // HistoryPage (src/pages/HistoryPage.jsx)
 // -------------------------------------------------------
 
-// Props: なし（内部で useWorkoutList, workoutRepository を使用）
-// カレンダーUI + 日付選択 + 記録詳細表示
+// Props: なし
+// ナビゲーションとしてはルートの遷移先として空ページを用意するのみ。
+// 中身（カレンダーUI・記録詳細等）は別 spec/design で定義・実装する。
+// 初期実装は「Coming Soon」等のプレースホルダー表示。
 
 // -------------------------------------------------------
 // AddExerciseModal (src/components/AddExerciseModal.jsx)
@@ -296,10 +298,10 @@ function useNavigation() {
 |-----------|------|------------|
 | ユニットテスト | navigationStore（navigate, currentRoute） | 全アクション |
 | ユニットテスト | useNavigation（ルーティングフック） | 全返り値 |
-| コンポーネントテスト | BottomNav（タブ切り替え、アクティブ状態ハイライト） | FR-008 |
-| コンポーネントテスト | FAB（表示/非表示、クリック） | FR-009, FR-010 |
+| コンポーネントテスト | BottomNav（タブ切り替え、アクティブ状態ハイライト） | FR-005 |
+| コンポーネントテスト | FAB（表示/非表示、クリック） | FR-006, FR-007 |
 | コンポーネントテスト | TrainingPage（待機/アクティブ切り替え） | FR-001, FR-002 |
-| 統合テスト | App（ページ遷移 + セッション永続化） | FR-007, FR-011 |
+| 統合テスト | App（ページ遷移 + セッション永続化） | FR-004, FR-008 |
 | 統合テスト | workoutStore persist（リロード後のデータ復元） | NFR-002 |
 
 ---
@@ -321,7 +323,7 @@ function useNavigation() {
 
 | 課題 | 影響度 | 対応方針 |
 |------|--------|--------|
-| カレンダーUIライブラリの選定 | 中 | HistoryPage 実装時に決定。自前実装 vs 軽量ライブラリ（例: react-day-picker）を比較 |
-| 進捗グラフモーダルの実装方式 | 低 | HistoryPage 実装時に決定。Chart.js / Recharts 等の選定が必要 |
+| カレンダーUIライブラリの選定 | 中 | 履歴ページspec/designで決定（ナビゲーションの責務外） |
+| 進捗グラフモーダルの実装方式 | 低 | 履歴ページspec/designで決定（ナビゲーションの責務外） |
 | ボトムナビのアイコン選定 | - | **決定済み**: lucide-react を採用。SVGのAI生成は著作権リスクがあるためライブラリを使用 |
 | Phase 3 でのChat タブ追加方式 | 低 | Phase 3 着手時にナビゲーション拡張方法を設計 |
