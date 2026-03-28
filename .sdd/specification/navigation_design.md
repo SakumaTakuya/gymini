@@ -312,7 +312,7 @@ function useNavigation() {
 |---------|--------|--------|------|
 | ルーティング方式 | React Router vs Zustand 状態ベース | Zustand 状態ベース | 2ページのみで React Router は過剰。既存の Zustand をルーティングにも活用し依存を増やさない |
 | navigationStore の分離 | workoutStore に統合 vs 独立ストア | 独立ストア | 責務分離。ルーティングとワークアウトデータは異なる関心事 |
-| FAB の非表示方式 | 条件レンダリング（null） vs CSS非表示 | CSS非表示（opacity-0） | レイアウトシフト防止（NFR-003）。FAB領域のスペースを常に確保する。なお spec 使用例では `{isActive && <FAB />}` と条件レンダリングで示されているが、本設計では NFR-003 のために CSS非表示を採用する（意図的な乖離） |
+| FAB の非表示方式 | 条件レンダリング（null） vs CSS非表示 | CSS非表示（opacity-0） | レイアウトシフト防止（NFR-003）。FAB領域のスペースを常に確保する |
 | workoutStore の persist 対象 | 全状態 vs ドラフトのみ | ドラフトのみ（partialize） | `workouts`（一覧キャッシュ）は都度 localStorage から読み込むため永続化不要。ドラフト状態のみ永続化してストレージ消費を抑える |
 | 既存ページの扱い | リファクタリング vs 新規作成 | 新規作成 + 段階的移行 | WorkoutListPage → HistoryPage, WorkoutFormPage → TrainingPage/ActiveSessionView として新規作成。既存ページは移行完了後に削除 |
 | persist の localStorage キー | `gymini:workouts` と共有 vs 別キー | 別キー `gymini:workout-session` | ワークアウトデータ（CRUD）とセッションドラフトは別の目的。キーを分離することで管理しやすくなる |

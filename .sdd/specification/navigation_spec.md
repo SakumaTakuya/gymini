@@ -162,7 +162,7 @@ function BottomNav() {
         History
       </TabButton>
       <FABArea>
-        {isActive && <FAB onClick={openAddExerciseModal} />}
+        <FAB visible={isActive} onClick={openAddExerciseModal} />
       </FABArea>
     </nav>
   )
