@@ -29,8 +29,7 @@ gyminiは、筋トレ記録とAIコーチングを組み合わせたWebアプリ
 
 | ページ / モーダル | 内容 | Phase | 要求仕様書 |
 |------|------|-------|-----------|
-| 🏠 ホーム | 挨拶・トレーニング開始 | 1 | [navigation.md](navigation.md) |
-| 🏋️ トレーニング | ワークアウトセッション記録 | 1 | [workout](workout/index.md), [exercise-master](exercise-master/index.md), [navigation.md](navigation.md) |
+| 🏋️ トレーニング | 待機画面 + ワークアウトセッション記録 | 1 | [workout](workout/index.md), [exercise-master](exercise-master/index.md), [navigation.md](navigation.md) |
 | 📅 履歴 | カレンダー表示・記録確認 | 1 | [calendar](calendar/index.md), [navigation.md](navigation.md) |
 | ⚙️ 設定（モーダル） | APIキー・種目マスター管理 | 1〜2 | [exercise-master](exercise-master/index.md), [api-key](api-key/index.md) |
 | 💬 チャット | AIとの会話 | 3 | [ai-chat](ai-chat/index.md) |
@@ -182,9 +181,9 @@ requirementDiagram
         verifymethod: inspection
     }
 
-    interfaceRequirement DynamicBottomNav {
+    interfaceRequirement StaticBottomNav {
         id: IR_001
-        text: "セッション状態に応じて動的に変化するボトムナビゲーション（2タブ + コンテキストFAB）"
+        text: "静的2タブ（Training + History）+ FAB領域のボトムナビゲーション"
         risk: medium
         verifymethod: inspection
     }
@@ -229,9 +228,9 @@ Reactで開発し、クライアントサイドのみで動作する。
 
 スマートフォンでの利用を最優先としたUI設計を行う。
 
-### IR_001: 動的ボトムナビゲーション
+### IR_001: 静的ボトムナビゲーション
 
-セッション状態に応じて動的に変化するボトムナビゲーション（2タブ + コンテキストFAB）を提供する。スマホ画面下部に固定配置する。詳細は [navigation.md](navigation.md) を参照。
+静的2タブ（Training + History）+ FAB領域のボトムナビゲーションを提供する。タブは左寄せ、FAB領域は右側に常に確保。スマホ画面下部に固定配置する。詳細は [navigation.md](navigation.md) を参照。
 
 ---
 
