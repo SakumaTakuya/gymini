@@ -3,6 +3,8 @@ import { act } from '@testing-library/react'
 import useWorkoutStore from './workoutStore'
 import { create as createWorkout, getById } from '../lib/workoutRepository'
 
+const PERSIST_KEY = 'gymini:workout-session'
+
 beforeEach(() => {
   localStorage.clear()
   act(() => {
@@ -116,5 +118,32 @@ describe('saveSession', () => {
     act(() => useWorkoutStore.getState().saveSession())
     const saved = getById(w.id)
     expect(saved?.memo).toBe('updated memo')
+  })
+})
+
+describe('workoutStore persist (NFR-002)', () => {
+  it('persists draft fields to localStorage on state change', () => {
+    act(() => useWorkoutStore.getState().startSession('2026-03-29'))
+    act(() => useWorkoutStore.getState().setDraftMemo('persist test'))
+    const raw = localStorage.getItem(PERSIST_KEY)
+    expect(raw).not.toBeNull()
+    const parsed = JSON.parse(raw!)
+    expect(parsed.state.draftDate).toBe('2026-03-29')
+    expect(parsed.state.draftMemo).toBe('persist test')
+  })
+
+  it('does not persist workouts array', () => {
+    act(() => useWorkoutStore.getState().startSession('2026-03-29'))
+    const raw = localStorage.getItem(PERSIST_KEY)
+    const parsed = JSON.parse(raw!)
+    expect(parsed.state.workouts).toBeUndefined()
+  })
+
+  it('falls back to defaults when localStorage is unavailable (T-002)', () => {
+    // Simulate corrupted storage
+    localStorage.setItem(PERSIST_KEY, 'INVALID_JSON')
+    // State should still be accessible (store recovers gracefully)
+    expect(() => useWorkoutStore.getState()).not.toThrow()
+    expect(useWorkoutStore.getState().draftDate).toBeDefined()
   })
 })

@@ -1,46 +1,19 @@
-import { useState } from 'react'
 import './index.css'
-import type { WorkoutRecord } from './types'
-import WorkoutListPage from './pages/WorkoutListPage'
-import WorkoutFormPage from './pages/WorkoutFormPage'
-
-type Page = 'list' | 'form'
+import useNavigation from './hooks/useNavigation'
+import TrainingPage from './pages/TrainingPage'
+import HistoryPage from './pages/HistoryPage'
+import BottomNav from './components/BottomNav'
 
 export default function App() {
-  const [page, setPage] = useState<Page>('list')
-  const [editWorkout, setEditWorkout] = useState<WorkoutRecord | null>(null)
-
-  function handleStartNew() {
-    setEditWorkout(null)
-    setPage('form')
-  }
-
-  function handleEdit(workout: WorkoutRecord) {
-    setEditWorkout(workout)
-    setPage('form')
-  }
-
-  function handleSave() {
-    setPage('list')
-    setEditWorkout(null)
-  }
-
-  function handleCancel() {
-    setPage('list')
-    setEditWorkout(null)
-  }
-
-  if (page === 'form') {
-    return (
-      <WorkoutFormPage
-        onSave={handleSave}
-        onCancel={handleCancel}
-        editWorkout={editWorkout}
-      />
-    )
-  }
+  const { currentRoute } = useNavigation()
 
   return (
-    <WorkoutListPage onStartNew={handleStartNew} onEdit={handleEdit} />
+    <div className="flex flex-col min-h-screen bg-white">
+      <div className="flex-1 flex flex-col min-h-0">
+        {currentRoute === 'training' && <TrainingPage />}
+        {currentRoute === 'history' && <HistoryPage />}
+      </div>
+      <BottomNav />
+    </div>
   )
 }

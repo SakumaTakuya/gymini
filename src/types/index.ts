@@ -1,3 +1,5 @@
+export type Route = 'training' | 'history'
+
 export interface Exercise {
   id: string
   name: string

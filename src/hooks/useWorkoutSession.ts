@@ -29,7 +29,10 @@ export default function useWorkoutSession() {
     return searchExercisesRepo(query)
   }
 
+  const isActive = draftDate !== ''
+
   return {
+    isActive,
     draftDate,
     draftExercises,
     draftMemo,

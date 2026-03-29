@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { persist } from 'zustand/middleware'
 import type { WorkoutRecord, WorkoutExercise, WorkoutInput, PendingSet, WorkoutSet } from '../types'
 import {
   listByDateDesc,
@@ -35,9 +36,16 @@ interface WorkoutActions {
 
 type WorkoutStore = WorkoutState & WorkoutActions
 
+type WorkoutSessionPersistedKeys = Pick<
+  WorkoutState,
+  'draftDate' | 'draftExercises' | 'draftMemo' | 'draftWorkoutId'
+>
+
 const emptyPendingSet = (): PendingSet => ({ weight: 0, reps: 0, memo: '' })
 
-const useWorkoutStore = create<WorkoutStore>()((set, get) => ({
+const useWorkoutStore = create<WorkoutStore>()(
+  persist(
+    (set, get) => ({
   workouts: [],
   draftDate: '',
   draftExercises: [],
@@ -151,7 +159,7 @@ const useWorkoutStore = create<WorkoutStore>()((set, get) => ({
     } else {
       repoUpdateWorkout(draftWorkoutId, input)
     }
-    set({ draftWorkoutId: null, workouts: listByDateDesc() })
+    set({ draftDate: '', draftExercises: [], draftMemo: '', draftWorkoutId: null, workouts: listByDateDesc() })
   },
 
   cancelSession: () => {
@@ -167,6 +175,22 @@ const useWorkoutStore = create<WorkoutStore>()((set, get) => ({
     repoUpdateWorkout(id, input)
     set({ workouts: listByDateDesc() })
   },
-}))
+}),
+    {
+      name: 'gymini:workout-session',
+      partialize: (state): WorkoutSessionPersistedKeys => ({
+        draftDate: state.draftDate,
+        draftExercises: state.draftExercises,
+        draftMemo: state.draftMemo,
+        draftWorkoutId: state.draftWorkoutId,
+      }),
+      onRehydrateStorage: () => (_state, error) => {
+        if (error) {
+          console.warn('[gymini] workoutStore rehydration failed, using defaults', error)
+        }
+      },
+    }
+  )
+)
 
 export default useWorkoutStore

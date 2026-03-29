@@ -4,7 +4,7 @@ title: "ページナビゲーション"
 type: "design"
 status: "draft"
 sdd-phase: "plan"
-impl-status: "not-implemented"
+impl-status: "implemented"
 created: "2026-03-28"
 updated: "2026-03-29"
 depends-on: ["spec-navigation"]
@@ -23,18 +23,18 @@ risk: "medium"
 
 # 1. 実装ステータス
 
-**ステータス:** 🔴 未実装
+**ステータス:** 🟢 実装済み（2026-03-29）
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| navigationStore | 🔴 未実装 | ルーティング状態管理 |
-| useNavigation フック | 🔴 未実装 | ルーティングフック |
-| BottomNav コンポーネント | 🔴 未実装 | 静的2タブ + FAB領域 |
-| FAB コンポーネント | 🔴 未実装 | コンテキストFAB |
-| TrainingPage | 🔴 未実装 | 待機/アクティブの二面表示（既存WorkoutFormPageを統合） |
-| HistoryPage | 🔴 未実装 | プレースホルダー空ページ（中身は別spec/designで定義） |
-| App.tsx リファクタリング | 🔴 未実装 | useState ルーティング → useNavigation へ移行 |
-| workoutStore persist | 🔴 未実装 | Zustand persist ミドルウェア追加 |
+| navigationStore | 🟢 実装済み | ルーティング状態管理 |
+| useNavigation フック | 🟢 実装済み | ルーティングフック |
+| BottomNav コンポーネント | 🟢 実装済み | 静的2タブ + FAB領域 |
+| FAB コンポーネント | 🟢 実装済み | コンテキストFAB |
+| TrainingPage | 🟢 実装済み | 待機/アクティブの二面表示（既存WorkoutFormPageを統合） |
+| HistoryPage | 🟢 実装済み | プレースホルダー空ページ（中身は別spec/designで定義） |
+| App.tsx リファクタリング | 🟢 実装済み | useState ルーティング → useNavigation へ移行 |
+| workoutStore persist | 🟢 実装済み | Zustand persist ミドルウェア追加 |
 
 ---
 

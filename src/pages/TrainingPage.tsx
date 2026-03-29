@@ -1,21 +1,16 @@
-import { useState, useEffect } from 'react'
-import type { WorkoutRecord, Exercise, PendingSet, WorkoutSet } from '../types'
+import { useState } from 'react'
+import type { Exercise, PendingSet, WorkoutSet } from '../types'
 import useWorkoutSession from '../hooks/useWorkoutSession'
+import IdleView from '../components/IdleView'
 import ExerciseSection from '../components/ExerciseSection'
 
-interface WorkoutFormPageProps {
-  onSave: () => void
-  onCancel: () => void
-  editWorkout?: WorkoutRecord | null
-}
-
-export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }: WorkoutFormPageProps) {
+export default function TrainingPage() {
   const {
+    isActive,
     draftDate,
     draftExercises,
     draftMemo,
     startSession,
-    startEditSession,
     addExercise,
     addSet,
     updateSet,
@@ -29,14 +24,6 @@ export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }
   const [exerciseQuery, setExerciseQuery] = useState('')
   const [searchResults, setSearchResults] = useState<Exercise[]>([])
   const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null)
-
-  useEffect(() => {
-    if (editWorkout) {
-      startEditSession(editWorkout)
-    } else {
-      startSession()
-    }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   function handleExerciseSearch(query: string) {
     setExerciseQuery(query)
@@ -63,26 +50,25 @@ export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }
     updateSet(exerciseIndex, setIndex, updatedSet)
   }
 
-  function handleSave() {
-    saveSession()
-    onSave()
-  }
-
-  function handleCancel() {
-    cancelSession()
-    onCancel()
+  if (!isActive) {
+    return (
+      <div className="flex flex-col flex-1 min-h-0">
+        <IdleView
+          onStartTraining={() => startSession()}
+          onOpenSettings={() => {/* TODO: settings */}}
+        />
+      </div>
+    )
   }
 
   return (
-    <div className="flex flex-col min-h-screen bg-white">
+    <div className="flex flex-col flex-1 min-h-0">
       {/* NavBar */}
       <div className="h-[103px] bg-white border-b border-zinc-100 px-6 pt-[59px] pb-4 flex items-center justify-between">
-        <h1 className="font-outfit font-extrabold text-[28px] tracking-[-1px]">
-          {editWorkout ? '編集' : '記録'}
-        </h1>
+        <h1 className="font-outfit font-extrabold text-[28px] tracking-[-1px]">記録</h1>
         <button
           className="h-11 rounded-xl font-outfit font-semibold text-base px-4 text-black"
-          onClick={handleCancel}
+          onClick={cancelSession}
         >
           キャンセル
         </button>
@@ -152,7 +138,7 @@ export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }
         {/* Save button */}
         <button
           className="h-[52px] rounded-2xl bg-black text-white font-outfit font-bold text-base px-6"
-          onClick={handleSave}
+          onClick={saveSession}
         >
           保存
         </button>
