@@ -318,12 +318,13 @@ function useNavigation() {
 | workoutStore の persist 対象 | 全状態 vs ドラフトのみ | ドラフトのみ（partialize） | `workouts`（一覧キャッシュ）は都度 localStorage から読み込むため永続化不要。ドラフト状態のみ永続化してストレージ消費を抑える |
 | 既存ページの扱い | リファクタリング vs 新規作成 | 新規作成 + 段階的移行 | WorkoutListPage → HistoryPage, WorkoutFormPage → TrainingPage/ActiveSessionView として新規作成。既存ページは移行完了後に削除 |
 | persist の localStorage キー | `gymini:workouts` と共有 vs 別キー | 別キー `gymini:workout-session` | ワークアウトデータ（CRUD）とセッションドラフトは別の目的。キーを分離することで管理しやすくなる |
+| ボトムナビのアイコン選定 | SVG自作 vs ライブラリ | lucide-react を採用 | SVGのAI生成は著作権リスクがあるためライブラリを使用 |
 
 ## 9.2. 未解決の課題
 
-| 課題 | 影響度 | 対応方針 |
-|------|--------|--------|
-| カレンダーUIライブラリの選定 | 中 | 履歴ページspec/designで決定（ナビゲーションの責務外） |
-| 進捗グラフモーダルの実装方式 | 低 | 履歴ページspec/designで決定（ナビゲーションの責務外） |
-| ボトムナビのアイコン選定 | - | **決定済み**: lucide-react を採用。SVGのAI生成は著作権リスクがあるためライブラリを使用 |
-| Phase 3 でのChat タブ追加方式 | 低 | Phase 3 着手時にナビゲーション拡張方法を設計 |
+*未解決の課題なし（実装開始可能）*
+
+> スコープ外メモ（他機能で解決）:
+> - カレンダーUIライブラリの選定 → 履歴ページ design doc で決定
+> - 進捗グラフモーダルの実装方式 → 履歴ページ design doc で決定
+> - Chat タブ追加方式（Phase 3）→ Phase 3 着手時のナビゲーション拡張 design doc で決定

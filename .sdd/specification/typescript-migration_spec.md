@@ -83,6 +83,7 @@ TypeScript strict mode（`"strict": true`）を有効化する。
 | `types`   | `index.ts`     | `WorkoutExercise`| 1種目分の記録（種目ID・名前・セット一覧）の型    |
 | `types`   | `index.ts`     | `WorkoutRecord`  | 1回のワークアウト全体（日付・種目一覧・メモ）の型   |
 | `types`   | `index.ts`     | `PendingSet`     | 入力中（未確定）セットの型               |
+| `types`   | `index.ts`     | `WorkoutInput`   | リポジトリへの書き込み入力型（`memo` 省略可）  |
 
 ## 4.1. 型定義
 
@@ -124,6 +125,13 @@ export interface WorkoutRecord {
   date: string
   exercises: WorkoutExercise[]
   memo: string
+}
+
+/** リポジトリ層への書き込み入力型。memo は省略可能（省略時は '' 扱い） */
+export interface WorkoutInput {
+  date: string
+  exercises: WorkoutExercise[]
+  memo?: string
 }
 ```
 

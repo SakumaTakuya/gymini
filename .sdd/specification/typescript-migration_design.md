@@ -96,11 +96,11 @@ graph TD
 
 | ファイル                         | 変換後                       | 主な型付け作業                                      |
 |------------------------------|---------------------------|---------------------------------------------|
-| `src/types/index.ts`         | 新規作成                      | Exercise, WorkoutSet, WorkoutExercise, WorkoutRecord, PendingSet |
+| `src/types/index.ts`         | 新規作成                      | Exercise, WorkoutSet, WorkoutExercise, WorkoutRecord, PendingSet, WorkoutInput |
 | `src/stores/workoutStore.js` | `.ts`                     | WorkoutState, WorkoutActions インターフェース定義     |
 | `src/lib/exerciseRepository.js` | `.ts`                  | 引数・戻り値に `Exercise[]` を付与                   |
 | `src/lib/workoutRepository.js` | `.ts`                   | 引数・戻り値に `WorkoutRecord[]` を付与              |
-| `src/hooks/useWorkoutSession.js` | `.ts`                 | フック戻り値の型定義（UseWorkoutSessionReturn）       |
+| `src/hooks/useWorkoutSession.js` | `.ts`                 | 戻り値型は推論に委任。`startEditSession(workout)` を追加公開 |
 | `src/hooks/useWorkoutList.js` | `.ts`                    | フック戻り値の型定義                                  |
 | `src/components/ExerciseSection.jsx` | `.tsx`          | ExerciseSectionProps 定義                    |
 | `src/components/SetRowInput.jsx` | `.tsx`                | SetRowInputProps 定義                        |
@@ -110,7 +110,8 @@ graph TD
 | `src/App.jsx`                | `.tsx`                    | props なし                                   |
 | `src/main.jsx`               | `.tsx`                    | `document.getElementById` の null チェック     |
 | `src/test/setup.js`          | `.ts`                     | `@testing-library/jest-dom` の型参照          |
-| `vite.config.js`             | `.ts`                     | defineConfig の型付け                          |
+| `vite.config.js`             | `.ts`                     | defineConfig の型付け。tsconfig の `include` から除外（Vite8/Vitest3 の型競合回避） |
+| `src/vite-env.d.ts`          | 新規作成                      | CSS インポートの型宣言（`/// <reference types="vite/client" />`） |
 
 ---
 
@@ -150,6 +151,13 @@ export interface WorkoutRecord {
   exercises: WorkoutExercise[]
   memo: string
 }
+
+/** リポジトリ層への書き込み入力型。memo は省略可能（省略時は '' 扱い） */
+export interface WorkoutInput {
+  date: string
+  exercises: WorkoutExercise[]
+  memo?: string
+}
 ```
 
 ---
@@ -184,7 +192,7 @@ interface WorkoutActions {
   saveSession: () => void
   cancelSession: () => void
   deleteWorkout: (id: string) => void
-  updateWorkout: (id: string, input: Partial<WorkoutRecord>) => void
+  updateWorkout: (id: string, input: WorkoutInput) => void
 }
 
 type WorkoutStore = WorkoutState & WorkoutActions
@@ -202,7 +210,7 @@ interface ExerciseSectionProps {
 interface WorkoutCardProps {
   workout: WorkoutRecord
   onDelete: (id: string) => void
-  onEdit: (workout: WorkoutRecord) => void
+  onEdit?: (workout: WorkoutRecord) => void  // optional: 未指定時は編集ボタン非表示
 }
 
 interface WorkoutFormPageProps {
@@ -249,6 +257,8 @@ interface WorkoutFormPageProps {
 | Zustand ストア型付け方式  | ① `StoreApi<WorkoutStore>` / ② `create<WorkoutStore>()()` カリー化 | ② `create<WorkoutStore>()()` | Zustand 5 推奨のカリー化構文。型安全なまま `set`/`get` を使えるため |
 | `PendingSet` の weight/reps 型 | ① `string`（フォーム入力値） / ② `number`（Number() 変換後） | ② `number` | `SetRowInput.handlePendingChange` が `Number()` 変換してからストアに渡すため |
 | `localStorage` JSON.parse 型付け | ① `unknown` + 型ガード / ② `as WorkoutRecord[]` + try-catch | ② `as WorkoutRecord[]` + try-catch | `workoutRepository.js` に try-catch 実装済み。T-002 準拠でキャストで十分 |
+| `vite.config.ts` の tsconfig include | ① `include` に含める / ② `include` から除外 | ② 除外 | Vite8/Vitest3 の型定義が競合し、含めるとコンパイルエラーが発生するため |
+| CSS インポートの型宣言 | ① 個別定義 / ② `vite-env.d.ts` 追加 | ② `vite-env.d.ts` 追加 | `/// <reference types="vite/client" />` 一行で Vite 提供の全クライアント型（CSS モジュール等）をカバーできるため |
 
 ## 9.2. 未解決の課題
 
@@ -257,6 +267,18 @@ interface WorkoutFormPageProps {
 ---
 
 # 10. 変更履歴
+
+## v1.2 (2026-03-29)
+
+**変更内容:**
+
+- `updateWorkout` 引数型を `Partial<WorkoutRecord>` → `WorkoutInput` に修正（実装と一致）
+- Section 5 データモデルに `WorkoutInput` 型定義を追加
+- `WorkoutCardProps.onEdit` を必須 → 任意（`?`）に修正（実装と一致）
+- Section 4.2 に `vite-env.d.ts` を追記。`vite.config.ts` に tsconfig `include` 除外の注記を追記
+- Section 9.1 に `vite.config.ts` tsconfig 除外・`vite-env.d.ts` の設計判断を追記
+- `useWorkoutSession` の型付け説明を修正（`UseWorkoutSessionReturn` → 推論委任、`startEditSession` を追記）
+- Section 4.2 モジュール表の `src/types/index.ts` に `WorkoutInput` を追記
 
 ## v1.1 (2026-03-29)
 
