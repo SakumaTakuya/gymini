@@ -12,6 +12,7 @@ export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }
     addExercise,
     addSet,
     updateSet,
+    updatePendingSet,
     setDraftMemo,
     saveSession,
     cancelSession,
@@ -42,8 +43,8 @@ export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }
     setSearchResults([])
   }
 
-  function handlePendingSetChange() {
-    // pendingSet changes are handled locally in SetRowInput; addSet captures the final value
+  function handlePendingSetChange(exerciseIndex, pendingSet) {
+    updatePendingSet(exerciseIndex, pendingSet)
   }
 
   function handleAddSet(exerciseIndex, pendingSet) {

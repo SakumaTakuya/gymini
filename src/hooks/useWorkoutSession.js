@@ -11,6 +11,7 @@ export default function useWorkoutSession() {
   const updateSet = useWorkoutStore((s) => s.updateSet)
   const removeSet = useWorkoutStore((s) => s.removeSet)
   const setDraftMemo = useWorkoutStore((s) => s.setDraftMemo)
+  const updatePendingSet = useWorkoutStore((s) => s.updatePendingSet_internal)
   const saveSession = useWorkoutStore((s) => s.saveSession)
   const cancelSession = useWorkoutStore((s) => s.cancelSession)
 
@@ -36,6 +37,7 @@ export default function useWorkoutSession() {
     addExercise,
     addSet,
     updateSet,
+    updatePendingSet,
     removeSet,
     setDraftMemo,
     saveSession,
