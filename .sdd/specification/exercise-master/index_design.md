@@ -4,7 +4,7 @@ title: "種目マスター管理"
 type: "design"
 status: "draft"
 sdd-phase: "plan"
-impl-status: "not-implemented"
+impl-status: "implemented"
 created: "2026-03-28"
 updated: "2026-03-29"
 depends-on: ["spec-exercise-master"]
@@ -23,16 +23,18 @@ risk: "high"
 
 # 1. 実装ステータス
 
-**ステータス:** 🟡 部分実装
+**ステータス:** 🟢 実装完了
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
 | ExerciseRepository.search | 🟢 実装済み | 部分一致検索（FR-005） |
-| ExerciseRepository.getAll | 🟡 部分実装 | 内部関数として存在。export が必要 |
-| ExerciseRepository.create | 🔴 未実装 | FR-006, FR-007 で必要 |
-| ExerciseRepository.remove | 🔴 未実装 | FR-007 で必要 |
-| 自動登録フロー（UI） | 🔴 未実装 | TrainingPage での候補なし時のUI |
-| 設定画面（種目管理） | 🔴 未実装 | 種目一覧・追加・削除のUI |
+| ExerciseRepository.getAll | 🟢 実装済み | export 済み（FR-007） |
+| ExerciseRepository.create | 🟢 実装済み | 重複名チェック付き（FR-006, FR-007） |
+| ExerciseRepository.remove | 🟢 実装済み | ID 指定削除（FR-007） |
+| useExerciseMaster Hook | 🟢 実装済み | useState + Repository ラッパー |
+| 自動登録フロー（UI） | 🟢 実装済み | TrainingPage + AddExerciseModal（FR-006） |
+| 設定画面（種目管理） | 🟢 実装済み | ExerciseMasterPage（FR-007） |
+| ナビゲーション統合 | 🟢 実装済み | Settings タブで ExerciseMasterPage にアクセス |
 
 ---
 
