@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Exercise } from '../types'
 import useWorkoutSession from '../hooks/useWorkoutSession'
+import { create as createExercise } from '../lib/exerciseRepository'
 
 interface AddExerciseModalProps {
   open: boolean
@@ -20,6 +21,16 @@ export default function AddExerciseModal({ open, onClose }: AddExerciseModalProp
   }
 
   function handleSelect(exercise: Exercise) {
+    addExercise({ exerciseId: exercise.id, exerciseName: exercise.name })
+    setQuery('')
+    setResults([])
+    onClose()
+  }
+
+  function handleAutoRegister() {
+    const trimmed = query.trim()
+    if (!trimmed) return
+    const exercise = createExercise(trimmed)
     addExercise({ exerciseId: exercise.id, exerciseName: exercise.name })
     setQuery('')
     setResults([])
@@ -48,6 +59,17 @@ export default function AddExerciseModal({ open, onClose }: AddExerciseModalProp
           placeholder="種目を検索..."
           autoFocus
         />
+
+        {query && results.length === 0 && (
+          <ul className="rounded-2xl bg-zinc-100 overflow-hidden">
+            <li
+              className="px-4 py-3 font-inter text-base cursor-pointer hover:bg-zinc-200 text-blue-600"
+              onClick={handleAutoRegister}
+            >
+              「{query.trim()}」を新しい種目として追加
+            </li>
+          </ul>
+        )}
 
         {results.length > 0 && (
           <ul className="rounded-2xl bg-zinc-100 overflow-hidden">

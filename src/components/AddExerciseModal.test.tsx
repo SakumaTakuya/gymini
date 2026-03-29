@@ -54,4 +54,22 @@ describe('AddExerciseModal', () => {
     await userEvent.click(results[0])
     expect(useWorkoutStore.getState().draftExercises).toHaveLength(1)
   })
+
+  it('shows auto-register option when no search results (FR-006)', async () => {
+    render(<AddExerciseModal open={true} onClose={() => {}} />)
+    const input = screen.getByPlaceholderText(/種目を検索/i)
+    await userEvent.type(input, 'デッドリフト')
+    expect(screen.getByText(/「デッドリフト」を新しい種目として追加/)).toBeInTheDocument()
+  })
+
+  it('auto-registers exercise and adds to session on click (FR-006)', async () => {
+    const onClose = vi.fn()
+    render(<AddExerciseModal open={true} onClose={onClose} />)
+    const input = screen.getByPlaceholderText(/種目を検索/i)
+    await userEvent.type(input, 'デッドリフト')
+    await userEvent.click(screen.getByText(/「デッドリフト」を新しい種目として追加/))
+    expect(useWorkoutStore.getState().draftExercises).toHaveLength(1)
+    expect(useWorkoutStore.getState().draftExercises[0].exerciseName).toBe('デッドリフト')
+    expect(onClose).toHaveBeenCalledOnce()
+  })
 })
