@@ -1,4 +1,4 @@
-export type Route = 'training' | 'history'
+export type Route = 'training' | 'history' | 'exercise-master'
 
 export interface Exercise {
   id: string

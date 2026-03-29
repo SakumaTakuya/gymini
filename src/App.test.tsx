@@ -39,6 +39,12 @@ describe('App integration (FR-004, FR-008)', () => {
     expect(screen.getByRole('button', { name: /トレーニングを開始/i })).toBeInTheDocument()
   })
 
+  it('renders ExerciseMaster page when Settings tab clicked', async () => {
+    render(<App />)
+    await userEvent.click(screen.getByRole('button', { name: /settings/i }))
+    expect(screen.getByText('種目マスター')).toBeInTheDocument()
+  })
+
   it('session data is maintained when navigating between tabs', async () => {
     render(<App />)
     // Start a session

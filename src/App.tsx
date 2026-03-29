@@ -2,6 +2,7 @@ import './index.css'
 import useNavigation from './hooks/useNavigation'
 import TrainingPage from './pages/TrainingPage'
 import HistoryPage from './pages/HistoryPage'
+import ExerciseMasterPage from './pages/ExerciseMasterPage'
 import BottomNav from './components/BottomNav'
 
 export default function App() {
@@ -12,6 +13,7 @@ export default function App() {
       <div className="flex-1 flex flex-col min-h-0">
         {currentRoute === 'training' && <TrainingPage />}
         {currentRoute === 'history' && <HistoryPage />}
+        {currentRoute === 'exercise-master' && <ExerciseMasterPage />}
       </div>
       <BottomNav />
     </div>
