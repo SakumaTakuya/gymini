@@ -21,7 +21,7 @@ describe('create', () => {
   it('persists to localStorage', () => {
     const input = { date: '2026-03-08', exercises: [] }
     create(input)
-    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY))
+    const stored = JSON.parse(localStorage.getItem(STORAGE_KEY) ?? '[]')
     expect(stored).toHaveLength(1)
   })
 })
@@ -72,9 +72,9 @@ describe('update', () => {
     const w = create({ date: '2026-03-08', exercises: [] })
     await new Promise((r) => setTimeout(r, 2))
     const updated = update(w.id, { date: '2026-03-09', exercises: [] })
-    expect(updated.date).toBe('2026-03-09')
-    expect(updated.createdAt).toBe(w.createdAt)
-    expect(updated.updatedAt).not.toBe(w.updatedAt)
+    expect(updated?.date).toBe('2026-03-09')
+    expect(updated?.createdAt).toBe(w.createdAt)
+    expect(updated?.updatedAt).not.toBe(w.updatedAt)
   })
 
   it('returns null for unknown id', () => {

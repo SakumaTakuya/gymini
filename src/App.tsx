@@ -1,18 +1,21 @@
-import React, { useState } from 'react'
+import { useState } from 'react'
 import './index.css'
+import type { WorkoutRecord } from './types'
 import WorkoutListPage from './pages/WorkoutListPage'
 import WorkoutFormPage from './pages/WorkoutFormPage'
 
+type Page = 'list' | 'form'
+
 export default function App() {
-  const [page, setPage] = useState('list') // 'list' | 'form'
-  const [editWorkout, setEditWorkout] = useState(null)
+  const [page, setPage] = useState<Page>('list')
+  const [editWorkout, setEditWorkout] = useState<WorkoutRecord | null>(null)
 
   function handleStartNew() {
     setEditWorkout(null)
     setPage('form')
   }
 
-  function handleEdit(workout) {
+  function handleEdit(workout: WorkoutRecord) {
     setEditWorkout(workout)
     setPage('form')
   }

@@ -1,5 +1,6 @@
 import useWorkoutStore from '../stores/workoutStore'
 import { search as searchExercisesRepo } from '../lib/exerciseRepository'
+import type { WorkoutRecord, Exercise } from '../types'
 
 export default function useWorkoutSession() {
   const draftDate = useWorkoutStore((s) => s.draftDate)
@@ -15,16 +16,16 @@ export default function useWorkoutSession() {
   const saveSession = useWorkoutStore((s) => s.saveSession)
   const cancelSession = useWorkoutStore((s) => s.cancelSession)
 
-  function startSession(date) {
+  function startSession(date?: string): void {
     const d = date || new Date().toISOString().slice(0, 10)
     startSessionStore(d)
   }
 
-  function startEditSession(workout) {
+  function startEditSession(workout: WorkoutRecord): void {
     startSessionStore(workout.date, workout)
   }
 
-  function searchExercises(query) {
+  function searchExercises(query: string): Exercise[] {
     return searchExercisesRepo(query)
   }
 

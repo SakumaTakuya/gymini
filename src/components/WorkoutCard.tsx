@@ -1,6 +1,12 @@
-import React from 'react'
+import type { WorkoutRecord } from '../types'
 
-export default function WorkoutCard({ workout, onDelete, onEdit }) {
+interface WorkoutCardProps {
+  workout: WorkoutRecord
+  onDelete: (id: string) => void
+  onEdit?: (workout: WorkoutRecord) => void
+}
+
+export default function WorkoutCard({ workout, onDelete, onEdit }: WorkoutCardProps) {
   const summary = workout.exercises
     .map((ex) => `${ex.exerciseName} ${ex.sets.length}セット`)
     .join(' / ')

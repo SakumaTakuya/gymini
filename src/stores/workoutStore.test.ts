@@ -47,7 +47,7 @@ describe('startSession', () => {
     const existing = {
       id: 'abc',
       date: '2026-03-08',
-      exercises: [{ exerciseId: 'bench', exerciseName: 'ベンチプレス', sets: [] }],
+      exercises: [{ exerciseId: 'bench', exerciseName: 'ベンチプレス', sets: [], pendingSet: { weight: 0, reps: 0, memo: '' } }],
       memo: 'good',
     }
     act(() => useWorkoutStore.getState().startSession('2026-03-08', existing))
@@ -115,6 +115,6 @@ describe('saveSession', () => {
     act(() => useWorkoutStore.getState().setDraftMemo('updated memo'))
     act(() => useWorkoutStore.getState().saveSession())
     const saved = getById(w.id)
-    expect(saved.memo).toBe('updated memo')
+    expect(saved?.memo).toBe('updated memo')
   })
 })

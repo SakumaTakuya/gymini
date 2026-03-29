@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import type { WorkoutRecord, WorkoutExercise, WorkoutInput, PendingSet, WorkoutSet } from '../types'
 import {
   listByDateDesc,
   create as repoCreateWorkout,
@@ -6,9 +7,37 @@ import {
   remove as repoRemoveWorkout,
 } from '../lib/workoutRepository'
 
-const emptyPendingSet = () => ({ weight: 0, reps: 0, memo: '' })
+interface WorkoutState {
+  workouts: WorkoutRecord[]
+  draftDate: string
+  draftExercises: WorkoutExercise[]
+  draftMemo: string
+  draftWorkoutId: string | null
+}
 
-const useWorkoutStore = create((set, get) => ({
+interface WorkoutActions {
+  loadWorkouts: () => void
+  startSession: (date: string, editTarget?: WorkoutRecord) => void
+  addExercise: (exercise: Pick<WorkoutExercise, 'exerciseId' | 'exerciseName'>) => void
+  addSet: (exerciseIndex: number, pendingSet: PendingSet) => void
+  /** Zustand 内部用。pendingSet 値を更新し、次の confirmSet_internal で確定する */
+  updatePendingSet_internal: (exerciseIndex: number, pendingSet: PendingSet) => void
+  /** Zustand 内部用。pendingSet を sets に移して次の pendingSet を初期化する */
+  confirmSet_internal: (exerciseIndex: number) => void
+  updateSet: (exerciseIndex: number, setIndex: number, updatedSet: WorkoutSet) => void
+  removeSet: (exerciseIndex: number, setIndex: number) => void
+  setDraftMemo: (memo: string) => void
+  saveSession: () => void
+  cancelSession: () => void
+  deleteWorkout: (id: string) => void
+  updateWorkout: (id: string, input: WorkoutInput) => void
+}
+
+type WorkoutStore = WorkoutState & WorkoutActions
+
+const emptyPendingSet = (): PendingSet => ({ weight: 0, reps: 0, memo: '' })
+
+const useWorkoutStore = create<WorkoutStore>()((set, get) => ({
   workouts: [],
   draftDate: '',
   draftExercises: [],
@@ -54,8 +83,8 @@ const useWorkoutStore = create((set, get) => ({
     }))
   },
 
-  addSet: (exerciseIndex, set) => {
-    get().updatePendingSet_internal(exerciseIndex, set)
+  addSet: (exerciseIndex, pendingSet) => {
+    get().updatePendingSet_internal(exerciseIndex, pendingSet)
     get().confirmSet_internal(exerciseIndex)
   },
 
@@ -74,8 +103,8 @@ const useWorkoutStore = create((set, get) => ({
     set((state) => {
       const exercises = state.draftExercises.map((ex, i) => {
         if (i !== exerciseIndex) return ex
-        const confirmedSet = { ...ex.pendingSet }
-        const nextPending = { weight: confirmedSet.weight, reps: confirmedSet.reps, memo: '' }
+        const confirmedSet: WorkoutSet = { ...ex.pendingSet }
+        const nextPending: PendingSet = { weight: confirmedSet.weight, reps: confirmedSet.reps, memo: '' }
         return { ...ex, sets: [...ex.sets, confirmedSet], pendingSet: nextPending }
       })
       return { draftExercises: exercises }
@@ -113,6 +142,7 @@ const useWorkoutStore = create((set, get) => ({
         exerciseId,
         exerciseName,
         sets,
+        pendingSet: emptyPendingSet(),
       })),
       memo: draftMemo,
     }

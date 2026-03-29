@@ -1,8 +1,15 @@
-import React, { useState, useEffect } from 'react'
+import { useState, useEffect } from 'react'
+import type { WorkoutRecord, Exercise, PendingSet, WorkoutSet } from '../types'
 import useWorkoutSession from '../hooks/useWorkoutSession'
 import ExerciseSection from '../components/ExerciseSection'
 
-export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }) {
+interface WorkoutFormPageProps {
+  onSave: () => void
+  onCancel: () => void
+  editWorkout?: WorkoutRecord | null
+}
+
+export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }: WorkoutFormPageProps) {
   const {
     draftDate,
     draftExercises,
@@ -20,8 +27,8 @@ export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }
   } = useWorkoutSession()
 
   const [exerciseQuery, setExerciseQuery] = useState('')
-  const [searchResults, setSearchResults] = useState([])
-  const [lastAddedIndex, setLastAddedIndex] = useState(null)
+  const [searchResults, setSearchResults] = useState<Exercise[]>([])
+  const [lastAddedIndex, setLastAddedIndex] = useState<number | null>(null)
 
   useEffect(() => {
     if (editWorkout) {
@@ -31,28 +38,28 @@ export default function WorkoutFormPage({ onSave, onCancel, editWorkout = null }
     }
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
-  function handleExerciseSearch(query) {
+  function handleExerciseSearch(query: string) {
     setExerciseQuery(query)
     setSearchResults(searchExercises(query))
   }
 
-  function handleSelectExercise(exercise) {
+  function handleSelectExercise(exercise: Exercise) {
     addExercise({ exerciseId: exercise.id, exerciseName: exercise.name })
     setLastAddedIndex(draftExercises.length)
     setExerciseQuery('')
     setSearchResults([])
   }
 
-  function handlePendingSetChange(exerciseIndex, pendingSet) {
+  function handlePendingSetChange(exerciseIndex: number, pendingSet: PendingSet) {
     updatePendingSet(exerciseIndex, pendingSet)
   }
 
-  function handleAddSet(exerciseIndex, pendingSet) {
+  function handleAddSet(exerciseIndex: number, pendingSet: PendingSet) {
     addSet(exerciseIndex, pendingSet)
     setLastAddedIndex(exerciseIndex)
   }
 
-  function handleUpdateSet(exerciseIndex, setIndex, updatedSet) {
+  function handleUpdateSet(exerciseIndex: number, setIndex: number, updatedSet: WorkoutSet) {
     updateSet(exerciseIndex, setIndex, updatedSet)
   }
 

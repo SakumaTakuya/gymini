@@ -1,4 +1,3 @@
-import React from 'react'
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import WorkoutFormPage from './WorkoutFormPage'
@@ -19,6 +18,7 @@ const makeSession = (overrides = {}) => ({
   addExercise: vi.fn(),
   addSet: vi.fn(),
   updateSet: vi.fn(),
+  updatePendingSet: vi.fn(),
   removeSet: vi.fn(),
   setDraftMemo: vi.fn(),
   saveSession: vi.fn(),
@@ -29,7 +29,7 @@ const makeSession = (overrides = {}) => ({
 
 describe('WorkoutFormPage', () => {
   beforeEach(() => {
-    useWorkoutSession.mockReturnValue(makeSession())
+    vi.mocked(useWorkoutSession).mockReturnValue(makeSession())
   })
 
   it('renders the form with date input', () => {
@@ -40,7 +40,7 @@ describe('WorkoutFormPage', () => {
   it('save button calls saveSession', () => {
     const saveSession = vi.fn()
     const onSave = vi.fn()
-    useWorkoutSession.mockReturnValue(makeSession({ saveSession }))
+    vi.mocked(useWorkoutSession).mockReturnValue(makeSession({ saveSession }))
     render(<WorkoutFormPage onSave={onSave} onCancel={vi.fn()} />)
     fireEvent.click(screen.getByRole('button', { name: /保存/i }))
     expect(saveSession).toHaveBeenCalled()
@@ -49,7 +49,7 @@ describe('WorkoutFormPage', () => {
   it('cancel button calls cancelSession and onCancel', () => {
     const cancelSession = vi.fn()
     const onCancel = vi.fn()
-    useWorkoutSession.mockReturnValue(makeSession({ cancelSession }))
+    vi.mocked(useWorkoutSession).mockReturnValue(makeSession({ cancelSession }))
     render(<WorkoutFormPage onSave={vi.fn()} onCancel={onCancel} />)
     fireEvent.click(screen.getByRole('button', { name: /キャンセル/i }))
     expect(cancelSession).toHaveBeenCalled()
@@ -57,7 +57,7 @@ describe('WorkoutFormPage', () => {
   })
 
   it('renders ExerciseSections for each exercise in draftExercises', () => {
-    useWorkoutSession.mockReturnValue(makeSession({
+    vi.mocked(useWorkoutSession).mockReturnValue(makeSession({
       draftExercises: [
         {
           exerciseId: 'bench',

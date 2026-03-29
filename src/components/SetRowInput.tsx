@@ -1,4 +1,14 @@
-import React, { useRef, useEffect, useState } from 'react'
+import { useRef, useEffect, useState } from 'react'
+import type { PendingSet, WorkoutSet } from '../types'
+
+interface SetRowInputProps {
+  pendingSet: PendingSet
+  onPendingSetChange: (pendingSet: PendingSet) => void
+  onAddSet: () => void
+  autoFocus?: boolean
+  confirmedSets?: WorkoutSet[]
+  onUpdateSet?: (setIndex: number, updatedSet: WorkoutSet) => void
+}
 
 // Renders the pending set input row + confirmed sets list
 export default function SetRowInput({
@@ -8,10 +18,10 @@ export default function SetRowInput({
   autoFocus = false,
   confirmedSets = [],
   onUpdateSet,
-}) {
-  const weightRef = useRef(null)
-  const [editingIndex, setEditingIndex] = useState(null)
-  const [editValues, setEditValues] = useState({})
+}: SetRowInputProps) {
+  const weightRef = useRef<HTMLInputElement>(null)
+  const [editingIndex, setEditingIndex] = useState<number | null>(null)
+  const [editValues, setEditValues] = useState<WorkoutSet>({ weight: 0, reps: 0, memo: '' })
 
   useEffect(() => {
     if (autoFocus && weightRef.current) {
@@ -19,22 +29,22 @@ export default function SetRowInput({
     }
   }, [autoFocus])
 
-  function handlePendingChange(field, rawValue) {
+  function handlePendingChange(field: string, rawValue: string) {
     const value = field === 'memo' ? rawValue : Number(rawValue)
     onPendingSetChange({ ...pendingSet, [field]: value })
   }
 
-  function handleEditStart(index) {
+  function handleEditStart(index: number) {
     setEditingIndex(index)
     setEditValues(confirmedSets[index])
   }
 
-  function handleEditChange(field, rawValue) {
+  function handleEditChange(field: string, rawValue: string) {
     const value = field === 'memo' ? rawValue : Number(rawValue)
     setEditValues((prev) => ({ ...prev, [field]: value }))
   }
 
-  function handleEditCommit(index) {
+  function handleEditCommit(index: number) {
     onUpdateSet && onUpdateSet(index, editValues)
     setEditingIndex(null)
   }

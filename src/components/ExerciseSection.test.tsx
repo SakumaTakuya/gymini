@@ -1,9 +1,9 @@
-import React from 'react'
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
+import type { WorkoutExercise } from '../types'
 import ExerciseSection from './ExerciseSection'
 
-const makeExercise = (overrides = {}) => ({
+const makeExercise = (overrides: Partial<WorkoutExercise> = {}): WorkoutExercise => ({
   exerciseId: 'bench',
   exerciseName: 'ベンチプレス',
   sets: [],

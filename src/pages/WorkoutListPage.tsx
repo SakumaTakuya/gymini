@@ -1,8 +1,13 @@
-import React from 'react'
+import type { WorkoutRecord } from '../types'
 import useWorkoutList from '../hooks/useWorkoutList'
 import WorkoutCard from '../components/WorkoutCard'
 
-export default function WorkoutListPage({ onStartNew, onEdit }) {
+interface WorkoutListPageProps {
+  onStartNew: () => void
+  onEdit: (workout: WorkoutRecord) => void
+}
+
+export default function WorkoutListPage({ onStartNew, onEdit }: WorkoutListPageProps) {
   const { workouts, deleteWorkout } = useWorkoutList()
 
   return (
