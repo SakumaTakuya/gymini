@@ -6,7 +6,7 @@ status: "draft"
 created: "2026-03-08"
 updated: "2026-03-08"
 depends-on: ["prd-gymini", "prd-workout"]
-tags: ["calendar", "phase-4"]
+tags: ["calendar", "phase-1"]
 category: "view"
 priority: "low"
 risk: "low"
@@ -15,6 +15,8 @@ risk: "low"
 # カレンダー表示 要求仕様書
 
 **親要求:** [index.md](../index.md) - REQ_006
+
+> **統合済み:** 本PRDの機能要求（FR_013〜FR_016）は [navigation.md](../navigation.md) の FR_018（履歴ページ）に統合されました。本ドキュメントは個別要求の詳細定義として引き続き参照されます。
 
 ## 概要
 
