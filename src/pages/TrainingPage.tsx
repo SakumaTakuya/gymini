@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import type { Exercise, PendingSet, WorkoutSet } from '../types'
 import useWorkoutSession from '../hooks/useWorkoutSession'
+import { create } from '../lib/exerciseRepository'
 import IdleView from '../components/IdleView'
 import ExerciseSection from '../components/ExerciseSection'
 
@@ -31,6 +32,16 @@ export default function TrainingPage() {
   }
 
   function handleSelectExercise(exercise: Exercise) {
+    addExercise({ exerciseId: exercise.id, exerciseName: exercise.name })
+    setLastAddedIndex(draftExercises.length)
+    setExerciseQuery('')
+    setSearchResults([])
+  }
+
+  function handleAutoRegister() {
+    const trimmed = exerciseQuery.trim()
+    if (!trimmed) return
+    const exercise = create(trimmed)
     addExercise({ exerciseId: exercise.id, exerciseName: exercise.name })
     setLastAddedIndex(draftExercises.length)
     setExerciseQuery('')
@@ -109,6 +120,16 @@ export default function TrainingPage() {
             onChange={(e) => handleExerciseSearch(e.target.value)}
             placeholder="種目を検索..."
           />
+          {exerciseQuery && searchResults.length === 0 && (
+            <ul className="rounded-2xl bg-zinc-100 overflow-hidden">
+              <li
+                className="px-4 py-3 font-inter text-base cursor-pointer hover:bg-zinc-200 text-blue-600"
+                onClick={handleAutoRegister}
+              >
+                「{exerciseQuery.trim()}」を新しい種目として追加
+              </li>
+            </ul>
+          )}
           {searchResults.length > 0 && (
             <ul className="rounded-2xl bg-zinc-100 overflow-hidden">
               {searchResults.map((ex) => (
