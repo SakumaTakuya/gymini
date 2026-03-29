@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-03-28"
-updated: "2026-03-28"
+updated: "2026-03-29"
 depends-on: ["prd-exercise-master"]
 tags: ["exercise", "master-data", "phase-1"]
 category: "core"
@@ -68,14 +68,11 @@ gymini の Phase 1 中核機能。トレーニング種目のマスターデー�
 ## 4.1. 型定義
 
 ```typescript
-// 種目マスターエントリ
+// 種目マスターエントリ（src/types/index.ts の Exercise インターフェースと同一）
 type Exercise = {
   id: string            // 一意識別子（自動生成）
   name: string          // 種目名（一意、ユーザー定義）
-  createdAt: string     // ISO 8601 datetime
-  updatedAt: string     // ISO 8601 datetime
 }
-
 ```
 
 # 5. 用語集
@@ -105,7 +102,7 @@ type Exercise = {
 7. ドロップダウンに「"インクラインダンベルカール" を新しい種目として追加」が表示される
 8. ユーザーがその選択肢を選択
 9. newExercise = ExerciseRepository.create("インクラインダンベルカール")
-   → { id: "generated-id", name: "インクラインダンベルカール", createdAt: "...", updatedAt: "..." }
+   → { id: "generated-id", name: "インクラインダンベルカール" }
 10. newExercise が現在のワークアウトエントリの種目としてセットされる
 ```
 
@@ -189,8 +186,8 @@ sequenceDiagram
 
 - 種目名は一意でなければならない。重複する名前での登録はエラーとなる
 - ワークアウト記録（WorkoutExercise）に保存される `exerciseName` は記録時のスナップショットである。種目マスターから種目が削除されても、既存のワークアウト記録は影響を受けない（ワークアウト仕様書の制約事項を継承）
-- 種目データはブラウザの localStorage に永続化される（DC_003 - [index.md](../../requirement/index.md)）
-- Phase 3 の AI コーチング機能は `getAll()` および `search()` を通じて種目マスターを読み取り専用で参照する。AI による書き込み操作（`create`, `remove`）は REQ_008（[index.md](../../requirement/index.md)）に基づきユーザー確認が必要
+- 種目データはブラウザの localStorage に永続化される（A-002: Client-Only Architecture）
+- Phase 3 の AI コーチング機能は `getAll()` および `search()` を通じて種目マスターを読み取り専用で参照する。AI による書き込み操作（`create`, `remove`）は B-002（AI安全操作の確認優先）に基づきユーザー確認が必要。読み取り専用操作は確認不要
 - Phase 1 では種目の更新（リネーム）機能は提供しない。将来追加する場合、ワークアウト記録のスナップショットとの整合性を考慮する必要がある
 
 ---
@@ -203,4 +200,11 @@ sequenceDiagram
 | FR_006 | 一致しない文字列を新しい種目として自動登録 | FR-006, ExerciseRepository.create(), Section 7 振る舞い図（候補なし alt） |
 | FR_007 | 設定画面で種目の一覧表示・手動追加・削除 | FR-007, ExerciseRepository.getAll()/create()/remove(), Section 7 振る舞い図（設定画面フロー） |
 
-> **Note**: CONSTITUTION.md が存在しないため原則準拠チェックはスキップしました。`/sdd-init` で作成を推奨します。
+### CONSTITUTION.md 原則準拠
+
+| 原則ID | 原則名 | 準拠状況 |
+|--------|--------|---------|
+| A-002 | Client-Only Architecture | 準拠: データ永続化は localStorage のみ（Section 8） |
+| B-001 | Privacy-by-Design | 準拠: 外部サーバーへのデータ送信なし |
+| B-002 | AI安全操作の確認優先 | 準拠: AI 書き込み操作はユーザー確認必須（Section 8） |
+| T-001 | TypeScript Strict Mode | 準拠: 型定義は `src/types/index.ts` の `Exercise` インターフェースと整合 |
