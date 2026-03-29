@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-03-28"
-updated: "2026-03-28"
+updated: "2026-03-29"
 depends-on: ["prd-navigation"]
 tags: ["navigation", "routing", "bottom-nav", "pwa"]
 category: "ui"
@@ -46,24 +46,24 @@ gymini は現在 `useState` による簡易的な2画面切り替え（一覧 / 
 
 ## 3.1. 機能要件 (Functional Requirements)
 
-| ID | 要件 | 優先度 | PRD参照 |
-|----|------|--------|---------|
-| FR-001 | トレーニングページはセッション非アクティブ時に待機画面（挨拶・開始ボタン・設定アクセス）を表示する | 必須 | FR_017 |
-| FR-002 | トレーニングページはセッションアクティブ時にセッション管理画面（種目カード・終了ボタン）を表示する | 必須 | FR_017 |
-| FR-003 | 履歴ページをルートとして用意する（中身は別specで定義） | 必須 | FR_018 |
-| FR-004 | セッションデータをページ遷移・リロード間で永続化する | 必須 | FR_019 |
-| FR-005 | ボトムナビで Training / History タブを常に固定表示する | 必須 | IR_001 |
-| FR-006 | FAB領域をボトムナビ右側に常に確保し、セッション中のみFABを表示する | 必須 | IR_001, IR_002 |
-| FR-007 | FABタップで種目追加モーダルを開く | 必須 | IR_002 |
-| FR-008 | 2つの論理ルート（training, history）間をクライアントサイドで切り替える | 必須 | DC_005 |
+| ID | 要件 | 優先度 | PRD参照 | 検証方法 |
+|----|------|--------|---------|---------|
+| FR-001 | トレーニングページはセッション非アクティブ時に待機画面（挨拶・開始ボタン・設定アクセス）を表示する | 必須 | FR_017 | Test |
+| FR-002 | トレーニングページはセッションアクティブ時にセッション管理画面（種目カード・終了ボタン）を表示する | 必須 | FR_017 | Test |
+| FR-003 | 履歴ページをルートとして用意する（中身は別specで定義） | 必須 | FR_018 | Test |
+| FR-004 | セッションデータをページ遷移・リロード間で永続化する | 必須 | FR_019 | Test |
+| FR-005 | ボトムナビで Training / History タブを常に固定表示する | 必須 | IR_001 | Inspection |
+| FR-006 | FAB領域をボトムナビ右側に常に確保し、セッション中のみFABを表示する | 必須 | IR_001, IR_002 | Inspection |
+| FR-007 | FABタップで種目追加モーダルを開く | 必須 | IR_002 | Test |
+| FR-008 | 2つの論理ルート（training, history）間をクライアントサイドで切り替える | 必須 | DC_005 | Inspection |
 
 ## 3.2. 非機能要件 (Non-Functional Requirements)
 
-| ID | カテゴリ | 要件 | 目標値 |
-|----|--------|------|--------|
-| NFR-001 | 操作性 | ページ切り替えが即座に行われること | ページ切り替えは1フレーム（16ms）以内に完了すること |
-| NFR-002 | データ整合性 | セッション中のページ遷移・リロードでデータが失われないこと | ページ遷移・リロード後もセッションデータが完全に復元される |
-| NFR-003 | レイアウト安定性 | FAB の表示/非表示でボトムナビのレイアウトがシフトしないこと | FAB領域を常に確保 |
+| ID | カテゴリ | 要件 | 目標値 | 検証方法 |
+|----|--------|------|--------|---------|
+| NFR-001 | 操作性 | ページ切り替えが即座に行われること | ページ切り替えは1フレーム（16ms）以内に完了すること | Test |
+| NFR-002 | データ整合性 | セッション中のページ遷移・リロードでデータが失われないこと | ページ遷移・リロード後もセッションデータが完全に復元される | Test |
+| NFR-003 | レイアウト安定性 | FAB の表示/非表示でボトムナビのレイアウトがシフトしないこと | FAB領域を常に確保 | Inspection |
 
 # 4. API
 
@@ -97,10 +97,11 @@ type NavTab = {
   icon: ReactNode
 }
 
-// FABの設定（UIストアで管理）
+// FABの設定（WorkoutStore の isActive 状態から派生。navigation モジュールの公開APIではない）
+// FABの onClick ハンドラは BottomNav コンポーネントが種目追加モーダルの開閉状態と紐付けて管理する
 type FABConfig = {
-  visible: boolean
-  onClick: () => void
+  visible: boolean   // WorkoutStore.isActive に連動
+  onClick: () => void  // 種目追加モーダルを開くハンドラ
 }
 ```
 
@@ -117,8 +118,8 @@ type FABConfig = {
 
 # 6. 使用例
 
-```jsx
-// App.jsx - ルーティングとボトムナビの統合
+```tsx
+// App.tsx - ルーティングとボトムナビの統合
 function App() {
   const { currentRoute } = useNavigation()
 
@@ -158,6 +159,7 @@ function BottomNav() {
         History
       </TabButton>
       <FABArea>
+        {/* openAddExerciseModal は BottomNav 内のローカル状態（useState）またはWorkoutStore から提供 */}
         <FAB visible={isActive} onClick={openAddExerciseModal} />
       </FABArea>
     </nav>
@@ -222,12 +224,14 @@ sequenceDiagram
 
 # 8. 制約事項
 
-- ルーティングは状態ベースで実現する（React Router 等の外部ルーターライブラリは使用しない）（DC_005）
+- ルーティングは状態ベースで実現する（React Router 等の外部ルーターライブラリは使用しない）（DC_005, A-001例外: 2ページのみで外部ルーターは過剰・依存削減を目的とした自作。詳細な根拠は [navigation_design.md](navigation_design.md) を参照）
 - URLベースのルーティング（ブラウザ履歴API / ハッシュルーティング）はスコープ外
 - ボトムナビのタブ構成は静的であり、セッション状態による変更は行わない（IR_001）
 - FABの表示/非表示のみがセッション状態に依存する（IR_002）
 - セッション永続化はワークアウトストアの永続化機能によって実現する（FR_019）
 - 履歴ページの中身（カレンダー表示・記録詳細等）はナビゲーションの責務外。別specで定義する
+- TypeScript strict mode を遵守し、すべての型を明示する（T-001）
+- タップターゲットは最低 44px × 44px を確保する（T-003）
 
 ---
 
@@ -242,5 +246,3 @@ sequenceDiagram
 | IR_002 | コンテキストFAB | FR-006, FR-007, FAB コンポーネント |
 | DC_005 | クライアントサイドSPAルーティング | FR-008, useNavigation フック |
 | FR_013〜FR_016 | カレンダー表示・記録詳細 | 別spec（履歴ページspec）で対応 |
-
-> **Note**: CONSTITUTION.md が存在しないため原則準拠チェックはスキップしました。`/sdd-init` で作成を推奨します。
