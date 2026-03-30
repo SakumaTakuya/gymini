@@ -49,7 +49,6 @@ describe('App integration (FR-004, FR-008)', () => {
     render(<App />)
     // Start a session
     await userEvent.click(screen.getByRole('button', { name: /トレーニングを開始/i }))
-    expect(useWorkoutStore.getState().isActive).toBeUndefined() // isActive is on hook not store
     expect(useWorkoutStore.getState().draftDate).not.toBe('')
 
     // Navigate to history

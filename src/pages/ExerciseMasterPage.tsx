@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type FormEvent } from 'react'
 import useExerciseMaster from '../hooks/useExerciseMaster'
 
 export default function ExerciseMasterPage() {
@@ -11,7 +11,7 @@ export default function ExerciseMasterPage() {
     setName('')
   }
 
-  function handleSubmit(e: React.FormEvent) {
+  function handleSubmit(e: FormEvent) {
     e.preventDefault()
     handleAdd()
   }

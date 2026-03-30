@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useState, type ReactNode } from 'react'
 import { Dumbbell, Calendar, Settings } from 'lucide-react'
 import type { Route } from '../types'
 import useNavigation from '../hooks/useNavigation'
@@ -9,7 +9,7 @@ import AddExerciseModal from './AddExerciseModal'
 interface NavTab {
   route: Route
   label: string
-  icon: React.ReactNode
+  icon: ReactNode
 }
 
 const NAV_TABS: NavTab[] = [
