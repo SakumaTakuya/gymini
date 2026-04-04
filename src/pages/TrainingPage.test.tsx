@@ -18,6 +18,8 @@ beforeEach(() => {
   })
 })
 
+const EXERCISE_KEY = 'gymini:exercises'
+
 describe('TrainingPage', () => {
   it('shows IdleView when session is not active', () => {
     render(<TrainingPage />)
@@ -42,5 +44,32 @@ describe('TrainingPage', () => {
     render(<TrainingPage />)
     await userEvent.click(screen.getByRole('button', { name: /キャンセル/i }))
     expect(useWorkoutStore.getState().draftDate).toBe('')
+  })
+
+  it('shows auto-register option when search has no results (FR-006)', async () => {
+    localStorage.setItem(EXERCISE_KEY, JSON.stringify([
+      { id: 'bench-press', name: 'ベンチプレス' },
+    ]))
+    act(() => useWorkoutStore.getState().startSession('2026-03-29'))
+    render(<TrainingPage />)
+    const input = screen.getByPlaceholderText('種目を検索...')
+    await userEvent.type(input, 'デッドリフト')
+    expect(screen.getByText(/「デッドリフト」を新しい種目として追加/)).toBeInTheDocument()
+  })
+
+  it('auto-registers exercise and adds to session on click (FR-006)', async () => {
+    localStorage.setItem(EXERCISE_KEY, JSON.stringify([
+      { id: 'bench-press', name: 'ベンチプレス' },
+    ]))
+    act(() => useWorkoutStore.getState().startSession('2026-03-29'))
+    render(<TrainingPage />)
+    const input = screen.getByPlaceholderText('種目を検索...')
+    await userEvent.type(input, 'デッドリフト')
+    await userEvent.click(screen.getByText(/「デッドリフト」を新しい種目として追加/))
+    // Exercise should be added to the session
+    expect(useWorkoutStore.getState().draftExercises).toHaveLength(1)
+    expect(useWorkoutStore.getState().draftExercises[0].exerciseName).toBe('デッドリフト')
+    // Search should be cleared
+    expect(input).toHaveValue('')
   })
 })

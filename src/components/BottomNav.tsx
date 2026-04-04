@@ -1,5 +1,5 @@
-import { useState } from 'react'
-import { Dumbbell, Calendar } from 'lucide-react'
+import { useState, type ReactNode } from 'react'
+import { Dumbbell, Calendar, Settings } from 'lucide-react'
 import type { Route } from '../types'
 import useNavigation from '../hooks/useNavigation'
 import useWorkoutSession from '../hooks/useWorkoutSession'
@@ -9,12 +9,13 @@ import AddExerciseModal from './AddExerciseModal'
 interface NavTab {
   route: Route
   label: string
-  icon: React.ReactNode
+  icon: ReactNode
 }
 
 const NAV_TABS: NavTab[] = [
   { route: 'training', label: 'Training', icon: <Dumbbell size={20} /> },
   { route: 'history', label: 'History', icon: <Calendar size={20} /> },
+  { route: 'exercise-master', label: 'Settings', icon: <Settings size={20} /> },
 ]
 
 export default function BottomNav() {
