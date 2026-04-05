@@ -4,9 +4,9 @@ title: "ページナビゲーション"
 type: "prd"
 status: "draft"
 created: "2026-03-28"
-updated: "2026-03-28"
-depends-on: ["prd-gymini", "prd-workout", "prd-calendar"]
-tags: ["navigation", "routing", "bottom-nav", "pwa"]
+updated: "2026-04-06"
+depends-on: ["prd-gymini", "prd-workout", "prd-history", "prd-ai-chat", "prd-settings"]
+tags: ["navigation", "routing", "bottom-nav"]
 category: "ui"
 priority: "high"
 risk: "medium"
@@ -16,154 +16,49 @@ risk: "medium"
 
 **親要求:** [index.md](index.md) - REQ_007 (UI Design), IR_001 (ナビゲーション)
 
-**参照元:** [SakumaTakuya/first-pwa](https://github.com/SakumaTakuya/first-pwa) のページ導線をベースに gymini 向けに適応する。
+**デザインリファレンス:** `.sdd/design-system.html` 全FRAME共通
 
 ## 概要
 
-gymini のページナビゲーションアーキテクチャを定義する。first-pwa のナビゲーションモデルをベースに、ボトムナビゲーションを**静的2タブ（Training + History）+ FAB領域**のレイアウトで構成する。
+gymini のページナビゲーションアーキテクチャを定義する。
 
-既存の IR_001（4タブナビゲーション）を本PRDで再定義する。
-
-**ボトムナビゲーションのレイアウト:**
-
-```
-┌──────────┬──────────┬──────────────────┐
-│ Training │ History  │     [+ FAB]      │
-└──────────┴──────────┴──────────────────┘
-  タブ（左寄せ）          FAB領域（常に確保）
-```
-
-- タブは常に **Training** と **History** の2つを固定表示（セッション状態に関わらず変化しない）
-- FAB領域はボトムナビの右側に常に確保される
-- FAB（+）ボタンはトレーニングセッション中のみ表示される
+- **BottomNav**: 2タブ（Training + History）+ 右側 AI 専用ボタン
+- **歯車アイコン**: 全画面の右上に固定、タップで設定画面へ遷移
+- **ルーティング**: 5つの論理画面（FRAME1〜5）をクライアントサイドで管理
 
 ---
 
-# 1. 要求図の読み方
-
-## 1.1. 要求タイプ
-
-- **requirement**: 一般的な要求
-- **functionalRequirement**: 機能要求
-- **interfaceRequirement**: インターフェース要求
-- **designConstraint**: 設計制約
-
-## 1.2. リスクレベル
-
-- **High**: 高リスク（ビジネスクリティカル、実装困難）
-- **Medium**: 中リスク（重要だが代替可能）
-- **Low**: 低リスク（Nice to have）
-
-## 1.3. 検証方法
-
-- **Test**: テストによる検証
-- **Demonstration**: デモンストレーションによる検証
-- **Inspection**: インスペクション（レビュー）による検証
-
-## 1.4. 関係タイプ
-
-- **contains**: 包含関係（親要求が子要求を含む）
-- **derives**: 派生関係（要求から別の要求が導出される）
-- **traces**: トレース関係（要求間の追跡可能性）
-
----
-
-# 2. 要求一覧
-
-## 2.1. ユースケース図（概要）
+## 1. 画面遷移図
 
 ```mermaid
 graph TB
     subgraph "gymini ナビゲーション"
         User((ユーザー))
-        Training[トレーニングページ]
-        History[履歴ページ]
-        Settings[設定モーダル]
-        AddExercise[種目追加モーダル]
-        BottomNav[ボトムナビゲーション]
+        FRAME1["FRAME1: Training Idle"]
+        FRAME2["FRAME2: Active Workout"]
+        FRAME3["FRAME3: History"]
+        FRAME4["FRAME4: AI Chat"]
+        FRAME5["FRAME5: Settings"]
     end
 
-    User --- BottomNav
-    BottomNav --> Training
-    BottomNav --> History
-    Training --> Settings
-    Training -->|"トレーニング開始"| Training
-    Training --> AddExercise
+    User -->|"トレーニングを始める"| FRAME1
+    FRAME1 -->|"セッション開始"| FRAME2
+    FRAME2 -->|"終了ボタン"| FRAME1
+
+    FRAME1 <-->|"BottomNav: 履歴タブ"| FRAME3
+    FRAME1 <-->|"BottomNav: AIボタン"| FRAME4
+    FRAME3 <-->|"BottomNav: AIボタン"| FRAME4
+
+    FRAME1 -->|"歯車アイコン"| FRAME5
+    FRAME2 -->|"歯車アイコン"| FRAME5
+    FRAME3 -->|"歯車アイコン"| FRAME5
+    FRAME4 -->|"歯車アイコン"| FRAME5
+    FRAME5 -->|"Xボタン"| FRAME5_PREV["遷移元に戻る"]
 ```
-
-## 2.2. ユースケース図（詳細）
-
-### トレーニングページ（セッション非アクティブ時）
-
-```mermaid
-graph TB
-    subgraph "セッション非アクティブ"
-        User((ユーザー))
-        ViewIdle[待機画面表示]
-        StartTraining[トレーニング開始]
-        OpenSettings[設定を開く]
-
-        subgraph "ボトムナビ（静的）"
-            TabTraining["Training タブ"]
-            TabHistory["History タブ"]
-            FABArea["FAB領域（空）"]
-        end
-    end
-
-    User --- TabTraining
-    User --- TabHistory
-    TabTraining --> ViewIdle
-    ViewIdle --> StartTraining
-    ViewIdle --> OpenSettings
-    StartTraining -->|"セッション開始"| ActiveSession[セッションアクティブ画面へ]
-```
-
-### トレーニングページ（セッションアクティブ時）
-
-```mermaid
-graph TB
-    subgraph "セッションアクティブ"
-        User((ユーザー))
-        ViewTraining[トレーニング表示]
-        AddExercise[種目追加]
-        EndSession[セッション終了]
-        ViewHistory[履歴閲覧]
-
-        subgraph "ボトムナビ（静的）"
-            TabTraining["Training タブ"]
-            TabHistory["History タブ"]
-            FAB(("+ FAB"))
-        end
-    end
-
-    User --- TabTraining
-    User --- TabHistory
-    User --- FAB
-    TabTraining --> ViewTraining
-    TabHistory --> ViewHistory
-    FAB --> AddExercise
-    ViewTraining --> EndSession
-    EndSession -->|"保存して待機画面へ"| Idle[セッション非アクティブ画面へ]
-```
-
-## 2.3. 機能一覧（テキスト形式）
-
-- ページ構成
-    - FR_017: トレーニングページ（待機状態 + アクティブセッション）
-    - FR_018: 履歴ページ（カレンダー表示）
-- セッション管理
-    - FR_019: セッション状態の永続化
-- ナビゲーション
-    - IR_001: 静的ボトムナビゲーション（IR_001 再定義）
-    - IR_002: コンテキストFAB
-- ルーティング
-    - DC_005: クライアントサイドSPAルーティング
 
 ---
 
-# 3. 要求図（SysML Requirements Diagram）
-
-## 3.1. 全体要求図
+## 2. 要求図（SysML Requirements Diagram）
 
 ```mermaid
 requirementDiagram
@@ -176,258 +71,185 @@ requirementDiagram
 
     functionalRequirement TrainingPage {
         id: FR_017
-        text: "トレーニングページ: 待機状態とアクティブセッション管理"
+        text: "トレーニングページ: Idle（FRAME1）とActive（FRAME2）の2状態"
         risk: high
         verifymethod: test
     }
 
     functionalRequirement HistoryPage {
         id: FR_018
-        text: "履歴ページ: カレンダー表示・日付別記録閲覧"
+        text: "履歴ページ（FRAME3）: カレンダー＋記録サマリー"
         risk: medium
         verifymethod: test
     }
 
     functionalRequirement SessionPersistence {
         id: FR_019
-        text: "セッション状態をページ遷移・リロード間で永続化"
+        text: "セッション状態をタブ遷移・リロード間で永続化"
         risk: high
         verifymethod: test
     }
 
-    interfaceRequirement StaticBottomNav {
+    functionalRequirement AIChatPage {
+        id: FR_020
+        text: "AIチャットページ（FRAME4）: 常時アクセス可能"
+        risk: high
+        verifymethod: test
+    }
+
+    interfaceRequirement BottomNav {
         id: IR_001
-        text: "静的2タブ（Training + History）+ FAB領域のボトムナビゲーション"
+        text: "2タブ + AI専用ボタンのBottomNav"
         risk: medium
         verifymethod: inspection
     }
 
-    interfaceRequirement ContextualFAB {
+    interfaceRequirement GearIcon {
         id: IR_002
-        text: "トレーニングセッション中のみFAB領域に表示されるFAB"
+        text: "全画面の右上に固定の歯車アイコン → 設定画面へ遷移"
         risk: low
         verifymethod: inspection
     }
 
     designConstraint SPARouting {
         id: DC_005
-        text: "クライアントサイドSPAルーティング"
+        text: "クライアントサイドSPAルーティング（training / history / ai / settings）"
         risk: medium
         verifymethod: inspection
     }
 
     PageNavigation - contains -> TrainingPage
     PageNavigation - contains -> HistoryPage
-    PageNavigation - contains -> StaticBottomNav
+    PageNavigation - contains -> AIChatPage
+    PageNavigation - contains -> BottomNav
+    PageNavigation - contains -> GearIcon
     PageNavigation - contains -> SPARouting
 
     TrainingPage - derives -> SessionPersistence
-    TrainingPage - derives -> ContextualFAB
-    StaticBottomNav - contains -> ContextualFAB
-```
-
-## 3.2. 外部要求との関係
-
-```mermaid
-requirementDiagram
-    functionalRequirement TrainingPage {
-        id: FR_017
-        text: "トレーニングページ"
-        risk: high
-        verifymethod: test
-    }
-
-    functionalRequirement HistoryPage {
-        id: FR_018
-        text: "履歴ページ（カレンダー表示）"
-        risk: medium
-        verifymethod: test
-    }
-
-    interfaceRequirement StaticBottomNav {
-        id: IR_001
-        text: "静的ボトムナビゲーション"
-        risk: medium
-        verifymethod: inspection
-    }
-
-    requirement WorkoutManagement {
-        id: REQ_002
-        text: "ワークアウト記録の管理機能"
-        risk: high
-        verifymethod: demonstration
-    }
-
-    requirement CalendarView {
-        id: REQ_006
-        text: "カレンダーによる記録確認機能"
-        risk: low
-        verifymethod: demonstration
-    }
-
-    designConstraint MobileFirstUI {
-        id: DC_004
-        text: "スマートフォンでの利用を最優先としたUI設計"
-        risk: medium
-        verifymethod: inspection
-    }
-
-    TrainingPage - traces -> WorkoutManagement
-    HistoryPage - traces -> CalendarView
-    StaticBottomNav - traces -> MobileFirstUI
+    AIChatPage - derives -> SessionPersistence
 ```
 
 ---
 
-# 4. 要求の詳細説明
-
-## 4.1. 機能要求
+## 3. 機能要求の詳細
 
 ### FR_017: トレーニングページ
 
-アプリのメインページ。セッションの状態に応じて2つの表示モードを持つ。
+アプリのメインページ。セッション状態に応じてFRAME1（Idle）とFRAME2（Active）を切り替える。
 
-**セッション非アクティブ時（待機状態）:**
-
-- 挨拶メッセージの表示（例:「今日の調子はどうですか？」）
-- 「トレーニングを開始」ボタン（タップでセッションを開始し、アクティブ表示へ切り替え）
-- 設定アクセス（ギアアイコン等からモーダルを開く）
-
-**セッションアクティブ時:**
-
-- セッションヘッダー（開始時刻の表示）
-- 種目カードの一覧表示（セット入力を含む）
-- FAB（+）による種目追加（モーダル経由、IR_002）
-- 「終了」ボタン（セッションを保存して待機状態へ戻る）
+- **FRAME1（Idle）**: 挨拶 + 「トレーニングを始める」ボタン。詳細は [workout/index.md](workout/index.md) 参照
+- **FRAME2（Active）**: 種目カード一覧 + セット記録。終了ボタンでFRAME1に戻る
 
 **検証方法:** テストによる検証
 
-### FR_018: 履歴ページ（カレンダー表示）
+### FR_018: 履歴ページ（FRAME3）
 
-ワークアウト履歴をカレンダー形式で表示するページ。既存の calendar PRD（[calendar/index.md](calendar/index.md) - FR_013〜FR_016）を統合する。
-
-**含まれる機能:**
-
-- FR_013: 月表示カレンダーの表示（前月・次月への遷移）
-- FR_014: トレーニング日マーカーの表示
-- FR_015: 日付タップでその日のワークアウト記録を表示
-- FR_016: 日付タップからワークアウト追加が可能
-- 種目タップで進捗グラフモーダルを表示（first-pwa 準拠）
+月表示カレンダー + 選択日の記録サマリー。詳細は [history/index.md](history/index.md) 参照。
 
 **検証方法:** テストによる検証
 
 ### FR_019: セッション状態の永続化
 
-トレーニングセッションのドラフトデータをページ遷移やブラウザリロード間で維持する。ボトムナビによるページ遷移（Training ↔ History）でセッションデータが失われないことを保証する。
-
-**実現方法の方針:**
-
-- Zustand の `persist` ミドルウェアを使用し、セッションデータを localStorage に永続化
-- 永続化対象: `draftDate`, `draftExercises`, `draftMemo`, `draftWorkoutId`
+BottomNavによるタブ遷移やブラウザリロードでセッションデータが失われないことを保証する。Zustandの`persist`ミドルウェアでlocalStorageに永続化。
 
 **検証方法:** テストによる検証
 
-## 4.2. インターフェース要求
+### FR_020: AIチャットページ（FRAME4）
 
-### IR_001: 静的ボトムナビゲーション（再定義）
+BottomNavのAIボタンから常時アクセス可能。APIキー未設定時もタップ可能（ページ内で設定を促すUI表示）。詳細は [ai-chat/index.md](ai-chat/index.md) 参照。
 
-スマホ画面下部に固定配置されるボトムナビゲーションバー。セッション状態に関わらず常に同じタブを表示する。
+**検証方法:** テストによる検証
 
-> **注意:** 本PRDにより、master PRD（[index.md](index.md)）の IR_001「4つのタブによるメインナビゲーション」を以下の静的ナビゲーションモデルに再定義する。
+## 4. インターフェース要求
+
+### IR_001: BottomNav（2タブ + AI専用ボタン）
+
+スマホ画面下部に固定配置。FRAME1〜4で常に表示（FRAME5では非表示）。
 
 **レイアウト:**
 
 ```
 ┌──────────┬──────────┬──────────────────┐
-│ Training │ History  │     [+ FAB]      │
+│ Training │ History  │   [ AI ボタン ]   │
 └──────────┴──────────┴──────────────────┘
-  タブ（左寄せ）          FAB領域（常に確保）
+  2タブ（均等 flex-1）   AI 専用ボタン（pill型）
 ```
 
-**ナビゲーション項目（固定）:**
+**UIスペック:**
+- 高さ: `h-24`（セーフエリア含む）
+- 背景: `bg-white/80 backdrop-blur-xl`
+- ボーダー: `border-t border-zinc-200/50`
 
-| タブ | ラベル | 遷移先 |
-|:-----|:-------|:-------|
-| タブ1 | Training（トレーニング） | トレーニングページ |
-| タブ2 | History（履歴） | 履歴ページ |
+**タブ状態:**
 
-**FAB領域:**
+| 要素 | ラベル | アイコン | アクティブ | 非アクティブ |
+|:-----|:-------|:---------|:-----------|:-------------|
+| タブ1 | トレ | `ph-barbell` | `ph-fill text-black font-bold` | `text-zinc-400 font-medium` |
+| タブ2 | 履歴 | `ph-clock-counter-clockwise` | `ph-fill text-black font-bold` | `text-zinc-400 font-medium` |
 
-- ボトムナビバーの右側に常に確保
-- セッションアクティブ時: FAB（+）ボタンを表示
-- セッション非アクティブ時: 空のまま（スペースのみ確保）
+**AIボタン:**
 
-**UI仕様:**
+| 状態 | 背景 | テキスト |
+|:-----|:-----|:---------|
+| 通常 | `bg-black border-zinc-800` | `text-white` |
+| アクティブ（FRAME4表示中） | `bg-accent shadow-red-200` | `text-white` |
 
-- タブは左寄せで配置
-- アクティブなタブを視覚的にハイライト
-- モバイルセーフエリアに対応したパディング
-- 一貫した高さとタッチターゲットサイズ
+- サイズ: `px-4 h-11 rounded-2xl`
+- アイコン: `ph-robot text-xl` + 「AI」ラベル `text-xs font-bold`
 
-**検証方法:** インスペクションによる検証
+**遷移先:**
 
-### IR_002: コンテキストFAB（Floating Action Button）
-
-ボトムナビの FAB 領域に、トレーニングセッション中のみ表示される「+」ボタン。種目追加モーダルを開く。
-
-**UI仕様:**
-
-- ボトムナビゲーションバー内の右側 FAB 領域に配置
-- セッションアクティブ時のみ表示（非アクティブ時は領域だけ確保）
-- タップで種目追加モーダルを開く（ページ遷移ではない）
+| 操作 | 遷移先 |
+|:-----|:-------|
+| トレタブ | FRAME1（Idle）/ FRAME2（セッション中の場合） |
+| 履歴タブ | FRAME3 |
+| AIボタン | FRAME4 |
 
 **検証方法:** インスペクションによる検証
 
-## 4.3. 設計制約
+### IR_002: 歯車アイコン（全画面共通）
+
+全画面（FRAME1〜4）の右上に固定表示される歯車アイコン。タップでFRAME5（設定）へ遷移する。
+
+**UIスペック:**
+- 位置: `absolute top-12 right-4 z-30`
+- サイズ: `w-9 h-9`
+- スタイル: `bg-white/80 backdrop-blur-sm rounded-full shadow-sm border-zinc-100`
+- アイコン: `ph-gear text-base text-zinc-500`
+
+**APIキー未設定時のバッジ:**
+- 赤ドット: `w-3 h-3 bg-accent rounded-full`
+- 位置: `absolute top-[-2px] right-[-2px]`
+
+**FRAME2での追加要素:**
+- 歯車の右隣に「終了」ボタン
+- ボタン群の下にタイマーpill
+
+**検証方法:** インスペクションによる検証
+
+## 5. 設計制約
 
 ### DC_005: クライアントサイドSPAルーティング
 
-gymini は React SPA（DC_001）であるため、ルーティングはクライアントサイドで完結する。軽量なルーティング機構を採用し、2つの論理ルート（`training`, `history`）を管理する。
+4つの論理ルート（`training`, `history`, `ai`, `settings`）をクライアントサイドで管理。URLベースルーティングやブラウザ履歴APIは使用しない。
 
 **検証方法:** インスペクションによる検証
 
 ---
 
-# 5. フェーズ統合戦略
-
-ナビゲーションは各フェーズの進行に伴い有機的に拡張される。
+## 6. フェーズ統合戦略
 
 | Phase | 追加機能 | ナビゲーションへの影響 |
 |:------|:---------|:---------------------|
-| Phase 1 | ワークアウト CRUD + ナビゲーション | 2タブ: Training + History |
-| Phase 2 | APIキー設定 | トレーニングページの設定モーダルに統合（タブ追加不要） |
-| Phase 3 | AIチャット | 3つ目のタブ「Chat」を追加（タブを左寄せで3つ並べ、FAB領域は右端に維持） |
-
-カレンダー表示（旧 Phase 4）は FR_018 として本ナビゲーションの履歴ページに統合済み。
+| Phase 1 | ワークアウト CRUD、履歴 | FRAME1/2/3が機能。AIボタンは「準備中」表示 |
+| Phase 2 | 設定画面（APIキー・種目管理） | FRAME5追加。歯車アイコン全画面表示 |
+| Phase 3 | AIチャット | FRAME4が完全機能。AIボタンのアクティブ状態（accent） |
 
 ---
 
-# 6. IR_001 更新に関する注記
-
-本PRDの採用に伴い、以下のドキュメントを更新する必要がある:
-
-- **[index.md](index.md):** IR_001 のテキストを「4つのタブによるメインナビゲーション」→「静的ボトムナビゲーション（2タブ + FAB領域）」に変更。フェーズ構成テーブルを更新
-- **[calendar/index.md](calendar/index.md):** FR_013〜FR_016 が FR_018 に統合された旨を追記
-
----
-
-# 7. スコープ外
-
-以下は本PRDのスコープ外とする：
+## 7. スコープ外
 
 - URLベースルーティング（ブラウザ履歴API / ハッシュルーティング）
 - ディープリンク / ブックマーク対応
 - ページ間のトランジションアニメーション
 - タブレット / デスクトップ向けレスポンシブレイアウト
-
----
-
-# 8. 用語集
-
-| 用語 | 定義 |
-|:-----|:-----|
-| ボトムナビゲーション | スマホ画面下部に固定配置されるタブ型ナビゲーションバー |
-| FAB | Floating Action Button。ボトムナビ右側の領域に表示される丸型のアクションボタン |
-| FAB領域 | ボトムナビバーの右側に常に確保されるスペース。セッション中はFABが表示され、非アクティブ時は空のまま |
-| セッション | 1回のトレーニングの記録期間。開始から終了（保存）までの状態 |
-| first-pwa | 本PRDの参照元となるPWAアプリケーション（[SakumaTakuya/first-pwa](https://github.com/SakumaTakuya/first-pwa)） |

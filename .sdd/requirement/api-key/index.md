@@ -4,7 +4,7 @@ title: "APIキー設定"
 type: "prd"
 status: "draft"
 created: "2026-03-08"
-updated: "2026-03-08"
+updated: "2026-04-06"
 depends-on: ["prd-gymini"]
 tags: ["api-key", "byok", "settings", "phase-2"]
 category: "settings"
@@ -15,6 +15,8 @@ risk: "medium"
 # APIキー設定 要求仕様書
 
 **親要求:** [index.md](../index.md) - REQ_004
+
+> **UI配置:** 本PRDの機能は設定画面（FRAME5）のAPIキーセクションとして表示される。画面構成の詳細は [settings/index.md](../settings/index.md) を参照。
 
 ## 概要
 
@@ -99,6 +101,8 @@ Gemini APIキーの入力フォームを提供し、ブラウザにローカル�
 
 ### FR_010: APIキー未設定時の警告
 
-APIキーが未設定の場合、ヘッダー部分に警告バナーを表示し、設定画面への導線を提供する。
+APIキーが未設定の場合、全画面の歯車アイコンに赤いバッジ（ドット）を表示して設定画面への導線を示す。
+
+> **変更（2026-04-06）:** 旧仕様の「ヘッダー警告バナー」から「歯車アイコン赤バッジ」に変更。バナーは廃止。バッジの詳細は [settings/index.md](../settings/index.md) FR_022 を参照。
 
 **検証方法:** テストによる検証

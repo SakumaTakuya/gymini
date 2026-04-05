@@ -4,7 +4,7 @@ title: "gymini - 筋トレ記録 × AIコーチングアプリ"
 type: "prd"
 status: "draft"
 created: "2026-03-08"
-updated: "2026-03-08"
+updated: "2026-04-06"
 depends-on: []
 tags: ["fitness", "ai-coaching", "byok", "gemini"]
 category: "product"
@@ -27,12 +27,15 @@ gyminiは、筋トレ記録とAIコーチングを組み合わせたWebアプリ
 
 段階的にリリースする。各フェーズは以下の構成に対応する。ページ導線は [navigation.md](navigation.md) で定義する。
 
-| ページ / モーダル | 内容 | Phase | 要求仕様書 |
-|------|------|-------|-----------|
-| 🏋️ トレーニング | 待機画面 + ワークアウトセッション記録 | 1 | [workout](workout/index.md), [exercise-master](exercise-master/index.md), [navigation.md](navigation.md) |
-| 📅 履歴 | カレンダー表示・記録確認 | 1 | [calendar](calendar/index.md), [navigation.md](navigation.md) |
-| ⚙️ 設定（モーダル） | APIキー・種目マスター管理 | 1〜2 | [exercise-master](exercise-master/index.md), [api-key](api-key/index.md) |
-| 💬 チャット | AIとの会話 | 3 | [ai-chat](ai-chat/index.md) |
+| FRAME | 画面 | 内容 | Phase | 要求仕様書 |
+|:------|:-----|:-----|:------|:----------|
+| FRAME1 | 🏋️ Training Idle | 待機画面・セッション開始 | 1 | [workout](workout/index.md), [navigation.md](navigation.md) |
+| FRAME2 | 🏋️ Active Workout | 種目カード・セット記録・タイマー | 1 | [workout](workout/index.md), [exercise-master](exercise-master/index.md) |
+| FRAME3 | 📅 History | カレンダー + 日付別記録サマリー | 1 | [history](history/index.md) |
+| FRAME4 | 💬 AI Chat | AIチャット・Function Calling | 3 | [ai-chat](ai-chat/index.md) |
+| FRAME5 | ⚙️ Settings | APIキー・種目マスター管理 | 2 | [settings](settings/index.md), [api-key](api-key/index.md), [exercise-master](exercise-master/index.md) |
+
+**デザインリファレンス:** `.sdd/design-system.html`
 
 ---
 
@@ -181,11 +184,25 @@ requirementDiagram
         verifymethod: inspection
     }
 
-    interfaceRequirement StaticBottomNav {
+    interfaceRequirement BottomNav {
         id: IR_001
-        text: "静的2タブ（Training + History）+ FAB領域のボトムナビゲーション"
+        text: "2タブ（Training + History）+ AI専用ボタンのBottomNav"
         risk: medium
         verifymethod: inspection
+    }
+
+    interfaceRequirement GearIcon {
+        id: IR_002
+        text: "全画面の右上に歯車アイコン固定。タップで設定画面（FRAME5）へ遷移"
+        risk: low
+        verifymethod: inspection
+    }
+
+    requirement SettingsScreen {
+        id: REQ_009
+        text: "設定画面による一元管理（APIキー + 種目マスター）"
+        risk: low
+        verifymethod: demonstration
     }
 
     GyminiSystem - contains -> WorkoutManagement
@@ -198,7 +215,11 @@ requirementDiagram
     GyminiSystem - contains -> BYOKModel
     GyminiSystem - contains -> DataPersistence
     GyminiSystem - contains -> MobileFirstUI
-    UIDesign - contains -> TabNavigation
+    GyminiSystem - contains -> SettingsScreen
+    UIDesign - contains -> BottomNav
+    UIDesign - contains -> GearIcon
+    SettingsScreen - contains -> APIKeyManagement
+    SettingsScreen - contains -> ExerciseMaster
     UIDesign - traces -> MobileFirstUI
     AIChatCoaching - contains -> AIWriteConfirmation
     AIChatCoaching - traces -> WorkoutManagement
@@ -228,9 +249,13 @@ Reactで開発し、クライアントサイドのみで動作する。
 
 スマートフォンでの利用を最優先としたUI設計を行う。
 
-### IR_001: 静的ボトムナビゲーション
+### IR_001: BottomNav（2タブ + AI専用ボタン）
 
-静的2タブ（Training + History）+ FAB領域のボトムナビゲーションを提供する。タブは左寄せ、FAB領域は右側に常に確保。スマホ画面下部に固定配置する。詳細は [navigation.md](navigation.md) を参照。
+2タブ（Training + History）+ 右側AI専用ボタン（pill型）のBottomNavを提供する。スマホ画面下部に固定配置。FRAME1〜4で常に表示、FRAME5（設定）では非表示。詳細は [navigation.md](navigation.md) IR_001 を参照。
+
+### IR_002: 歯車アイコン（全画面共通）
+
+全画面（FRAME1〜4）の右上に歯車アイコンを固定表示。タップでFRAME5（設定画面）へ遷移。APIキー未設定時は赤バッジ表示。詳細は [navigation.md](navigation.md) IR_002、[settings/index.md](settings/index.md) FR_022 を参照。
 
 ---
 

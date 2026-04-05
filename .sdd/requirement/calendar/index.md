@@ -4,7 +4,7 @@ title: "カレンダー表示"
 type: "prd"
 status: "draft"
 created: "2026-03-08"
-updated: "2026-03-08"
+updated: "2026-04-06"
 depends-on: ["prd-gymini", "prd-workout"]
 tags: ["calendar", "phase-1"]
 category: "view"
@@ -16,7 +16,7 @@ risk: "low"
 
 **親要求:** [index.md](../index.md) - REQ_006
 
-> **統合済み:** 本PRDの機能要求（FR_013〜FR_016）は [navigation.md](../navigation.md) の FR_018（履歴ページ）に統合されました。本ドキュメントは個別要求の詳細定義として引き続き参照されます。
+> **廃止・統合:** 本PRDの機能要求（FR_013〜FR_016）は [history/index.md](../history/index.md)（履歴画面PRD）に完全統合されました。新規の履歴画面PRDでは FR_026（空状態）、FR_027（今日強調）も追加定義されています。本ドキュメントは履歴的参照としてのみ残します。
 
 ## 概要
 
