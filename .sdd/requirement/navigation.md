@@ -166,36 +166,7 @@ BottomNavのAIボタンから常時アクセス可能。APIキー未設定時も
 
 スマホ画面下部に固定配置。FRAME1〜4で常に表示（FRAME5では非表示）。
 
-**レイアウト:**
-
-```
-┌──────────┬──────────┬──────────────────┐
-│ Training │ History  │   [ AI ボタン ]   │
-└──────────┴──────────┴──────────────────┘
-  2タブ（均等 flex-1）   AI 専用ボタン（pill型）
-```
-
-**UIスペック:**
-- 高さ: `h-24`（セーフエリア含む）
-- 背景: `bg-white/80 backdrop-blur-xl`
-- ボーダー: `border-t border-zinc-200/50`
-
-**タブ状態:**
-
-| 要素 | ラベル | アイコン | アクティブ | 非アクティブ |
-|:-----|:-------|:---------|:-----------|:-------------|
-| タブ1 | トレ | `ph-barbell` | `ph-fill text-black font-bold` | `text-zinc-400 font-medium` |
-| タブ2 | 履歴 | `ph-clock-counter-clockwise` | `ph-fill text-black font-bold` | `text-zinc-400 font-medium` |
-
-**AIボタン:**
-
-| 状態 | 背景 | テキスト |
-|:-----|:-----|:---------|
-| 通常 | `bg-black border-zinc-800` | `text-white` |
-| アクティブ（FRAME4表示中） | `bg-accent shadow-red-200` | `text-white` |
-
-- サイズ: `px-4 h-11 rounded-2xl`
-- アイコン: `ph-robot text-xl` + 「AI」ラベル `text-xs font-bold`
+**構成:** 2タブ（均等幅）+ AI専用ボタン（pill型）。セーフエリアを含む高さで画面下部に固定。
 
 **遷移先:**
 
@@ -211,15 +182,7 @@ BottomNavのAIボタンから常時アクセス可能。APIキー未設定時も
 
 全画面（FRAME1〜4）の右上に固定表示される歯車アイコン。タップでFRAME5（設定）へ遷移する。
 
-**UIスペック:**
-- 位置: `absolute top-12 right-4 z-30`
-- サイズ: `w-9 h-9`
-- スタイル: `bg-white/80 backdrop-blur-sm rounded-full shadow-sm border-zinc-100`
-- アイコン: `ph-gear text-base text-zinc-500`
-
-**APIキー未設定時のバッジ:**
-- 赤ドット: `w-3 h-3 bg-accent rounded-full`
-- 位置: `absolute top-[-2px] right-[-2px]`
+APIキー未設定時は赤いバッジ（ドット）を表示する。
 
 **FRAME2での追加要素:**
 - 歯車の右隣に「終了」ボタン
