@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "not-implemented"
 created: "2026-04-07"
-updated: "2026-04-07"
+updated: "2026-04-08"
 depends-on: ["spec-history"]
 tags: ["history", "calendar", "phase-1"]
 category: "view"
@@ -166,8 +166,13 @@ interface UseCalendarReturn {
 function useCalendar(): UseCalendarReturn
 // 初期値: displayMonth = 今月, selectedDate = null
 // goToPrevMonth/goToNextMonth: displayMonthを±1し、selectedDateをnullにリセット
-// daysWithWorkouts: displayMonthが変わるたびにworkoutRepository.listByDateDesc()から
-//   該当月のワークアウト日付をSetに変換
+// daysWithWorkouts: 画面表示（マウント/再表示）のたびにworkoutRepository.listByDateDesc()から
+//   該当月のワークアウト日付をSetに再取得する（別画面でのWO追加/削除を反映するため）
+//
+// タブ復帰時の状態保持:
+//   HistoryPage は条件レンダリング（currentRoute === 'history' && <HistoryPage />）で
+//   アンマウントせず非表示にする。これによりuseState状態（displayMonth, selectedDate）が維持される。
+//   daysWithWorkouts は useEffect で画面が再表示されるたびに再計算する。
 
 // -------------------------------------------------------
 // useWorkoutsForDate (src/hooks/useWorkoutsForDate.ts)
@@ -219,10 +224,12 @@ interface WorkoutSummaryProps {
 
 // 表示形式:
 // 日付ヘッダー: "10月20日の記録"
-// 種目ごとのセクション:
+// 同日に複数ワークアウトがある場合はワークアウトごとにセクション分割して縦に並べる
+// 各ワークアウト内:
 //   種目名（太字）
 //   SET1  100kg × 10回
 //   SET2  100kg × 8回
+// 削除済み種目は exerciseName をそのまま表示（特別な表示なし）
 
 // -------------------------------------------------------
 // EmptyDayState (src/components/EmptyDayState.tsx)
@@ -290,6 +297,11 @@ interface EmptyDayStateProps {
 | 赤ドットマーカーの色 | デザインシステム参照 | accent色（#DE3A2B / `bg-accent`） | `.sdd/design-system.html` で定義済みのアクセントカラーに準拠 |
 | 今日の日付セルの色 | デザインシステム参照 | 黒塗り（`bg-black text-white rounded-full`） | PRDの「黒塗りで強調表示」に準拠。他の日付と明確に区別可能 |
 | DayCell の非当月日表示 | 非表示 vs 薄く表示 | 薄く表示（`text-zinc-200`、タップ不可） | カレンダーグリッドの形状を維持し、空白セルによるレイアウト崩れを防ぐ |
+| 未来日付の扱い | タップ可能 vs タップ不可 | タップ可能（当月の日付と同じ扱い） | 未来日付でもワークアウト追加の導線を提供。空状態UIの「追加」ボタンで未来日付のセッション開始が可能 |
+| タブ復帰時の状態保持 | アンマウント vs 非表示 | 非表示（条件レンダリングでDOMに残す） | UXを重視し表示月・選択日を維持。daysWithWorkoutsのみ再表示時に再取得して最新状態を反映 |
+| 同日複数ワークアウト表示 | フラット統合 vs セクション分割 | セクション分割（ワークアウトごとに縦に並べる） | 各トレーニングセッションの区切りが明確になり、ユーザーが記録の時系列を把握しやすい |
+| 削除済み種目の表示 | ラベル付き vs そのまま表示 | exerciseNameをそのまま表示 | WorkoutExercise.exerciseName はスナップショットとして保存されているため、削除済みかどうかの判定コストを避ける。ユーザーにとっても過去記録の名前が変わらない方が自然 |
+| カレンダーマーカー更新 | 画面表示ごと vs 月遷移時のみ | 画面表示（マウント/再表示）のたびに再取得 | 別画面でのWO追加/削除が即座に反映される。localStorage同期読み出しのため性能影響は無視可能 |
 | 実装言語 | JavaScript (.jsx) vs TypeScript (.tsx) | TypeScript (.tsx) | プロジェクト全体がTypeScript strict mode（T-001） |
 
 ## 9.2. 未解決の課題
