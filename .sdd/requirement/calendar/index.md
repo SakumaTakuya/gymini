@@ -2,7 +2,7 @@
 id: "prd-calendar"
 title: "カレンダー表示"
 type: "prd"
-status: "draft"
+status: "deprecated"
 created: "2026-03-08"
 updated: "2026-04-06"
 depends-on: ["prd-gymini", "prd-workout"]

@@ -97,10 +97,7 @@ requirementDiagram
     SettingsScreen - contains -> CloseReturn
     SettingsScreen - contains -> APIKeySection
     SettingsScreen - contains -> ExerciseMasterSection
-    APIKeySection - traces -> FR_008
-    APIKeySection - traces -> FR_009
-    APIKeySection - traces -> FR_010
-    ExerciseMasterSection - traces -> FR_007
+    APIKeySection - derives -> GearBadge
 ```
 
 ---
@@ -142,7 +139,7 @@ Gemini APIキーが未設定の場合、歯車アイコンの右上に赤いバ�
 
 ### FR_024: APIキー設定セクション
 
-設定画面上部にAPIキー管理セクションを表示する。詳細な入力・表示切替・削除機能は [api-key/index.md](../api-key/index.md) を参照。
+設定画面上部にAPIキー管理セクションを表示する。詳細な入力・表示切替・削除機能は [api-key/index.md](../api-key/index.md) を参照。FR_024 は FR_008（入力・保存）、FR_009（表示切替）、FR_010（未設定警告）を統合表示する。
 
 **セクション構成:**
 1. セクションラベル「Gemini API」
@@ -154,7 +151,7 @@ Gemini APIキーが未設定の場合、歯車アイコンの右上に赤いバ�
 
 ### FR_025: 種目マスター管理セクション
 
-APIキーセクションの下に種目マスター管理セクションを表示する。詳細な検索・追加・削除機能は [exercise-master/index.md](../exercise-master/index.md) を参照。
+APIキーセクションの下に種目マスター管理セクションを表示する。詳細な検索・追加・削除機能は [exercise-master/index.md](../exercise-master/index.md) を参照。FR_025 は FR_007（種目CRUD）を統合表示する。
 
 **セクション構成:**
 1. セクションラベル「種目マスター」

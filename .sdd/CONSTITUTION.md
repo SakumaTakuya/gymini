@@ -1,7 +1,7 @@
 # プロジェクト原則
 
-**バージョン**: 2.0.0
-**最終更新日**: 2026-03-29
+**バージョン**: 3.0.0
+**最終更新日**: 2026-04-08
 **ステータス**: 有効
 
 ## 目的
@@ -95,7 +95,10 @@
 **準拠例**:
 
 - 状態管理には Zustand を活用
-- UIコンポーネントには Tailwind CSS のユーティリティクラスを活用
+- UIコンポーネントには shadcn/ui + Radix UI を活用（Tailwind CSS でカスタマイズ）
+- ルーティングには TanStack Router を活用（型安全なファイルベースルーティング）
+- データフェッチ/キャッシュには TanStack Query を活用
+- バリデーションには Zod を活用（型推論との統合）
 - 自作する場合は理由を設計書に明記（パフォーマンス、依存削減等）
 
 ---
@@ -234,9 +237,14 @@
 | レイヤー | 採用技術 | バージョン | 禁止事項 |
 |:---------|:---------|:-----------|:---------|
 | **UI フレームワーク** | React | ^19 | Vue, Angular, Svelte |
+| **UIコンポーネント** | shadcn/ui + Radix UI | latest | MUI, Ant Design, Chakra UI |
 | **スタイリング** | Tailwind CSS | ^4 | CSS-in-JS, styled-components |
-| **状態管理** | Zustand | ^5 | Redux, Context API（複雑状態） |
+| **ルーティング** | TanStack Router | ^1 | React Router, 自作ルーティング |
+| **データフェッチ/キャッシュ** | TanStack Query | ^5 | SWR, 自作キャッシュ |
+| **状態管理** | Zustand | ^5 | Redux |
+| **バリデーション** | Zod | ^3 | Yup, Joi, io-ts |
 | **ビルドツール** | Vite | ^8 | Webpack, Rollup（直接） |
+| **PWA** | vite-plugin-pwa | latest | 手動Service Worker管理 |
 | **ユニット/統合テスト** | Vitest + Testing Library | ^3 | Jest（Vitest 移行済み） |
 | **E2E テスト** | Playwright | latest | Cypress, Puppeteer |
 | **言語** | TypeScript (JSX) | strict mode | plain JavaScript |
@@ -244,23 +252,33 @@
 
 **例外プロセス**: 技術スタックの変更はチーム承認後に設計書へ記録
 
+**注記**: TanStack Router はファイルベースルーティングを使用し、`src/routes/` 配下にルートファイルを配置する。TanStack Start（SSR/SSGフレームワーク）は使用しない — 本プロジェクトは完全クライアントサイドアーキテクチャである（A-002）。
+
 ### モジュール構成
 
 ```
 src/
+├── routes/           # TanStack Router ルート定義（ファイルベース）
+│   ├── __root.tsx    # ルートレイアウト（BottomNav等の共通UI）
+│   ├── index.tsx     # / トレーニング画面
+│   └── ...           # 各ページルート
 ├── components/       # UIコンポーネント（プレゼンテーション）
+│   └── ui/           # shadcn/ui コンポーネント
 ├── stores/           # Zustandストア（状態管理・ビジネスロジック）
 ├── hooks/            # カスタムフック
+├── lib/              # リポジトリ・ユーティリティ（localStorage CRUD等）
 ├── types/            # TypeScript型定義
-└── utils/            # 純粋関数ユーティリティ
+└── schemas/          # Zod スキーマ定義（バリデーション・型生成）
 ```
 
 **依存ルール**:
 
-- `components/` は `stores/`, `hooks/`, `utils/`, `types/` に依存可
-- `stores/` は `utils/`, `types/` に依存可（UIに依存しない）
-- `utils/` は外部依存なし（純粋関数）
-- `types/` は外部依存なし（型定義のみ）
+- `routes/` は `components/`, `stores/`, `hooks/`, `lib/`, `types/`, `schemas/` に依存可
+- `components/` は `stores/`, `hooks/`, `lib/`, `types/`, `schemas/` に依存可
+- `stores/` は `lib/`, `types/`, `schemas/` に依存可（UIに依存しない）
+- `lib/` は `types/`, `schemas/` に依存可
+- `schemas/` は外部依存なし（Zodスキーマ定義のみ）
+- `types/` は外部依存なし（型定義のみ。Zodスキーマから推論された型は `schemas/` に配置）
 
 ---
 
@@ -414,6 +432,20 @@ src/
 ---
 
 ## 変更履歴
+
+### v3.0.0 (2026-04-08)
+
+**技術スタック拡張（Breaking）**
+
+- TanStack Router ^1 を追加：Zustand ベースの自作ルーティングからファイルベース型安全ルーティングへ移行
+- TanStack Query ^5 を追加：データフェッチ/キャッシュ層
+- shadcn/ui + Radix UI を追加：UIコンポーネントライブラリ
+- Zod ^3 を追加：バリデーション＋型推論
+- vite-plugin-pwa を追加：PWA対応（オフライン閲覧）
+- モジュール構成を更新：`routes/`（TanStack Router）、`components/ui/`（shadcn/ui）、`schemas/`（Zod）を追加
+- TanStack Start（SSR/SSGフレームワーク）は明示的に不採用：A-002（Client-Only Architecture）に基づく判断
+- Zustand は状態管理として維持（ルーティング用途のみ廃止）
+- localStorage は引き続きデータ永続化の唯一の手段（B-001準拠）
 
 ### v2.0.0 (2026-03-29)
 
