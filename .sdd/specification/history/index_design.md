@@ -42,7 +42,7 @@ risk: "low"
 - **コンポーネント分離**: カレンダーUI、サマリー表示、空状態を独立コンポーネントとし、単体テスト可能にする
 - **ローカル状態のみ**: カレンダーの表示月と選択日はコンポーネントローカル状態（useState / カスタムフック）で管理。Zustand グローバルストアは不要
 - **TanStack Query によるキャッシュ**: ワークアウト日一覧の取得を TanStack Query で管理し、画面復帰時の自動再取得とキャッシュ無効化を実現
-- **モバイルファースト**: 日付セルのタップターゲット44px以上を確保（T-003）
+- **モバイルファースト**: 日付セルは視覚サイズ36px（`w-9 h-9`）、グリッドセル領域でタップターゲット44px相当を確保（T-003、design-system.html FRAME3 準拠）
 
 ---
 
@@ -252,7 +252,7 @@ interface DayCellProps {
 // - selected:                  ring-2 ring-black ring-offset-2 font-bold
 // - otherMonth (前月/次月):    text-zinc-200（タップ不可）
 //
-// セルサイズ: w-11 h-11（44px: T-003 準拠）
+// セルサイズ: w-9 h-9（36px視覚サイズ）、グリッドセル領域でタップターゲット44px相当を確保（T-003、design-system.html FRAME3 準拠）
 
 // -------------------------------------------------------
 // WorkoutSummary (src/components/WorkoutSummary.tsx)
@@ -315,7 +315,7 @@ interface EmptyDayStateProps {
 |------|--------|
 | 操作性（NFR-001）: 月遷移の即時性 | useState による displayMonth の更新は同期的。カレンダーグリッド生成は純粋関数で計算コストO(42)（6行×7列）。TanStack Query のキャッシュにより2回目以降の月遷移は即座に完了 |
 | 操作性（NFR-002）: 日付タップからサマリー表示 | selectedDate の useState 更新でサマリーを条件レンダリング。TanStack Query が workoutRepository.listByDate() の結果をキャッシュするため、同じ日付の再選択時は即座に表示 |
-| アクセシビリティ（NFR-003）: タップターゲット | DayCell を `w-11 h-11`（44px）で確保。シェブロンボタン・追加ボタンも同サイズ以上を確保（T-003） |
+| アクセシビリティ（NFR-003）: タップターゲット | DayCell は視覚サイズ `w-9 h-9`（36px）、グリッドセル領域でタップターゲット44px相当を確保。シェブロンボタン・追加ボタンは `min-h-[44px] min-w-[44px]` を確保（T-003、design-system.html FRAME3 準拠） |
 | エラー耐性（T-002）: workoutRepository エラー | TanStack Query の onError コールバックで console.error ログ出力。エラー時は空の Set / 空配列にフォールバック |
 
 ---
