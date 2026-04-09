@@ -62,9 +62,7 @@ risk: "high"
 
 ## 3.1. UI デザインシステム
 
-**参照ファイル（正）**: `/Users/sakumatakuya/src/github.com/SakumaTakuya/design/system.pen`
-
-UIコンポーネントのスタイルは `design-system.pen` を正とする。実装は以下の Tailwind CSS クラスマッピングに従う。
+UIコンポーネントのスタイルは PRD のデザインリファレンスおよび以下の Tailwind CSS クラスマッピングに従う。
 
 ### カラーパレット
 
