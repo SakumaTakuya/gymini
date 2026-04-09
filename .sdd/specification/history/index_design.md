@@ -40,7 +40,7 @@ risk: "low"
 
 - **データ層の設計**: `workoutRepository`（localStorage CRUD）を新規実装し、TanStack Query でキャッシュ管理をラップする。workout design doc のインターフェース仕様（[workout/index_design.md](../workout/index_design.md)）に準拠
 - **コンポーネント分離**: カレンダーUI、サマリー表示、空状態を独立コンポーネントとし、単体テスト可能にする
-- **ローカル状態のみ**: カレンダーの表示月と選択日はコンポーネントローカル状態（useState / カスタムフック）で管理。Zustand グローバルストアは不要
+- **URL駆動の状態管理**: カレンダーの表示月と選択日を TanStack Router の search params で管理。タブ切替・ブラウザバックでも状態が保持され、Zustand グローバルストアは不要
 - **TanStack Query によるキャッシュ**: ワークアウト日一覧の取得を TanStack Query で管理し、画面復帰時の自動再取得とキャッシュ無効化を実現
 - **モバイルファースト**: 日付セルは視覚サイズ36px（`w-9 h-9`）、グリッドセル領域でタップターゲット44px相当を確保（T-003、design-system.html FRAME3 準拠）
 
@@ -55,7 +55,7 @@ risk: "low"
 | ルーティング | TanStack Router | CONSTITUTION v3.0.0 準拠。ファイルベース型安全ルーティング |
 | データフェッチ/キャッシュ | TanStack Query | CONSTITUTION v3.0.0 準拠。workoutRepository をラップし、キャッシュ管理・自動再取得を実現 |
 | UIコンポーネント | shadcn/ui + Radix UI | CONSTITUTION v3.0.0 準拠。Button 等の基本コンポーネントに利用 |
-| 状態管理 | React useState + カスタムフック | カレンダー状態は画面ローカル。Zustandに載せる必要はない |
+| 状態管理 | TanStack Router search params | 表示月・選択日をURLに保持。タブ切替・ブラウザバックで状態維持。Zustand不要 |
 | データ取得 | workoutRepository | localStorage CRUD 層。workout design doc のインターフェース仕様に準拠して新規実装（A-002, B-001） |
 | スタイリング | Tailwind CSS | プロジェクト標準のスタイリング手法 |
 
@@ -196,6 +196,19 @@ const queryKeys = {
 }
 
 // -------------------------------------------------------
+// history ルート search params 定義 (src/routes/history.tsx)
+// -------------------------------------------------------
+
+const historySearchSchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/).optional(),  // "YYYY-MM"
+  date: dateStringSchema.optional(),                      // "YYYY-MM-DD"
+})
+
+export const Route = createFileRoute('/history')({
+  validateSearch: historySearchSchema,
+})
+
+// -------------------------------------------------------
 // useCalendar (src/hooks/useCalendar.ts)
 // -------------------------------------------------------
 
@@ -209,8 +222,16 @@ interface UseCalendarReturn {
 }
 
 function useCalendar(): UseCalendarReturn
-// 初期値: displayMonth = 今月, selectedDate = null
-// goToPrevMonth/goToNextMonth: displayMonthを±1し、selectedDateをnullにリセット
+// 状態管理:
+//   displayMonth と selectedDate は Route.useSearch() から取得。
+//   デフォルト: month = 今月（"YYYY-MM"）, date = undefined（未選択）
+//
+// goToPrevMonth/goToNextMonth:
+//   navigate({ search: { month: 前/次月, date: undefined } }) で search params を更新。
+//   selectedDate は月遷移時にリセット。
+//
+// selectDate(date):
+//   navigate({ search: (prev) => ({ ...prev, date }) }) で search params を更新。
 //
 // daysWithWorkouts の取得:
 //   useQuery({
@@ -225,8 +246,8 @@ function useCalendar(): UseCalendarReturn
 //   })
 //
 // タブ復帰時の状態保持:
-//   TanStack Router はルートコンポーネントをアンマウントしないため、
-//   useState 状態（displayMonth, selectedDate）は自然に維持される。
+//   displayMonth と selectedDate は URL search params に保持されるため、
+//   ルートコンポーネントがアンマウント・再マウントされても状態は維持される。
 //   daysWithWorkouts は staleTime: 0 によりウィンドウフォーカス時に自動再取得される。
 
 // -------------------------------------------------------
@@ -315,8 +336,7 @@ interface EmptyDayStateProps {
 // history ルート (src/routes/history.tsx)
 // -------------------------------------------------------
 
-// TanStack Router のファイルベースルーティングにより自動登録
-// createFileRoute('/history') で定義
+// search params のスキーマ定義と validateSearch は上記「history ルート search params 定義」を参照
 // useCalendar, useWorkoutsForDate を組み合わせてカレンダーとサマリーを表示
 
 // -------------------------------------------------------
@@ -337,8 +357,8 @@ interface EmptyDayStateProps {
 
 | 要件 | 実現方針 |
 |------|--------|
-| 操作性（NFR-001）: 月遷移の即時性 | useState による displayMonth の更新は同期的。カレンダーグリッド生成は純粋関数で計算コストO(42)（6行×7列）。TanStack Query のキャッシュにより2回目以降の月遷移は即座に完了 |
-| 操作性（NFR-002）: 日付タップからサマリー表示 | selectedDate の useState 更新でサマリーを条件レンダリング。TanStack Query が workoutRepository.listByDate() の結果をキャッシュするため、同じ日付の再選択時は即座に表示 |
+| 操作性（NFR-001）: 月遷移の即時性 | search params の更新による再レンダリングは同期的。カレンダーグリッド生成は純粋関数で計算コストO(42)（6行×7列）。TanStack Query のキャッシュにより2回目以降の月遷移は即座に完了 |
+| 操作性（NFR-002）: 日付タップからサマリー表示 | selectedDate の search params 更新でサマリーを条件レンダリング。TanStack Query が workoutRepository.listByDate() の結果をキャッシュするため、同じ日付の再選択時は即座に表示 |
 | アクセシビリティ（NFR-003）: タップターゲット | DayCell は視覚サイズ `w-9 h-9`（36px）、グリッドセル領域でタップターゲット44px相当を確保。シェブロンボタン・追加ボタンは `min-h-[44px] min-w-[44px]` を確保（T-003、design-system.html FRAME3 準拠） |
 | エラー耐性（T-002）: workoutRepository エラー | TanStack Query の onError コールバックで console.error ログ出力。エラー時は空の Set / 空配列にフォールバック |
 
@@ -370,13 +390,13 @@ interface EmptyDayStateProps {
 | ルーティング | Zustand 状態ベース vs TanStack Router | TanStack Router（ファイルベース） | CONSTITUTION v3.0.0 で TanStack Router が必須技術に指定。`src/routes/history.tsx` として定義 |
 | データフェッチ/キャッシュ | 直接 workoutRepository 呼び出し vs TanStack Query | TanStack Query | CONSTITUTION v3.0.0 準拠。staleTime: 0 で画面復帰時の自動再取得を実現。キャッシュによる2回目以降の高速表示 |
 | UIコンポーネント基盤 | 全自作 vs shadcn/ui 活用 | shadcn/ui（Button, Card 等） | CONSTITUTION v3.0.0 準拠。DayCell 等のカレンダー固有コンポーネントは自作、汎用コンポーネント（Button, Card）は shadcn/ui を使用 |
-| 状態管理 | Zustand グローバルストア vs React ローカル状態 | React ローカル状態（useCalendar フック） | カレンダーの表示月・選択日は画面ローカルな関心事。他の画面から参照する必要がないためグローバルストアは不要 |
+| 状態管理 | Zustand vs React useState vs TanStack Router search params | TanStack Router search params | useState はルートアンマウント時に消失。Zustand は追加ストアが必要。search params ならURL に状態が乗りタブ切替・ブラウザバックで保持され、Zod validateSearch と自然に統合できる |
 | ワークアウト日の取得方法 | 月ごとにフィルタリング vs 全件取得してメモリでフィルタ | 全件取得してメモリでフィルタ | workoutRepository.listByDateDesc() で全件取得し、表示月の日付をSetに変換。ローカルアプリで件数が限定的（数百件程度）なため、月ごとのインデックス構築は過剰 |
 | 赤ドットマーカーの色 | デザインシステム参照 | accent色（#DE3A2B / `bg-accent`） | `.sdd/design-system.html` で定義済みのアクセントカラーに準拠 |
 | 今日の日付セルの色 | デザインシステム参照 | 黒塗り（`bg-black text-white rounded-full`） | PRDの「黒塗りで強調表示」に準拠。他の日付と明確に区別可能 |
 | DayCell の非当月日表示 | 非表示 vs 薄く表示 | 薄く表示（`text-zinc-200`、タップ不可） | カレンダーグリッドの形状を維持し、空白セルによるレイアウト崩れを防ぐ |
 | 未来日付の扱い | タップ可能 vs タップ不可 | タップ可能（当月の日付と同じ扱い） | 未来日付でもワークアウト追加の導線を提供。空状態UIの「追加」ボタンで未来日付のセッション開始が可能 |
-| タブ復帰時の状態保持 | TanStack Router ルート状態保持 | TanStack Router のデフォルト動作 | TanStack Router はルートコンポーネントをアンマウントしないため、useState 状態は自然に維持される。daysWithWorkouts は TanStack Query の staleTime: 0 + refetchOnWindowFocus で自動再取得 |
+| タブ復帰時の状態保持 | useState vs search params | TanStack Router search params | displayMonth・selectedDate は URL search params に保持されるため、ルートのアンマウント・再マウントでも状態維持。daysWithWorkouts は TanStack Query の staleTime: 0 + refetchOnWindowFocus で自動再取得 |
 | 同日複数ワークアウト表示 | フラット統合 vs セクション分割 | セクション分割（ワークアウトごとに縦に並べる） | 各トレーニングセッションの区切りが明確になり、ユーザーが記録の時系列を把握しやすい |
 | 削除済み種目の表示 | ラベル付き vs そのまま表示 | exerciseNameをそのまま表示 | WorkoutExercise.exerciseName はスナップショットとして保存されているため、削除済みかどうかの判定コストを避ける。ユーザーにとっても過去記録の名前が変わらない方が自然 |
 | カレンダーマーカー更新 | 画面表示ごと vs 月遷移時のみ | 画面表示（フォーカス復帰）のたびに再取得 | TanStack Query の refetchOnWindowFocus + staleTime: 0 で実現。別画面でのWO追加/削除が即座に反映される |

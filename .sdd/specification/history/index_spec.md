@@ -41,7 +41,7 @@ risk: "low"
 
 - **データモデルの共有**: `WorkoutRecord` / `workoutRepository` を workout モジュールと共有し、履歴画面固有のデータ層は追加しない
 - **コンポーネント分離**: カレンダーUI、サマリー表示、空状態をそれぞれ独立したコンポーネントとする
-- **状態の最小化**: カレンダーの表示月と選択日のみをローカル状態として管理
+- **URL駆動の状態管理**: カレンダーの表示月と選択日を TanStack Router の search params で管理し、タブ切替・ブラウザバックでも状態を保持
 
 # 3. 要求定義
 
@@ -81,8 +81,8 @@ risk: "low"
 | history | EmptyDayState | (component) | 記録なし日の空状態コンポーネント |
 | history | useWorkoutsForDate | (hook) | 指定日付のワークアウト記録を取得するフック。内部で TanStack Query + workoutRepository.listByDate() を使用 |
 | history | DateString | (type) | "YYYY-MM-DD" 形式の branded type（Zod スキーマで検証。`src/schemas/date.ts`） |
-| history | useCalendar | selectedDate | 現在選択中の日付（DateString \| null） |
-| history | useCalendar | displayMonth | 表示中の年月 |
+| history | useCalendar | selectedDate | 現在選択中の日付（DateString \| null）。search params から取得 |
+| history | useCalendar | displayMonth | 表示中の年月。search params から取得（デフォルト: 今月） |
 | history | useCalendar | goToPrevMonth() | 前月に遷移 |
 | history | useCalendar | goToNextMonth() | 次月に遷移 |
 | history | useCalendar | selectDate(date) | 日付を選択 |
@@ -135,13 +135,21 @@ interface WorkoutSummaryData {
 
 ```tsx
 // HistoryPage - カレンダーとサマリーの統合（src/routes/history.tsx）
+// URL例: /history?month=2026-04&date=2026-04-09
+export const Route = createFileRoute('/history')({
+  validateSearch: z.object({
+    month: z.string().regex(/^\d{4}-\d{2}$/).optional(),
+    date: dateStringSchema.optional(),
+  }),
+})
+
 function HistoryPage() {
+  // useCalendar は内部で Route.useSearch() を使い search params を読み書きする
   const { selectedDate, displayMonth, goToPrevMonth, goToNextMonth, selectDate, daysWithWorkouts } = useCalendar()
   const workouts = useWorkoutsForDate(selectedDate)
   const navigate = useNavigate()
 
   const handleAddWorkout = (date: DateString) => {
-    // startSession(date) を呼び出し、TanStack Router でトレーニング画面へ遷移
     navigate({ to: '/', search: { startDate: date } })
   }
 
@@ -216,7 +224,7 @@ sequenceDiagram
 - カレンダーUIライブラリの選定はdesign docで決定する（A-001）
 - 履歴画面はデータの閲覧専用であり、既存記録の編集・削除機能は含まない
 - 削除済み種目を含む過去のワークアウトは、保存済みの `exerciseName` をそのまま表示する（削除済みラベル等の特別な表示は行わない）
-- 他タブに切り替えて履歴画面に戻った際、カレンダーの表示月と選択日は保持される（TanStack Router のルート状態保持による）
+- 他タブに切り替えて履歴画面に戻った際、カレンダーの表示月と選択日は保持される（TanStack Router の search params による URL 状態管理）
 - カレンダーマーカー（daysWithWorkouts）は履歴画面が表示されるたびに最新データを再取得する（TanStack Query のキャッシュ無効化による）
 - 空状態からのワークアウト追加は、既存の workout モジュールの `startSession(date)` を呼び出し、TanStack Router でトレーニング画面（`/`）へ遷移する（[workout/index_spec.md](../workout/index_spec.md) FR-001 参照）
 
