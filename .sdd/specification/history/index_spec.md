@@ -76,7 +76,7 @@ risk: "low"
 | モジュール | インターフェース | メンバー | 概要 |
 |---------|--------------|--------|------|
 | history | HistoryPage | (component) | 履歴画面のルートコンポーネント |
-| history | MonthCalendar | (component) | 月表示カレンダーコンポーネント |
+| history | MonthCalendar | (component) | shadcn/ui Calendar ベースの月表示カレンダーコンポーネント |
 | history | WorkoutSummary | (component) | 選択日のワークアウト記録サマリー |
 | history | EmptyDayState | (component) | 記録なし日の空状態コンポーネント |
 | history | useWorkoutsForDate | (hook) | 指定日付のワークアウト記録を取得するフック。内部で TanStack Query + workoutRepository.listByDate() を使用 |
@@ -221,7 +221,7 @@ sequenceDiagram
 - データ取得は `workoutRepository` 経由でlocalStorageから行う。サーバー通信は行わない（A-002, B-001）
 - TypeScript strict mode を遵守する（T-001）
 - 日付セルの視覚サイズは `w-9 h-9`（36px）、グリッドセル領域でタップターゲット44px相当を確保する（T-003、design-system.html FRAME3 準拠）
-- カレンダーUIライブラリの選定はdesign docで決定する（A-001）
+- カレンダーUIは shadcn/ui Calendar（react-day-picker ベース）を使用する（A-001: Library-First）
 - 履歴画面はデータの閲覧専用であり、既存記録の編集・削除機能は含まない
 - 削除済み種目を含む過去のワークアウトは、保存済みの `exerciseName` をそのまま表示する（削除済みラベル等の特別な表示は行わない）
 - 他タブに切り替えて履歴画面に戻った際、カレンダーの表示月と選択日は保持される（TanStack Router の search params による URL 状態管理）
