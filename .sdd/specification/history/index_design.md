@@ -112,6 +112,7 @@ graph TD
 
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
+| dateStringSchema | "YYYY-MM-DD" の Zod スキーマ + DateString branded type + ヘルパー関数 | Zod | `src/schemas/date.ts` |
 | history ルート | 履歴画面のルート定義 | useCalendar, useWorkoutsForDate, UI components | `src/routes/history.tsx` |
 | useCalendar | 表示月・選択日・ワークアウト日集合の管理 | TanStack Query, workoutRepository | `src/hooks/useCalendar.ts` |
 | useWorkoutsForDate | 指定日付のワークアウト記録取得 | TanStack Query, workoutRepository | `src/hooks/useWorkoutsForDate.ts` |
@@ -132,11 +133,33 @@ graph TD
 # 5. データモデル
 
 ```typescript
+// -------------------------------------------------------
+// DateString スキーマ (src/schemas/date.ts)
+// -------------------------------------------------------
+
+import { z } from 'zod'
+
+export const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+export type DateString = string & { readonly __brand: 'DateString' }
+
+/** 文字列を DateString にパース。無効な形式は ZodError をスロー */
+export function toDateString(value: string): DateString {
+  dateStringSchema.parse(value)
+  return value as DateString
+}
+
+/** 今日の日付を DateString で返す */
+export function todayDateString(): DateString {
+  return new Date().toISOString().slice(0, 10) as DateString
+}
+
+// -------------------------------------------------------
 // src/lib/calendarUtils.ts - カレンダーグリッド生成
+// -------------------------------------------------------
 
 /** カレンダーグリッドの1日分 */
 interface CalendarDay {
-  date: string          // "YYYY-MM-DD"
+  date: DateString
   dayOfMonth: number    // 1-31
   isCurrentMonth: boolean  // 表示月に属するか
   isToday: boolean
@@ -153,7 +176,7 @@ type CalendarGrid = CalendarDay[][]
 function generateCalendarGrid(
   year: number,
   month: number,        // 1-indexed
-  workoutDates: Set<string>
+  workoutDates: Set<DateString>
 ): CalendarGrid
 ```
 
@@ -168,7 +191,7 @@ function generateCalendarGrid(
 
 const queryKeys = {
   workoutDates: (year: number, month: number) => ['workoutDates', year, month] as const,
-  workoutsForDate: (date: string | null) => ['workoutsForDate', date] as const,
+  workoutsForDate: (date: DateString | null) => ['workoutsForDate', date] as const,
 }
 
 // -------------------------------------------------------
@@ -176,12 +199,12 @@ const queryKeys = {
 // -------------------------------------------------------
 
 interface UseCalendarReturn {
-  selectedDate: string | null
+  selectedDate: DateString | null
   displayMonth: { year: number; month: number }
   goToPrevMonth: () => void
   goToNextMonth: () => void
-  selectDate: (date: string) => void
-  daysWithWorkouts: Set<string>
+  selectDate: (date: DateString) => void
+  daysWithWorkouts: Set<DateString>
 }
 
 function useCalendar(): UseCalendarReturn
@@ -209,7 +232,7 @@ function useCalendar(): UseCalendarReturn
 // useWorkoutsForDate (src/hooks/useWorkoutsForDate.ts)
 // -------------------------------------------------------
 
-function useWorkoutsForDate(date: string | null): WorkoutRecord[]
+function useWorkoutsForDate(date: DateString | null): WorkoutRecord[]
 // TanStack Query でラップ:
 //   useQuery({
 //     queryKey: queryKeys.workoutsForDate(date),
@@ -224,11 +247,11 @@ function useWorkoutsForDate(date: string | null): WorkoutRecord[]
 
 interface MonthCalendarProps {
   displayMonth: { year: number; month: number }
-  selectedDate: string | null
-  daysWithWorkouts: Set<string>
+  selectedDate: DateString | null
+  daysWithWorkouts: Set<DateString>
   onPrevMonth: () => void
   onNextMonth: () => void
-  onSelectDate: (date: string) => void
+  onSelectDate: (date: DateString) => void
 }
 
 // シェブロンボタン: shadcn/ui Button variant="ghost" を使用
@@ -241,7 +264,7 @@ interface MonthCalendarProps {
 interface DayCellProps {
   day: CalendarDay
   isSelected: boolean
-  onSelect: (date: string) => void
+  onSelect: (date: DateString) => void
 }
 
 // 状態に応じたTailwindクラス:
@@ -259,7 +282,7 @@ interface DayCellProps {
 // -------------------------------------------------------
 
 interface WorkoutSummaryProps {
-  date: string
+  date: DateString
   workouts: WorkoutRecord[]
 }
 
@@ -278,8 +301,8 @@ interface WorkoutSummaryProps {
 // -------------------------------------------------------
 
 interface EmptyDayStateProps {
-  date: string
-  onAddWorkout: (date: string) => void
+  date: DateString
+  onAddWorkout: (date: DateString) => void
 }
 
 // 表示: 「記録なし」テキスト + shadcn/ui Button（追加ボタン）
@@ -357,6 +380,7 @@ interface EmptyDayStateProps {
 | 削除済み種目の表示 | ラベル付き vs そのまま表示 | exerciseNameをそのまま表示 | WorkoutExercise.exerciseName はスナップショットとして保存されているため、削除済みかどうかの判定コストを避ける。ユーザーにとっても過去記録の名前が変わらない方が自然 |
 | カレンダーマーカー更新 | 画面表示ごと vs 月遷移時のみ | 画面表示（フォーカス復帰）のたびに再取得 | TanStack Query の refetchOnWindowFocus + staleTime: 0 で実現。別画面でのWO追加/削除が即座に反映される |
 | calendarUtils 配置 | src/utils/ vs src/lib/ | src/lib/ | CONSTITUTION v3.0.0 のモジュール構成で `src/utils/` は廃止、`src/lib/` に統合 |
+| 日付の型表現 | 素の `string` vs `Date` vs Zod branded type | Zod branded type（`DateString`） | 素の `string` では任意の文字列が型チェックを通過する。`Date` はタイムゾーン問題・localStorage非互換。Zod branded type は境界でパースし内部は型安全に流通でき、CONSTITUTION v3.0.0 の Zod 活用方針に合致。スキーマは `src/schemas/date.ts` に配置 |
 
 ## 9.2. 未解決の課題
 

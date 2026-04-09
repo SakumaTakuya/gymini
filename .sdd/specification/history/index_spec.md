@@ -80,7 +80,8 @@ risk: "low"
 | history | WorkoutSummary | (component) | 選択日のワークアウト記録サマリー |
 | history | EmptyDayState | (component) | 記録なし日の空状態コンポーネント |
 | history | useWorkoutsForDate | (hook) | 指定日付のワークアウト記録を取得するフック。内部で TanStack Query + workoutRepository.listByDate() を使用 |
-| history | useCalendar | selectedDate | 現在選択中の日付 |
+| history | DateString | (type) | "YYYY-MM-DD" 形式の branded type（Zod スキーマで検証。`src/schemas/date.ts`） |
+| history | useCalendar | selectedDate | 現在選択中の日付（DateString \| null） |
 | history | useCalendar | displayMonth | 表示中の年月 |
 | history | useCalendar | goToPrevMonth() | 前月に遷移 |
 | history | useCalendar | goToNextMonth() | 次月に遷移 |
@@ -90,14 +91,20 @@ risk: "low"
 ## 4.1. 型定義
 
 ```typescript
+// 日付型（Zod branded type）
+// "YYYY-MM-DD" 形式の文字列。境界（ユーザー入力・localStorage読み出し）で
+// Zod パースし、内部は DateString として流通させる。
+// スキーマ定義は src/schemas/date.ts に配置。
+type DateString = string & { readonly __brand: 'DateString' }
+
 // カレンダーフック
 type UseCalendar = () => {
-  selectedDate: string | null      // "YYYY-MM-DD" or null
+  selectedDate: DateString | null
   displayMonth: { year: number; month: number }  // 1-indexed month
   goToPrevMonth: () => void
   goToNextMonth: () => void
-  selectDate: (date: string) => void
-  daysWithWorkouts: Set<string>    // "YYYY-MM-DD" の集合
+  selectDate: (date: DateString) => void
+  daysWithWorkouts: Set<DateString>
 }
 
 // カレンダー日付セルの状態
@@ -105,7 +112,7 @@ type DayCellState = 'default' | 'hasWorkout' | 'today' | 'todayWithWorkout' | 's
 
 // ワークアウトサマリーの表示データ
 interface WorkoutSummaryData {
-  date: string
+  date: DateString
   exercises: {
     exerciseName: string
     sets: { weight: number; reps: number }[]
@@ -117,6 +124,7 @@ interface WorkoutSummaryData {
 
 | 用語 | 説明 |
 |------|------|
+| DateString | "YYYY-MM-DD" 形式の branded type。Zod スキーマで実行時検証し、型安全に日付を扱う |
 | 表示月 | カレンダーに表示している年月。初期値は今月 |
 | 選択日 | ユーザーがタップして選択した日付。サマリー表示の対象 |
 | 赤ドットマーカー | ワークアウト記録がある日付の下部に表示するインジケーター |
@@ -132,7 +140,7 @@ function HistoryPage() {
   const workouts = useWorkoutsForDate(selectedDate)
   const navigate = useNavigate()
 
-  const handleAddWorkout = (date: string) => {
+  const handleAddWorkout = (date: DateString) => {
     // startSession(date) を呼び出し、TanStack Router でトレーニング画面へ遷移
     navigate({ to: '/', search: { startDate: date } })
   }
