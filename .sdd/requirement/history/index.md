@@ -18,7 +18,7 @@ risk: "low"
 
 **デザインリファレンス:** `.sdd/design-system.html` FRAME3
 
-> **統合:** 旧 [calendar/index.md](../calendar/index.md) の機能要求（FR_013〜FR_016）を本PRDに統合し、履歴画面としての完全な仕様を定義する。
+> **統合:** 旧カレンダーPRDの機能要求（FR_013〜FR_016）を本PRDに統合し、履歴画面としての完全な仕様を定義する。
 
 ## 概要
 
