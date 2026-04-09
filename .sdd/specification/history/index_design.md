@@ -38,7 +38,7 @@ risk: "low"
 
 # 2. 設計目標
 
-- **既存データ層の再利用**: `workoutRepository` をそのまま利用し、新たなリポジトリは追加しない。TanStack Query でキャッシュ管理を追加
+- **データ層の設計**: `workoutRepository`（localStorage CRUD）を新規実装し、TanStack Query でキャッシュ管理をラップする。workout design doc のインターフェース仕様（[workout/index_design.md](../workout/index_design.md)）に準拠
 - **コンポーネント分離**: カレンダーUI、サマリー表示、空状態を独立コンポーネントとし、単体テスト可能にする
 - **ローカル状態のみ**: カレンダーの表示月と選択日はコンポーネントローカル状態（useState / カスタムフック）で管理。Zustand グローバルストアは不要
 - **TanStack Query によるキャッシュ**: ワークアウト日一覧の取得を TanStack Query で管理し、画面復帰時の自動再取得とキャッシュ無効化を実現
@@ -56,7 +56,7 @@ risk: "low"
 | データフェッチ/キャッシュ | TanStack Query | CONSTITUTION v3.0.0 準拠。workoutRepository をラップし、キャッシュ管理・自動再取得を実現 |
 | UIコンポーネント | shadcn/ui + Radix UI | CONSTITUTION v3.0.0 準拠。Button 等の基本コンポーネントに利用 |
 | 状態管理 | React useState + カスタムフック | カレンダー状態は画面ローカル。Zustandに載せる必要はない |
-| データ取得 | workoutRepository（既存） | 既存のlocalStorageアクセス層をそのまま利用（A-002, B-001） |
+| データ取得 | workoutRepository | localStorage CRUD 層。workout design doc のインターフェース仕様に準拠して新規実装（A-002, B-001） |
 | スタイリング | Tailwind CSS | プロジェクト標準のスタイリング手法 |
 
 ---
@@ -87,7 +87,7 @@ graph TD
         TQ[TanStack Query]
     end
 
-    subgraph "Data Layer (既存)"
+    subgraph "Data Layer"
         WR[workoutRepository.ts]
         LS[(localStorage)]
     end
@@ -122,11 +122,12 @@ graph TD
 | EmptyDayState | 記録なし日の空状態UI + 追加ボタン | shadcn/ui Button | `src/components/EmptyDayState.tsx` |
 | calendarUtils | 月のグリッド生成、日付比較等の純粋関数 | なし | `src/lib/calendarUtils.ts` |
 
-### 既存モジュールの変更
+### 前提モジュール（他機能で実装）
 
-| モジュール名 | 変更内容 | 配置場所 |
+| モジュール名 | 依存内容 | 配置場所 |
 |-----------|---------|--------|
-| __root.tsx | 履歴ルートへのナビゲーションリンク追加 | `src/routes/__root.tsx` |
+| workoutRepository | localStorage CRUD（listByDateDesc, listByDate） | `src/lib/workoutRepository.ts` |
+| __root.tsx | ルートレイアウト。履歴ルートへのナビゲーションリンクを含む | `src/routes/__root.tsx` |
 
 ---
 

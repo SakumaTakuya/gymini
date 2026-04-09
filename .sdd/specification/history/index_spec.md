@@ -39,7 +39,7 @@ risk: "low"
 
 設計原則:
 
-- **既存データモデルの活用**: `WorkoutRecord` / `workoutRepository` をそのまま利用し、新たなデータ層は追加しない
+- **データモデルの共有**: `WorkoutRecord` / `workoutRepository` を workout モジュールと共有し、履歴画面固有のデータ層は追加しない
 - **コンポーネント分離**: カレンダーUI、サマリー表示、空状態をそれぞれ独立したコンポーネントとする
 - **状態の最小化**: カレンダーの表示月と選択日のみをローカル状態として管理
 
@@ -210,7 +210,7 @@ sequenceDiagram
 
 # 8. 制約事項
 
-- データ取得は既存の `workoutRepository` 経由でlocalStorageから行う。サーバー通信は行わない（A-002, B-001）
+- データ取得は `workoutRepository` 経由でlocalStorageから行う。サーバー通信は行わない（A-002, B-001）
 - TypeScript strict mode を遵守する（T-001）
 - 日付セルの視覚サイズは `w-9 h-9`（36px）、グリッドセル領域でタップターゲット44px相当を確保する（T-003、design-system.html FRAME3 準拠）
 - カレンダーUIライブラリの選定はdesign docで決定する（A-001）
