@@ -205,7 +205,7 @@ function useNavigation(): UseNavigationReturn
 //   │ Training │ History  │     [+ FAB]      │
 //   └──────────┴──────────┴──────────────────┘
 //
-// Tailwind クラス（design-system.pen 準拠）:
+// Tailwind クラス（PRD デザインリファレンス準拠）:
 //   TabBar: h-[83px] bg-white border-t border-zinc-100 px-5 pt-3 flex
 //   タブ: 左寄せ（justify-start）
 //   FAB領域: ml-auto（右端に配置）

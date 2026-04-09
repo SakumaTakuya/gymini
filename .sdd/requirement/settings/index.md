@@ -97,10 +97,7 @@ requirementDiagram
     SettingsScreen - contains -> CloseReturn
     SettingsScreen - contains -> APIKeySection
     SettingsScreen - contains -> ExerciseMasterSection
-    APIKeySection - traces -> FR_008
-    APIKeySection - traces -> FR_009
-    APIKeySection - traces -> FR_010
-    ExerciseMasterSection - traces -> FR_007
+    APIKeySection - derives -> GearBadge
 ```
 
 ---
@@ -109,7 +106,12 @@ requirementDiagram
 
 ### FR_021: 歯車アイコンから設定画面へ遷移
 
-全画面（FRAME1〜FRAME4）の右上に歯車アイコンボタンを固定表示する。スクロールしても常にアクセス可能。タップすると設定画面（FRAME5）へ遷移する。
+全画面（FRAME1〜FRAME4）の右上に歯車アイコンボタンを固定表示する。`absolute top-12 right-4` でスクロールしても常にアクセス可能。タップすると設定画面（FRAME5）へ遷移する。
+
+**UIスペック:**
+- サイズ: `w-9 h-9` 丸ボタン
+- スタイル: `bg-white/80 backdrop-blur-sm` + `shadow-sm border border-zinc-100`
+- アイコン: Phosphor Icons `ph-gear`
 
 **検証方法:** テストによる検証
 
@@ -117,17 +119,27 @@ requirementDiagram
 
 Gemini APIキーが未設定の場合、歯車アイコンの右上に赤いバッジ（ドット）を表示する。
 
+**UIスペック:**
+- サイズ: `w-3 h-3`
+- 位置: `absolute top-[-2px] right-[-2px]`
+- 色: `bg-accent`（#DE3A2B）+ `border-2 border-zinc-50`
+
 **検証方法:** テストによる検証
 
 ### FR_023: 閉じるボタンで遷移元に戻る
 
 設定画面の右上に閉じる（X）ボタンを固定表示する。タップすると設定画面を閉じて遷移元の画面に戻る。
 
+**UIスペック:**
+- 歯車アイコンと同じスタイルの丸ボタン
+- アイコン: Phosphor Icons `ph-x`
+- 位置: `absolute top-12 right-4`
+
 **検証方法:** テストによる検証
 
 ### FR_024: APIキー設定セクション
 
-設定画面上部にAPIキー管理セクションを表示する。詳細な入力・表示切替・削除機能は [api-key/index.md](../api-key/index.md) を参照。
+設定画面上部にAPIキー管理セクションを表示する。詳細な入力・表示切替・削除機能は [api-key/index.md](../api-key/index.md) を参照。FR_024 は FR_008（入力・保存）、FR_009（表示切替）、FR_010（未設定警告）を統合表示する。
 
 **セクション構成:**
 1. セクションラベル「Gemini API」
@@ -139,7 +151,7 @@ Gemini APIキーが未設定の場合、歯車アイコンの右上に赤いバ�
 
 ### FR_025: 種目マスター管理セクション
 
-APIキーセクションの下に種目マスター管理セクションを表示する。詳細な検索・追加・削除機能は [exercise-master/index.md](../exercise-master/index.md) を参照。
+APIキーセクションの下に種目マスター管理セクションを表示する。詳細な検索・追加・削除機能は [exercise-master/index.md](../exercise-master/index.md) を参照。FR_025 は FR_007（種目CRUD）を統合表示する。
 
 **セクション構成:**
 1. セクションラベル「種目マスター」
@@ -151,6 +163,34 @@ APIキーセクションの下に種目マスター管理セクションを表�
 
 ---
 
-## 4. 備考
+## 4. 画面レイアウト
 
-- 設定画面にはBottomNavを表示しない
+```
+┌─────────────────────────────────┐
+│ (sensor notch)                  │
+│                          [  X ] │  ← 固定: 閉じるボタン
+│                                 │
+│  設定                           │  ← スクロールコンテンツ
+│                                 │
+│  ┌─ Gemini API ───────────────┐ │
+│  │ APIキー                     │ │
+│  │ [●●●●●●●●●●●●●●●●●] [👁] │ │
+│  │─────────────────────────── │ │
+│  │ 🟢 接続済み        [削除]  │ │
+│  └────────────────────────────┘ │
+│                                 │
+│  ┌─ 種目マスター ─────────────┐ │
+│  │ [🔍 種目を検索...]         │ │
+│  │─────────────────────────── │ │
+│  │ Bench Press          [✏️]  │ │
+│  │ Squat                [✏️]  │ │
+│  │ Deadlift             [✏️]  │ │
+│  │ Incline DB Press     [✏️]  │ │
+│  │─────────────────────────── │ │
+│  │ [+] 種目を追加             │ │
+│  └────────────────────────────┘ │
+│                                 │
+└─────────────────────────────────┘
+```
+
+**Note:** 設定画面にはBottomNavを表示しない

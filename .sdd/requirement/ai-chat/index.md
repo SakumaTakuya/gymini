@@ -164,12 +164,18 @@ requirementDiagram
 
 Gemini APIを用いたチャットインターフェースを提供する。ユーザーのBYOK APIキーを使ってGemini APIに接続する。
 
-チャットバブルは種別（ユーザーメッセージ / AI返答 / AI確認待ち）に応じて配置・スタイルを分ける。
+**デザインリファレンス:** `.sdd/design-system.html` FRAME4
 
-- ユーザーメッセージ: 右寄せ
-- AI返答・確認待ち: 左寄せ
+**チャットバブルUIスペック:**
+
+| バブル種別 | 配置 | 背景 | 角丸 | max-width |
+|:-----------|:-----|:-----|:-----|:----------|
+| ユーザーメッセージ | 右寄せ | `bg-black text-white` | `rounded-[18px] rounded-br-[4px]` | 75% |
+| AI返答（読み取り操作後） | 左寄せ | `bg-white border-zinc-100 shadow-soft` | `rounded-[18px] rounded-bl-[4px]` | 88% |
+| AI確認待ち（書き込み操作） | 左寄せ | `bg-white border-zinc-200 shadow-soft` | `rounded-[18px] rounded-bl-[4px]` | 88% |
+
 - AIメッセージにアバターアイコンは表示しない（幅節約）
-- 入力バー: BottomNavの上に固定配置、丸角テキスト入力 + 送信ボタン
+- 入力バー: BottomNavの上に固定（`bottom: 96px`）、丸角テキスト入力 + 送信ボタン
 
 **検証方法:** テストによる検証
 
@@ -208,5 +214,10 @@ AIが書き込み操作（ワークアウト保存・種目追加・セッショ
 AI: 「スクワットを今日のセッションに追加しますか？」
     [追加する]  [キャンセル]   ← バブル内インラインボタン
 ```
+
+**インラインボタンUIスペック:**
+- キャンセル: `bg-zinc-100 text-black font-semibold rounded-xl h-9`
+- 実行（追加する等）: `bg-black text-white font-bold rounded-xl h-9` + アイコン
+- 2ボタンを `flex gap-2` で横並び、各 `flex-1`
 
 **検証方法:** テストによる検証
