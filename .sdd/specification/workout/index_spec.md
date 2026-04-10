@@ -32,7 +32,7 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 - **種目追加・セット記録**: セッション内で複数種目を追加し、セット単位で重量(kg)と回数を記録
 - **セット完了と自動追加**: チェックでセットを完了し、次のセット入力行を自動追加（前セット値で自動入力）
 - **完了済みセットの操作**: 完了済みセットの削除・編集
-- **種目カードの状態管理**: 4つの状態（折りたたみ・展開空・記録中・全完了）による種目単位のUI制御
+- **種目カードの状態管理**: 3つの状態（折りたたみ・idle・記録中）による種目単位のUI制御。記録中は同時に1種目のみ
 - **セッションタイマー**: 経過時間のリアルタイム表示
 - **セッション終了・保存**: 終了ボタンでデータを永続化し、アイドル状態に戻る
 
@@ -48,9 +48,9 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 | FR-003 | セット単位で重量(kg)と回数を管理する | 必須 | FR_003 | テスト |
 | FR-005 | 1セッション内で複数の種目を連続して追加・記録できる | 必須 | FR_005 | テスト |
 | FR-006 | セット完了時に自動追加される次セット入力行に、直前セットの重量と回数を初期値として自動入力する | 必須 | FR_006 | テスト |
-| FR-028 | チェックでセット完了→次セット入力行を自動追加する。最初のセットは種目カード内の「+」ボタンで追加する | 必須 | FR_028 | テスト |
+| FR-028 | 種目追加時にセット入力行を自動作成しフォーカス。チェックでセット完了→次セット自動追加。別の種目追加時は現在の記録中種目の未完了入力行を消去しidleに降格 | 必須 | FR_028 | テスト |
 | FR-029 | 完了済みセットの削除（ゴミ箱アイコン）・編集（鉛筆アイコンで入力行に戻す）操作ができる | 必須 | FR_029 | テスト |
-| FR-030 | 種目カードが4状態（折りたたみ・展開空・記録中・全完了）を持つ | 必須 | FR_030 | テスト |
+| FR-030 | 種目カードが3状態（collapsed・idle・recording）を持つ。recordingは同時に1種目のみ | 必須 | FR_030 | テスト |
 | FR-031 | 終了ボタンでセッションを保存して終了し、アイドル状態に戻る | 必須 | FR_031 | テスト |
 | FR-032 | セッション経過時間をリアルタイム表示する | 推奨 | FR_032 | テスト |
 
@@ -84,8 +84,8 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 |---------|--------------|--------|------|
 | workout | WorkoutSession | startSession() | セッションを開始し、タイマーを開始する（FR-001, FR-032） |
 | workout | WorkoutSession | endSession() | セッションを保存して終了し、アイドル状態に戻る（FR-001, FR-031） |
-| workout | WorkoutSession | addExercise(exercise) | セッションに種目を追加する（FR-005） |
-| workout | WorkoutSession | addFirstSet(exerciseIndex) | 種目カード内の「+」ボタンで最初のセット入力行を追加する（FR-028） |
+| workout | WorkoutSession | addExercise(exercise) | セッションに種目を追加する。セット入力行を自動作成しフォーカス。現在recording中の他種目はidleに降格（FR-005, FR-028） |
+| workout | WorkoutSession | activateExercise(exerciseIndex) | idle種目の「+」ボタンで記録中に切替。現在recording中の他種目はidleに降格（FR-028, FR-030） |
 | workout | WorkoutSession | completeSet(exerciseIndex, set) | セットを完了し、次セット入力行を自動追加する（FR-028, FR-006） |
 | workout | WorkoutSession | editCompletedSet(exerciseIndex, setIndex) | 完了済みセットを入力行に戻して編集可能にする（FR-029） |
 | workout | WorkoutSession | deleteCompletedSet(exerciseIndex, setIndex) | 完了済みセットを削除する（FR-029） |
@@ -135,12 +135,12 @@ type DraftExercise = {
   cardState: ExerciseCardState    // 種目カードの状態（FR-030）
 }
 
-// 種目カードの4状態（FR-030）
+// 種目カードの3状態（FR-030）
+// recording は同時に1種目のみ。別の種目が recording になると自動で idle に降格する。
 type ExerciseCardState =
-  | 'collapsed'      // 折りたたみ: セット一覧非表示、セット数サマリー表示
-  | 'expanded-empty' // 展開・セットなし: 展開直後、まだセット未追加。「+」ボタンのみ表示
-  | 'recording'      // 記録中: 完了済みセット + 入力中セット行
-  | 'all-completed'  // 全セット完了: 全セット完了後。「+」ボタンで追加セット可能
+  | 'collapsed'  // 折りたたみ: セット一覧非表示、セット数サマリー表示
+  | 'idle'       // 待機: 完了済みセット（あれば）+ 「+」ボタン。入力行なし
+  | 'recording'  // 記録中: 完了済みセット + 入力中セット行。同時に1種目のみ
 ```
 
 # 5. 用語集
@@ -153,7 +153,7 @@ type ExerciseCardState =
 | 完了済みセット | チェックにより確定されたセット。削除・編集が可能（FR-029） |
 | 入力中セット（pendingSet） | 現在入力中の未確定セット。直前セットの値で自動入力される（FR-006） |
 | WorkoutExercise | ワークアウト内の1種目エントリ。種目IDと種目名のスナップショットを保持する |
-| 種目カード | セッション中に各種目を表示するUIの単位。4つの状態を持つ（FR-030） |
+| 種目カード | セッション中に各種目を表示するUIの単位。3つの状態を持つ（FR-030）。recording は同時に1種目のみ |
 
 # 6. 使用例
 
@@ -165,32 +165,35 @@ type ExerciseCardState =
 2. FRAME2（Active Workout）へ遷移
 3. セッションタイマーが開始（FR-032）
 
-[種目1: ベンチプレス（FR-005）]
+[種目1: ベンチプレス（FR-005, FR-028）]
 4. 画面下部の「種目を追加...」検索フィールドからベンチプレスを選択
-5. 種目カードが「展開・セットなし」状態で追加される（FR-030）
-6. 「+」ボタンで最初のセット入力行を追加 → カードは「記録中」状態へ（FR-028, FR-030）
-7. 1セット目: 重量=60kg, 回数=10 を入力 → チェックボタンをタップ（FR-028）
+5. 種目カードがrecording状態で追加。セット入力行が自動作成され、重量フィールドにフォーカス（FR-028）
+6. 1セット目: 重量=60kg, 回数=10 を入力 → チェックボタンをタップ（FR-028）
    → セットが完了状態に変わる
    → 次のセット入力行が自動追加される（重量=60, 回数=10 が自動入力: FR-006）
-8. 2セット目: 回数を8に変更 → チェック（FR-028）
+7. 2セット目: 回数を8に変更 → チェック（FR-028）
    → 次のセット入力行（重量=60, 回数=8）が自動追加（FR-006）
-9. 3セット目: そのままチェック（FR-028）
-   → カードは「全セット完了」状態に（セット入力行なし: FR-030）
+8. 3セット目: そのままチェック（FR-028）
 
 [完了済みセットの操作（FR-029）]
-10. 1セット目の鉛筆アイコンをタップ → セットが入力行に戻り編集可能に
-11. 重量を65kgに変更 → チェックで再完了
-12. ※ ゴミ箱アイコンをタップすると完了済みセットを削除
+9. 1セット目の鉛筆アイコンをタップ → セットが入力行に戻り編集可能に
+10. 重量を65kgに変更 → チェックで再完了
+11. ※ ゴミ箱アイコンをタップすると完了済みセットを削除
 
-[種目2: スクワット（FR-005）]
-13. 「種目を追加...」からスクワットを選択
-14. 同様にセットを記録
-15. 種目1のカードを折りたたみ可能（FR-030）
+[種目2: スクワット（FR-005, FR-028）]
+12. 「種目を追加...」からスクワットを選択
+13. → ベンチプレスの未完了入力行が消去され idle に降格（「+」ボタン表示）
+14. → スクワットがrecording状態で追加。セット入力行が自動作成されフォーカス
+15. 同様にセットを記録
+
+[前の種目に戻る（FR-030）]
+16. ベンチプレスの「+」ボタンをタップ → ベンチプレスがrecordingに、スクワットがidleに降格
+17. 種目1のカードを折りたたみ可能（FR-030）
 
 [セッション終了（FR-001, FR-031）]
-16. 右上の「終了」ボタンをタップ
-17. セッションデータが保存される（WorkoutRepository.save）
-18. FRAME1（Idle）に戻る
+18. 右上の「終了」ボタンをタップ
+19. セッションデータが保存される（WorkoutRepository.save）
+20. FRAME1（Idle）に戻る
 ```
 
 > **制約（B-002準拠 / REQ_008 — [index.md](../../requirement/index.md) で定義）**: AIが `WorkoutRepository.save` / `remove` を呼び出す前には、ユーザー確認が必要である。確認フローはAIチャット仕様（[ai-chat](../../requirement/ai-chat/index.md)）で定義する。
@@ -223,22 +226,17 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
-    state "expanded-empty" as ExpandedEmpty
+    state "idle" as Idle
     state "recording" as Recording
-    state "all-completed" as AllCompleted
     state "collapsed" as Collapsed
 
-    [*] --> ExpandedEmpty: 種目追加時
-    ExpandedEmpty --> Recording: 「+」ボタンで最初のセット入力行追加（FR-028）
+    [*] --> Recording: 種目追加時（セット入力行自動作成 + フォーカス）
     Recording --> Recording: チェックでセット完了→次セット自動追加（FR-028）
-    Recording --> AllCompleted: 最後のセット完了後、入力行なし
-    AllCompleted --> Recording: 「+」ボタンで追加セット入力行追加
-    ExpandedEmpty --> Collapsed: カードヘッダータップ
+    Recording --> Idle: 別の種目がrecordingになった時（未完了入力行を消去）
+    Idle --> Recording: 「+」ボタンタップ（他のrecording種目はidleへ降格）
+    Idle --> Collapsed: カードヘッダータップ
     Recording --> Collapsed: カードヘッダータップ
-    AllCompleted --> Collapsed: カードヘッダータップ
-    Collapsed --> ExpandedEmpty: カードヘッダータップ（セットなし時）
-    Collapsed --> Recording: カードヘッダータップ（入力中セットあり時）
-    Collapsed --> AllCompleted: カードヘッダータップ（全完了時）
+    Collapsed --> Idle: カードヘッダータップ
 ```
 
 ## セット記録フロー（FR-028, FR-006, FR-029）
@@ -249,10 +247,9 @@ sequenceDiagram
     participant ExerciseCard
     participant Session
 
-    User->>ExerciseCard: 「+」ボタンタップ（最初のセット）
-    ExerciseCard->>ExerciseCard: 入力行を表示（カード状態: recording）
+    Note over ExerciseCard: 種目追加時にセット入力行が自動作成（recording状態）
 
-    User->>ExerciseCard: 重量・回数を入力
+    User->>ExerciseCard: 重量・回数を入力（フォーカス済み）
     User->>ExerciseCard: チェックボタンタップ（FR-028）
     ExerciseCard->>Session: セット完了
     Session->>ExerciseCard: 次セット入力行を自動追加（前セット値で自動入力: FR-006）
@@ -288,9 +285,10 @@ sequenceDiagram
     loop 種目を追加する（FR-005）
         User->>ExerciseRepository: 種目検索・選択
         ExerciseRepository-->>UI: 選択した種目
-        UI->>UI: 種目カードを追加（展開・セットなし: FR-030）
+        UI->>UI: 現在recording中の種目をidleに降格（FR-030）
+        UI->>UI: 新種目をrecordingで追加（セット入力行自動作成 + フォーカス: FR-028）
 
-        User->>UI: 「+」→ セット入力 → チェック（FR-028）
+        User->>UI: セット入力 → チェック（FR-028）
         loop セットを追加
             UI->>UI: 次セット自動追加（前セット値: FR-006）
             User->>UI: 値確認/変更 → チェック（FR-028）
@@ -322,9 +320,9 @@ sequenceDiagram
 | FR_003 | セット単位で重量kgと回数を管理 | FR-003, WorkoutSet型定義 |
 | FR_005 | 1セッション内で複数の種目を連続して追加・記録 | FR-005, WorkoutSession.addExercise, Section 6 使用例 |
 | FR_006 | セット完了時に次セットへ前セットの重量・回数を自動入力 | FR-006, DraftExercise.pendingSet, Section 6 使用例 |
-| FR_028 | チェックでセット完了→次セット入力行を自動追加 | FR-028, WorkoutSession.completeSet/addFirstSet, Section 7 セット記録フロー |
+| FR_028 | 種目追加時にセット入力行自動作成。チェックで完了→次セット自動追加。別種目追加時にidle降格 | FR-028, WorkoutSession.addExercise/activateExercise/completeSet, Section 7 セット記録フロー |
 | FR_029 | 完了済みセットの削除・編集操作 | FR-029, WorkoutSession.editCompletedSet/deleteCompletedSet, Section 7 セット記録フロー |
-| FR_030 | 種目カードの4状態 | FR-030, ExerciseCardState型定義, DraftExercise.cardState, Section 7 種目カード状態遷移 |
+| FR_030 | 種目カードの3状態（collapsed・idle・recording）。recordingは同時に1種目のみ | FR-030, ExerciseCardState型定義, DraftExercise.cardState, Section 7 種目カード状態遷移 |
 | FR_031 | 終了ボタンでセッションを保存して終了 | FR-031, WorkoutSession.endSession, Section 7 セッション全体フロー |
 | FR_032 | セッション経過時間をリアルタイム表示 | FR-032, WorkoutSession.getElapsedTime, Workout.startedAt/endedAt |
 

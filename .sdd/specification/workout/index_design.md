@@ -312,14 +312,15 @@ type WorkoutSessionState = {
   // 完了後 isActive = false, startedAt = null, draftExercises = [] にリセット
 
   addExercise: (exercise: { exerciseId: string; exerciseName: string }) => void
-  // 種目カードを expanded-empty 状態で追加（FR-005, FR-030）
+  // 種目カードを recording 状態で追加。pendingSet を { weight: 0, reps: 0 } で初期化。
+  // 現在 recording 中の他種目があれば pendingSet を消去し idle に降格（FR-005, FR-028, FR-030）
 
-  addFirstSet: (exerciseIndex: number) => void
-  // 「+」ボタン: pendingSet を { weight: 0, reps: 0 } で初期化、cardState → recording（FR-028）
+  activateExercise: (exerciseIndex: number) => void
+  // idle 種目の「+」ボタン: pendingSet を初期化し cardState → recording。
+  // 現在 recording 中の他種目があれば pendingSet を消去し idle に降格（FR-028, FR-030）
 
   completeSet: (exerciseIndex: number, set: WorkoutSet) => void
   // チェックボタン: pendingSet → sets[] に追加、次の pendingSet を前セット値で初期化（FR-028, FR-006）
-  // 呼び出し側が入力行なし→cardState: all-completed に遷移するかを判定
 
   editCompletedSet: (exerciseIndex: number, setIndex: number) => void
   // 鉛筆: sets[setIndex] を pendingSet に移動、cardState → recording（FR-029）
@@ -337,7 +338,7 @@ type DraftExercise = {
   exerciseName: string
   sets: WorkoutSet[]              // 完了済みセット
   pendingSet: WorkoutSet | null   // 入力中セット。null = 入力行なし
-  cardState: ExerciseCardState    // 4状態（FR-030）
+  cardState: ExerciseCardState    // 3状態（FR-030）
 }
 
 // -------------------------------------------------------
@@ -357,12 +358,12 @@ function useWorkoutSession() {
   //   startSession: () => void,
   //   endSession: () => void,
   //
-  //   // Exercise management（FR-005）
-  //   addExercise: (exercise: { exerciseId: string; exerciseName: string }) => void,
+  //   // Exercise management（FR-005, FR-028）
+  //   addExercise: (exercise: { exerciseId: string; exerciseName: string }) => void,  // recording状態で追加。他のrecordingはidleに降格
+  //   activateExercise: (exerciseIndex: number) => void,  // idle種目の「+」ボタン。他のrecordingはidleに降格
   //   searchExercises: (query: string) => Exercise[],  // ExerciseRepository を内部で呼ぶ
   //
   //   // Set management（FR-028, FR-006, FR-029）
-  //   addFirstSet: (exerciseIndex: number) => void,
   //   completeSet: (exerciseIndex: number, set: WorkoutSet) => void,
   //   editCompletedSet: (exerciseIndex: number, setIndex: number) => void,
   //   deleteCompletedSet: (exerciseIndex: number, setIndex: number) => void,
@@ -394,15 +395,16 @@ function useWorkoutSession() {
 
 ### 種目カード状態遷移の実現方針（FR-030）
 
-`DraftExercise.cardState` を Zustand store で管理し、以下のルールで遷移する：
+`DraftExercise.cardState` を Zustand store で管理し、以下のルールで遷移する。**recording は同時に1種目のみ**（排他制御）：
 
-| トリガー | 遷移元 | 遷移先 | アクション |
-|:--------|:-------|:-------|:---------|
-| 種目追加 | - | `expanded-empty` | `addExercise` |
-| 「+」ボタン | `expanded-empty` / `all-completed` | `recording` | `addFirstSet` |
-| チェック | `recording` | `recording` | `completeSet`（次の pendingSet を設定） |
-| 最後のセット完了 | `recording` | `all-completed` | `completeSet` 後に pendingSet が null の場合 |
-| ヘッダータップ | 任意 | `collapsed` / 元の状態 | `toggleExerciseCard` |
+| トリガー | 遷移元 | 遷移先 | アクション | 排他制御 |
+|:--------|:-------|:-------|:---------|:---------|
+| 種目追加 | - | `recording` | `addExercise`（pendingSet自動作成） | 他のrecording → idle |
+| 「+」ボタン | `idle` | `recording` | `activateExercise`（pendingSet初期化） | 他のrecording → idle |
+| チェック | `recording` | `recording` | `completeSet`（次の pendingSet を設定） | - |
+| 別種目がrecordingに | `recording` | `idle` | 自動降格（pendingSet消去） | - |
+| ヘッダータップ | `idle`/`recording` | `collapsed` | `toggleExerciseCard` | - |
+| ヘッダータップ | `collapsed` | `idle` | `toggleExerciseCard` | - |
 
 ### セッションタイマーの実現方針（FR-032）
 
@@ -434,7 +436,7 @@ useEffect(() => {
 | ユニットテスト | useWorkoutSession（startSession, endSession, addExercise, completeSet, editCompletedSet, deleteCompletedSet, addFirstSet, toggleExerciseCard） | 全アクション | FR-001〜FR-032 |
 | コンポーネントテスト | PendingSetRow（チェック→完了、前セット値表示） | 主要インタラクション | FR-028, FR-006 |
 | コンポーネントテスト | CompletedSetRow（ゴミ箱→削除、鉛筆→編集戻し） | 主要インタラクション | FR-029 |
-| コンポーネントテスト | ExerciseCard（4状態遷移、折りたたみ/展開） | 主要インタラクション | FR-030 |
+| コンポーネントテスト | ExerciseCard（3状態遷移、collapsed/idle/recording切替） | 主要インタラクション | FR-030 |
 | コンポーネントテスト | SessionTimer（経過時間表示） | 表示フォーマット検証 | FR-032 |
 | 統合テスト | ActiveWorkoutPage（複数種目セッション→終了→保存） | FR-005 完全フロー | FR-005 |
 | E2Eテスト | FRAME1 → FRAME2 → セット記録 → 終了 → FRAME1 | セッションライフサイクル全体 | FR-001, FR-031 |
@@ -458,6 +460,9 @@ useEffect(() => {
 | レイヤー構成 | Repository を UI から直接呼ぶ vs Hook Layer を挟む | Hook Layer（usecase hooks）を挟む | UI が Zustand・Repository を直接知ると、状態管理ライブラリ変更時の影響範囲が広い。hooks を境界にすることで UI は「何ができるか」だけ知ればよい |
 | Zustand store の公開範囲 | UI から直接 useStore() vs hooks 経由のみ | hooks 経由のみ | store は hooks から利用される実装詳細。直接公開するとユースケースの境界が曖昧になる |
 | カード状態の管理場所 | コンポーネントローカル state vs Zustand store | Zustand store | 折りたたみ状態はセッション全体で管理が必要。ローカル state だとリレンダリング時にリセットされる |
+| カード状態モデル | 4状態（collapsed/expanded-empty/recording/all-completed） vs 3状態（collapsed/idle/recording） | 3状態 | expanded-emptyとall-completedはUI上「+」ボタン表示で同一。3状態に簡素化することでロジックが単純になる |
+| recording の排他制御 | 複数種目同時recording vs 1種目のみ | 1種目のみ | 同時に複数の入力行があるとフォームが散乱する。1種目に集中させることで画面がスッキリし入力ミスを防ぐ |
+| 最初のセット入力行 | 「+」ボタンで手動追加 vs 種目追加時に自動作成 | 自動作成 + フォーカス | 種目追加→「+」タップの2ステップを1ステップに削減。2セット目以降はチェック後に自動追加されるので、最初のセットも自動が一貫性ある |
 | タイマーの更新方式 | setInterval vs requestAnimationFrame | setInterval（1秒間隔） | 秒単位の表示で十分。requestAnimationFrame はオーバースペック |
 | FRAME1/FRAME2 の画面遷移 | TanStack Router ルート | ルートベースの遷移 | FRAME1（`/`）→ FRAME2（`/workout`）。TanStack Router の型安全なナビゲーション |
 | localStorage 読み取り検証 | 型アサーション vs Zod パース | Zod パース | T-002: No Runtime Errors。不正データによるクラッシュを防止 |
