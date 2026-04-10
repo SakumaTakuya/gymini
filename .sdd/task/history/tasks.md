@@ -20,7 +20,10 @@ priority: "medium"
 |:---|:---|
 | 機能名 | 履歴画面 |
 | 技術設計書 | `.sdd/specification/history/index_design.md` |
-| 作成日 | 2026-04-09 |
+| 視覚仕様 | `.sdd/design-system.html` **FRAME 3: History Tab** |
+| 作成日 | 2026-04-10 |
+
+> **重要:** 全UIコンポーネント（MonthCalendar, WorkoutSummary, EmptyDayState）の見た目は `design-system.html` FRAME 3 を正規リファレンスとして実装すること。レイアウト・カラー・角丸・フォント・スペーシング・シャドウ等、FRAME 3 の HTML/CSS を忠実に再現する。
 
 ## 前提条件
 
@@ -49,9 +52,9 @@ priority: "medium"
 |:---|:---|:---|:---|:---|
 | 2.1 | useCalendar フック | `src/hooks/useCalendar.ts` を実装。TanStack Router search params から `displayMonth`・`selectedDate` を取得し、`goToPrevMonth`/`goToNextMonth`/`selectDate` で search params を更新。TanStack Query で `daysWithWorkouts`（表示月のワークアウト記録がある日の Set）を取得 | 1. displayMonth のデフォルトが今月である 2. goToPrevMonth/goToNextMonth で search params の month が更新される 3. 月遷移時に selectedDate がリセットされる 4. selectDate で search params の date が更新される 5. daysWithWorkouts が表示月の記録日を Set\<DateString\> で返す 6. staleTime: 0 でフォーカス復帰時に再取得される | 1.1, 1.3 |
 | 2.2 | useWorkoutsForDate フック | `src/hooks/useWorkoutsForDate.ts` を実装。TanStack Query で `workoutRepository.listByDate(date)` をラップ。date が null の場合は `enabled: false` で空配列を返す | 1. date 指定時に workoutRepository.listByDate を呼び出す 2. date が null の場合クエリが無効化され空配列を返す 3. 同じ date の再呼び出し時にキャッシュが使われる | 1.1, 1.3 |
-| 2.3 | MonthCalendar コンポーネント | `src/components/MonthCalendar.tsx` を実装。shadcn/ui Calendar をラップし、`modifiers` で hasWorkout 日を指定、`components` prop でカスタム day レンダリング（赤ドットマーカー・今日強調・選択リング・記録なし薄色・前月/次月薄色） | 1. 月表示カレンダーグリッド（7列: 日〜土）が表示される 2. 記録あり日に赤ドットマーカー（`bg-accent`）が表示される 3. 今日の日付が `bg-black text-white rounded-full` で強調される 4. 選択中の日付に `ring-2 ring-black` が表示される 5. 記録なし当月日が `text-zinc-400` で表示される 6. 前月/次月の日が `text-zinc-200` で表示される 7. セルの視覚サイズが 36px（`w-9 h-9`） 8. onPrevMonth/onNextMonth/onSelectDate コールバックが動作する | 1.1, 1.2 |
-| 2.4 | WorkoutSummary コンポーネント | `src/components/WorkoutSummary.tsx` を実装。shadcn/ui Card でラップし、種目名（太字）+ セット一覧（`SET1: 100kg × 10回` 形式）を表示。同日複数ワークアウトはセクション分割 | 1. 日付ヘッダー（「10月20日の記録」形式）が表示される 2. 種目名が太字で表示される 3. 各セットが「SET{n}: {weight}kg × {reps}回」形式で表示される 4. 複数ワークアウトがセクション分割されて縦に並ぶ 5. 削除済み種目の exerciseName がそのまま表示される | 1.1, 1.2 |
-| 2.5 | EmptyDayState コンポーネント | `src/components/EmptyDayState.tsx` を実装。「記録なし」テキスト + shadcn/ui Button の追加ボタン。onAddWorkout コールバックで日付を渡す | 1. 「記録なし」テキストが表示される 2. 「追加」ボタンが表示される 3. ボタンタップで onAddWorkout(date) が呼び出される 4. 追加ボタンのタップターゲットが 44px 以上（`min-h-[44px] min-w-[44px]`） | 1.1, 1.2 |
+| 2.3 | MonthCalendar コンポーネント | `src/components/MonthCalendar.tsx` を実装。shadcn/ui Calendar をラップし、`modifiers` で hasWorkout 日を指定、`components` prop でカスタム day レンダリング。**FRAME 3 の Calendar Module セクションに完全準拠**（コンテナ `rounded-[32px]`、月ヘッダーの年月フォーマット、曜日行の日曜アクセント色、グリッド `gap-y-3 gap-x-1`、日付セルの5状態スタイル） | 1. design-system.html FRAME 3 と見た目が一致する 2. 月表示カレンダーグリッド（7列: 日〜土）が表示される 3. 記録あり日に赤ドットマーカーが表示される 4. 今日の日付が黒塗り + シャドウで強調される 5. 選択中の日付にリング表示される 6. 記録なし当月日が薄色、前月/次月はさらに薄色 7. セルの視覚サイズが 36px（`w-9 h-9`） 8. onPrevMonth/onNextMonth/onSelectDate コールバックが動作する | 1.1, 1.2 |
+| 2.4 | WorkoutSummary コンポーネント | `src/components/WorkoutSummary.tsx` を実装。**FRAME 3 の Selected Date Workout Summary セクションに完全準拠**（コンテナ `rounded-[24px]`、種目名 font-outfit font-bold、セット行の重量×回数レイアウト、種目間セパレーター） | 1. design-system.html FRAME 3 と見た目が一致する 2. 日付ヘッダー（「10月20日の記録」形式、font-jp）が表示される 3. 種目名が font-outfit font-bold で表示される 4. セット行が SET/重量kg × 回数回 のレイアウトで表示される 5. 複数ワークアウトがセクション分割されて縦に並ぶ 6. 削除済み種目の exerciseName がそのまま表示される | 1.1, 1.2 |
+| 2.5 | EmptyDayState コンポーネント | `src/components/EmptyDayState.tsx` を実装。**FRAME 3 の Empty State Context Example セクションに完全準拠**（破線ボーダー、ゴーストアイコン `ph-duotone ph-ghost`、「記録なし」テキスト、追加ボタン） | 1. design-system.html FRAME 3 と見た目が一致する 2. 破線ボーダーのコンテナが表示される 3. ゴーストアイコン + 「記録なし」テキストが表示される 4. 「追加」ボタン（ph-plus アイコン付き）が表示される 5. ボタンタップで onAddWorkout(date) が呼び出される | 1.1, 1.2 |
 
 ### Phase 3: 統合
 
@@ -157,6 +160,7 @@ graph TD
 - PRD: [index.md](../../requirement/history/index.md)
 - 抽象仕様書: [index_spec.md](../../specification/history/index_spec.md)
 - 技術設計書: [index_design.md](../../specification/history/index_design.md)
+- **視覚仕様: [design-system.html](../../design-system.html) FRAME 3: History Tab** -- UIコンポーネントの見た目はこのフレームを正規リファレンスとする
 
 ## 要求カバレッジ
 

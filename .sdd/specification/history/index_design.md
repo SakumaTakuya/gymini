@@ -18,6 +18,9 @@ risk: "low"
 
 **関連 Spec:** [index_spec.md](index_spec.md)
 **関連 PRD:** [index.md](../../requirement/history/index.md)
+**視覚仕様:** [design-system.html](../../design-system.html) FRAME 3: History Tab
+
+> **実装時の視覚仕様について:** 全コンポーネントのレイアウト・スタイリング（カラー、角丸、フォント、スペーシング、シャドウ等）は `design-system.html` FRAME 3 を正規リファレンスとする。本 design doc に記載のクラス名・スタイル値は FRAME 3 からの抜粋であり、差異がある場合は FRAME 3 を優先する。
 
 ---
 
@@ -253,18 +256,30 @@ interface MonthCalendarProps {
 }
 
 // shadcn/ui Calendar（react-day-picker ベース）をラップ。
+// 視覚仕様は design-system.html FRAME 3: History Tab に完全準拠すること。
+//
+// [カレンダーモジュール全体]
+// - コンテナ: bg-white rounded-[32px] p-5 shadow-soft border border-gym-zinc-100
+// - 月ヘッダー: font-outfit font-bold, 「2025年10月」形式
+//   シェブロン: w-8 h-8 rounded-full, ph-bold ph-caret-left / ph-caret-right
+// - 曜日行: text-[10px] font-bold, 日曜のみ text-gym-accent, 他は text-gym-zinc-400
+// - グリッド: grid-cols-7 gap-y-3 gap-x-1, font-outfit text-sm font-medium
+//
+// [日付セルの状態別スタイル（FRAME 3 準拠）]
+// - 全セル共通: w-9 h-9 mx-auto flex items-center justify-center rounded-full
+// - 記録なし（当月）: text-gym-zinc-400 hover:bg-gym-zinc-50
+// - 記録あり: text-gym-black hover:bg-gym-zinc-50
+//   + 赤ドット: absolute bottom-1 w-1 h-1 bg-gym-accent rounded-full
+// - 選択中: ring-2 ring-gym-black ring-offset-2 ring-offset-white text-gym-black font-bold
+// - 今日: bg-gym-black text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)]
+//   + 赤ドット（記録あり時）: border border-gym-black 付き, bottom-[3px]
+// - 前月/次月: text-gym-zinc-200（タップ不可）
+//
+// [react-day-picker との統合]
 // - month / onMonthChange: displayMonth の制御
 // - selected / onSelect: selectedDate の制御
 // - modifiers: { hasWorkout: [...daysWithWorkouts] } でマーカー対象日を指定
-// - components prop でカスタム day レンダリング:
-//   - 記録あり日: 赤ドットマーカー表示
-//   - 今日: bg-black text-white rounded-full
-//   - 選択中: ring-2 ring-black ring-offset-2 font-bold
-//   - 記録なし（当月）: text-zinc-400
-//   - 前月/次月の日: text-zinc-200（タップ不可）
-// - セルサイズ: CSS変数 --cell-size で w-9 h-9（36px視覚サイズ）を設定、
-//   グリッドセル領域でタップターゲット44px相当を確保（T-003、design-system.html FRAME3 準拠）
-// - シェブロンボタン: shadcn/ui Calendar 内蔵のナビゲーションボタンを使用
+// - components prop でカスタム day レンダリング
 
 // -------------------------------------------------------
 // WorkoutSummary (src/components/WorkoutSummary.tsx)
@@ -275,14 +290,25 @@ interface WorkoutSummaryProps {
   workouts: WorkoutRecord[]
 }
 
-// shadcn/ui Card でラップ
-// 表示形式:
-// 日付ヘッダー: "10月20日の記録"
-// 同日に複数ワークアウトがある場合はワークアウトごとにセクション分割して縦に並べる
-// 各ワークアウト内:
-//   種目名（太字）
-//   SET1  100kg × 10回
-//   SET2  100kg × 8回
+// 視覚仕様は design-system.html FRAME 3 に完全準拠すること。
+//
+// [日付ヘッダー]
+// - font-jp font-bold text-sm text-gym-zinc-500, 「10月20日の記録」形式
+//
+// [サマリーコンテナ]
+// - bg-white rounded-[24px] p-5 shadow-soft border border-gym-zinc-100
+// - 種目間セパレーター: h-px w-full bg-gym-zinc-100
+//
+// [種目表示]
+// - 種目名: font-outfit font-bold text-base text-gym-black mb-2
+// - セット行: flex items-center gap-2
+//   - ラベル: text-[10px] font-bold text-gym-zinc-400 w-8（「SET1」）
+//   - 重量: font-outfit font-semibold text-sm text-gym-black
+//     + 単位: text-xs font-normal text-gym-zinc-400 ml-0.5（「kg」）
+//   - ×: text-gym-zinc-300
+//   - 回数: 重量と同スタイル + 単位「回」
+//
+// 同日複数ワークアウトはセクション分割して縦に並べる。
 // 削除済み種目は exerciseName をそのまま表示（特別な表示なし）
 
 // -------------------------------------------------------
@@ -294,8 +320,24 @@ interface EmptyDayStateProps {
   onAddWorkout: (date: DateString) => void
 }
 
-// 表示: 「記録なし」テキスト + shadcn/ui Button（追加ボタン）
-// 追加ボタン: min-h-[44px] min-w-[44px]（T-003）
+// 視覚仕様は design-system.html FRAME 3 に完全準拠すること。
+//
+// [空状態コンテナ]
+// - border-2 border-dashed border-gym-zinc-200 rounded-[24px] py-8 px-6
+//   flex flex-col items-center justify-center gap-3
+//
+// [ゴーストアイコン]
+// - w-12 h-12 bg-white rounded-full shadow-sm text-gym-zinc-300
+// - ph-duotone ph-ghost text-2xl
+//
+// [テキスト]
+// - text-xs font-bold text-gym-zinc-400 tracking-wider（「記録なし」）
+//
+// [追加ボタン]
+// - text-[10px] font-bold bg-white border border-gym-zinc-200 shadow-sm
+//   text-gym-black px-3 py-1.5 rounded-lg
+// - ph-bold ph-plus アイコン + 「追加」テキスト
+//
 // onAddWorkout → useNavigate({ to: '/', search: { startDate: date } })
 //   + startSession(date) でワークアウト開始
 
