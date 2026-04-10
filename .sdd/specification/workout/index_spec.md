@@ -42,23 +42,23 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 
 ## 3.1. 機能要件
 
-| ID | 要件 | 優先度 | PRD参照 |
-|----|------|--------|---------|
-| FR-001 | セッションの開始・終了・保存ができる | 必須 | FR_001 |
-| FR-003 | セット単位で重量(kg)と回数を管理する | 必須 | FR_003 |
-| FR-005 | 1セッション内で複数の種目を連続して追加・記録できる | 必須 | FR_005 |
-| FR-006 | セット完了時に自動追加される次セット入力行に、直前セットの重量と回数を初期値として自動入力する | 必須 | FR_006 |
-| FR-028 | チェックでセット完了→次セット入力行を自動追加する。最初のセットは種目カード内の「+」ボタンで追加する | 必須 | FR_028 |
-| FR-029 | 完了済みセットの削除（ゴミ箱アイコン）・編集（鉛筆アイコンで入力行に戻す）操作ができる | 必須 | FR_029 |
-| FR-030 | 種目カードが4状態（折りたたみ・展開空・記録中・全完了）を持つ | 必須 | FR_030 |
-| FR-031 | 終了ボタンでセッションを保存して終了し、アイドル状態に戻る | 必須 | FR_031 |
-| FR-032 | セッション経過時間をリアルタイム表示する | 推奨 | FR_032 |
+| ID | 要件 | 優先度 | PRD参照 | 検証方法 |
+|----|------|--------|---------|---------|
+| FR-001 | セッションの開始・終了・保存ができる | 必須 | FR_001 | テスト |
+| FR-003 | セット単位で重量(kg)と回数を管理する | 必須 | FR_003 | テスト |
+| FR-005 | 1セッション内で複数の種目を連続して追加・記録できる | 必須 | FR_005 | テスト |
+| FR-006 | セット完了時に自動追加される次セット入力行に、直前セットの重量と回数を初期値として自動入力する | 必須 | FR_006 | テスト |
+| FR-028 | チェックでセット完了→次セット入力行を自動追加する。最初のセットは種目カード内の「+」ボタンで追加する | 必須 | FR_028 | テスト |
+| FR-029 | 完了済みセットの削除（ゴミ箱アイコン）・編集（鉛筆アイコンで入力行に戻す）操作ができる | 必須 | FR_029 | テスト |
+| FR-030 | 種目カードが4状態（折りたたみ・展開空・記録中・全完了）を持つ | 必須 | FR_030 | テスト |
+| FR-031 | 終了ボタンでセッションを保存して終了し、アイドル状態に戻る | 必須 | FR_031 | テスト |
+| FR-032 | セッション経過時間をリアルタイム表示する | 推奨 | FR_032 | テスト |
 
 ## 3.2. 非機能要件
 
 | ID | カテゴリ | 要件 | 目標値 |
 |----|--------|------|--------|
-| NFR-001 | データ整合性 | ワークアウトデータが損失・破損しないこと | ローカル永続化 |
+| NFR-001 | データ整合性 | ワークアウトデータが損失・破損しないこと | セッション終了後、再起動しても全セット・種目が復元されること |
 
 # 4. API
 
@@ -74,7 +74,7 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 | workout | WorkoutRepository | remove(id) | ワークアウトを削除する（`delete` はJS予約語のため `remove` を使用） |
 | workout | WorkoutRepository | getById(id) | IDでワークアウトを取得する |
 | workout | WorkoutRepository | listByDateDesc() | 日付降順で全ワークアウトを取得する（履歴機能・AI用） |
-| workout | WorkoutRepository | listByDate(date) | 指定日のワークアウトを取得する（カレンダー・AI用） |
+| workout | WorkoutRepository | listByDate(date: string) | 指定日（ISO 8601 "YYYY-MM-DD"）のワークアウトを取得する（カレンダー・AI用） |
 
 ## 4.2. WorkoutSession（セッション管理）
 
@@ -90,7 +90,7 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 | workout | WorkoutSession | editCompletedSet(exerciseIndex, setIndex) | 完了済みセットを入力行に戻して編集可能にする（FR-029） |
 | workout | WorkoutSession | deleteCompletedSet(exerciseIndex, setIndex) | 完了済みセットを削除する（FR-029） |
 | workout | WorkoutSession | toggleExerciseCard(exerciseIndex) | 種目カードの折りたたみ/展開を切り替える（FR-030） |
-| workout | WorkoutSession | getElapsedTime() | セッション経過時間を取得する（FR-032） |
+| workout | WorkoutSession | getElapsedTime(): number | セッション経過秒数を取得する。表示フォーマット（HH:MM:SS）は呼び出し側の責務（FR-032） |
 
 ## 4.3. 型定義
 
@@ -187,7 +187,7 @@ type ExerciseCardState =
 18. FRAME1（Idle）に戻る
 ```
 
-> **制約（REQ_008）**: AIが `WorkoutRepository.save` / `remove` を呼び出す前には、ユーザー確認が必要である。確認フローはAIチャット仕様（[ai-chat](../../requirement/ai-chat/index.md)）で定義する。
+> **制約（B-002準拠 / REQ_008 — [index.md](../../requirement/index.md) で定義）**: AIが `WorkoutRepository.save` / `remove` を呼び出す前には、ユーザー確認が必要である。確認フローはAIチャット仕様（[ai-chat](../../requirement/ai-chat/index.md)）で定義する。
 
 ```
 # 他モジュールがワークアウト記録を参照する場合
@@ -217,6 +217,11 @@ stateDiagram-v2
 
 ```mermaid
 stateDiagram-v2
+    state "expanded-empty" as ExpandedEmpty
+    state "recording" as Recording
+    state "all-completed" as AllCompleted
+    state "collapsed" as Collapsed
+
     [*] --> ExpandedEmpty: 種目追加時
     ExpandedEmpty --> Recording: 「+」ボタンで最初のセット入力行追加（FR-028）
     Recording --> Recording: チェックでセット完了→次セット自動追加（FR-028）
