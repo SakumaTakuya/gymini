@@ -7,7 +7,7 @@ sdd-phase: "plan"
 impl-status: "not-implemented"
 created: "2026-03-08"
 updated: "2026-04-10"
-depends-on: ["spec-workout"]
+depends-on: ["spec-workout", "design-navigation"]
 tags: ["workout", "session", "phase-1", "react", "typescript", "zustand", "localstorage"]
 category: "core"
 priority: "high"
@@ -28,24 +28,24 @@ risk: "high"
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
 | WorkoutRepository | 🔴 未実装 | Data Layer: localStorage CRUD（TypeScript化） |
-| workoutSessionStore (Zustand) | 🔴 未実装 | State Layer: セッション下書き・カード状態・タイマー |
+| workoutSessionStore (Zustand + persist) | 🔴 未実装 | State Layer: セッション下書き・カード状態。persist でセッション永続化 |
 | useWorkoutSession | 🔴 未実装 | Hook Layer: セッション記録ユースケース |
-| IdlePage (FRAME1) | 🔴 未実装 | UI Layer: セッション未開始画面 |
-| ActiveWorkoutPage (FRAME2) | 🔴 未実装 | UI Layer: セッション記録画面 |
-| ExerciseCard | 🔴 未実装 | UI Layer: 種目カード（4状態） |
+| TrainingPage | 🔴 未実装 | UI Layer: isActive で IdleView/ActiveSessionView 切替 |
+| IdleView (FRAME1) | 🔴 未実装 | UI Layer: セッション未開始画面 |
+| ActiveSessionView (FRAME2) | 🔴 未実装 | UI Layer: セッション記録画面 |
+| ExerciseCard | 🔴 未実装 | UI Layer: 種目カード（3状態） |
 | CompletedSetRow | 🔴 未実装 | UI Layer: 完了済みセット行 |
 | PendingSetRow | 🔴 未実装 | UI Layer: 入力中セット行 |
-| SessionTimer | 🔴 未実装 | UI Layer: 経過時間表示 |
 | ExerciseSearchField | 🔴 未実装 | UI Layer: 種目検索・追加フィールド |
 
 ---
 
 # 2. 設計目標
 
-- **セッションライフサイクル中心**: FRAME1（Idle）→ FRAME2（Active）→ 保存 → FRAME1 のフローを中心とした設計
+- **セッションライフサイクル中心**: FRAME1（Idle）→ FRAME2（Active）→ 保存 → FRAME1 のフローを中心とした設計。FRAME1/FRAME2 は `/training` ルート内の状態切替（navigation 機能がルーティングを管理）
 - **セット記録のスムーズさ**: チェックで完了→自動追加→前セット値自動入力の連続フロー（FR-028, FR-006）
 - **種目カードの状態管理**: 4状態の明確な遷移によるUI制御（FR-030）
-- **セッション終了時の一括保存**: 記録中はメモリ内の下書き状態を保持し、「終了」タップ時にのみ localStorage に書き込む
+- **セッション永続化**: Zustand persist で下書き状態を自動永続化し、ページ遷移・リロード後も復元可能（navigation FR-006）。「終了」タップ時に WorkoutRepository.save で正式保存
 - **オフライン動作**: サーバー不要でブラウザ単体で完結（A-002）
 - **Phase 3への拡張性**: AIが `WorkoutRepository` のAPIを利用できるよう、ストア外からも呼び出せる純粋関数として設計
 
@@ -58,7 +58,8 @@ risk: "high"
 | UIフレームワーク | React (TSX) | T-001: TypeScript Strict Mode |
 | UIコンポーネント | shadcn/ui + Radix UI | A-001: Library-First。一貫したデザインシステム |
 | スタイリング | Tailwind CSS ^4 | T-003: Mobile-First UI。ユーティリティクラスで迅速なモバイルUI構築 |
-| ルーティング | TanStack Router ^1 | FRAME1/FRAME2 間の遷移。ファイルベース型安全ルーティング |
+| ルーティング | TanStack Router ^1 | ナビゲーション機能が管理。FRAME1/FRAME2 は `/training` ルート内の状態切替 |
+| アイコン | @phosphor-icons/react | design-system.html が Phosphor Icons を使用（A-001） |
 | 状態管理 | Zustand ^5 | セッション下書き状態の管理。hooks 経由のみ公開 |
 | データ永続化 | localStorage (JSON) | B-001: Privacy-by-Design。A-002: Client-Only Architecture |
 | バリデーション | Zod ^3 | localStorage 読み取り時のデータ検証（T-002: No Runtime Errors） |
@@ -97,13 +98,17 @@ UIコンポーネントのスタイルは PRD のデザインリファレンス�
 
 ```mermaid
 graph TD
+    subgraph "Route Layer（navigation が管理）"
+        TR["_app/training.tsx<br/>/training ルート"]
+    end
+
     subgraph "UI Layer"
-        IP[IdlePage<br/>FRAME1]
-        AWP[ActiveWorkoutPage<br/>FRAME2]
+        TP[TrainingPage]
+        IV[IdleView<br/>FRAME1]
+        AWV[ActiveSessionView<br/>FRAME2]
         EC[ExerciseCard]
         CSR[CompletedSetRow]
         PSR[PendingSetRow]
-        ST[SessionTimer]
         ESF[ExerciseSearchField]
     end
 
@@ -112,7 +117,7 @@ graph TD
     end
 
     subgraph "State Layer（Hook の実装詳細）"
-        WSS[workoutSessionStore<br/>Zustand]
+        WSS[workoutSessionStore<br/>Zustand + persist]
     end
 
     subgraph "Data Layer（純粋関数）"
@@ -121,11 +126,12 @@ graph TD
         LS[(localStorage)]
     end
 
-    IP --> HWS
-    AWP --> HWS
-    AWP --> ST
-    AWP --> EC
-    AWP --> ESF
+    TR --> TP
+    TP --> IV
+    TP --> AWV
+    TP --> HWS
+    AWV --> EC
+    AWV --> ESF
     EC --> CSR
     EC --> PSR
     HWS --> WSS
@@ -136,6 +142,8 @@ graph TD
 ```
 
 UIは Hook Layer だけを知る。State Layer・Data Layer は hooks の実装詳細であり、UI から直接参照しない。
+
+> **ルーティング**: `/training` ルートは navigation 機能（`src/routes/_app/training.tsx`）が管理する。FRAME1/FRAME2 の切替は `TrainingPage` コンポーネント内で `useWorkoutSession().isActive` により行い、URL は変わらない。セッションタイマーと「終了」ボタンは navigation の `GearIcon` コンポーネントが props 経由で表示する（[navigation_design.md](../navigation_design.md) 参照）。
 
 ## 4.2. モジュール分割
 
@@ -156,7 +164,9 @@ UIは Hook Layer だけを知る。State Layer・Data Layer は hooks の実装�
 
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
-| workoutSessionStore | セッション下書き・カード状態・タイマーの状態保持（Zustand）。UI から直接使用しない | WorkoutRepository | `src/stores/workoutSessionStore.ts` |
+| workoutSessionStore | セッション下書き・カード状態・タイマーの状態保持（Zustand + persist）。UI から直接使用しない | WorkoutRepository | `src/stores/workoutSessionStore.ts` |
+
+> **persist 設定**: Zustand `persist` ミドルウェアで `draftExercises`, `startedAt`, `isActive` を `gymini:workout-session` キーで localStorage に永続化する。`partialize` で永続化対象を限定し、`onRehydrateStorage` でエラーハンドリング（T-002）。ページ遷移やリロード時のセッションデータ復元を実現する（navigation spec FR-006, NFR-002）。
 
 ### Hook Layer（ユースケース）
 
@@ -168,13 +178,15 @@ UIは Hook Layer だけを知る。State Layer・Data Layer は hooks の実装�
 
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
-| IdlePage | FRAME1: セッション未開始画面。「トレーニングを始める」ボタン | useWorkoutSession | `src/routes/index.tsx` |
-| ActiveWorkoutPage | FRAME2: セッション記録画面。種目カード一覧 + 種目追加 + 終了ボタン | useWorkoutSession | `src/routes/workout.tsx` |
-| ExerciseCard | 種目カード（4状態: collapsed/expanded-empty/recording/all-completed） | なし（props） | `src/components/workout/ExerciseCard.tsx` |
+| TrainingPage | `/training` ルートのページコンポーネント。`isActive` で IdleView / ActiveSessionView を切替 | useWorkoutSession | `src/pages/TrainingPage.tsx` |
+| IdleView | FRAME1: セッション未開始画面。挨拶 + 「トレーニングを始める」ボタン | なし（props: `onStartTraining`） | `src/components/IdleView.tsx` |
+| ActiveSessionView | FRAME2: セッション記録画面。種目カード一覧 + 種目追加フィールド | useWorkoutSession | `src/components/workout/ActiveSessionView.tsx` |
+| ExerciseCard | 種目カード（3状態: collapsed/idle/recording） | なし（props） | `src/components/workout/ExerciseCard.tsx` |
 | CompletedSetRow | 完了済みセット行（ゴミ箱 + 値表示 + 鉛筆） | なし（props） | `src/components/workout/CompletedSetRow.tsx` |
 | PendingSetRow | 入力中セット行（セット番号 + 重量/回数入力 + チェックボタン） | なし（props） | `src/components/workout/PendingSetRow.tsx` |
-| SessionTimer | セッション経過時間のリアルタイム表示（pill型） | なし（props: startedAt） | `src/components/workout/SessionTimer.tsx` |
 | ExerciseSearchField | 種目検索・追加フィールド | なし（props） | `src/components/workout/ExerciseSearchField.tsx` |
+
+> **Note**: セッションタイマー（pill型）と「終了」ボタンはナビゲーション機能の `GearIcon` コンポーネントが表示する。`GearIcon` は `showEndButton`, `elapsedTime`, `onEndSession` props を受け取り、FRAME2 時に header area に配置する（[navigation_design.md](../navigation_design.md) 参照）。本モジュールでは `useWorkoutSession` の `elapsedSeconds` と `endSession` を提供する側の責務を持つ。
 
 ---
 
@@ -295,6 +307,7 @@ function remove(id: string): void {
 // -------------------------------------------------------
 // workoutSessionStore (src/stores/workoutSessionStore.ts)
 // Hook の実装詳細。UI から直接 import しない。
+// Zustand + persist ミドルウェアでセッションデータを永続化。
 // -------------------------------------------------------
 
 type WorkoutSessionState = {
@@ -331,6 +344,26 @@ type WorkoutSessionState = {
   toggleExerciseCard: (exerciseIndex: number) => void
   // カードヘッダータップ: collapsed ↔ 元の状態 を切り替え（FR-030）
 }
+
+// persist 設定
+// const useWorkoutSessionStore = create<WorkoutSessionState>()(
+//   persist(
+//     (set, get) => ({ ... }),
+//     {
+//       name: 'gymini:workout-session',
+//       partialize: (state) => ({
+//         isActive: state.isActive,
+//         startedAt: state.startedAt,
+//         draftExercises: state.draftExercises,
+//       }),
+//       onRehydrateStorage: () => (_state, error) => {
+//         if (error) {
+//           console.warn('[gymini] workoutSessionStore rehydration failed, using defaults', error)
+//         }
+//       },
+//     }
+//   )
+// )
 
 // DraftExercise: セッション記録中の1種目（未保存）
 type DraftExercise = {
@@ -381,6 +414,7 @@ function useWorkoutSession() {
 | 要件 | 実現方針 |
 |------|--------|
 | データ整合性（NFR-001） | localStorage への書き込みは `try/catch` でラップ。読み取り時は Zod パースで検証し、失敗時は空配列にフォールバック（T-002） |
+| セッション永続化（navigation FR-006, NFR-002） | Zustand `persist` ミドルウェアで `isActive`, `startedAt`, `draftExercises` を `gymini:workout-session` キーで自動永続化。`onRehydrateStorage` でエラーハンドリング（T-002） |
 
 ### セット完了→自動追加の実現方針（FR-028, FR-006）
 
@@ -423,7 +457,7 @@ useEffect(() => {
 }, [startedAt])
 ```
 
-`SessionTimer` コンポーネントが `elapsedSeconds` を `HH:MM:SS` 形式で表示する。
+`elapsedSeconds` は `useWorkoutSession` が返す。表示は navigation の `GearIcon` コンポーネントが `elapsedTime` prop（`"HH:MM:SS"` 形式）として受け取り、header area にタイマーpillとして表示する。フォーマット変換は `_app.tsx` の AppLayout（または TrainingPage）で行う。
 
 ---
 
@@ -437,9 +471,9 @@ useEffect(() => {
 | コンポーネントテスト | PendingSetRow（チェック→完了、前セット値表示） | 主要インタラクション | FR-028, FR-006 |
 | コンポーネントテスト | CompletedSetRow（ゴミ箱→削除、鉛筆→編集戻し） | 主要インタラクション | FR-029 |
 | コンポーネントテスト | ExerciseCard（3状態遷移、collapsed/idle/recording切替） | 主要インタラクション | FR-030 |
-| コンポーネントテスト | SessionTimer（経過時間表示） | 表示フォーマット検証 | FR-032 |
-| 統合テスト | ActiveWorkoutPage（複数種目セッション→終了→保存） | FR-005 完全フロー | FR-005 |
-| E2Eテスト | FRAME1 → FRAME2 → セット記録 → 終了 → FRAME1 | セッションライフサイクル全体 | FR-001, FR-031 |
+| 統合テスト | ActiveSessionView（複数種目セッション→終了→保存） | FR-005 完全フロー | FR-005 |
+| 統合テスト | workoutSessionStore persist（リロード後のセッション復元） | セッション永続化 | navigation FR-006, NFR-002 |
+| E2Eテスト | TrainingPage: FRAME1 → FRAME2 → セット記録 → 終了 → FRAME1 | セッションライフサイクル全体 | FR-001, FR-031 |
 
 ---
 
@@ -455,7 +489,7 @@ useEffect(() => {
 | exerciseNameのスナップショット保存 | IDのみ保存 vs 名前も保存 | 両方保存 | 種目名変更後も記録の表示が崩れない。AIが参照する際も名前があると有利 |
 | 日付形式 | Date オブジェクト vs 文字列 | 文字列（YYYY-MM-DD） | localStorage にそのまま保存可能。ソート・比較が文字列比較で可能 |
 | 削除済み種目の表示 | exerciseId 存在確認 vs exerciseName フォールバック | フォールバック表示（存在確認なし） | 種目マスターが削除されても記録の表示が壊れない（spec 制約事項参照） |
-| 記録中の下書き管理 | 都度保存 vs セッション終了時に一括保存 | セッション終了時に一括保存 | 種目追加のたびに保存すると不完全なデータが残る。「終了」タップ時にのみ localStorage に書き込む（FR-031） |
+| 記録中の下書き管理 | 都度保存 vs persist + 終了時に正式保存 | persist で自動永続化 + 終了時に WorkoutRepository.save | Zustand persist でセッション中の下書き（draftExercises）を自動永続化し、リロード後も復元可能にする。「終了」タップ時に WorkoutRepository.save で正式なワークアウトとして保存（FR-031）。persist は下書き専用キー `gymini:workout-session` を使用 |
 | 自動入力の対象フィールド | 重量・回数 | 重量・回数のみ | 重量・回数は同じセットを繰り返すケースが多い（FR-006） |
 | レイヤー構成 | Repository を UI から直接呼ぶ vs Hook Layer を挟む | Hook Layer（usecase hooks）を挟む | UI が Zustand・Repository を直接知ると、状態管理ライブラリ変更時の影響範囲が広い。hooks を境界にすることで UI は「何ができるか」だけ知ればよい |
 | Zustand store の公開範囲 | UI から直接 useStore() vs hooks 経由のみ | hooks 経由のみ | store は hooks から利用される実装詳細。直接公開するとユースケースの境界が曖昧になる |
@@ -464,7 +498,9 @@ useEffect(() => {
 | recording の排他制御 | 複数種目同時recording vs 1種目のみ | 1種目のみ | 同時に複数の入力行があるとフォームが散乱する。1種目に集中させることで画面がスッキリし入力ミスを防ぐ |
 | 最初のセット入力行 | 「+」ボタンで手動追加 vs 種目追加時に自動作成 | 自動作成 + フォーカス | 種目追加→「+」タップの2ステップを1ステップに削減。2セット目以降はチェック後に自動追加されるので、最初のセットも自動が一貫性ある |
 | タイマーの更新方式 | setInterval vs requestAnimationFrame | setInterval（1秒間隔） | 秒単位の表示で十分。requestAnimationFrame はオーバースペック |
-| FRAME1/FRAME2 の画面遷移 | TanStack Router ルート | ルートベースの遷移 | FRAME1（`/`）→ FRAME2（`/workout`）。TanStack Router の型安全なナビゲーション |
+| FRAME1/FRAME2 の画面遷移 | 別ルート vs 状態切替 | `/training` 内の状態切替 | FRAME1/FRAME2 は同一ルート内で `isActive` による切替。ルーティングは navigation 機能が管理（[navigation_design.md](../navigation_design.md)）。URL が変わらないため、セッション中の誤ナビゲーションを防止 |
+| セッションタイマー・終了ボタンの配置 | ページ内 vs header area | header area（GearIcon） | navigation の GearIcon が `showEndButton`, `elapsedTime`, `onEndSession` props で表示。design-system.html 準拠。全画面共通の header area に統一 |
+| セッションデータ永続化 | 都度保存 vs persist | Zustand persist | ページ遷移・リロード時のセッション復元。navigation spec FR-006, NFR-002 準拠。`partialize` で `isActive`, `startedAt`, `draftExercises` のみ永続化 |
 | localStorage 読み取り検証 | 型アサーション vs Zod パース | Zod パース | T-002: No Runtime Errors。不正データによるクラッシュを防止 |
 | 日付・日時の型表現 | 素の `string` vs Zod branded type | Zod branded type（`DateString`, `ISODateTimeString`） | history モジュールと同じパターン。素の `string` では任意の文字列が型チェックを通過する。branded type は境界でパースし内部は型安全に流通でき、Zod 活用方針に合致。`src/schemas/date.ts` で history と共有 |
 
