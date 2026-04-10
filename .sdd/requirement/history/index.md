@@ -18,7 +18,7 @@ risk: "low"
 
 **デザインリファレンス:** `.sdd/design-system.html` FRAME3
 
-> **統合:** 旧 [calendar/index.md](../calendar/index.md) の機能要求（FR_013〜FR_016）を本PRDに統合し、履歴画面としての完全な仕様を定義する。
+> **統合:** 旧カレンダーPRDの機能要求（FR_013〜FR_016）を本PRDに統合し、履歴画面としての完全な仕様を定義する。
 
 ## 概要
 
@@ -115,7 +115,7 @@ requirementDiagram
 **UIスペック:**
 - 月ヘッダー: `[<] 2025年10月 [>]`（Outfit Bold）
 - 曜日行: 日（accent赤）、月〜土（zinc-400）
-- 日付セル: `w-11 h-11` 丸ボタン（44px: T-003 タップターゲット最小要件）
+- 日付セル: 視覚サイズ `w-9 h-9`（36px）、グリッドセル領域でタップターゲット44px相当を確保（T-003 準拠: design-system.html FRAME3 参照）
 
 **検証方法:** テストによる検証
 
