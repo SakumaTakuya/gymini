@@ -74,7 +74,7 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 | workout | WorkoutRepository | remove(id) | ワークアウトを削除する（`delete` はJS予約語のため `remove` を使用） |
 | workout | WorkoutRepository | getById(id) | IDでワークアウトを取得する |
 | workout | WorkoutRepository | listByDateDesc() | 日付降順で全ワークアウトを取得する（履歴機能・AI用） |
-| workout | WorkoutRepository | listByDate(date: string) | 指定日（ISO 8601 "YYYY-MM-DD"）のワークアウトを取得する（カレンダー・AI用） |
+| workout | WorkoutRepository | listByDate(date: DateString) | 指定日のワークアウトを取得する（カレンダー・AI用） |
 
 ## 4.2. WorkoutSession（セッション管理）
 
@@ -95,15 +95,21 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 ## 4.3. 型定義
 
 ```typescript
+// 日付・日時の branded type（src/schemas/date.ts で定義）
+// 境界（localStorage読み出し・ユーザー入力）で Zod パースし、内部は型安全に流通させる。
+// history モジュールと共有。
+type DateString = string & { readonly __brand: 'DateString' }               // "YYYY-MM-DD"
+type ISODateTimeString = string & { readonly __brand: 'ISODateTimeString' } // ISO 8601 datetime
+
 // ワークアウト（1回のトレーニングセッション・保存済み）
 type Workout = {
   id: string
-  date: string          // ISO 8601 date: "YYYY-MM-DD"
+  date: DateString              // "YYYY-MM-DD"
   exercises: WorkoutExercise[]
-  startedAt: string     // ISO 8601 datetime: セッション開始時刻
-  endedAt: string       // ISO 8601 datetime: セッション終了時刻
-  createdAt: string     // ISO 8601 datetime
-  updatedAt: string
+  startedAt: ISODateTimeString  // セッション開始時刻
+  endedAt: ISODateTimeString    // セッション終了時刻
+  createdAt: ISODateTimeString
+  updatedAt: ISODateTimeString
 }
 
 // ワークアウト内の1種目エントリ

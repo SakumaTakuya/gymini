@@ -150,7 +150,7 @@ UIは Hook Layer だけを知る。State Layer・Data Layer は hooks の実装�
 
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
-| workoutSchema | Workout/WorkoutExercise/WorkoutSet の Zod スキーマ定義 | なし | `src/schemas/workout.ts` |
+| workoutSchema | Workout/WorkoutExercise/WorkoutSet の Zod スキーマ定義 | dateStringSchema, isoDateTimeSchema (date.ts) | `src/schemas/workout.ts` |
 
 ### State Layer（Hook の実装詳細）
 
@@ -184,8 +184,31 @@ UIは Hook Layer だけを知る。State Layer・Data Layer は hooks の実装�
 // localStorage キー
 const STORAGE_KEY = 'gymini:workouts'
 
-// Zod スキーマ（src/schemas/workout.ts）
+// -------------------------------------------------------
+// 日付・日時スキーマ（src/schemas/date.ts — history モジュールと共有）
+// -------------------------------------------------------
 import { z } from 'zod'
+
+// DateString: "YYYY-MM-DD" 形式の branded type（history で定義済み）
+export const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+export type DateString = string & { readonly __brand: 'DateString' }
+
+// ISODateTimeString: ISO 8601 datetime の branded type（新規追加）
+export const isoDateTimeSchema = z.string().datetime()
+export type ISODateTimeString = string & { readonly __brand: 'ISODateTimeString' }
+
+export function toISODateTimeString(value: string): ISODateTimeString {
+  isoDateTimeSchema.parse(value)
+  return value as ISODateTimeString
+}
+
+export function nowISODateTimeString(): ISODateTimeString {
+  return new Date().toISOString() as ISODateTimeString
+}
+
+// -------------------------------------------------------
+// ワークアウト Zod スキーマ（src/schemas/workout.ts）
+// -------------------------------------------------------
 
 const workoutSetSchema = z.object({
   weight: z.number().nonnegative(),
@@ -200,12 +223,12 @@ const workoutExerciseSchema = z.object({
 
 const workoutSchema = z.object({
   id: z.string(),
-  date: z.string().regex(/^\d{4}-\d{2}-\d{2}$/),
+  date: dateStringSchema,
   exercises: z.array(workoutExerciseSchema),
-  startedAt: z.string().datetime(),
-  endedAt: z.string().datetime(),
-  createdAt: z.string().datetime(),
-  updatedAt: z.string().datetime(),
+  startedAt: isoDateTimeSchema,
+  endedAt: isoDateTimeSchema,
+  createdAt: isoDateTimeSchema,
+  updatedAt: isoDateTimeSchema,
 })
 
 // 保存形式: JSON配列
@@ -255,8 +278,8 @@ function listByDateDesc(): Workout[] {
   // 日付降順でソートして返す。ワークアウトが存在しない場合は []
 }
 
-function listByDate(date: string): Workout[] {
-  // 指定日 (YYYY-MM-DD) のワークアウトを返す。該当なしの場合は []
+function listByDate(date: DateString): Workout[] {
+  // 指定日のワークアウトを返す。該当なしの場合は []
 }
 
 type WorkoutInput = Omit<Workout, 'id' | 'createdAt' | 'updatedAt'>
@@ -276,13 +299,13 @@ function remove(id: string): void {
 
 type WorkoutSessionState = {
   // State
-  isActive: boolean               // セッション中かどうか
-  startedAt: string | null        // セッション開始時刻（ISO 8601）
+  isActive: boolean                       // セッション中かどうか
+  startedAt: ISODateTimeString | null     // セッション開始時刻
   draftExercises: DraftExercise[] // セッション中の種目・セット
 
   // Actions（spec WorkoutSession API に対応）
   startSession: () => void
-  // startSession: isActive = true, startedAt = now, draftExercises = []
+  // startSession: isActive = true, startedAt = nowISODateTimeString(), draftExercises = []
 
   endSession: () => void
   // endSession: draftExercises → WorkoutInput に変換 → WorkoutRepository.save
@@ -326,7 +349,7 @@ function useWorkoutSession() {
   // return: {
   //   // State
   //   isActive: boolean,
-  //   startedAt: string | null,
+  //   startedAt: ISODateTimeString | null,
   //   draftExercises: DraftExercise[],
   //   elapsedSeconds: number,              // spec の getElapsedTime(): number を React hooks パターンでリアクティブ state として実現（FR-032）
   //
@@ -438,6 +461,7 @@ useEffect(() => {
 | タイマーの更新方式 | setInterval vs requestAnimationFrame | setInterval（1秒間隔） | 秒単位の表示で十分。requestAnimationFrame はオーバースペック |
 | FRAME1/FRAME2 の画面遷移 | TanStack Router ルート | ルートベースの遷移 | FRAME1（`/`）→ FRAME2（`/workout`）。TanStack Router の型安全なナビゲーション |
 | localStorage 読み取り検証 | 型アサーション vs Zod パース | Zod パース | T-002: No Runtime Errors。不正データによるクラッシュを防止 |
+| 日付・日時の型表現 | 素の `string` vs Zod branded type | Zod branded type（`DateString`, `ISODateTimeString`） | history モジュールと同じパターン。素の `string` では任意の文字列が型チェックを通過する。branded type は境界でパースし内部は型安全に流通でき、Zod 活用方針に合致。`src/schemas/date.ts` で history と共有 |
 
 ## 9.2. 未解決の課題
 
