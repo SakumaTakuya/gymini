@@ -10,8 +10,6 @@ updated: "2026-04-10"
 depends-on: ["spec-navigation"]
 tags: ["navigation", "routing", "bottom-nav", "gear-icon"]
 category: "ui"
-priority: "high"
-risk: "medium"
 ---
 
 # ページナビゲーション
