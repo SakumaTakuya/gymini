@@ -4,14 +4,12 @@ title: "ページナビゲーション"
 type: "design"
 status: "draft"
 sdd-phase: "plan"
-impl-status: "implemented"
+impl-status: "not-implemented"
 created: "2026-03-28"
-updated: "2026-03-29"
+updated: "2026-04-10"
 depends-on: ["spec-navigation"]
-tags: ["navigation", "routing", "bottom-nav", "pwa"]
+tags: ["navigation", "routing", "bottom-nav", "gear-icon"]
 category: "ui"
-priority: "high"
-risk: "medium"
 ---
 
 # ページナビゲーション
@@ -23,28 +21,34 @@ risk: "medium"
 
 # 1. 実装ステータス
 
-**ステータス:** 🟢 実装済み（2026-03-29）
+**ステータス:** 🔴 未実装（再設計）
+
+> v1.x（2026-03-29）で Zustand 状態ベース + 2ルート + FAB構成を実装済みだったが、
+> CONSTITUTION v3.0.0 準拠（TanStack Router 採用）および PRD 準拠の再設計に伴い全面刷新する。
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| navigationStore | 🟢 実装済み | ルーティング状態管理 |
-| useNavigation フック | 🟢 実装済み | ルーティングフック |
-| BottomNav コンポーネント | 🟢 実装済み | 静的2タブ + FAB領域 |
-| FAB コンポーネント | 🟢 実装済み | コンテキストFAB |
-| TrainingPage | 🟢 実装済み | 待機/アクティブの二面表示（既存WorkoutFormPageを統合） |
-| HistoryPage | 🟢 実装済み | プレースホルダー空ページ（中身は別spec/designで定義） |
-| App.tsx リファクタリング | 🟢 実装済み | useState ルーティング → useNavigation へ移行 |
-| workoutStore persist | 🟢 実装済み | Zustand persist ミドルウェア追加 |
+| TanStack Router セットアップ | 🔴 未実装 | Vite plugin + routeTree 自動生成 |
+| __root.tsx (ルートレイアウト) | 🔴 未実装 | ルートの Outlet |
+| _app.tsx (pathless layout) | 🔴 未実装 | GearIcon + Outlet + BottomNav |
+| _app/training.tsx | 🔴 未実装 | FRAME1/2: Idle/Active の二面表示 |
+| _app/history.tsx | 🔴 未実装 | FRAME3: プレースホルダー（中身は別design） |
+| _app/ai.tsx | 🔴 未実装 | FRAME4: プレースホルダー（中身は別design） |
+| settings.tsx | 🔴 未実装 | FRAME5: layout外。Xボタンで history.back() |
+| BottomNav コンポーネント | 🔴 未実装 | 2タブ + AI専用ボタン。Link コンポーネント使用 |
+| GearIcon コンポーネント | 🔴 未実装 | 歯車アイコン + APIキーバッジ。Link で /settings へ |
+| workoutStore persist | 🔴 未実装 | Zustand persist ミドルウェア追加 |
 
 ---
 
 # 2. 設計目標
 
-- **既存コードの最小変更**: 現在の Data Layer / Hook Layer はそのまま維持し、UI Layer とルーティングのみ変更する
-- **外部依存ゼロ**: React Router 等のルーターライブラリを追加しない。Zustand で状態ベースルーティングを実現（A-001）
-- **レイアウト安定性**: FAB領域を常に確保し、表示/非表示でのレイアウトシフトを防ぐ（T-003）
+- **CONSTITUTION 完全準拠**: TanStack Router によるファイルベースルーティング（A-001）。自作ルーティング禁止に従う
+- **PRD 完全準拠**: 5つの論理画面（FRAME1〜5）、4ルート、BottomNav（2タブ + AIボタン）、歯車アイコン
+- **宣言的レイアウト制御**: pathless layout route により BottomNav / GearIcon の表示を構造的に制御する
+- **デザインシステム準拠**: `.sdd/design-system.html` のレイアウト・スタイルを忠実に再現する
 - **セッション安全性**: ページ遷移やリロードでセッションデータが失われない（B-001: ローカルストレージ完結）
-- **TypeScript strict mode**: すべてのファイルを `.ts`/`.tsx` で記述し、型安全を維持する（T-001）
+- **TypeScript strict mode**: TanStack Router の型推論 + strict mode で型安全を確保する（T-001）
 
 ---
 
@@ -52,12 +56,13 @@ risk: "medium"
 
 | 領域 | 採用技術 | 選定理由 |
 |------|--------|--------|
-| 言語 | TypeScript（.ts / .tsx） | プロジェクト全体がTypeScript strict modeに移行済み（T-001）。型安全なルート管理が可能 |
-| ルーティング | Zustand（状態ベース） | 既にプロジェクトで使用中。外部ルーターライブラリ不要で依存を増やさない（A-001） |
-| セッション永続化 | Zustand persist + localStorage | 既存 workoutStore に persist ミドルウェアを追加するだけで実現可能（B-001準拠: サーバー送信なし） |
-| BottomNav スタイリング | Tailwind CSS | 既存デザインシステムのTabBarクラスを活用（A-001） |
-| アイコン | lucide-react | SVGのAI生成は著作権リスクがあるため、OSSアイコンライブラリを採用（A-001） |
-| FAB | Tailwind CSS | デザインシステムに準拠した丸型ボタン |
+| 言語 | TypeScript（.ts / .tsx） | T-001準拠 |
+| ルーティング | TanStack Router ^1 | A-001準拠。ファイルベースルーティング + 型安全なパス推論 + layout route パターン |
+| ルーティング Vite プラグイン | @tanstack/router-plugin (devDep) | ファイルベースルートの自動生成（routeTree.gen.ts） |
+| セッション永続化 | Zustand persist + localStorage | workoutStore に persist ミドルウェアを追加（B-001準拠: サーバー送信なし） |
+| 状態管理 | Zustand ^5 | ワークアウト・設定の状態管理。ルーティングは TanStack Router に委譲 |
+| スタイリング | Tailwind CSS | デザインシステム準拠 |
+| アイコン | @phosphor-icons/react | デザインシステムが Phosphor Icons を使用（ph-barbell, ph-robot, ph-gear 等）。OSS対応（A-001） |
 
 ---
 
@@ -67,91 +72,110 @@ risk: "medium"
 
 ```mermaid
 graph TD
+    subgraph "Route Layer (TanStack Router)"
+        Root["__root.tsx<br/>Outlet"]
+        AppLayout["_app.tsx<br/>GearIcon + Outlet + BottomNav"]
+        TR["_app/training.tsx"]
+        HR["_app/history.tsx"]
+        AR["_app/ai.tsx"]
+        SR["settings.tsx"]
+    end
+
     subgraph "UI Layer"
-        App[App.tsx]
+        BN[BottomNav.tsx]
+        GI[GearIcon.tsx]
         TP[TrainingPage.tsx]
         HP[HistoryPage.tsx]
-        BN[BottomNav.tsx]
-        FAB_C[FAB.tsx]
+        ACP[AIChatPage.tsx]
+        SP[SettingsPage.tsx]
         IV[IdleView.tsx]
         ASV[ActiveSessionView.tsx]
-        AEM[AddExerciseModal.tsx]
     end
 
     subgraph "Hook Layer"
-        UN[useNavigation.ts]
         HWS[useWorkoutSession.ts]
         HWL[useWorkoutList.ts]
     end
 
     subgraph "State Layer"
-        NS[navigationStore.ts<br/>Zustand]
         WS[workoutStore.ts<br/>Zustand + persist]
+        SS[settingsStore.ts<br/>Zustand]
     end
 
-    App --> UN
-    App --> TP
-    App --> HP
-    App --> BN
+    Root --> AppLayout
+    Root --> SR
+    AppLayout --> TR
+    AppLayout --> HR
+    AppLayout --> AR
 
-    BN --> UN
-    BN --> FAB_C
-    BN --> HWS
+    AppLayout --> BN
+    AppLayout --> GI
+
+    TR --> TP
+    HR --> HP
+    AR --> ACP
+    SR --> SP
 
     TP --> HWS
     TP --> IV
     TP --> ASV
-    ASV --> AEM
 
-    HP -.- HWL
+    GI --> SS
 
-    UN --> NS
+    SP -.->|router.history.back| Root
+
     HWS --> WS
     HWL --> WS
 ```
 
 ## 4.2. モジュール分割
 
-### 新規モジュール
+### ルートファイル（TanStack Router ファイルベースルーティング）
+
+| ファイル | 責務 | URLパス | レイアウト |
+|---------|------|--------|----------|
+| `src/routes/__root.tsx` | ルートレイアウト（Outlet のみ） | - | - |
+| `src/routes/_app.tsx` | pathless layout: GearIcon + Outlet + BottomNav | - (URLセグメントなし) | BottomNav + GearIcon あり |
+| `src/routes/_app/training.tsx` | /training ルート → TrainingPage | `/training` | _app layout |
+| `src/routes/_app/history.tsx` | /history ルート → HistoryPage | `/history` | _app layout |
+| `src/routes/_app/ai.tsx` | /ai ルート → AIChatPage | `/ai` | _app layout |
+| `src/routes/settings.tsx` | /settings ルート → SettingsPage | `/settings` | layout外（BottomNav なし） |
+
+### UIコンポーネント
 
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
-| navigationStore | ルーティング状態管理（currentRoute） | なし | `src/stores/navigationStore.ts` |
-| useNavigation | ルーティングフック（currentRoute, navigate） | navigationStore | `src/hooks/useNavigation.ts` |
-| BottomNav | 静的2タブ + FAB領域のナビゲーションバー | useNavigation, useWorkoutSession | `src/components/BottomNav.tsx` |
-| FAB | コンテキストFAB（セッション中のみ表示） | なし（props） | `src/components/FAB.tsx` |
-| TrainingPage | トレーニングページ（待機/アクティブ切り替え） | useWorkoutSession | `src/pages/TrainingPage.tsx` |
-| IdleView | 待機画面（挨拶・開始ボタン・設定） | useWorkoutSession | `src/components/IdleView.tsx` |
-| HistoryPage | 履歴ページ（プレースホルダー。中身は別specで定義・実装） | なし | `src/pages/HistoryPage.tsx` |
-| AddExerciseModal | 種目追加モーダル | useWorkoutSession | `src/components/AddExerciseModal.tsx` |
+| BottomNav | 2タブ（トレ / 履歴）+ AI専用pill型ボタン | TanStack Router Link | `src/components/BottomNav.tsx` |
+| GearIcon | 歯車アイコン + APIキー未設定バッジ | TanStack Router Link, settingsStore | `src/components/GearIcon.tsx` |
+| TrainingPage | トレーニングページ（Idle/Active 切り替え） | useWorkoutSession | `src/pages/TrainingPage.tsx` |
+| IdleView | Idle画面（挨拶・開始ボタン） | useWorkoutSession | `src/components/IdleView.tsx` |
+| HistoryPage | 履歴ページ（プレースホルダー。中身は別design） | なし | `src/pages/HistoryPage.tsx` |
+| AIChatPage | AIチャットページ（プレースホルダー。中身は別design） | なし | `src/pages/AIChatPage.tsx` |
+| SettingsPage | 設定ページ（Xボタンで戻る。中身は別design） | TanStack Router useRouter, useCanGoBack | `src/pages/SettingsPage.tsx` |
 
 ### 既存モジュールの変更
 
 | モジュール名 | 変更内容 | 配置場所 |
 |-----------|---------|--------|
-| App.tsx | useState ルーティング → useNavigation + BottomNav 統合 | `src/App.tsx` |
 | workoutStore.ts | Zustand `persist` ミドルウェア追加 | `src/stores/workoutStore.ts` |
+| vite.config.ts | TanStack Router Vite plugin 追加 | `vite.config.ts` |
+| main.tsx | RouterProvider でラップ | `src/main.tsx` |
 
-### 廃止予定モジュール
+### 廃止モジュール
 
-| モジュール名 | 理由 | 配置場所 |
-|-----------|------|--------|
-| WorkoutListPage.tsx | HistoryPage に置換 | `src/pages/WorkoutListPage.tsx` |
-| WorkoutFormPage.tsx | TrainingPage (ActiveSessionView) に統合 | `src/pages/WorkoutFormPage.tsx` |
+| モジュール名 | 理由 |
+|-----------|------|
+| `src/stores/navigationStore.ts` | TanStack Router がルーティング状態を管理するため不要 |
+| `src/hooks/useNavigation.ts` | TanStack Router の `Link`, `useRouter`, `useCanGoBack` に置換 |
+| `src/types/index.ts` の Route / NavRoute 型 | TanStack Router が routeTree.gen.ts から型を自動推論するため不要 |
 
 ---
 
 # 5. データモデル
 
 ```typescript
-// navigationStore の状態
-interface NavigationState {
-  currentRoute: 'training' | 'history'
-}
-
-interface NavigationActions {
-  navigate: (route: 'training' | 'history') => void
-}
+// TanStack Router のルーティング状態は router 内部で管理される。
+// 自前の NavigationState / NavigationStore は不要。
 
 // workoutStore に追加される persist 設定
 // 既存の draftDate, draftExercises, draftMemo, draftWorkoutId を永続化対象とする
@@ -167,75 +191,178 @@ type WorkoutSessionPersistedKeys = Pick<
 
 ```typescript
 // -------------------------------------------------------
-// navigationStore (src/stores/navigationStore.ts)
+// vite.config.ts（TanStack Router Vite plugin）
 // -------------------------------------------------------
 
-type Route = 'training' | 'history'
+import { defineConfig } from 'vite'
+import react from '@vitejs/plugin-react'
+import { tanstackRouter } from '@tanstack/router-plugin/vite'
 
-interface NavigationStore {
-  currentRoute: Route
-  navigate: (route: Route) => void
+export default defineConfig({
+  plugins: [
+    tanstackRouter({ target: 'react', autoCodeSplitting: true }),
+    react(),
+  ],
+})
+
+// -------------------------------------------------------
+// src/main.tsx（RouterProvider）
+// -------------------------------------------------------
+
+import { createRouter, RouterProvider } from '@tanstack/react-router'
+import { routeTree } from './routeTree.gen'
+
+const router = createRouter({ routeTree })
+
+declare module '@tanstack/react-router' {
+  interface Register {
+    router: typeof router
+  }
 }
 
-const useNavigationStore = create<NavigationStore>()((set) => ({
-  currentRoute: 'training',
-  navigate: (route) => set({ currentRoute: route }),
-}))
+ReactDOM.createRoot(document.getElementById('root')!).render(
+  <RouterProvider router={router} />
+)
 
 // -------------------------------------------------------
-// useNavigation (src/hooks/useNavigation.ts)
+// src/routes/__root.tsx（ルートレイアウト）
 // -------------------------------------------------------
 
-interface UseNavigationReturn {
-  currentRoute: Route
-  navigate: (route: Route) => void
+import { createRootRoute, Outlet } from '@tanstack/react-router'
+
+export const Route = createRootRoute({
+  component: () => (
+    <div className="min-h-screen bg-zinc-50">
+      <Outlet />
+    </div>
+  ),
+})
+
+// -------------------------------------------------------
+// src/routes/_app.tsx（pathless layout: BottomNav + GearIcon）
+// -------------------------------------------------------
+
+import { createFileRoute, Outlet } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/_app')({
+  component: AppLayout,
+})
+
+function AppLayout() {
+  return (
+    <>
+      <GearIcon />
+      <main className="flex-1 pb-24">
+        <Outlet />
+      </main>
+      <BottomNav />
+    </>
+  )
 }
 
-function useNavigation(): UseNavigationReturn
+// -------------------------------------------------------
+// src/routes/_app/training.tsx
+// -------------------------------------------------------
+
+import { createFileRoute } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/_app/training')({
+  component: TrainingPage,
+})
+
+// -------------------------------------------------------
+// src/routes/settings.tsx（layout外 — BottomNav なし）
+// -------------------------------------------------------
+
+import { createFileRoute, useRouter, useCanGoBack } from '@tanstack/react-router'
+
+export const Route = createFileRoute('/settings')({
+  component: SettingsPage,
+})
 
 // -------------------------------------------------------
 // BottomNav (src/components/BottomNav.tsx)
 // -------------------------------------------------------
 
-// Props: なし（内部で useNavigation, useWorkoutSession を使用）
-// FAB の visible プロップ: BottomNav が useWorkoutSession.isActive を取得し、props として FAB へ渡す
-//   → FAB 自身は WorkoutSession を参照しない（FABProps.visible で制御）
-// レイアウト:
+// Props: なし（TanStack Router の Link を使用）
+// レイアウト（PRD IR_001 / design-system.html 準拠）:
 //   ┌──────────┬──────────┬──────────────────┐
-//   │ Training │ History  │     [+ FAB]      │
+//   │  トレ     │  履歴    │   [ 🤖 AI ]      │
 //   └──────────┴──────────┴──────────────────┘
+//     2タブ（均等 flex-1）    AI専用ボタン（pill型）
 //
-// Tailwind クラス（PRD デザインリファレンス準拠）:
-//   TabBar: h-[83px] bg-white border-t border-zinc-100 px-5 pt-3 flex
-//   タブ: 左寄せ（justify-start）
-//   FAB領域: ml-auto（右端に配置）
+// Tailwind クラス（design-system.html 準拠）:
+//   コンテナ: fixed bottom-0 left-0 w-full h-24 bg-white/80 backdrop-blur-xl
+//            border-t border-zinc-200/50 flex items-start pt-3 px-4 z-40
+//
+// タブ状態（Link の activeProps / inactiveProps で制御）:
+//   アクティブ: ph-fill text-black font-bold（text-[10px]）
+//   非アクティブ: text-zinc-400 font-medium（text-[10px]）
+//
+// AIボタン（Link の activeProps で制御）:
+//   通常: bg-black text-white rounded-2xl px-4 h-11 border border-zinc-800
+//   アクティブ（/ai）: bg-accent text-white shadow-lg shadow-red-200
+//   アイコン: ph-bold ph-robot text-xl + "AI" text-xs font-bold
 //
 // 内部タブ定義（静的）:
-// const NAV_TABS: NavTab[] = [
-//   { route: 'training', label: 'Training', icon: <Dumbbell /> },  // lucide-react
-//   { route: 'history',  label: 'History',  icon: <Calendar /> },  // lucide-react
+// const NAV_TABS = [
+//   { to: '/training' as const, label: 'トレ', icon: <PhBarbell />, activeIcon: <PhBarbell weight="fill" /> },
+//   { to: '/history' as const,  label: '履歴', icon: <PhClockCounterClockwise />, activeIcon: <PhClockCounterClockwise weight="fill" /> },
 // ]
 
 // -------------------------------------------------------
-// FAB (src/components/FAB.tsx)
+// GearIcon (src/components/GearIcon.tsx)
 // -------------------------------------------------------
 
-interface FABProps {
-  visible: boolean
-  onClick: () => void
+// TanStack Router の Link to="/settings" を使用
+//
+// Tailwind クラス（design-system.html / PRD IR_002 準拠）:
+//   位置: absolute top-12 right-4 z-30
+//   ボタン: w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm
+//          shadow-sm border border-zinc-100
+//   アイコン: ph ph-gear text-base text-zinc-500
+//
+// APIキー未設定バッジ:
+//   位置: absolute top-[-2px] right-[-2px]
+//   スタイル: w-3 h-3 bg-accent rounded-full border-2 border-white
+//
+// FRAME2（Active Workout）追加要素:
+//   歯車の右隣に「終了」ボタン:
+//     text-accent text-sm font-bold bg-red-50/90 backdrop-blur-sm px-3 py-1.5 rounded-lg
+//   ボタン群の下にタイマーpill:
+//     flex items-center gap-1 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm border border-zinc-100
+//     アイコン: ph-fill ph-clock text-accent text-xs
+//     テキスト: font-outfit font-bold text-xs
+
+interface GearIconProps {
+  showEndButton?: boolean  // FRAME2のみtrue
+  elapsedTime?: string     // FRAME2のみ。"00:14:32" 形式
+  onEndSession?: () => void  // FRAME2の終了ボタン
 }
 
-// visible=false の場合は DOM に存在するが opacity-0/pointer-events-none
-// （FAB領域のスペースは常に確保）
+// -------------------------------------------------------
+// SettingsPage (src/pages/SettingsPage.tsx)
+// -------------------------------------------------------
+
+// useRouter + useCanGoBack によるネイティブ戻りナビゲーション:
+//   const router = useRouter()
+//   const canGoBack = useCanGoBack()
+//   const handleClose = () => {
+//     canGoBack ? router.history.back() : router.navigate({ to: '/training' })
+//   }
+//
+// Xボタン（design-system.html 準拠）:
+//   位置: absolute top-12 right-4 z-30
+//   スタイル: w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm shadow-sm border border-zinc-100
+//   アイコン: ph-bold ph-x text-base text-zinc-500
 
 // -------------------------------------------------------
 // TrainingPage (src/pages/TrainingPage.tsx)
 // -------------------------------------------------------
 
 // Props: なし（内部で useWorkoutSession を使用）
-// セッション非アクティブ時: IdleView を表示
-// セッションアクティブ時: ActiveSessionView を表示
-//   （ActiveSessionView は既存 WorkoutFormPage の内容を移植）
+// セッション非アクティブ時: IdleView を表示（FRAME1）
+// セッションアクティブ時: ActiveSessionView を表示（FRAME2）
 
 // -------------------------------------------------------
 // IdleView (src/components/IdleView.tsx)
@@ -243,32 +370,11 @@ interface FABProps {
 
 interface IdleViewProps {
   onStartTraining: () => void
-  onOpenSettings: () => void
 }
 
-// 表示内容:
-//   - 挨拶メッセージ
-//   - 「トレーニングを開始」ボタン（min-h-[44px] min-w-[44px] 確保）
-//   - 設定アイコン（min-h-[44px] min-w-[44px] 確保）
-
-// -------------------------------------------------------
-// HistoryPage (src/pages/HistoryPage.tsx)
-// -------------------------------------------------------
-
-// Props: なし
-// ナビゲーションとしてはルートの遷移先として空ページを用意するのみ。
-// 中身（カレンダーUI・記録詳細等）は別 spec/design で定義・実装する。
-// 初期実装は「Coming Soon」等のプレースホルダー表示。
-
-// -------------------------------------------------------
-// AddExerciseModal (src/components/AddExerciseModal.tsx)
-// -------------------------------------------------------
-
-interface AddExerciseModalProps {
-  open: boolean
-  onClose: () => void
-}
-// 内部で useWorkoutSession を使用して種目検索・追加を行う
+// FRAME1 表示内容（design-system.html 準拠）:
+//   - アバター + 日付 + 挨拶メッセージ
+//   - 「トレーニングを始める」ボタン（w-[85%] h-13 bg-black text-white rounded-2xl）
 
 // -------------------------------------------------------
 // workoutStore の persist 変更 (src/stores/workoutStore.ts)
@@ -306,9 +412,9 @@ interface AddExerciseModalProps {
 
 | 要件 | 実現方針 |
 |------|--------|
-| 操作性（NFR-001）: 1フレーム以内のページ切り替え | 状態ベースルーティング（Zustand setState）による条件レンダリング。DOMの追加/削除のみで、ネットワーク通信やコード分割なし |
-| データ整合性（NFR-002）: セッションデータ永続化 | Zustand `persist` ミドルウェアで `draftDate`, `draftExercises`, `draftMemo`, `draftWorkoutId` を localStorage に自動保存。`partialize` で永続化対象を限定し、`workouts`（一覧キャッシュ）は永続化しない（B-001: 外部送信なし）。localStorage が利用不可（Safari プライベートモード等）またはパースエラー時は `onRehydrateStorage` でエラーをキャッチしデフォルト初期状態へフォールバック（T-002） |
-| レイアウト安定性（NFR-003）: FABレイアウトシフト防止 | FABコンポーネントは `visible=false` でも DOM に存在し、`opacity-0 pointer-events-none` で不可視化。FAB領域のサイズは常に確保される（T-003） |
+| 操作性（NFR-001）: 1フレーム以内のページ切り替え | TanStack Router の SPA ルーティング + autoCodeSplitting によるルート別遅延読み込み。ルート遷移はクライアントサイド完結でネットワーク通信なし |
+| データ整合性（NFR-002）: セッションデータ永続化 | Zustand `persist` ミドルウェアで `draftDate`, `draftExercises`, `draftMemo`, `draftWorkoutId` を localStorage に自動保存。`partialize` で永続化対象を限定。localStorage 利用不可またはパースエラー時は `onRehydrateStorage` でデフォルト初期状態へフォールバック（T-002） |
+| レイアウト安定性（NFR-003）: BottomNav一貫性 | pathless layout route (`_app.tsx`) により BottomNav + GearIcon を構造的に制御。FRAME5（/settings）は layout 外に配置し自動的に非表示 |
 
 ---
 
@@ -316,14 +422,14 @@ interface AddExerciseModalProps {
 
 | テストレベル | 対象 | カバレッジ目標 |
 |-----------|------|------------|
-| ユニットテスト | navigationStore（navigate, currentRoute） | 全アクション（D-001: TDD） |
-| ユニットテスト | useNavigation（ルーティングフック） | 全返り値 |
-| コンポーネントテスト | BottomNav（タブ切り替え、アクティブ状態ハイライト） | FR-005 |
-| コンポーネントテスト | FAB（表示/非表示、クリック） | FR-006, FR-007 |
-| コンポーネントテスト | TrainingPage（待機/アクティブ切り替え） | FR-001, FR-002 |
-| 統合テスト | App（ページ遷移 + セッション永続化） | FR-004, FR-008 |
+| コンポーネントテスト | BottomNav（Link アクティブ状態、タブ切り替え、AIボタン） | FR-007 |
+| コンポーネントテスト | GearIcon（表示、バッジ表示、FRAME2の終了ボタン・タイマー） | FR-009, FR-010, FR-011 |
+| コンポーネントテスト | TrainingPage（Idle/Active 切り替え） | FR-001, FR-002 |
+| 統合テスト | ルート遷移（/training → /history → /ai → /settings → back） | FR-004, FR-005, FR-012 |
+| 統合テスト | layout route（_app 配下は BottomNav あり、/settings は BottomNav なし） | FR-007, FR-008 |
 | 統合テスト | workoutStore persist（リロード後のデータ復元） | NFR-002 |
 | E2Eテスト | ナビゲーション全体フロー（Playwright） | 主要ユーザーフロー（D-001） |
+| E2Eテスト | ブラウザバックボタンで /settings から戻れること | FR-005 |
 
 ---
 
@@ -333,58 +439,89 @@ interface AddExerciseModalProps {
 
 | 決定事項 | 選択肢 | 決定内容 | 理由 |
 |---------|--------|--------|------|
-| ルーティング方式 | React Router vs Zustand 状態ベース | Zustand 状態ベース | 2ページのみで React Router は過剰。既存の Zustand をルーティングにも活用し依存を増やさない（A-001） |
-| navigationStore の分離 | workoutStore に統合 vs 独立ストア | 独立ストア | 責務分離。ルーティングとワークアウトデータは異なる関心事（CONSTITUTION.md モジュール構成の依存ルールに準拠: stores/ は独立した関心事ごとに分割） |
-| FAB の非表示方式 | 条件レンダリング（null） vs CSS非表示 | CSS非表示（opacity-0） | レイアウトシフト防止（NFR-003）。FAB領域のスペースを常に確保する（T-003） |
-| workoutStore の persist 対象 | 全状態 vs ドラフトのみ | ドラフトのみ（partialize） | `workouts`（一覧キャッシュ）は都度 localStorage から読み込むため永続化不要。ドラフト状態のみ永続化してストレージ消費を抑える（B-001） |
-| 既存ページの扱い | リファクタリング vs 新規作成 | 新規作成 + 段階的移行 | WorkoutListPage → HistoryPage, WorkoutFormPage → TrainingPage/ActiveSessionView として新規作成。既存ページは移行完了後に削除 |
-| persist の localStorage キー | `gymini:workouts` と共有 vs 別キー | 別キー `gymini:workout-session` | ワークアウトデータ（CRUD）とセッションドラフトは別の目的。キーを分離することで管理しやすくなる |
-| ボトムナビのアイコン選定 | SVG自作 vs ライブラリ | lucide-react を採用 | SVGのAI生成は著作権リスクがあるためライブラリを使用（A-001） |
-| 実装言語 | JavaScript (.jsx) vs TypeScript (.tsx) | TypeScript (.tsx) | プロジェクト全体がTypeScript strict modeへ移行済み（コミット 57594eb）。T-001原則準拠 |
+| ルーティング方式 | TanStack Router vs Zustand 状態ベース | TanStack Router | A-001準拠。CONSTITUTION が TanStack Router を必須とし自作ルーティングを禁止。layout route で BottomNav/GearIcon の表示制御を宣言的に解決でき、`useCanGoBack` + `router.history.back()` で settings 戻りナビゲーションをネイティブに実現。12kb gzipped のコストは navigationStore + useNavigation の削減で相殺される |
+| ルーティングファイル配置 | コードベースルーティング vs ファイルベースルーティング | ファイルベース | CONSTITUTION 注記: 「`src/routes/` 配下にルートファイルを配置する」。routeTree.gen.ts の自動生成による型安全性 |
+| layout route パターン | pathless layout (`_app`) vs 手動条件分岐 | pathless layout | FRAME1〜4 は `_app/` 配下（BottomNav + GearIcon あり）、FRAME5 は `settings.tsx`（layout 外、BottomNav なし）。構造的に表示制御を解決し、手動 `{route !== 'settings' && ...}` が不要 |
+| settings 戻りナビゲーション | 自前 previousRoute 管理 vs ブラウザ履歴 | ブラウザ履歴 | `useCanGoBack()` + `router.history.back()` でネイティブに実現。自前のストア管理が不要。直接アクセス時は `/training` にフォールバック |
+| BottomNav 第3要素 | FAB（種目追加）vs AI専用ボタン | AI専用ボタン | PRD IR_001 / design-system.html に準拠 |
+| アイコンライブラリ | lucide-react vs @phosphor-icons/react | @phosphor-icons/react | design-system.html が Phosphor Icons を使用（A-001） |
+| TanStack Start | 使用する vs 使用しない | 使用しない | A-002: 完全クライアントサイドアーキテクチャ。SSR/SSG は不要 |
+| workoutStore の persist 対象 | 全状態 vs ドラフトのみ | ドラフトのみ（partialize） | ストレージ消費を抑える（B-001） |
+| persist の localStorage キー | 共有 vs 別キー | 別キー `gymini:workout-session` | セッションドラフトとワークアウトデータの分離 |
+| デフォルトルート | `/` → /training リダイレクト | リダイレクト | アプリ起動時は /training を表示。__root.tsx の `beforeLoad` で `/` → `/training` にリダイレクト |
 
 ## 9.2. 未解決の課題
 
 *未解決の課題なし（実装開始可能）*
 
 > スコープ外メモ（他機能で解決）:
-> - カレンダーUIライブラリの選定 → 履歴ページ design doc で決定
-> - 進捗グラフモーダルの実装方式 → 履歴ページ design doc で決定
-> - Chat タブ追加方式（Phase 3）→ Phase 3 着手時のナビゲーション拡張 design doc で決定
+> - 履歴ページの中身（カレンダーUI等）→ 履歴ページ design doc で決定
+> - AIチャットの中身（チャットUI・Function Calling）→ AIチャット design doc で決定
+> - 設定ページの中身（APIキー管理・種目マスター）→ 設定ページ design doc で決定
 
 ---
 
 # 10. 変更履歴
 
-## v1.1 (2026-03-29)
+## v3.0 (2026-04-10) — TanStack Router 採用
 
 **変更内容:**
 
-- TypeScript移行に合わせてファイル名・コード例を `.ts`/`.tsx` に更新
-- 技術スタックの言語をTypeScriptに変更
-- CONSTITUTION.md原則への参照（T-001, A-001, B-001, T-003, D-001）を追加
-- E2Eテスト（Playwright）をテスト戦略に追加
+- ルーティングを Zustand 状態ベース → TanStack Router ファイルベースに変更（A-001準拠）
+- navigationStore.ts, useNavigation.ts を廃止（TanStack Router に委譲）
+- Route / NavRoute 手動型定義を廃止（routeTree.gen.ts から自動推論）
+- previousRoute の自前管理を廃止（`useCanGoBack` + `router.history.back()` に置換）
+- pathless layout route (`_app.tsx`) で BottomNav / GearIcon の表示制御を構造的に解決
+- ブラウザ戻るボタンが正常に動作するようになった
 
 **移行ガイド:**
 
 ```typescript
-// ❌ 旧（JavaScript）
-// src/stores/navigationStore.js
-const useNavigationStore = create((set) => ({
-  currentRoute: 'training',
-  navigate: (route) => set({ currentRoute: route }),
-}))
-
-// ✅ 新（TypeScript strict）
+// ❌ 旧（v2.0: Zustand 状態ベース — A-001例外）
 // src/stores/navigationStore.ts
-type Route = 'training' | 'history'
-
-interface NavigationStore {
-  currentRoute: Route
-  navigate: (route: Route) => void
-}
-
-const useNavigationStore = create<NavigationStore>()((set) => ({
+type Route = 'training' | 'history' | 'ai' | 'settings'
+const useNavigationStore = create<NavigationStore>()((set, get) => ({
   currentRoute: 'training',
-  navigate: (route) => set({ currentRoute: route }),
+  previousRoute: null,
+  navigate: (route) => { /* ... */ },
 }))
+
+// App.tsx: 手動条件分岐
+{currentRoute === 'training' && <TrainingPage />}
+{currentRoute !== 'settings' && <BottomNav />}
+
+// ✅ 新（v3.0: TanStack Router — A-001準拠）
+// src/routes/_app.tsx: pathless layout
+export const Route = createFileRoute('/_app')({
+  component: () => (
+    <>
+      <GearIcon />
+      <Outlet />
+      <BottomNav />
+    </>
+  ),
+})
+
+// src/routes/_app/training.tsx: ルートファイル
+export const Route = createFileRoute('/_app/training')({
+  component: TrainingPage,
+})
+
+// src/routes/settings.tsx: layout 外（BottomNav なし）
+export const Route = createFileRoute('/settings')({
+  component: SettingsPage,
+})
 ```
+
+## v2.0 (2026-04-10) — PRD準拠の全面再設計
+
+- Route 型を2ルートから4ルートに拡張
+- BottomNav: FAB → AI専用pill型ボタンに変更
+- GearIcon / AIChatPage / SettingsPage を新規追加
+- アイコンを lucide-react → @phosphor-icons/react に変更
+
+## v1.x (2026-03-29) — 初期実装
+
+- Zustand 状態ベースの2ルート（training/history）ルーティング
+- BottomNav: 2タブ + FAB 構成
+- 実装済み → v3.0 で破棄
