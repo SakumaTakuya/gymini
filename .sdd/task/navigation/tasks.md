@@ -2,7 +2,7 @@
 id: "task-navigation"
 title: "ページナビゲーション"
 type: "task"
-status: "pending"
+status: "completed"
 sdd-phase: "tasks"
 created: "2026-03-29"
 updated: "2026-04-11"

@@ -8,7 +8,7 @@ export default defineConfig({
   reporter: 'html',
 
   use: {
-    baseURL: 'http://localhost:5173',
+    baseURL: 'http://localhost:5173/gymini/',
     trace: 'on-first-retry',
   },
 
@@ -28,7 +28,7 @@ export default defineConfig({
   // テスト実行前に dev サーバーを自動起動
   webServer: {
     command: 'npm run dev',
-    url: 'http://localhost:5173',
+    url: 'http://localhost:5173/gymini/',
     reuseExistingServer: !process.env.CI,
   },
 })
