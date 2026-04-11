@@ -98,7 +98,7 @@ graph TD
     end
 
     subgraph "State Layer"
-        WS[workoutStore.ts<br/>Zustand + persist]
+        WS[workoutSessionStore.ts<br/>Zustand + persist]
         SS[settingsStore.ts<br/>Zustand]
     end
 
@@ -147,8 +147,8 @@ graph TD
 |-----------|------|---------|--------|
 | BottomNav | 2タブ（トレ / 履歴）+ AI専用pill型ボタン | TanStack Router Link | `src/components/BottomNav.tsx` |
 | GearIcon | 歯車アイコン + APIキー未設定バッジ | TanStack Router Link, settingsStore | `src/components/GearIcon.tsx` |
-| TrainingPage | トレーニングページ（Idle/Active 切り替え） | useWorkoutSession | `src/pages/TrainingPage.tsx` |
-| IdleView | Idle画面（挨拶・開始ボタン） | useWorkoutSession | `src/components/IdleView.tsx` |
+| TrainingPage | トレーニングページ（Idle/Active 切り替え）。**workout モジュールが実装** | useWorkoutSession | `src/pages/TrainingPage.tsx` |
+| IdleView | Idle画面（挨拶・開始ボタン）。**workout モジュールが実装** | なし（props: onStartTraining） | `src/components/IdleView.tsx` |
 | HistoryPage | 履歴ページ（プレースホルダー。中身は別design） | なし | `src/pages/HistoryPage.tsx` |
 | AIChatPage | AIチャットページ（プレースホルダー。中身は別design） | なし | `src/pages/AIChatPage.tsx` |
 | SettingsPage | 設定ページ（Xボタンで戻る。中身は別design） | TanStack Router useRouter, useCanGoBack | `src/pages/SettingsPage.tsx` |
@@ -157,7 +157,7 @@ graph TD
 
 | モジュール名 | 変更内容 | 配置場所 |
 |-----------|---------|--------|
-| workoutStore.ts | Zustand `persist` ミドルウェア追加 | `src/stores/workoutStore.ts` |
+| workoutSessionStore.ts | Zustand `persist` ミドルウェア追加 | `src/stores/workoutSessionStore.ts` |
 | vite.config.ts | TanStack Router Vite plugin 追加 | `vite.config.ts` |
 | main.tsx | RouterProvider でラップ | `src/main.tsx` |
 
@@ -177,12 +177,13 @@ graph TD
 // TanStack Router のルーティング状態は router 内部で管理される。
 // 自前の NavigationState / NavigationStore は不要。
 
-// workoutStore に追加される persist 設定
-// 既存の draftDate, draftExercises, draftMemo, draftWorkoutId を永続化対象とする
-type WorkoutSessionPersistedKeys = Pick<
-  WorkoutState,
-  'draftDate' | 'draftExercises' | 'draftMemo' | 'draftWorkoutId'
->
+// workoutSessionStore の persist 設定（workout design で定義）
+// セッション状態を永続化し、ページ遷移・リロード後に復元する
+type WorkoutSessionPersistedKeys = {
+  isActive: boolean
+  startedAt: ISODateTimeString | null
+  draftExercises: DraftExercise[]
+}
 ```
 
 ---
@@ -320,6 +321,7 @@ export const Route = createFileRoute('/settings')({
 //   位置: absolute top-12 right-4 z-30
 //   ボタン: w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm
 //          shadow-sm border border-zinc-100
+//          p-0 min-h-[44px] min-w-[44px]（T-003: 視覚サイズ36px + タッチ領域44px）
 //   アイコン: ph ph-gear text-base text-zinc-500
 //
 // APIキー未設定バッジ:
@@ -354,6 +356,7 @@ interface GearIconProps {
 // Xボタン（design-system.html 準拠）:
 //   位置: absolute top-12 right-4 z-30
 //   スタイル: w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm shadow-sm border border-zinc-100
+//            min-h-[44px] min-w-[44px]（T-003: 視覚サイズ36px + タッチ領域44px）
 //   アイコン: ph-bold ph-x text-base text-zinc-500
 
 // -------------------------------------------------------
@@ -377,33 +380,29 @@ interface IdleViewProps {
 //   - 「トレーニングを始める」ボタン（w-[85%] h-13 bg-black text-white rounded-2xl）
 
 // -------------------------------------------------------
-// workoutStore の persist 変更 (src/stores/workoutStore.ts)
+// workoutSessionStore の persist 設定 (src/stores/workoutSessionStore.ts)
+// 詳細は workout design doc を参照
 // -------------------------------------------------------
 
-// Before:
-//   const useWorkoutStore = create<WorkoutStore>()((set, get) => ({ ... }))
-//
-// After:
-//   const useWorkoutStore = create<WorkoutStore>()(
-//     persist(
-//       (set, get) => ({ ... }),
-//       {
-//         name: 'gymini:workout-session',
-//         partialize: (state): WorkoutSessionPersistedKeys => ({
-//           draftDate: state.draftDate,
-//           draftExercises: state.draftExercises,
-//           draftMemo: state.draftMemo,
-//           draftWorkoutId: state.draftWorkoutId,
-//         }),
-//         // T-002: localStorage 不可・パースエラー時はデフォルト初期状態へフォールバック
-//         onRehydrateStorage: () => (_state, error) => {
-//           if (error) {
-//             console.warn('[gymini] workoutStore rehydration failed, using defaults', error)
-//           }
-//         },
-//       }
-//     )
+// const useWorkoutSessionStore = create<WorkoutSessionState>()(
+//   persist(
+//     (set, get) => ({ ... }),
+//     {
+//       name: 'gymini:workout-session',
+//       partialize: (state) => ({
+//         isActive: state.isActive,
+//         startedAt: state.startedAt,
+//         draftExercises: state.draftExercises,
+//       }),
+//       // T-002: localStorage 不可・パースエラー時はデフォルト初期状態へフォールバック
+//       onRehydrateStorage: () => (_state, error) => {
+//         if (error) {
+//           console.warn('[gymini] workoutSessionStore rehydration failed, using defaults', error)
+//         }
+//       },
+//     }
 //   )
+// )
 ```
 
 ---
@@ -413,7 +412,7 @@ interface IdleViewProps {
 | 要件 | 実現方針 |
 |------|--------|
 | 操作性（NFR-001）: 1フレーム以内のページ切り替え | TanStack Router の SPA ルーティング + autoCodeSplitting によるルート別遅延読み込み。ルート遷移はクライアントサイド完結でネットワーク通信なし |
-| データ整合性（NFR-002）: セッションデータ永続化 | Zustand `persist` ミドルウェアで `draftDate`, `draftExercises`, `draftMemo`, `draftWorkoutId` を localStorage に自動保存。`partialize` で永続化対象を限定。localStorage 利用不可またはパースエラー時は `onRehydrateStorage` でデフォルト初期状態へフォールバック（T-002） |
+| データ整合性（NFR-002）: セッションデータ永続化 | Zustand `persist` ミドルウェアで `isActive`, `startedAt`, `draftExercises` を localStorage に自動保存（`gymini:workout-session` キー）。`partialize` で永続化対象を限定。localStorage 利用不可またはパースエラー時は `onRehydrateStorage` でデフォルト初期状態へフォールバック（T-002）。詳細は workout design doc を参照 |
 | レイアウト安定性（NFR-003）: BottomNav一貫性 | pathless layout route (`_app.tsx`) により BottomNav + GearIcon を構造的に制御。FRAME5（/settings）は layout 外に配置し自動的に非表示 |
 
 ---

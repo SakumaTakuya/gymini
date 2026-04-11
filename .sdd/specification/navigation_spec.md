@@ -90,7 +90,7 @@ gymini は5つの論理画面（FRAME1〜5）を持つモバイルフィット�
 | @tanstack/react-router | useMatch | (opts) => Match | 現在のルートマッチ情報。アクティブ状態の判定に使用 |
 | navigation | BottomNav | (component) | 2タブ + AI専用ボタンのボトムナビゲーションコンポーネント |
 | navigation | GearIcon | (component) | 歯車アイコンコンポーネント（APIキーバッジ付き） |
-| navigation | TrainingPage | (component) | トレーニングページ（FRAME1 Idle / FRAME2 Active の二面表示） |
+| workout | TrainingPage | (component) | トレーニングページ（FRAME1 Idle / FRAME2 Active の二面表示）。workout モジュールが実装し、navigation のルートファイルから参照 |
 | navigation | HistoryPage | (component) | 履歴ページ（FRAME3。中身は別specで定義） |
 | navigation | AIChatPage | (component) | AIチャットページ（FRAME4。中身は別specで定義） |
 | navigation | SettingsPage | (component) | 設定ページ（FRAME5。中身は別specで定義） |
@@ -146,7 +146,7 @@ function AppLayout() {
   return (
     <>
       <GearIcon />
-      <main className="pb-24">
+      <main className="flex-1 pb-24">
         <Outlet />
       </main>
       <BottomNav />
