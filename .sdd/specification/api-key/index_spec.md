@@ -4,6 +4,7 @@ title: "APIキー管理"
 type: "spec"
 status: "draft"
 sdd-phase: "specify"
+impl-status: "not-implemented"
 created: "2026-04-11"
 updated: "2026-04-11"
 depends-on: ["prd-api-key"]
@@ -53,7 +54,7 @@ APIキー管理機能は以下の責務を持つ：
 | FR-001 | APIキーを localStorage に保存できる | 必須 | FR_008 | Test |
 | FR-002 | 保存済みのAPIキーを localStorage から読み込める | 必須 | FR_008 | Test |
 | FR-003 | 保存済みのAPIキーを localStorage から削除できる | 必須 | FR_008 | Test |
-| FR-004 | APIキーの設定状態（設定済み / 未設定）を派生値として公開する | 必須 | FR_010 | Test |
+| FR-004 | APIキーの設定状態（設定済み / 未設定）を派生値として公開する（navigation GearIcon 赤バッジにも使用） | 必須 | FR_010, FR_022 | Test |
 | FR-005 | APIキーの表示 / 非表示（パスワードマスク）切替を可能にする | 必須 | FR_009 | Test |
 | FR-006 | アプリ起動時に localStorage から保存済みAPIキーを自動読み込みする | 必須 | FR_008 | Test |
 

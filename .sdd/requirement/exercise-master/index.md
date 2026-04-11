@@ -40,6 +40,7 @@ graph TB
         subgraph "設定画面"
             ListExercises[種目一覧表示]
             ManualAdd[手動追加]
+            ManualEdit[編集]
             ManualDelete[手動削除]
         end
     end
@@ -47,6 +48,7 @@ graph TB
     User --- Search
     User --- ListExercises
     User --- ManualAdd
+    User --- ManualEdit
     User --- ManualDelete
     AutoRegister -.->|"<<拡張>>"| Search
 ```
@@ -80,7 +82,7 @@ requirementDiagram
 
     functionalRequirement ExerciseManualCRUD {
         id: FR_007
-        text: "設定画面で種目の一覧表示・手動追加・削除"
+        text: "設定画面で種目の一覧表示・手動追加・編集・削除"
         risk: medium
         verifymethod: test
     }

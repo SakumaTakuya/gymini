@@ -7,7 +7,7 @@ sdd-phase: "plan"
 impl-status: "not-implemented"
 created: "2026-04-11"
 updated: "2026-04-11"
-depends-on: ["spec-settings"]
+depends-on: ["spec-settings", "design-exercise-master", "design-api-key"]
 tags: ["settings", "phase-2"]
 category: "view"
 priority: "medium"

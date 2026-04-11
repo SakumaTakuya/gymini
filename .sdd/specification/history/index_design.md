@@ -115,7 +115,7 @@ graph TD
 
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
-| dateStringSchema | "YYYY-MM-DD" の Zod スキーマ + DateString branded type + ヘルパー関数 | Zod | `src/schemas/date.ts` |
+| dateStringSchema | "YYYY-MM-DD" の Zod スキーマ + DateString branded type + ヘルパー関数。**本モジュールが定義元（canonical）。** workout 等の他モジュールはここから import する | Zod | `src/schemas/date.ts` |
 | history ルート | 履歴画面のルート定義 | useCalendar, useWorkoutsForDate, UI components | `src/routes/history.tsx` |
 | useCalendar | 表示月・選択日・ワークアウト日集合の管理 | TanStack Query, workoutRepository | `src/hooks/useCalendar.ts` |
 | useWorkoutsForDate | 指定日付のワークアウト記録取得 | TanStack Query, workoutRepository | `src/hooks/useWorkoutsForDate.ts` |
