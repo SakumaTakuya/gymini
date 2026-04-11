@@ -216,8 +216,8 @@ AI: 「スクワットを今日のセッションに追加しますか？」
 ```
 
 **インラインボタンUIスペック:**
-- キャンセル: `bg-zinc-100 text-black font-semibold rounded-xl h-9`
-- 実行（追加する等）: `bg-black text-white font-bold rounded-xl h-9` + アイコン
+- キャンセル: `bg-zinc-100 text-black font-semibold rounded-xl h-11`
+- 実行（追加する等）: `bg-black text-white font-bold rounded-xl h-11` + アイコン
 - 2ボタンを `flex gap-2` で横並び、各 `flex-1`
 
 **検証方法:** テストによる検証

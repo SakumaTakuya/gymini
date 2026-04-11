@@ -7,7 +7,7 @@ sdd-phase: "plan"
 impl-status: "not-implemented"
 created: "2026-04-11"
 updated: "2026-04-11"
-depends-on: ["spec-ai-chat"]
+depends-on: ["spec-ai-chat", "design-workout", "design-exercise-master", "design-api-key"]
 tags: ["ai", "chat", "function-calling", "gemini", "phase-3"]
 category: "ai"
 priority: "high"
@@ -485,33 +485,48 @@ async function sendMessage(text: string) {
 
     // 4. Function Call の処理
     if (response.functionCalls) {
+      // 4a. 読み取りツールを全て先に実行し、結果を収集する
+      const readResults: Array<{ name: string; args: Record<string, unknown>; result: ToolExecutionResult }> = []
+      let writeCall: FunctionCallRequest | null = null
+
       for (const fc of response.functionCalls) {
         if (isWriteTool(fc.name)) {
-          // 書き込みツール → PendingAction を作成し確認待ち
-          const pendingAction = createPendingAction(fc)
-          chatStore.addMessage({
-            role: 'assistant',
-            content: response.text ?? '',
-            pendingAction,
-            ...
-          })
-          // ユーザーの approve/reject を待つ（approve 時に executeWriteTool を呼ぶ）
-          return
+          // 書き込みツールは最初の1つだけ保持（同時に1つまで）
+          if (!writeCall) writeCall = fc
         } else {
           // 読み取りツール → 即座に実行
           const result = executeReadTool(fc.name, fc.args)
-          // ツール結果を Gemini API に返送
-          const followUp = await geminiClient.sendFunctionResult(history, [
-            { name: fc.name, response: result }
-          ])
-          // 最終応答をストアに追加
-          chatStore.addMessage({
-            role: 'assistant',
-            content: followUp.text ?? '',
-            toolCalls: [{ toolName: fc.name, args: fc.args, result }],
-            ...
-          })
+          readResults.push({ name: fc.name, args: fc.args, result })
         }
+      }
+
+      // 4b. 書き込みツールがある場合 → PendingAction を作成し確認待ち
+      if (writeCall) {
+        // 読み取り結果があれば toolCalls に含める
+        const pendingAction = createPendingAction(writeCall)
+        chatStore.addMessage({
+          role: 'assistant',
+          content: response.text ?? '',
+          toolCalls: readResults.map(r => ({ toolName: r.name, args: r.args, result: r.result })),
+          pendingAction,
+          ...
+        })
+        // ユーザーの approve/reject を待つ（approve 時に executeWriteTool を呼ぶ）
+        return
+      }
+
+      // 4c. 読み取りツールのみ → 全結果を Gemini API に返送
+      if (readResults.length > 0) {
+        const followUp = await geminiClient.sendFunctionResult(history,
+          readResults.map(r => ({ name: r.name, response: r.result })),
+          abortController.signal
+        )
+        chatStore.addMessage({
+          role: 'assistant',
+          content: followUp.text ?? '',
+          toolCalls: readResults.map(r => ({ toolName: r.name, args: r.args, result: r.result })),
+          ...
+        })
       }
     } else {
       // テキスト応答のみ

@@ -4,6 +4,7 @@ title: "設定画面"
 type: "spec"
 status: "draft"
 sdd-phase: "specify"
+impl-status: "not-implemented"
 created: "2026-04-11"
 updated: "2026-04-11"
 depends-on: ["prd-settings"]

@@ -146,12 +146,15 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
     hasApiKey: false,
 
     setApiKey: (key: string) => {
+      if (key === '') {
+        throw new Error('空文字列は setApiKey に渡せません。削除には deleteApiKey() を使用してください。')
+      }
       try {
         localStorage.setItem(STORAGE_KEY, key)
       } catch {
         // T-002: localStorage 書き込み失敗時も状態は更新する
       }
-      set({ apiKey: key, hasApiKey: key !== '' })
+      set({ apiKey: key, hasApiKey: true })
     },
 
     deleteApiKey: () => {

@@ -117,10 +117,10 @@ graph TD
 
 # 5. データモデル
 
-```typescript
-// src/types/index.ts
+> **⚠️ 非推奨（Deprecated）**: 以下の `src/types/index.ts` の型定義は TypeScript 移行時点のスナップショットである。新しい機能設計書（workout, exercise-master 等）では Zod スキーマから型を導出する方針に移行しており、実装時には各機能の `src/schemas/*.ts` で定義される Zod スキーマ由来の型が正となる。`src/types/index.ts` は新機能の実装に伴い段階的に削除する。
 
-export interface Exercise {
+```typescript
+// src/types/index.ts（非推奨: 新機能では src/schemas/*.ts の Zod スキーマを使用すること）
   id: string
   name: string
 }

@@ -4,6 +4,7 @@ title: "履歴画面"
 type: "spec"
 status: "draft"
 sdd-phase: "specify"
+impl-status: "not-implemented"
 created: "2026-04-07"
 updated: "2026-04-09"
 depends-on: ["prd-history"]

@@ -4,6 +4,7 @@ title: "AIチャット × Function Calling"
 type: "spec"
 status: "draft"
 sdd-phase: "specify"
+impl-status: "not-implemented"
 created: "2026-04-11"
 updated: "2026-04-11"
 depends-on: ["prd-ai-chat"]
@@ -288,7 +289,7 @@ type ExerciseBreakdown = {
     → AI: 「キャンセルしました。」
 ```
 
-## シナリオ7: AI応答の停止
+## シナリオ6: AI応答の停止
 
 ```
 1. ユーザー: 「今月のトレーニング内容を全部教えて」
@@ -301,7 +302,7 @@ type ExerciseBreakdown = {
 5. ユーザーが即座に新しいメッセージを送信可能
 ```
 
-## シナリオ8: APIキー未設定時
+## シナリオ7: APIキー未設定時
 
 ```
 1. ユーザー: 「最近のトレーニング内容を教えて」
@@ -468,4 +469,4 @@ sequenceDiagram
 | A-002 | Client-Only Architecture | 準拠: 中間サーバーなし。クライアントから直接 Gemini API を呼び出す |
 | T-001 | TypeScript Strict Mode | 準拠: 全型定義で any 型を使用しない（Section 4.4） |
 | T-002 | No Runtime Errors | 準拠: Gemini API エラーは try-catch で捕捉しフォールバック（NFR-003, Section 8） |
-| T-003 | Mobile-First UI | 準拠: チャットバブルの UIスペックは PRD で定義済み。インラインボタンは h-11（44px）でタップターゲットを確保する必要あり（PRD の h-9 指定は T-003 違反のため要修正） |
+| T-003 | Mobile-First UI | 準拠: チャットバブルの UIスペックは PRD で定義済み。インラインボタンは h-11（44px）でタップターゲットを確保（PRD も h-11 に統一済み） |

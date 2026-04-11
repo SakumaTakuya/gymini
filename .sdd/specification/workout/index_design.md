@@ -197,15 +197,13 @@ UIは Hook Layer だけを知る。State Layer・Data Layer は hooks の実装�
 const STORAGE_KEY = 'gymini:workouts'
 
 // -------------------------------------------------------
-// 日付・日時スキーマ（src/schemas/date.ts — history モジュールと共有）
+// 日付・日時スキーマ（src/schemas/date.ts）
+// dateStringSchema / DateString / toDateString / todayDateString は
+// history モジュールが定義元（canonical）。本モジュールは import して使用する。
 // -------------------------------------------------------
-import { z } from 'zod'
+import { dateStringSchema, type DateString } from './date'  // history が定義元
 
-// DateString: "YYYY-MM-DD" 形式の branded type（history で定義済み）
-export const dateStringSchema = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
-export type DateString = string & { readonly __brand: 'DateString' }
-
-// ISODateTimeString: ISO 8601 datetime の branded type（新規追加）
+// ISODateTimeString: ISO 8601 datetime の branded type（本モジュールで追加定義）
 export const isoDateTimeSchema = z.string().datetime()
 export type ISODateTimeString = string & { readonly __brand: 'ISODateTimeString' }
 
