@@ -62,7 +62,7 @@ gymini は歯車アイコンから全画面（FRAME1〜4）でアクセス可能
 | FR-008 | 種目をリアルタイム検索で絞り込みできる | 必須 | FR_007 | Test |
 | FR-009 | 種目の手動追加・編集・削除ができる | 必須 | FR_007 | Test |
 
-> **Note (FR-001, FR-002)**: /settings ルートと戻りナビゲーションは navigation 機能（SettingsPage コンポーネント）で実装済み。本 spec はそのページ内のコンテンツ（APIキーセクション + 種目マスターセクション）を定義する。
+> **Note (FR-001, FR-002)**: /settings ルートと戻りナビゲーションは navigation 機能（SettingsPage コンポーネント）で実装済み。本 spec はそのページ内のコンテンツ（APIキーセクション + 種目マスターセクション）を定義する。詳細は [navigation_spec.md](../navigation_spec.md) を参照。
 
 > **Note (FR-003〜FR-006)**: APIキーの永続化ロジックは api-key モジュールが提供する。本 spec はUI統合のみを定義。
 
@@ -84,7 +84,7 @@ gymini は歯車アイコンから全画面（FRAME1〜4）でアクセス可能
 | settings | SettingsContent | (component) | 設定画面のコンテンツ部分。APIキーセクション + 種目マスターセクションを統合 |
 | settings | APIKeySection | (component) | APIキー管理セクション。settingsStore を使用 |
 | settings | ExerciseMasterSection | (component) | 種目マスター管理セクション。exerciseRepository を使用 |
-| api-key (外部) | settingsStore | hasApiKey, apiKey, setApiKey, deleteApiKey | APIキーの永続化。設定画面から参照（B-001: localStorage のみ） |
+| settings | settingsStore | hasApiKey, apiKey, setApiKey, deleteApiKey | APIキーの永続化（`src/stores/settingsStore.ts`）。navigation GearIcon からも参照（B-001: localStorage のみ） |
 | exercise-master (外部) | ExerciseRepository | list, add, update, remove, search | 種目CRUDの永続化。設定画面から参照 |
 
 ## 4.1. 型定義
@@ -237,7 +237,7 @@ sequenceDiagram
 - 設定画面（/settings）は navigation の layout route 外に配置される。BottomNav / GearIcon は非表示
 - 戻りナビゲーション（Xボタン / ブラウザバック）は navigation モジュールの SettingsPage が実装済み
 - APIキーは localStorage にのみ保存する。外部サーバーに送信しない（B-001）
-- APIキーのバリデーション（Gemini API への接続テスト）はスコープ外。Phase 3（AIチャット）で実装
+- APIキーのバリデーション（Gemini API への接続テスト）はスコープ外。Phase 3（AIチャット）で実装。`APIKeyStatus` に `'error'` 状態を追加するのも Phase 3 スコープ
 - 種目マスターデータは localStorage に保存する（B-001, A-002）
 - 設定画面のコンテンツは SettingsPage の children または内部コンポーネントとして配置する
 - TypeScript strict mode を遵守する（T-001）
@@ -250,7 +250,7 @@ sequenceDiagram
 | PRD要求ID | 要件 | Spec対応箇所 |
 |----------|------|------------|
 | FR_021 | 歯車アイコンから設定画面へ遷移 | FR-001（navigation 実装済み） |
-| FR_022 | APIキー未設定時に赤バッジ表示 | navigation GearIcon で実装済み。FR-006 でステータス表示 |
+| FR_022 | APIキー未設定時に赤バッジ表示 | navigation GearIcon が `settingsStore.hasApiKey` を参照して表示。本モジュールは `hasApiKey` の公開のみ担当 |
 | FR_023 | 閉じるボタンで遷移元に戻る | FR-002（navigation 実装済み） |
 | FR_024 | APIキー設定セクション表示 | FR-003, FR-004, FR-005, FR-006 |
 | FR_025 | 種目マスター管理セクション表示 | FR-007, FR-008, FR-009 |
