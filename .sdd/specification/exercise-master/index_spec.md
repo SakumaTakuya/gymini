@@ -24,7 +24,7 @@ risk: "high"
 
 gymini の Phase 1 中核機能。トレーニング種目のマスターデータを管理し、ワークアウト記録時の種目選択と設定画面での手動管理を提供する。
 
-ワークアウト記録（[workout](../workout/index_spec.md)）は種目マスターの `exerciseId` と `exerciseName` を参照しており、種目マスターはアプリ全体のマスターデータ基盤となる。また、Phase 3 の AI コーチング機能がユーザーのトレーニング種目一覧を読み取るため、外部モジュールから利用可能な公開インターフェースが必要となる。
+ワークアウト記録（[index_spec.md](../workout/index_spec.md)）は種目マスターの `exerciseId` と `exerciseName` を参照しており、種目マスターはアプリ全体のマスターデータ基盤となる。また、Phase 3 の AI コーチング機能がユーザーのトレーニング種目一覧を読み取るため、外部モジュールから利用可能な公開インターフェースが必要となる。
 
 # 2. 概要
 
@@ -35,7 +35,7 @@ gymini の Phase 1 中核機能。トレーニング種目のマスターデー�
 - **一覧表示**: 設定画面で登録済みの種目一覧を表示する
 - **手動管理**: 設定画面から種目の追加・編集（名前変更）・削除を行う
 
-本モジュールは独立したデータ管理モジュールであり、ワークアウトモジュール（[workout](../workout/index_spec.md)）や設定画面（[settings](../settings/index_spec.md)）、将来の AI モジュールから利用される。他のドメインモジュールには依存しない。
+本モジュールは独立したデータ管理モジュールであり、ワークアウトモジュール（[index_spec.md](../workout/index_spec.md)）や設定画面（[index_spec.md](../settings/index_spec.md)）、将来の AI モジュールから利用される。他のドメインモジュールには依存しない。
 
 # 3. 要求定義
 
@@ -51,7 +51,7 @@ gymini の Phase 1 中核機能。トレーニング種目のマスターデー�
 
 | ID | カテゴリ | 要件 | 目標値 |
 |----|--------|------|--------|
-| NFR-001 | データ整合性 | 種目名は一意であること（重複登録を防止する） | create / update 時に一意性を保証 |
+| NFR-001 | データ整合性 | 種目名は一意であること（重複登録を防止する）。一意性の判定は大文字小文字を区別する（case-sensitive）。ただし検索（search）は case-insensitive | create / update 時に一意性を保証 |
 | NFR-002 | 操作性 | 検索結果が体感できる遅延なく表示されること | 一般的なデータ量（数百件以下）で 100ms 以内 |
 
 # 4. API
@@ -62,8 +62,8 @@ gymini の Phase 1 中核機能。トレーニング種目のマスターデー�
 |---------|--------------|--------|------|
 | exercise | ExerciseRepository | getAll() | 登録済みの全種目を取得する |
 | exercise | ExerciseRepository | search(query) | 部分一致検索（大文字小文字を区別しない）で一致する種目を返す。query が空文字列または空白のみの場合は全件返す |
-| exercise | ExerciseRepository | create(name) | 新しい種目を登録する。登録した Exercise を返す。名前が重複する場合は例外をスローする |
-| exercise | ExerciseRepository | update(id, name) | 指定 ID の種目名を変更する。変更後の Exercise を返す。名前が重複する場合・ID が存在しない場合は例外をスローする |
+| exercise | ExerciseRepository | create(name) | 新しい種目を登録する。登録した Exercise を返す。name が空文字列または空白のみの場合、または名前が重複する場合は例外をスローする |
+| exercise | ExerciseRepository | update(id, name) | 指定 ID の種目名を変更する。変更後の Exercise を返す。name が空文字列または空白のみの場合、名前が重複する場合・ID が存在しない場合は例外をスローする |
 | exercise | ExerciseRepository | remove(id) | 指定 ID の種目を削除する。存在しない ID の場合は何もしない（冪等）。（`delete` は JS 予約語のため `remove` を使用） |
 
 ## 4.1. 型定義
@@ -201,14 +201,14 @@ sequenceDiagram
     else 手動削除
         User->>SettingsUI: 種目の「削除」をタップ
         SettingsUI->>ExerciseRepository: remove(id)
-        ExerciseRepository-->>SettingsUI: 削除完了
+        note over ExerciseRepository,SettingsUI: remove は void を返す（冪等）
         SettingsUI-->>User: 更新された一覧を表示
     end
 ```
 
 # 8. 制約事項
 
-- 種目名は一意でなければならない。重複する名前での登録・変更はエラーとなる
+- 種目名は一意でなければならない（大文字小文字を区別する）。重複する名前での登録・変更はエラーとなる。なお、search() による検索は大文字小文字を区別しない（検索ヒット率優先）
 - ワークアウト記録（WorkoutExercise）に保存される `exerciseName` は記録時のスナップショットである。種目マスターで種目が編集（名前変更）・削除されても、既存のワークアウト記録は影響を受けない（ワークアウト仕様書の制約事項を継承）
 - 種目データはブラウザの localStorage に永続化される（A-002: Client-Only Architecture）
 - localStorage アクセスおよび JSON パースのエラーは適切にハンドリングし、フォールバック値（空配列）を返すこと（T-002: No Runtime Errors）

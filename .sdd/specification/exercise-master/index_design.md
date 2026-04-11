@@ -97,7 +97,7 @@ graph TD
 |------------|----------|------|--------|
 | workout | search, create | ワークアウト記録時の種目検索・自動登録 | [index_design.md](../workout/index_design.md) |
 | settings | getAll, search, create, update, remove | 設定画面での種目一覧・検索・追加・編集・削除 | [index_design.md](../settings/index_design.md) |
-| ai-chat（Phase 3） | getAll, search | AI がコンテキストとして種目一覧を参照 | 未定義 |
+| ai-chat（Phase 3） | getAll, search | AI がコンテキストとして種目一覧を参照 | 未定義（Phase 3 スコープ — 設計書未作成） |
 
 ---
 
@@ -133,7 +133,7 @@ export function getAll(): Exercise[] {
 
 export function search(query: string): Exercise[] {
   // 部分一致検索。大文字小文字を区別しない。
-  // query が空の場合は全件返す
+  // query が空文字列または空白のみ（trim 後に空文字列）の場合は全件返す
 }
 
 export function create(name: string): Exercise {
