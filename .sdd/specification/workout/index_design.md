@@ -44,7 +44,7 @@ risk: "high"
 
 - **セッションライフサイクル中心**: FRAME1（Idle）→ FRAME2（Active）→ 保存 → FRAME1 のフローを中心とした設計。FRAME1/FRAME2 は `/training` ルート内の状態切替（navigation 機能がルーティングを管理）
 - **セット記録のスムーズさ**: チェックで完了→自動追加→前セット値自動入力の連続フロー（FR-028, FR-006）
-- **種目カードの状態管理**: 4状態の明確な遷移によるUI制御（FR-030）
+- **種目カードの状態管理**: 3状態（collapsed/idle/recording）の明確な遷移によるUI制御（FR-030）
 - **セッション永続化**: Zustand persist で下書き状態を自動永続化し、ページ遷移・リロード後も復元可能（navigation FR-006）。「終了」タップ時に WorkoutRepository.save で正式保存
 - **オフライン動作**: サーバー不要でブラウザ単体で完結（A-002）
 - **Phase 3への拡張性**: AIが `WorkoutRepository` のAPIを利用できるよう、ストア外からも呼び出せる純粋関数として設計

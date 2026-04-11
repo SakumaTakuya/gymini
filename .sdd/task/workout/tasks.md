@@ -55,6 +55,8 @@ priority: "high"
 
 ### Phase 4: 統合（ページ）
 
+> **Note**: TrainingPage と IdleView は本モジュール（workout）が作成する。navigation タスクの 2.3 (IdleView) と 2.4 (TrainingPage) は削除済み。navigation はルートファイル（`_app/training.tsx`）のみ作成し、`component: TrainingPage` で本モジュールのコンポーネントを参照する。
+
 | # | タスク | 説明 | 完了条件 | 依存 |
 |:---|:---|:---|:---|:---|
 | 4.1 | TrainingPage 実装 | `src/pages/TrainingPage.tsx`。`useWorkoutSession().isActive` で IdleView（FRAME1）/ ActiveSessionView（FRAME2）を切替。ルートファイル `src/routes/_app/training.tsx` は navigation タスクで作成済みの前提 | `isActive=false` → IdleView 表示。`isActive=true` → ActiveSessionView 表示。統合テスト通過 | 2.4, 4.2, 4.3 |
@@ -65,7 +67,7 @@ priority: "high"
 
 | # | タスク | 説明 | 完了条件 | 依存 |
 |:---|:---|:---|:---|:---|
-| 5.1 | E2E テスト | Playwright で FRAME1 → FRAME2 → 種目追加 → セット記録（チェック→自動追加→前セット値確認）→ 完了セット編集/削除 → 別種目追加（排他制御確認）→ 終了 → FRAME1 の全フローをテスト | 全 E2E テスト通過。セッションライフサイクル・3状態遷移・排他制御・タイマー表示を検証 | 4.2 |
+| 5.1 | E2E テスト | Playwright で FRAME1 → FRAME2 → 種目追加 → セット記録（チェック→自動追加→前セット値確認）→ 完了セット編集/削除 → 別種目追加（排他制御確認）→ 終了 → FRAME1 の全フローをテスト | 全 E2E テスト通過。セッションライフサイクル・3状態遷移・排他制御・タイマー表示を検証 | 4.1 |
 
 ### Phase 6: 仕上げ
 

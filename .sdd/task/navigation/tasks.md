@@ -46,18 +46,16 @@ priority: "high"
 |:--|:------|:-----|:--------|:----|
 | 2.1 | BottomNav コンポーネント | `src/components/BottomNav.tsx` を作成。TanStack Router の `Link` で 2タブ（トレ: `/training`, 履歴: `/history`）+ AI専用pill型ボタン（`/ai`）を実装。`activeProps` / `inactiveProps` でアクティブ状態を制御。Phosphor Icons（`PhBarbell`, `PhClockCounterClockwise`, `PhRobot`）を使用。Tailwind: `fixed bottom-0 w-full h-24 bg-white/80 backdrop-blur-xl` | BottomNav コンポーネントテスト（3タブ表示、アクティブ状態切り替え、AIボタンのpill型スタイル）が通ること。タップターゲット 44px 以上（T-003） | 1.2, 1.5 |
 | 2.2 | GearIcon コンポーネント | `src/components/GearIcon.tsx` を作成。TanStack Router の `Link to="/settings"` で歯車アイコンを実装。`settingsStore` から `hasApiKey` を取得し、未設定時に赤バッジを表示。FRAME2 用の `showEndButton`, `elapsedTime`, `onEndSession` props をサポート。Tailwind: `absolute top-12 right-4 z-30` | GearIcon テスト（表示、バッジ表示/非表示、FRAME2の終了ボタン・タイマー表示）が通ること | 1.2, 1.5 |
-| 2.3 | IdleView コンポーネント | `src/components/IdleView.tsx` を作成。アバター + 日付 + 挨拶メッセージ + 「トレーニングを始める」ボタンを表示。`onStartTraining: () => void` を props で受け取る。ボタン: `w-[85%] h-13 bg-black text-white rounded-2xl` | IdleView テスト（表示、ボタンクリック）が通ること。タップターゲット 44px 以上 | 1.2 |
-| 2.4 | TrainingPage | `src/pages/TrainingPage.tsx` を作成。`useWorkoutSession` で `isActive` を取得し、`false` → `IdleView`（FRAME1）、`true` → `ActiveSessionView`（FRAME2）を切り替え表示。`src/routes/_app/training.tsx` で `createFileRoute('/_app/training')` としてルート登録 | TrainingPage テスト（Idle/Active 切り替え）が通ること（FR-001, FR-002） | 2.1, 2.2, 2.3 |
-| 2.5 | HistoryPage（プレースホルダー） | `src/pages/HistoryPage.tsx` を作成。プレースホルダー表示。`src/routes/_app/history.tsx` で `createFileRoute('/_app/history')` としてルート登録 | HistoryPage がレンダリングエラーなく表示されること（FR-003） | 1.5 |
-| 2.6 | AIChatPage（プレースホルダー） | `src/pages/AIChatPage.tsx` を作成。プレースホルダー表示。`src/routes/_app/ai.tsx` で `createFileRoute('/_app/ai')` としてルート登録 | AIChatPage がレンダリングエラーなく表示されること。BottomNavのAIボタンから遷移可能（FR-004） | 1.5 |
-| 2.7 | SettingsPage | `src/pages/SettingsPage.tsx` を作成。`useRouter` + `useCanGoBack` で X ボタンの戻りナビゲーションを実装。`canGoBack` なら `router.history.back()`、なければ `/training` にフォールバック。`src/routes/settings.tsx`（layout 外）で `createFileRoute('/settings')` としてルート登録 | SettingsPage テスト（Xボタンで戻る、直接アクセス時 /training フォールバック）が通ること（FR-005）。layout 外のため BottomNav/GearIcon が非表示であること（FR-008） | 1.2, 1.3 |
-| 2.8 | workoutStore persist 追加 | `src/stores/workoutStore.ts` に Zustand `persist` ミドルウェアを追加。`partialize` で `draftDate`, `draftExercises`, `draftMemo`, `draftWorkoutId` のみ永続化。キー: `gymini:workout-session`。`onRehydrateStorage` でエラーハンドリング（T-002） | persist 追加後も既存テストが通ること。localStorage モックでリロード後のデータ復元が確認できること（FR-006, NFR-002） | - |
+| 2.3 | training ルートファイル | `src/routes/_app/training.tsx` を作成。`createFileRoute('/_app/training')` で TrainingPage をルート登録する。TrainingPage コンポーネントの実装は workout タスク（4.1）が担当 | ルートファイルが routeTree.gen.ts に認識され、`/training` でアクセス可能なこと | 1.5 |
+| 2.4 | HistoryPage（プレースホルダー） | `src/pages/HistoryPage.tsx` を作成。プレースホルダー表示。`src/routes/_app/history.tsx` で `createFileRoute('/_app/history')` としてルート登録 | HistoryPage がレンダリングエラーなく表示されること（FR-003） | 1.5 |
+| 2.5 | AIChatPage（プレースホルダー） | `src/pages/AIChatPage.tsx` を作成。プレースホルダー表示。`src/routes/_app/ai.tsx` で `createFileRoute('/_app/ai')` としてルート登録 | AIChatPage がレンダリングエラーなく表示されること。BottomNavのAIボタンから遷移可能（FR-004） | 1.5 |
+| 2.6 | SettingsPage | `src/pages/SettingsPage.tsx` を作成。`useRouter` + `useCanGoBack` で X ボタンの戻りナビゲーションを実装。`canGoBack` なら `router.history.back()`、なければ `/training` にフォールバック。`src/routes/settings.tsx`（layout 外）で `createFileRoute('/settings')` としてルート登録 | SettingsPage テスト（Xボタンで戻る、直接アクセス時 /training フォールバック）が通ること（FR-005）。layout 外のため BottomNav/GearIcon が非表示であること（FR-008） | 1.2, 1.3 |
 
 ### Phase 3: 統合
 
 | # | タスク | 説明 | 完了条件 | 依存 |
 |:--|:------|:-----|:--------|:----|
-| 3.1 | _app layout にコンポーネント統合 | `src/routes/_app.tsx` のプレースホルダーを実際の `GearIcon` + `BottomNav` コンポーネントに置換。`main` タグに `flex-1 pb-24` を適用 | FRAME1〜4 で BottomNav + GearIcon が表示され、FRAME5 で非表示になること（FR-007, FR-008, FR-009） | 2.1, 2.2, 2.4, 2.5, 2.6, 2.7 |
+| 3.1 | _app layout にコンポーネント統合 | `src/routes/_app.tsx` のプレースホルダーを実際の `GearIcon` + `BottomNav` コンポーネントに置換。`main` タグに `flex-1 pb-24` を適用 | FRAME1〜4 で BottomNav + GearIcon が表示され、FRAME5 で非表示になること（FR-007, FR-008, FR-009） | 2.1, 2.2, 2.3, 2.4, 2.5, 2.6 |
 | 3.2 | 旧モジュール廃止 | `src/stores/navigationStore.ts`, `src/hooks/useNavigation.ts`, `src/types/index.ts` の Route/NavRoute 型を削除（存在する場合）。参照コードがないことを確認 | `npm run build` が通ること。削除後に TypeScript コンパイルエラーがないこと | 3.1 |
 
 ### Phase 4: テスト
@@ -66,7 +64,7 @@ priority: "high"
 |:--|:------|:-----|:--------|:----|
 | 4.1 | コンポーネントテスト | BottomNav（Link アクティブ状態、タブ切り替え、AIボタン）、GearIcon（バッジ表示、FRAME2の終了ボタン・タイマー）、TrainingPage（Idle/Active 切り替え）のコンポーネントテストを作成 | テストが全て通ること（FR-001, FR-002, FR-007, FR-009, FR-010, FR-011） | 3.1 |
 | 4.2 | 統合テスト: ルート遷移 | `/training` → `/history` → `/ai` → `/settings` → back の遷移テスト。layout route の BottomNav 表示/非表示を検証 | 統合テストが通ること（FR-004, FR-005, FR-008, FR-012） | 3.1 |
-| 4.3 | 統合テスト: workoutStore persist | localStorage モックで persist のリロード後復元テスト。localStorage 不可時のフォールバックテスト | テストが通ること（NFR-002, T-002） | 2.8, 3.1 |
+| 4.3 | 統合テスト: セッション永続化 | ページ遷移後のセッションデータ維持を検証。workoutSessionStore の persist は workout タスク（2.2）で実装済みの前提 | テストが通ること（NFR-002） | 3.1 |
 | 4.4 | Playwright E2E テスト | ナビゲーション全体フロー: (1) /training 表示 → タブ遷移 → AI ボタン遷移 (2) 歯車アイコン → /settings → Xボタンで戻り (3) セッション中のページ遷移でデータ維持 (4) ブラウザバックボタンで /settings から戻れること | `npx playwright test` が通ること（D-001, FR-005） | 3.1 |
 
 ### Phase 5: 仕上げ
@@ -93,12 +91,10 @@ graph TD
     subgraph "Phase 2: コア実装"
         T2_1["2.1 BottomNav"]
         T2_2["2.2 GearIcon"]
-        T2_3["2.3 IdleView"]
-        T2_4["2.4 TrainingPage"]
-        T2_5["2.5 HistoryPage"]
-        T2_6["2.6 AIChatPage"]
-        T2_7["2.7 SettingsPage"]
-        T2_8["2.8 workoutStore persist"]
+        T2_3["2.3 training ルートファイル"]
+        T2_4["2.4 HistoryPage"]
+        T2_5["2.5 AIChatPage"]
+        T2_6["2.6 SettingsPage"]
     end
 
     subgraph "Phase 3: 統合"
@@ -126,26 +122,22 @@ graph TD
     T1_5 --> T2_1
     T1_2 --> T2_2
     T1_5 --> T2_2
-    T1_2 --> T2_3
-    T2_1 --> T2_4
-    T2_2 --> T2_4
-    T2_3 --> T2_4
+    T1_5 --> T2_3
+    T1_5 --> T2_4
     T1_5 --> T2_5
-    T1_5 --> T2_6
-    T1_2 --> T2_7
-    T1_3 --> T2_7
+    T1_2 --> T2_6
+    T1_3 --> T2_6
 
     T2_1 --> T3_1
     T2_2 --> T3_1
+    T2_3 --> T3_1
     T2_4 --> T3_1
     T2_5 --> T3_1
     T2_6 --> T3_1
-    T2_7 --> T3_1
     T3_1 --> T3_2
 
     T3_1 --> T4_1
     T3_1 --> T4_2
-    T2_8 --> T4_3
     T3_1 --> T4_3
     T3_1 --> T4_4
 
@@ -187,20 +179,20 @@ graph TD
 
 | 要求 ID | 要件 | 対応タスク |
 |:--------|:----|:----------|
-| FR-001 | トレーニングページ: セッション非アクティブ時に Idle 画面表示 | 2.3, 2.4 |
-| FR-002 | トレーニングページ: セッションアクティブ時に Active 画面表示 | 2.4 |
-| FR-003 | 履歴ページをルートとして用意 | 2.5 |
-| FR-004 | AIチャットページをルートとして用意し BottomNav AI ボタンから常時アクセス可能 | 2.6, 2.1 |
-| FR-005 | 設定ページを歯車アイコンから遷移可能、X ボタンまたはブラウザバックで戻る | 2.7 |
-| FR-006 | セッションデータをページ遷移・リロード間で永続化 | 2.8, 4.3 |
+| FR-001 | トレーニングページ: セッション非アクティブ時に Idle 画面表示 | 2.3（ルートファイル）, workout タスク 4.1/4.2 |
+| FR-002 | トレーニングページ: セッションアクティブ時に Active 画面表示 | 2.3（ルートファイル）, workout タスク 4.1/4.3 |
+| FR-003 | 履歴ページをルートとして用意 | 2.4 |
+| FR-004 | AIチャットページをルートとして用意し BottomNav AI ボタンから常時アクセス可能 | 2.5, 2.1 |
+| FR-005 | 設定ページを歯車アイコンから遷移可能、X ボタンまたはブラウザバックで戻る | 2.6 |
+| FR-006 | セッションデータをページ遷移・リロード間で永続化 | 4.3, workout タスク 2.2（persist 実装） |
 | FR-007 | BottomNav で Training / History タブと AI ボタンを常に表示（FRAME1〜4） | 2.1, 3.1 |
-| FR-008 | BottomNav は FRAME5（設定）では非表示 | 2.7, 3.1 |
+| FR-008 | BottomNav は FRAME5（設定）では非表示 | 2.6, 3.1 |
 | FR-009 | 歯車アイコンを FRAME1〜4 の右上に固定表示 | 2.2, 3.1 |
 | FR-010 | 歯車アイコンに APIキー未設定時の赤バッジ表示 | 2.2 |
 | FR-011 | FRAME2 では歯車アイコン右隣に「終了」ボタン、下にタイマーpill | 2.2 |
 | FR-012 | 4 つの論理ルートをクライアントサイドで切り替え | 1.1, 1.3, 1.4, 1.5 |
 | NFR-001 | ルーティング遷移 16ms 以内 | 1.1（TanStack Router SPA + autoCodeSplitting） |
-| NFR-002 | セッションデータのリロード後復元 | 2.8, 4.3 |
+| NFR-002 | セッションデータのリロード後復元 | 4.3, workout タスク 2.2 |
 | NFR-003 | BottomNav レイアウトが全画面で一貫 | 2.1, 3.1 |
 
 ---
