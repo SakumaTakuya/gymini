@@ -4,7 +4,7 @@ title: "ページナビゲーション"
 type: "design"
 status: "draft"
 sdd-phase: "plan"
-impl-status: "not-implemented"
+impl-status: "implemented"
 created: "2026-03-28"
 updated: "2026-04-11"
 depends-on: ["spec-navigation"]
@@ -21,23 +21,20 @@ category: "ui"
 
 # 1. 実装ステータス
 
-**ステータス:** 🔴 未実装（再設計）
+**ステータス:** 🟢 実装済み
 
-> v1.x（2026-03-29）で Zustand 状態ベース + 2ルート + FAB構成を実装済みだったが、
-> CONSTITUTION v3.0.0 準拠（TanStack Router 採用）および PRD 準拠の再設計に伴い全面刷新する。
-
-| モジュール/機能 | ステータス | 備考 |
+| モジ��ール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| TanStack Router セットアップ | 🔴 未実装 | Vite plugin + routeTree 自動生成 |
-| __root.tsx (ルートレイアウト) | 🔴 未実装 | ルートの Outlet |
-| _app.tsx (pathless layout) | 🔴 未実装 | GearIcon + Outlet + BottomNav |
-| _app/training.tsx | 🔴 未実装 | FRAME1/2: Idle/Active の二面表示 |
-| _app/history.tsx | 🔴 未実装 | FRAME3: プレースホルダー（中身は別design） |
-| _app/ai.tsx | 🔴 未実装 | FRAME4: プレースホルダー（中身は別design） |
-| settings.tsx | 🔴 未実装 | FRAME5: layout外。Xボタンで history.back() |
-| BottomNav コンポーネント | 🔴 未実装 | 2タブ + AI専用ボタン。Link コンポーネント使用 |
-| GearIcon コンポーネント | 🔴 未実装 | 歯車アイコン + APIキーバッジ。Link で /settings へ |
-| workoutStore persist | 🔴 未実装 | Zustand persist ミドルウェア追加 |
+| TanStack Router セットアップ | 🟢 実装済み | Vite plugin + routeTree 自動生成 |
+| __root.tsx (��ートレイアウト) | 🟢 実装済み | ルートの Outlet + notFoundComponent |
+| _app.tsx (pathless layout) | 🟢 実装済み | GearIcon + Outlet + BottomNav + rehydration ガード |
+| _app/training.tsx | ���� 実装済み | プレースホルダー（workout タスクで詳細実装） |
+| _app/history.tsx | 🟢 実装済み | FRAME3: プレースホルダー（中身は別design） |
+| _app/ai.tsx | 🟢 実装済み | FRAME4: プレースホルダー（中身は別design） |
+| settings.tsx | 🟢 実装済��� | FRAME5: layout外。Xボタンで history.back() |
+| BottomNav コン���ーネント | 🟢 実装済み | 2タブ + AI専用ボタン。Link コンポーネント使用 |
+| GearIcon ���ンポーネント | 🟢 実装済み | 歯車アイ��ン + APIキーバッジ。Link で /settings へ |
+| workoutStore persist | 🔴 未実装 | workout タスクで実装予定 |
 
 ---
 

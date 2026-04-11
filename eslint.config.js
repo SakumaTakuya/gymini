@@ -34,4 +34,10 @@ export default defineConfig([
       '@typescript-eslint/no-explicit-any': 'error',
     },
   },
+  {
+    files: ['src/routes/**/*.{ts,tsx}'],
+    rules: {
+      'react-refresh/only-export-components': 'off',
+    },
+  },
 ])
