@@ -87,6 +87,11 @@ describe('useWorkoutSession', () => {
         result.current.endSession()
       })
 
+      // startedAt が null になった後、次の interval tick で 0 にリセットされる
+      act(() => {
+        vi.advanceTimersByTime(1000)
+      })
+
       expect(result.current.elapsedSeconds).toBe(0)
     })
   })

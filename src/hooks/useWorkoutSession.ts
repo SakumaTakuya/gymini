@@ -3,28 +3,22 @@ import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
 import * as ExerciseRepository from '../lib/exerciseRepository'
 import type { Exercise } from '../types'
 
+function calcElapsed(startedAt: string | null): number {
+  if (!startedAt) return 0
+  return Math.floor((Date.now() - new Date(startedAt).getTime()) / 1000)
+}
+
 export function useWorkoutSession() {
   const store = useWorkoutSessionStore()
-  const [elapsedSeconds, setElapsedSeconds] = useState(0)
+  const startedAt = store.startedAt
+  const [elapsedSeconds, setElapsedSeconds] = useState(() => calcElapsed(startedAt))
 
   useEffect(() => {
-    if (!store.startedAt) {
-      setElapsedSeconds(0)
-      return
-    }
-
-    const updateElapsed = () => {
-      setElapsedSeconds(
-        Math.floor(
-          (Date.now() - new Date(store.startedAt!).getTime()) / 1000,
-        ),
-      )
-    }
-
-    updateElapsed()
-    const interval = setInterval(updateElapsed, 1000)
+    const interval = setInterval(() => {
+      setElapsedSeconds(calcElapsed(startedAt))
+    }, 1000)
     return () => clearInterval(interval)
-  }, [store.startedAt])
+  }, [startedAt])
 
   const searchExercises = (query: string): Exercise[] => {
     return ExerciseRepository.search(query)
