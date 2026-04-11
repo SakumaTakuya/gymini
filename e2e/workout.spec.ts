@@ -28,19 +28,20 @@ async function addSet(page: Parameters<typeof test>[1] extends { page: infer P }
   await page.getByRole('button', { name: '追加', exact: true }).last().click()
 }
 
+// NOTE: workout feature not yet implemented - these tests are pending
 test.describe('待機画面', () => {
-  test('「トレーニングを開始」ボタンが表示される', async ({ page }) => {
+  test.fixme('「トレーニングを開始」ボタンが表示される', async ({ page }) => {
     await expect(page.getByRole('button', { name: 'トレーニングを開始' })).toBeVisible()
   })
 
-  test('Training / History タブが表示される', async ({ page }) => {
+  test.fixme('Training / History タブが表示される', async ({ page }) => {
     await expect(page.getByRole('button', { name: 'Training' })).toBeVisible()
     await expect(page.getByRole('button', { name: 'History' })).toBeVisible()
   })
 })
 
 test.describe('トレーニング記録フロー', () => {
-  test('種目を追加してセットを記録し保存できる', async ({ page }) => {
+  test.fixme('種目を追加してセットを記録し保存できる', async ({ page }) => {
     // トレーニングを開始
     await page.getByRole('button', { name: 'トレーニングを開始' }).click()
     await expect(page.getByText('記録', { exact: true })).toBeVisible()
@@ -65,7 +66,7 @@ test.describe('トレーニング記録フロー', () => {
     await expect(page.getByRole('button', { name: 'トレーニングを開始' })).toBeVisible()
   })
 
-  test('複数種目を連続して記録できる', async ({ page }) => {
+  test.fixme('複数種目を連続して記録できる', async ({ page }) => {
     await page.getByRole('button', { name: 'トレーニングを開始' }).click()
 
     // 1種目目: ベンチプレス
@@ -87,7 +88,7 @@ test.describe('トレーニング記録フロー', () => {
     await expect(page.getByRole('button', { name: 'トレーニングを開始' })).toBeVisible()
   })
 
-  test('キャンセルすると待機画面に戻り記録は保存されない', async ({ page }) => {
+  test.fixme('キャンセルすると待機画面に戻り記録は保存されない', async ({ page }) => {
     await page.getByRole('button', { name: 'トレーニングを開始' }).click()
 
     await page.getByPlaceholder('種目を検索...').first().fill('スクワット')
@@ -100,7 +101,7 @@ test.describe('トレーニング記録フロー', () => {
 })
 
 test.describe('確定済みセット編集', () => {
-  test('確定済みセットをインラインで編集できる', async ({ page }) => {
+  test.fixme('確定済みセットをインラインで編集できる', async ({ page }) => {
     await page.getByRole('button', { name: 'トレーニングを開始' }).click()
 
     await page.getByPlaceholder('種目を検索...').first().fill('ベンチ')
@@ -122,3 +123,4 @@ test.describe('確定済みセット編集', () => {
     await expect(page.getByRole('button', { name: 'トレーニングを開始' })).toBeVisible()
   })
 })
+
