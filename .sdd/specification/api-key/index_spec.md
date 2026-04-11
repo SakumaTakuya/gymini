@@ -22,11 +22,11 @@ risk: "medium"
 
 # 1. 背景
 
-gymini は Gemini API を利用した AI コーチング機能（Phase 3）を提供する。AI 機能の前提として、ユーザーが自身の Gemini APIキーをブラウザに保存する BYOK（Bring Your Own Key）モデルを採用する（DC_002）。
+gymini は Gemini API を利用した AI コーチング機能（Phase 3）を提供する。AI 機能の前提として、ユーザーが自身の Gemini APIキーをブラウザに保存する BYOK（Bring Your Own Key）モデルを採用する。
 
 APIキー管理モジュールが独立して必要な理由：
 
-- APIキーの永続化ロジック（localStorage への保存・読み込み・削除）を単一モジュールに集約し、設定画面（[settings](../settings/index_spec.md)）や GearIcon バッジ（[navigation](../navigation_spec.md)）など複数の消費者から利用可能にする
+- APIキーの永続化ロジック（localStorage への保存・読み込み・削除）を単一モジュールに集約し、設定画面（[index_spec.md](../settings/index_spec.md)）や GearIcon バッジ（[navigation_spec.md](../navigation_spec.md)）など複数の消費者から利用可能にする
 - Phase 3 の AI チャット機能（[ai-chat](../../requirement/ai-chat/index.md)）が Gemini API 呼び出し時にAPIキーを取得する統一的なインターフェースを提供する
 - セキュリティ制約（B-001: APIキーを localStorage にのみ保存し外部送信しない）の遵守を本モジュールに集約する
 
@@ -74,7 +74,7 @@ APIキー管理機能が外部（他モジュール・UIレイヤー）に公開
 |---------|--------------|--------|------|
 | api-key | settingsStore | apiKey | 保存済みAPIキー文字列。未設定時は空文字列 |
 | api-key | settingsStore | hasApiKey | APIキーが設定済みかどうかの派生値（`boolean`） |
-| api-key | settingsStore | setApiKey(key) | APIキーを localStorage に保存し、ストア状態を更新する |
+| api-key | settingsStore | setApiKey(key) | APIキーを localStorage に保存し、ストア状態を更新する。空文字列（`''`）の渡しは禁止。削除には `deleteApiKey()` を使用すること |
 | api-key | settingsStore | deleteApiKey() | APIキーを localStorage から削除し、ストア状態をリセットする |
 | api-key | settingsStore | loadApiKey() | localStorage から保存済みAPIキーを読み込み、ストア状態を反映する |
 
@@ -83,9 +83,6 @@ APIキー管理機能が外部（他モジュール・UIレイヤー）に公開
 ## 4.1. 型定義
 
 ```typescript
-// APIキーの接続ステータス（UIレイヤーで使用）
-type APIKeyStatus = 'connected' | 'not-set'
-
 // settingsStore の状態
 type SettingsState = {
   apiKey: string       // APIキー文字列（未設定時は空文字列）
@@ -94,7 +91,7 @@ type SettingsState = {
 
 // settingsStore のアクション
 type SettingsActions = {
-  setApiKey: (key: string) => void    // 保存（localStorage + ストア更新）
+  setApiKey: (key: string) => void    // 保存（localStorage + ストア更新）。空文字列の渡し禁止、削除には deleteApiKey() を使用すること
   deleteApiKey: () => void            // 削除（localStorage + ストアリセット）
   loadApiKey: () => void              // 読み込み（localStorage → ストア反映）
 }
@@ -104,7 +101,7 @@ type SettingsActions = {
 
 | 用語 | 説明 |
 |------|------|
-| BYOK | Bring Your Own Key。ユーザーが自身の Gemini APIキーを持ち込むモデル（DC_002） |
+| BYOK | Bring Your Own Key。ユーザーが自身の Gemini APIキーを持ち込むモデル |
 | APIキー | Gemini API へのアクセスに必要な認証キー。ユーザーが Google AI Studio で取得する |
 | パスワードマスク | APIキーを `●●●●●●●●` で非表示にする表示モード。目アイコンで切替 |
 | 接続ステータス | APIキーの設定状態を示す表示。`connected`（接続済み）または `not-set`（未設定） |
@@ -226,7 +223,7 @@ sequenceDiagram
 - APIキーは localStorage にのみ保存する。外部サーバー・中間サーバー・第三者サービスに送信しない（B-001）
 - APIキーの用途は Gemini API エンドポイントへの通信のみに限定する（prd-api-key セキュリティ制約）
 - APIキーのバリデーション（Gemini API への接続テスト）は Phase 3（AI チャット）で実装する。Phase 2 では保存・削除・状態管理のみ
-- `APIKeyStatus` に `'error'` 状態を追加するのも Phase 3 スコープ
+- `APIKeyStatus` 型（`'connected' | 'not-set'`）はUIレイヤー（設定画面モジュール）で定義する。`'error'` 状態の追加は Phase 3 スコープ
 - localStorage アクセスは try-catch で保護し、失敗時は安全なデフォルト値にフォールバックする（T-002）
 - TypeScript strict mode を遵守する（T-001）
 - ストレージキーは `'gymini:api-key'` を使用する
