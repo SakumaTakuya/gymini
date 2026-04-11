@@ -105,6 +105,7 @@ graph TD
 
 ```typescript
 // localStorage キー
+// このキーは ExerciseRepository が排他的に所有する。他のモジュールはこのキーに直接アクセスしてはならない。
 const STORAGE_KEY = 'gymini:exercises'
 
 // 保存形式: JSON配列
@@ -126,7 +127,8 @@ const STORAGE_KEY = 'gymini:exercises'
 import type { Exercise } from '../types'
 
 export function getAll(): Exercise[] {
-  // localStorage から全種目を返す。失敗時・空の場合は []
+  // localStorage から全種目を返す。返却順は登録順（配列順）。
+  // 失敗時・空の場合は []
 }
 
 export function search(query: string): Exercise[] {
@@ -137,15 +139,20 @@ export function search(query: string): Exercise[] {
 export function create(name: string): Exercise {
   // 新しい種目を登録する。
   // id は crypto.randomUUID() で生成。
+  // name が空文字列または空白のみの場合はエラーをスローする。
   // name が既存の種目名と重複する場合はエラーをスローする。
-  // throws: Error（名前重複時）
+  // throws: Error("Exercise name is empty") — name が空/空白のみ
+  // throws: Error("Duplicate name: {name}") — 名前重複時
 }
 
 export function update(id: string, name: string): Exercise {
   // 指定IDの種目名を変更する。
+  // name が空文字列または空白のみの場合はエラーをスローする。
   // name が他の種目名と重複する場合はエラーをスローする。
   // id が存在しない場合はエラーをスローする。
-  // throws: Error（名前重複時 / ID不存在時）
+  // throws: Error("Exercise name is empty") — name が空/空白のみ
+  // throws: Error("Exercise not found: {id}") — ID不存在時
+  // throws: Error("Duplicate name: {name}") — 名前重複時
 }
 
 export function remove(id: string): void {
@@ -169,6 +176,8 @@ export function remove(id: string): void {
 
 | テストレベル | 対象 | カバレッジ目標 | 対応FR |
 |-----------|------|------------|--------|
+> **カバレッジ目標:** >= 80%（D-001: CONSTITUTION.md）
+
 | ユニットテスト | ExerciseRepository.getAll | 全件取得、空データ、localStorage 破損時のフォールバック | - |
 | ユニットテスト | ExerciseRepository.search | 部分一致、空クエリで全件、大文字小文字無視 | FR-005 |
 | ユニットテスト | ExerciseRepository.create | 正常登録、重複名エラー | FR-006, FR-007 |
@@ -188,7 +197,10 @@ export function remove(id: string): void {
 | モジュールのスコープ | Data Layer + Hook + UI vs Data Layer のみ | Data Layer（ExerciseRepository）のみ | UIは設定画面モジュール（[settings](../settings/index_design.md)）、ワークアウトモジュール（[workout](../workout/index_design.md)）が各自実装。Hook は各利用モジュール内の useState で十分（設定画面は単純な CRUD、ワークアウトは既存 useWorkoutSession 内で対応） |
 | create の入力 | `create(name)` vs `create({ name })` | `create(name)` | 入力が name の1フィールドのみ。オブジェクトにラップする必要がない |
 | update の入力 | `update(id, name)` vs `update(id, { name })` | `update(id, name)` | create と同様、変更対象は name の1フィールドのみ |
-| 重複名の判定 | 大文字小文字を区別 vs 区別しない | 区別する | 「ベンチプレス」と「べんちぷれす」は異なる種目として扱う。日本語の種目名では実用上問題にならない |
+| 重複名の判定 | 大文字小文字を区別 vs 区別しない | 区別する | 「ベンチプレス」と「べんちぷれす」は異なる種目として扱う。日本語の種目名では実用上問題にならない。Note: search() は case-insensitive（検索ヒット率優先）だが、create()/update() の一意性チェックは case-sensitive（格納時の厳密性）。この非対称は意図的 |
+| 空白名の入力バリデーション | Repository 内で検証 vs 呼び出し側の責務 | Repository 内で検証 | create()/update() は空文字列・空白のみの name を受け付けずエラーをスローする。UIバリデーションとの二重チェックとなるが、Data Layer の堅牢性を優先 |
+| 初期データ（初回起動時） | シードデータあり vs 空リスト | 空リスト | 初回起動時はユーザーが自分で種目を追加する。プリセット種目は要求にないため提供しない |
+| B-002 確認ゲートの責務 | Repository 内で実装 vs 呼び出し側の責務 | 呼び出し側の責務 | ExerciseRepository は B-002 確認ゲートを内部実装しない。AI が write 操作（create/update/remove）を呼び出す場合、呼び出し側（Phase 3 ai-chat モジュール）がユーザー確認を実装する責務を持つ |
 | remove 時のワークアウト記録 | 連鎖削除 vs 何もしない | 何もしない | spec 制約事項に従い、ワークアウト記録は `exerciseName` スナップショットでフォールバック表示する |
 | update 時のワークアウト記録 | スナップショット更新 vs 何もしない | 何もしない | ワークアウト記録の `exerciseName` は記録時のスナップショットであり、種目マスターの名前変更は既存記録に影響しない |
 | 種目の並び順 | 五十音順 vs 登録順 | 登録順（配列順） | PRD に並び順の要求なし。並び替えが必要になった時点で追加実装する |

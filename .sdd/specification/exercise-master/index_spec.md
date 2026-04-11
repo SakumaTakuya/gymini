@@ -56,15 +56,15 @@ gymini の Phase 1 中核機能。トレーニング種目のマスターデー�
 
 # 4. API
 
-種目マスター機能が外部（他モジュール・UIレイヤー）に公開するインターフェース。
+種目マスター機能が外部（他モジュール・UIレイヤー）に公開するインターフェース。ExerciseRepository は関数の集合であり、クラスやオブジェクトではない。各メンバーは独立したエクスポート関数として実装される（詳細は Design Doc を参照）。
 
 | モジュール | インターフェース | メンバー | 概要 |
 |---------|--------------|--------|------|
 | exercise | ExerciseRepository | getAll() | 登録済みの全種目を取得する |
-| exercise | ExerciseRepository | search(query) | 部分一致検索（大文字小文字を区別しない）で一致する種目を返す。query が空の場合は全件返す |
-| exercise | ExerciseRepository | create(name) | 新しい種目を登録する。登録した Exercise を返す。名前が重複する場合はエラーとする |
-| exercise | ExerciseRepository | update(id, name) | 指定 ID の種目名を変更する。変更後の Exercise を返す。名前が重複する場合はエラーとする。ID が存在しない場合はエラーとする |
-| exercise | ExerciseRepository | remove(id) | 指定 ID の種目を削除する（`delete` は JS 予約語のため `remove` を使用） |
+| exercise | ExerciseRepository | search(query) | 部分一致検索（大文字小文字を区別しない）で一致する種目を返す。query が空文字列または空白のみの場合は全件返す |
+| exercise | ExerciseRepository | create(name) | 新しい種目を登録する。登録した Exercise を返す。名前が重複する場合は例外をスローする |
+| exercise | ExerciseRepository | update(id, name) | 指定 ID の種目名を変更する。変更後の Exercise を返す。名前が重複する場合・ID が存在しない場合は例外をスローする |
+| exercise | ExerciseRepository | remove(id) | 指定 ID の種目を削除する。存在しない ID の場合は何もしない（冪等）。（`delete` は JS 予約語のため `remove` を使用） |
 
 ## 4.1. 型定義
 
@@ -211,6 +211,7 @@ sequenceDiagram
 - 種目名は一意でなければならない。重複する名前での登録・変更はエラーとなる
 - ワークアウト記録（WorkoutExercise）に保存される `exerciseName` は記録時のスナップショットである。種目マスターで種目が編集（名前変更）・削除されても、既存のワークアウト記録は影響を受けない（ワークアウト仕様書の制約事項を継承）
 - 種目データはブラウザの localStorage に永続化される（A-002: Client-Only Architecture）
+- localStorage アクセスおよび JSON パースのエラーは適切にハンドリングし、フォールバック値（空配列）を返すこと（T-002: No Runtime Errors）
 - Phase 3 の AI コーチング機能は `getAll()` および `search()` を通じて種目マスターを読み取り専用で参照する。AI による書き込み操作（`create`, `update`, `remove`）は B-002（AI安全操作の確認優先）に基づきユーザー確認が必要。読み取り専用操作は確認不要
 
 ---
