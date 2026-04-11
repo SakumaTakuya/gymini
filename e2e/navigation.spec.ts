@@ -2,7 +2,7 @@ import { test, expect } from '@playwright/test'
 
 test.describe('ナビゲーション基本動作', () => {
   test.beforeEach(async ({ page }) => {
-    await page.goto('/')
+    await page.goto('./')
   })
 
   test('① ルートアクセスで /training にリダイレクト', async ({ page }) => {
@@ -59,14 +59,14 @@ test.describe('ナビゲーション基本動作', () => {
   })
 
   test('⑤ 未知ルートで /training にリダイレクト (FR-013)', async ({ page }) => {
-    await page.goto('/#/unknown-route')
+    await page.goto('./#/unknown-route')
     await expect(page).toHaveURL(/#\/training/)
   })
 })
 
 test.describe('BottomNav レイアウト', () => {
   test('FRAME1-4 では BottomNav + GearIcon が表示', async ({ page }) => {
-    await page.goto('/')
+    await page.goto('./')
 
     // Training page
     await expect(page.getByRole('link', { name: 'トレ' })).toBeVisible()
@@ -83,7 +83,7 @@ test.describe('BottomNav レイアウト', () => {
   })
 
   test('FRAME5 (settings) では BottomNav が非表示 (FR-008)', async ({ page }) => {
-    await page.goto('/#/settings')
+    await page.goto('./#/settings')
     await expect(page.getByText('設定')).toBeVisible()
     await expect(page.getByRole('link', { name: 'トレ' })).not.toBeVisible()
   })
