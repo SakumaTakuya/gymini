@@ -4,9 +4,9 @@ title: "種目マスター管理"
 type: "design"
 status: "draft"
 sdd-phase: "plan"
-impl-status: "implemented"
+impl-status: "not-implemented"
 created: "2026-03-28"
-updated: "2026-03-29"
+updated: "2026-04-11"
 depends-on: ["spec-exercise-master"]
 tags: ["exercise", "master-data", "phase-1"]
 category: "core"
@@ -23,27 +23,25 @@ risk: "high"
 
 # 1. 実装ステータス
 
-**ステータス:** 🟢 実装完了
+**ステータス:** 🔴 未実装
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| ExerciseRepository.search | 🟢 実装済み | 部分一致検索（FR-005） |
-| ExerciseRepository.getAll | 🟢 実装済み | export 済み（FR-007） |
-| ExerciseRepository.create | 🟢 実装済み | 重複名チェック付き（FR-006, FR-007） |
-| ExerciseRepository.remove | 🟢 実装済み | ID 指定削除（FR-007） |
-| useExerciseMaster Hook | 🟢 実装済み | useState + Repository ラッパー |
-| 自動登録フロー（UI） | 🟢 実装済み | TrainingPage + AddExerciseModal（FR-006） |
-| 設定画面（種目管理） | 🟢 実装済み | ExerciseMasterPage（FR-007） |
-| ナビゲーション統合 | 🟢 実装済み | Settings タブで ExerciseMasterPage にアクセス |
+| ExerciseRepository.getAll | 🔴 未実装 | 全件取得 |
+| ExerciseRepository.search | 🔴 未実装 | 部分一致検索（FR-005） |
+| ExerciseRepository.create | 🔴 未実装 | 重複名チェック付き新規登録（FR-006, FR-007） |
+| ExerciseRepository.update | 🔴 未実装 | 重複名チェック付き名前変更（FR-007） |
+| ExerciseRepository.remove | 🔴 未実装 | ID 指定削除（FR-007） |
+
+> **UI統合モジュール**: 種目マスターのUIは本モジュールのスコープ外。ワークアウト記録時の検索・自動登録UIは [workout](../workout/index_design.md) モジュール、設定画面での CRUD UIは [settings](../settings/index_design.md) モジュールが担当する。
 
 ---
 
 # 2. 設計目標
 
-- **既存パターンの踏襲**: ワークアウトモジュールと同じ Data Layer → Hook Layer → UI Layer のレイヤー構成に従う
+- **純粋関数としての Data Layer**: ExerciseRepository は React を知らない純粋関数として設計し、ワークアウトモジュール・設定画面モジュール・Phase 3 の AI からも呼び出せるようにする
 - **シンプルな CRUD**: localStorage を直接操作するシンプルな実装。余分な抽象化をしない
-- **再利用可能な Data Layer**: ExerciseRepository は React を知らない純粋関数として設計し、Phase 3 の AI からも呼び出せるようにする
-- **既存コードへの影響最小化**: 現在の `search()` のインターフェースを維持しつつ、`getAll`・`create`・`remove` を追加する
+- **他モジュールへの影響なし**: ExerciseRepository は独立したモジュールとして提供し、UIレイヤーの設計に影響を与えない
 
 ---
 
@@ -51,11 +49,8 @@ risk: "high"
 
 | 領域 | 採用技術 | 選定理由 |
 |------|--------|--------|
-| 言語 | TypeScript (.ts / .tsx) | T-001: TypeScript strict mode。プロジェクト全体が TypeScript に移行済み |
-| UIフレームワーク | React (TSX) | アーキテクチャ制約: React ^19 |
-| 状態管理 | Zustand | A-001: Library-First。ワークアウトモジュールと統一 |
+| 言語 | TypeScript (.ts) | T-001: TypeScript strict mode |
 | データ永続化 | localStorage (JSON) | A-002: Client-Only Architecture。ブラウザローカル保存 |
-| スタイリング | Tailwind CSS | T-003: Mobile-First UI。UIデザインシステムは [workout/index_design.md](../workout/index_design.md) Section 3.1 を参照 |
 | ID生成 | crypto.randomUUID() | ワークアウトモジュールと統一。外部依存ゼロ（A-001 準拠: 自作理由は依存削減） |
 
 ---
@@ -66,29 +61,27 @@ risk: "high"
 
 ```mermaid
 graph TD
-    subgraph "UI Layer"
-        TP[TrainingPage<br/>既存: 検索・自動登録UI]
-        EMP[ExerciseMasterPage<br/>新規: 設定画面]
+    subgraph "利用モジュール（外部）"
+        HWS["useWorkoutSession<br/>（workout モジュール）"]
+        EMS["ExerciseMasterSection<br/>（settings モジュール）"]
+        AI["AI Function Calling<br/>（Phase 3）"]
     end
 
-    subgraph "Hook Layer（ユースケース）"
-        HWS[useWorkoutSession<br/>既存: searchExercises]
-        HEM[useExerciseMaster<br/>新規: 設定画面用]
+    subgraph "exercise-master モジュール"
+        ER[ExerciseRepository<br/>純粋関数]
     end
 
-    subgraph "Data Layer（純粋関数）"
-        ER[ExerciseRepository<br/>拡張: getAll/create/remove追加]
-        LS[(localStorage)]
+    subgraph "永続化"
+        LS[(localStorage<br/>gymini:exercises)]
     end
 
-    TP --> HWS
-    EMP --> HEM
     HWS --> ER
-    HEM --> ER
+    EMS --> ER
+    AI -.-> ER
     ER --> LS
 ```
 
-種目マスター固有の State Layer（Zustand store）は不要。設定画面の種目一覧は Hook 内で `useState` で管理すれば十分であり、ワークアウトモジュールのような複数ページ間の状態共有が不要なため。
+本モジュールは ExerciseRepository（Data Layer）のみを提供する。UIレイヤーは利用モジュールが各自で実装する。
 
 ## 4.2. モジュール分割
 
@@ -98,19 +91,13 @@ graph TD
 |-----------|------|---------|--------|
 | ExerciseRepository | 種目データの CRUD。React を知らない純粋関数 | なし | `src/lib/exerciseRepository.ts` |
 
-### Hook Layer（ユースケース）
+### 利用モジュール（参考 — 各モジュールの設計書で詳細定義）
 
-| モジュール名 | 責務 | 依存関係 | 配置場所 |
-|-----------|------|---------|--------|
-| useWorkoutSession | 既存。種目検索を含むセッション記録のユースケース | ExerciseRepository | `src/hooks/useWorkoutSession.ts`（既存） |
-| useExerciseMaster | 設定画面での種目一覧・追加・削除のユースケース | ExerciseRepository | `src/hooks/useExerciseMaster.ts`（新規） |
-
-### UI Layer
-
-| モジュール名 | 責務 | 依存関係 | 配置場所 |
-|-----------|------|---------|--------|
-| TrainingPage | 既存。検索・自動登録UIの追加が必要 | useWorkoutSession | `src/pages/TrainingPage.tsx`（既存・変更） |
-| ExerciseMasterPage | 設定画面の種目管理ページ | useExerciseMaster | `src/pages/ExerciseMasterPage.tsx`（新規） |
+| 利用元モジュール | 利用するAPI | 用途 | 参照先 |
+|------------|----------|------|--------|
+| workout | search, create | ワークアウト記録時の種目検索・自動登録 | [index_design.md](../workout/index_design.md) |
+| settings | getAll, search, create, update, remove | 設定画面での種目一覧・検索・追加・編集・削除 | [index_design.md](../settings/index_design.md) |
+| ai-chat（Phase 3） | getAll, search | AI がコンテキストとして種目一覧を参照 | 未定義 |
 
 ---
 
@@ -118,6 +105,7 @@ graph TD
 
 ```typescript
 // localStorage キー
+// このキーは ExerciseRepository が排他的に所有する。他のモジュールはこのキーに直接アクセスしてはならない。
 const STORAGE_KEY = 'gymini:exercises'
 
 // 保存形式: JSON配列
@@ -135,47 +123,40 @@ const STORAGE_KEY = 'gymini:exercises'
 ```typescript
 // ExerciseRepository (src/lib/exerciseRepository.ts)
 // 純粋関数群。localStorage を直接読み書きする。
-// 全関数を export する（getAll を含む）。
 
 import type { Exercise } from '../types'
 
 export function getAll(): Exercise[] {
-  // localStorage から全種目を返す。失敗時・空の場合は []
+  // localStorage から全種目を返す。返却順は登録順（配列順）。
+  // 失敗時・空の場合は []
 }
 
 export function search(query: string): Exercise[] {
   // 部分一致検索。大文字小文字を区別しない。
-  // query が空の場合は全件返す（既存の挙動を維持）
+  // query が空の場合は全件返す
 }
 
 export function create(name: string): Exercise {
   // 新しい種目を登録する。
   // id は crypto.randomUUID() で生成。
+  // name が空文字列または空白のみの場合はエラーをスローする。
   // name が既存の種目名と重複する場合はエラーをスローする。
-  // throws: Error（名前重複時）
+  // throws: Error("Exercise name is empty") — name が空/空白のみ
+  // throws: Error("Duplicate name: {name}") — 名前重複時
+}
+
+export function update(id: string, name: string): Exercise {
+  // 指定IDの種目名を変更する。
+  // name が空文字列または空白のみの場合はエラーをスローする。
+  // name が他の種目名と重複する場合はエラーをスローする。
+  // id が存在しない場合はエラーをスローする。
+  // throws: Error("Exercise name is empty") — name が空/空白のみ
+  // throws: Error("Exercise not found: {id}") — ID不存在時
+  // throws: Error("Duplicate name: {name}") — 名前重複時
 }
 
 export function remove(id: string): void {
   // 指定IDの種目を削除する。存在しないIDの場合は何もしない。
-}
-
-// -------------------------------------------------------
-// useExerciseMaster (src/hooks/useExerciseMaster.ts)
-// 設定画面のユースケース。UI はこれだけ知ればよい。
-// -------------------------------------------------------
-
-interface UseExerciseMasterReturn {
-  exercises: Exercise[]
-  addExercise: (name: string) => Exercise
-  removeExercise: (id: string) => void
-  error: string | null
-}
-
-function useExerciseMaster(): UseExerciseMasterReturn {
-  // exercises: 種目一覧
-  // addExercise: 種目追加（成功時に一覧を再読み込み）
-  // removeExercise: 種目削除（一覧を再読み込み）
-  // error: 直近のエラーメッセージ（重複名など）
 }
 ```
 
@@ -185,22 +166,25 @@ function useExerciseMaster(): UseExerciseMasterReturn {
 
 | 要件 | 実現方針 |
 |------|--------|
-| データ整合性（NFR-001）: 種目名の一意性 | `create()` 内で `getAll()` を呼び、同名の種目が存在しないことを確認してから保存。大文字小文字の違いは別名として扱う |
+| データ整合性（NFR-001）: 種目名の一意性 | `create()` / `update()` 内で `getAll()` を呼び、同名の種目が存在しないことを確認してから保存。大文字小文字の違いは別名として扱う |
 | 操作性（NFR-002）: 検索の即時応答 | localStorage の全件取得 + `Array.filter()` によるインメモリ検索。数百件規模では十分高速 |
+| エラーハンドリング（T-002） | localStorage の JSON.parse を try-catch で囲み、パース失敗時は空配列にフォールバック |
 
 ---
 
 # 8. テスト戦略
 
-| テストレベル | 対象 | カバレッジ目標 | 原則 |
-|-----------|------|------------|------|
-| ユニットテスト | ExerciseRepository.getAll | 全件取得、空データ | D-001 |
-| ユニットテスト | ExerciseRepository.create | 正常登録、重複名エラー | D-001 |
-| ユニットテスト | ExerciseRepository.remove | 正常削除、存在しないID | D-001 |
-| ユニットテスト | ExerciseRepository.search | 既存テストに加え、create 後の検索 | D-001 |
-| ユニットテスト | useExerciseMaster | 一覧取得、追加、削除、エラーハンドリング | D-001 |
-| コンポーネントテスト | ExerciseMasterPage | 一覧表示、追加操作、削除操作 | D-001 |
-| 統合テスト | TrainingPage | 自動登録フロー（検索→候補なし→新規追加→種目セット） | D-001 |
+> **カバレッジ目標:** >= 80%（D-001: CONSTITUTION.md）
+
+| テストレベル | 対象 | カバレッジ目標 | 対応FR |
+|-----------|------|------------|--------|
+| ユニットテスト | ExerciseRepository.getAll | 全件取得、空データ、localStorage 破損時のフォールバック | - |
+| ユニットテスト | ExerciseRepository.search | 部分一致、空クエリで全件、大文字小文字無視 | FR-005 |
+| ユニットテスト | ExerciseRepository.create | 正常登録、重複名エラー | FR-006, FR-007 |
+| ユニットテスト | ExerciseRepository.update | 正常変更、重複名エラー、存在しないIDエラー | FR-007 |
+| ユニットテスト | ExerciseRepository.remove | 正常削除、存在しないID | FR-007 |
+
+> **UI・統合テスト**: 種目マスターの UI テスト（設定画面での CRUD 操作、ワークアウト記録時の自動登録フロー）は利用モジュール（[settings](../settings/index_design.md)、[workout](../workout/index_design.md)）のテスト戦略で定義する。
 
 ---
 
@@ -210,17 +194,37 @@ function useExerciseMaster(): UseExerciseMasterReturn {
 
 | 決定事項 | 選択肢 | 決定内容 | 理由 |
 |---------|--------|--------|------|
-| 種目マスター専用の Zustand store | 専用 store を作る vs Hook 内 useState | Hook 内 useState | 設定画面は単一ページで完結し、他ページとの状態共有が不要。ワークアウトのような複数画面間共有のユースケースがないため、store は過剰 |
-| getAll の公開方法 | 新関数 vs 既存の内部関数を export | 既存の内部関数を export | 現在 `getAll()` は内部関数として存在。ロジックは変更不要で、`export` を追加するだけ |
+| モジュールのスコープ | Data Layer + Hook + UI vs Data Layer のみ | Data Layer（ExerciseRepository）のみ | UIは設定画面モジュール（[settings](../settings/index_design.md)）、ワークアウトモジュール（[workout](../workout/index_design.md)）が各自実装。Hook は各利用モジュール内の useState で十分（設定画面は単純な CRUD、ワークアウトは既存 useWorkoutSession 内で対応） |
 | create の入力 | `create(name)` vs `create({ name })` | `create(name)` | 入力が name の1フィールドのみ。オブジェクトにラップする必要がない |
-| 重複名の判定 | 大文字小文字を区別 vs 区別しない | 区別する | 「ベンチプレス」と「べんちぷれす」は異なる種目として扱う。日本語の種目名では実用上問題にならない |
-| remove 時のワークアウト記録 | 連鎖削除 vs 何もしない | 何もしない | spec 制約事項に従い、ワークアウト記録は `exerciseName` スナップショットでフォールバック表示する。種目削除が既存記録に影響しない |
-| 種目の並び順 | 五十音順 vs 登録順 | 登録順（配列順） | PRD に並び順の要求なし。Phase 1 は登録順で十分。並び替えが必要になった時点で追加実装する |
-| 種目のリネーム | Phase 1 で実装 vs スコープ外 | Phase 1 スコープ外 | PRD（FR_007）は「一覧表示・手動追加・削除」のみ定義。リネームは要求なし。将来追加時にワークアウト記録のスナップショットとの整合性を設計する |
+| update の入力 | `update(id, name)` vs `update(id, { name })` | `update(id, name)` | create と同様、変更対象は name の1フィールドのみ |
+| 重複名の判定 | 大文字小文字を区別 vs 区別しない | 区別する | 「ベンチプレス」と「べんちぷれす」は異なる種目として扱う。日本語の種目名では実用上問題にならない。Note: search() は case-insensitive（検索ヒット率優先）だが、create()/update() の一意性チェックは case-sensitive（格納時の厳密性）。この非対称は意図的 |
+| 空白名の入力バリデーション | Repository 内で検証 vs 呼び出し側の責務 | Repository 内で検証 | create()/update() は空文字列・空白のみの name を受け付けずエラーをスローする。UIバリデーションとの二重チェックとなるが、Data Layer の堅牢性を優先 |
+| 初期データ（初回起動時） | シードデータあり vs 空リスト | 空リスト | 初回起動時はユーザーが自分で種目を追加する。プリセット種目は要求にないため提供しない |
+| B-002 確認ゲートの責務 | Repository 内で実装 vs 呼び出し側の責務 | 呼び出し側の責務 | ExerciseRepository は B-002 確認ゲートを内部実装しない。AI が write 操作（create/update/remove）を呼び出す場合、呼び出し側（Phase 3 ai-chat モジュール）がユーザー確認を実装する責務を持つ |
+| remove 時のワークアウト記録 | 連鎖削除 vs 何もしない | 何もしない | spec 制約事項に従い、ワークアウト記録は `exerciseName` スナップショットでフォールバック表示する |
+| update 時のワークアウト記録 | スナップショット更新 vs 何もしない | 何もしない | ワークアウト記録の `exerciseName` は記録時のスナップショットであり、種目マスターの名前変更は既存記録に影響しない |
+| 種目の並び順 | 五十音順 vs 登録順 | 登録順（配列順） | PRD に並び順の要求なし。並び替えが必要になった時点で追加実装する |
+| 存在しないIDの remove | エラーをスロー vs 何もしない | 何もしない | 冪等性を確保。UIからの呼び出し時に不整合を起こさない |
+| 存在しないIDの update | エラーをスロー vs 何もしない | エラーをスロー | 更新操作は対象の存在が前提。存在しないIDの更新はプログラムバグの兆候であり、明示的にエラーとする |
+
+## 9.2. 未解決の課題
+
+*未解決の課題なし（実装開始可能）*
 
 ---
 
 # 10. 変更履歴
+
+## v2.0 (2026-04-11) — PRD・設定画面仕様との整合
+
+**変更内容:**
+
+- `impl-status` を `"implemented"` から `"not-implemented"` に修正（実装が存在しないため）
+- `update(id, name)` メソッドを追加（PRD FR_007 の「編集」対応）
+- アーキテクチャを刷新: ExerciseRepository（Data Layer）のみに集中。UI統合は設定画面モジュール・ワークアウトモジュールが担当
+- `ExerciseMasterPage`（スタンドアロンページ）を削除。設定画面の `ExerciseMasterSection` に統合（[index_design.md](../settings/index_design.md) 参照）
+- `useExerciseMaster` Hook を削除。設定画面セクションが ExerciseRepository を直接利用
+- 種目リネーム機能をスコープ内に変更（旧: Phase 1 スコープ外）
 
 ## v1.1 (2026-03-29)
 
@@ -229,9 +233,6 @@ function useExerciseMaster(): UseExerciseMasterReturn {
 - TypeScript 移行に合わせてファイル名・コード例を `.ts`/`.tsx` に更新（T-001 準拠）
 - 技術スタックに Language（TypeScript）行を追加
 - 制約 ID 参照を旧 DC_xxx から CONSTITUTION.md 原則 ID（A-001, A-002, T-001, T-003）に更新
-- WorkoutFormPage.jsx 参照を TrainingPage.tsx に更新（ナビゲーション実装に追従）
-- Exercise 型定義から `createdAt`/`updatedAt` を削除（`src/types/index.ts` との整合性）
-- D-002 準拠: Section 9.2 の未解決課題を Section 9.1 の決定事項に移動し、`impl-status` を `"not-implemented"` に修正
 
 ## v1.0 (2026-03-28)
 
