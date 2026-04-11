@@ -7,22 +7,22 @@ test.describe('ナビゲーション基本動作', () => {
 
   test('① ルートアクセスで /training にリダイレクト', async ({ page }) => {
     await expect(page).toHaveURL(/#\/training/)
-    await expect(page.getByText('トレーニング')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'トレーニング' })).toBeVisible()
   })
 
   test('② BottomNav でタブ遷移: トレ → 履歴 → AI', async ({ page }) => {
     // Initially on training
-    await expect(page.getByText('トレーニング')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'トレーニング' })).toBeVisible()
 
     // Navigate to history
     await page.getByRole('link', { name: '履歴' }).click()
     await expect(page).toHaveURL(/#\/history/)
-    await expect(page.getByText('履歴ページ')).toBeVisible()
+    await expect(page.getByRole('heading', { name: '履歴' })).toBeVisible()
 
     // Navigate to AI
     await page.getByRole('link', { name: 'AI' }).click()
     await expect(page).toHaveURL(/#\/ai/)
-    await expect(page.getByText('AI チャットページ')).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'AI チャット' })).toBeVisible()
 
     // Navigate back to training
     await page.getByRole('link', { name: 'トレ' }).click()
@@ -34,7 +34,7 @@ test.describe('ナビゲーション基本動作', () => {
     const gearLink = page.locator('a[href*="settings"]')
     await gearLink.click()
     await expect(page).toHaveURL(/#\/settings/)
-    await expect(page.getByText('設定')).toBeVisible()
+    await expect(page.getByRole('heading', { name: '設定' })).toBeVisible()
 
     // BottomNav should not be visible on settings page
     await expect(page.getByRole('link', { name: 'トレ' })).not.toBeVisible()
@@ -84,7 +84,7 @@ test.describe('BottomNav レイアウト', () => {
 
   test('FRAME5 (settings) では BottomNav が非表示 (FR-008)', async ({ page }) => {
     await page.goto('./#/settings')
-    await expect(page.getByText('設定')).toBeVisible()
+    await expect(page.getByRole('heading', { name: '設定' })).toBeVisible()
     await expect(page.getByRole('link', { name: 'トレ' })).not.toBeVisible()
   })
 })
