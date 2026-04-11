@@ -2,11 +2,11 @@
 id: "design-workout"
 title: "ワークアウト記録管理"
 type: "design"
-status: "draft"
+status: "approved"
 sdd-phase: "plan"
-impl-status: "not-implemented"
+impl-status: "implemented"
 created: "2026-03-08"
-updated: "2026-04-10"
+updated: "2026-04-12"
 depends-on: ["spec-workout", "design-navigation"]
 tags: ["workout", "session", "phase-1", "react", "typescript", "zustand", "localstorage"]
 category: "core"
@@ -23,20 +23,20 @@ risk: "high"
 
 # 1. 実装ステータス
 
-**ステータス:** 🔴 未実装（仕様書改訂に伴い再設計）
+**ステータス:** 🟢 実装済み
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| WorkoutRepository | 🔴 未実装 | Data Layer: localStorage CRUD（TypeScript化） |
-| workoutSessionStore (Zustand + persist) | 🔴 未実装 | State Layer: セッション下書き・カード状態。persist でセッション永続化 |
-| useWorkoutSession | 🔴 未実装 | Hook Layer: セッション記録ユースケース |
-| TrainingPage | 🔴 未実装 | UI Layer: isActive で IdleView/ActiveSessionView 切替 |
-| IdleView (FRAME1) | 🔴 未実装 | UI Layer: セッション未開始画面 |
-| ActiveSessionView (FRAME2) | 🔴 未実装 | UI Layer: セッション記録画面 |
-| ExerciseCard | 🔴 未実装 | UI Layer: 種目カード（3状態） |
-| CompletedSetRow | 🔴 未実装 | UI Layer: 完了済みセット行 |
-| PendingSetRow | 🔴 未実装 | UI Layer: 入力中セット行 |
-| ExerciseSearchField | 🔴 未実装 | UI Layer: 種目検索・追加フィールド |
+| WorkoutRepository | 🟢 実装済み | Data Layer: localStorage CRUD（Zod検証付き） |
+| workoutSessionStore (Zustand + persist) | 🟢 実装済み | State Layer: セッション下書き・カード状態。persist でセッション永続化 |
+| useWorkoutSession | 🟢 実装済み | Hook Layer: セッション記録ユースケース + elapsedSeconds |
+| TrainingPage | 🟢 実装済み | UI Layer: isActive で IdleView/ActiveSessionView 切替 |
+| IdleView (FRAME1) | 🟢 実装済み | UI Layer: セッション未開始画面 |
+| ActiveSessionView (FRAME2) | 🟢 実装済み | UI Layer: セッション記録画面 |
+| ExerciseCard | 🟢 実装済み | UI Layer: 種目カード（3状態） |
+| CompletedSetRow | 🟢 実装済み | UI Layer: 完了済みセット行 |
+| PendingSetRow | 🟢 実装済み | UI Layer: 入力中セット行 |
+| ExerciseSearchField | 🟢 実装済み | UI Layer: 種目検索・追加フィールド |
 
 ---
 
@@ -62,7 +62,7 @@ risk: "high"
 | アイコン | @phosphor-icons/react | design-system.html が Phosphor Icons を使用（A-001） |
 | 状態管理 | Zustand ^5 | セッション下書き状態の管理。hooks 経由のみ公開 |
 | データ永続化 | localStorage (JSON) | B-001: Privacy-by-Design。A-002: Client-Only Architecture |
-| バリデーション | Zod ^3 | localStorage 読み取り時のデータ検証（T-002: No Runtime Errors） |
+| バリデーション | Zod ^4 | localStorage 読み取り時のデータ検証（T-002: No Runtime Errors） |
 | 日付処理 | ネイティブ Date API | YYYY-MM-DD 形式と ISO 8601 datetime のみ扱うため十分 |
 
 ## 3.1. UI デザインシステム
@@ -501,6 +501,8 @@ useEffect(() => {
 | セッションデータ永続化 | 都度保存 vs persist | Zustand persist | ページ遷移・リロード時のセッション復元。navigation spec FR-006, NFR-002 準拠。`partialize` で `isActive`, `startedAt`, `draftExercises` のみ永続化 |
 | localStorage 読み取り検証 | 型アサーション vs Zod パース | Zod パース | T-002: No Runtime Errors。不正データによるクラッシュを防止 |
 | 日付・日時の型表現 | 素の `string` vs Zod branded type | Zod branded type（`DateString`, `ISODateTimeString`） | history モジュールと同じパターン。素の `string` では任意の文字列が型チェックを通過する。branded type は境界でパースし内部は型安全に流通でき、Zod 活用方針に合致。`src/schemas/date.ts` で history と共有 |
+| Zustand persist と React イベント | store action を onClick に直接渡す vs ラップ | `() => startSession()` でラップ | React の onClick ハンドラから store action を直接渡すと、SyntheticEvent が optional パラメータ（`date?`）として渡され、persist middleware がシリアライズ時に循環参照エラーを起こす。アロー関数でラップして引数を遮断する |
+| ExerciseCard の exerciseIndex | props で渡す vs クロージャで束縛 | クロージャで束縛（props から除外） | ExerciseCard は内部で exerciseIndex を使用しない。ActiveSessionView で `onActivate={() => activateExercise(i)}` のようにクロージャで束縛して渡すことで、コンポーネントの props をシンプルに保つ |
 
 ## 9.2. 未解決の課題
 

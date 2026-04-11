@@ -7,12 +7,12 @@ test.describe('ナビゲーション基本動作', () => {
 
   test('① ルートアクセスで /training にリダイレクト', async ({ page }) => {
     await expect(page).toHaveURL(/#\/training/)
-    await expect(page.getByRole('heading', { name: 'トレーニング' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '準備はいいですか？' })).toBeVisible()
   })
 
   test('② BottomNav でタブ遷移: トレ → 履歴 → AI', async ({ page }) => {
     // Initially on training
-    await expect(page.getByRole('heading', { name: 'トレーニング' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: '準備はいいですか？' })).toBeVisible()
 
     // Navigate to history
     await page.getByRole('link', { name: '履歴' }).click()
