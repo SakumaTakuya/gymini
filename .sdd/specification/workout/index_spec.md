@@ -2,7 +2,7 @@
 id: "spec-workout"
 title: "ワークアウト記録管理"
 type: "spec"
-status: "draft"
+status: "approved"
 sdd-phase: "specify"
 created: "2026-03-08"
 updated: "2026-04-10"
