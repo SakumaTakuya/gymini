@@ -4,7 +4,7 @@ title: "種目マスター管理"
 type: "design"
 status: "draft"
 sdd-phase: "plan"
-impl-status: "not-implemented"
+impl-status: "implemented"
 created: "2026-03-28"
 updated: "2026-04-11"
 depends-on: ["spec-exercise-master"]
@@ -23,15 +23,15 @@ risk: "high"
 
 # 1. 実装ステータス
 
-**ステータス:** 🔴 未実装
+**ステータス:** 🟢 実装完了
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| ExerciseRepository.getAll | 🔴 未実装 | 全件取得 |
-| ExerciseRepository.search | 🔴 未実装 | 部分一致検索（FR-005） |
-| ExerciseRepository.create | 🔴 未実装 | 重複名チェック付き新規登録（FR-006, FR-007） |
-| ExerciseRepository.update | 🔴 未実装 | 重複名チェック付き名前変更（FR-007） |
-| ExerciseRepository.remove | 🔴 未実装 | ID 指定削除（FR-007） |
+| ExerciseRepository.getAll | 🟢 実装完了 | 全件取得 |
+| ExerciseRepository.search | 🟢 実装完了 | 部分一致検索（FR-005） |
+| ExerciseRepository.create | 🟢 実装完了 | 重複名チェック付き新規登録（FR-006, FR-007） |
+| ExerciseRepository.update | 🟢 実装完了 | 重複名チェック付き名前変更（FR-007） |
+| ExerciseRepository.remove | 🟢 実装完了 | ID 指定削除（FR-007） |
 
 > **UI統合モジュール**: 種目マスターのUIは本モジュールのスコープ外。ワークアウト記録時の検索・自動登録UIは [workout](../workout/index_design.md) モジュール、設定画面での CRUD UIは [settings](../settings/index_design.md) モジュールが担当する。
 

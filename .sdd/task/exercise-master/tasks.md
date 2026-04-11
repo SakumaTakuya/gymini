@@ -2,7 +2,7 @@
 id: "task-exercise-master"
 title: "種目マスター管理"
 type: "task"
-status: "pending"
+status: "completed"
 sdd-phase: "tasks"
 created: "2026-03-29"
 updated: "2026-04-11"
