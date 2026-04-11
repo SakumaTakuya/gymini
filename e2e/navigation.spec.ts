@@ -1,122 +1,90 @@
 import { test, expect } from '@playwright/test'
 
-const SEED_EXERCISES = [
-  { id: 'ex-1', name: 'ベンチプレス' },
-  { id: 'ex-2', name: 'スクワット' },
-]
-
-// Seed exercises and clear session AFTER page loads (avoids addInitScript running on reload)
-async function resetState(page: Parameters<typeof test>[1] extends { page: infer P } ? P : never) {
-  await page.evaluate((exercises) => {
-    localStorage.setItem('gymini:exercises', JSON.stringify(exercises))
-    localStorage.removeItem('gymini:workout-session')
-  }, SEED_EXERCISES)
-  await page.reload()
-}
-
 test.describe('ナビゲーション基本動作', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('/')
-    await resetState(page)
   })
 
-  test('①待機画面→トレーニング開始→FAB 表示', async ({ page }) => {
-    // 待機画面: FABは不可視
-    const fab = page.getByLabel('種目を追加')
-    await expect(fab).toBeHidden()
-
-    // トレーニングを開始
-    await page.getByRole('button', { name: 'トレーニングを開始' }).click()
-
-    // セッション開始後: FABが表示される
-    await expect(fab).toBeVisible()
+  test('① ルートアクセスで /training にリダイレクト', async ({ page }) => {
+    await expect(page).toHaveURL(/#\/training/)
+    await expect(page.getByText('トレーニング')).toBeVisible()
   })
 
-  test('②History タブ遷移→Training タブ戻りでセッション維持', async ({ page }) => {
-    // セッション開始
-    await page.getByRole('button', { name: 'トレーニングを開始' }).click()
+  test('② BottomNav でタブ遷移: トレ → 履歴 → AI', async ({ page }) => {
+    // Initially on training
+    await expect(page.getByText('トレーニング')).toBeVisible()
 
-    // 種目を追加
-    await page.getByPlaceholder('種目を検索...').fill('ベンチ')
-    await page.getByText('ベンチプレス', { exact: true }).click()
-    await expect(page.getByText('ベンチプレス', { exact: true })).toBeVisible()
+    // Navigate to history
+    await page.getByRole('link', { name: '履歴' }).click()
+    await expect(page).toHaveURL(/#\/history/)
+    await expect(page.getByText('履歴ページ')).toBeVisible()
 
-    // History タブへ遷移
-    await page.getByRole('button', { name: 'History' }).click()
-    await expect(page.getByText('Coming Soon')).toBeVisible()
+    // Navigate to AI
+    await page.getByRole('link', { name: 'AI' }).click()
+    await expect(page).toHaveURL(/#\/ai/)
+    await expect(page.getByText('AI チャットページ')).toBeVisible()
 
-    // Training タブに戻る
-    await page.getByRole('button', { name: 'Training' }).click()
-
-    // セッション管理画面が表示される（種目も維持）
-    await expect(page.getByText('ベンチプレス', { exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: '保存' })).toBeVisible()
+    // Navigate back to training
+    await page.getByRole('link', { name: 'トレ' }).click()
+    await expect(page).toHaveURL(/#\/training/)
   })
 
-  test('③セッション終了→FAB 非表示', async ({ page }) => {
-    const fab = page.getByLabel('種目を追加')
+  test('③ 歯車アイコン → 設定画面 → X ボタンで戻る', async ({ page }) => {
+    // Navigate to settings via gear icon
+    const gearLink = page.locator('a[href*="settings"]')
+    await gearLink.click()
+    await expect(page).toHaveURL(/#\/settings/)
+    await expect(page.getByText('設定')).toBeVisible()
 
-    // セッション開始
-    await page.getByRole('button', { name: 'トレーニングを開始' }).click()
-    await expect(fab).toBeVisible()
+    // BottomNav should not be visible on settings page
+    await expect(page.getByRole('link', { name: 'トレ' })).not.toBeVisible()
 
-    // 保存してセッション終了
-    await page.getByRole('button', { name: '保存' }).click()
-
-    // FABが非表示に
-    await expect(fab).toBeHidden()
-    // 待機画面に戻る
-    await expect(page.getByRole('button', { name: 'トレーニングを開始' })).toBeVisible()
-  })
-})
-
-test.describe('FABによる種目追加', () => {
-  test.beforeEach(async ({ page }) => {
-    await page.goto('/')
-    await resetState(page)
+    // Click X button to go back
+    await page.getByLabel('閉じる').click()
+    await expect(page).toHaveURL(/#\/training/)
   })
 
-  test('FABタップで種目追加モーダルが開く', async ({ page }) => {
-    // セッション開始
-    await page.getByRole('button', { name: 'トレーニングを開始' }).click()
+  test('④ ブラウザバックボタンで settings から戻れる (FR-005)', async ({ page }) => {
+    // Go to history first, then settings
+    await page.getByRole('link', { name: '履歴' }).click()
+    await expect(page).toHaveURL(/#\/history/)
 
-    // FABをタップ
-    await page.getByLabel('種目を追加').click()
+    const gearLink = page.locator('a[href*="settings"]')
+    await gearLink.click()
+    await expect(page).toHaveURL(/#\/settings/)
 
-    // モーダルが開く（モーダルのヘッダーで確認）
-    await expect(page.getByRole('heading', { name: '種目を追加' })).toBeVisible()
+    // Browser back
+    await page.goBack()
+    await expect(page).toHaveURL(/#\/history/)
   })
 
-  test('モーダルから種目を追加できる', async ({ page }) => {
-    await page.getByRole('button', { name: 'トレーニングを開始' }).click()
-
-    await page.getByLabel('種目を追加').click()
-    await expect(page.getByRole('heading', { name: '種目を追加' })).toBeVisible()
-    // Modal's search input is nth(1) (TrainingPage in-page search is nth(0))
-    await page.getByPlaceholder('種目を検索...').nth(1).fill('スクワット')
-    await page.getByText('スクワット', { exact: true }).click()
-
-    // モーダルが閉じ、種目が追加される
-    await expect(page.getByText('スクワット', { exact: true })).toBeVisible()
+  test('⑤ 未知ルートで /training にリダイレクト (FR-013)', async ({ page }) => {
+    await page.goto('/#/unknown-route')
+    await expect(page).toHaveURL(/#\/training/)
   })
 })
 
-test.describe('セッション永続化 (NFR-002)', () => {
-  test('ページリロード後もセッションデータが復元される', async ({ page }) => {
+test.describe('BottomNav レイアウト', () => {
+  test('FRAME1-4 では BottomNav + GearIcon が表示', async ({ page }) => {
     await page.goto('/')
-    await resetState(page)
 
-    // セッション開始して種目追加
-    await page.getByRole('button', { name: 'トレーニングを開始' }).click()
-    await page.getByPlaceholder('種目を検索...').fill('ベンチ')
-    await page.getByText('ベンチプレス', { exact: true }).click()
-    await expect(page.getByText('ベンチプレス', { exact: true })).toBeVisible()
+    // Training page
+    await expect(page.getByRole('link', { name: 'トレ' })).toBeVisible()
+    await expect(page.getByRole('link', { name: '履歴' })).toBeVisible()
+    await expect(page.getByRole('link', { name: 'AI' })).toBeVisible()
 
-    // リロード（セッションは localStorage に自動保存済み、exercises も seeded）
-    await page.reload()
+    // History page
+    await page.getByRole('link', { name: '履歴' }).click()
+    await expect(page.getByRole('link', { name: 'トレ' })).toBeVisible()
 
-    // セッションが復元されてアクティブ画面が表示される
-    await expect(page.getByRole('button', { name: '保存' })).toBeVisible()
-    await expect(page.getByText('ベンチプレス', { exact: true })).toBeVisible()
+    // AI page
+    await page.getByRole('link', { name: 'AI' }).click()
+    await expect(page.getByRole('link', { name: 'トレ' })).toBeVisible()
+  })
+
+  test('FRAME5 (settings) では BottomNav が非表示 (FR-008)', async ({ page }) => {
+    await page.goto('/#/settings')
+    await expect(page.getByText('設定')).toBeVisible()
+    await expect(page.getByRole('link', { name: 'トレ' })).not.toBeVisible()
   })
 })
