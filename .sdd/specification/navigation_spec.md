@@ -2,7 +2,7 @@
 id: "spec-navigation"
 title: "ページナビゲーション"
 type: "spec"
-status: "draft"
+status: "active"
 sdd-phase: "specify"
 created: "2026-03-28"
 updated: "2026-04-10"
@@ -74,7 +74,7 @@ gymini は5つの論理画面（FRAME1〜5）を持つモバイルフィット�
 
 | ID | カテゴリ | 要件 | 目標値 | 検証方法 |
 |----|--------|------|--------|---------|
-| NFR-001 | 操作性 | ページ切り替えが即座に行われること | 1フレーム（16ms）以内に完了 | Test |
+| NFR-001 | 操作性 | ルーティング遷移開始からナビゲーションコンポーネントの更新完了まで16ms以内（60fps相当）であること。ページコンテンツの非同期ロードは含まない | 16ms（=1フレーム@60fps） | Test |
 | NFR-002 | データ整合性 | セッション中のページ遷移・リロードでデータが失われないこと | セッションデータが完全に復元される | Test |
 | NFR-003 | レイアウト安定性 | BottomNavのレイアウトが全画面で一貫していること | タブ構成・AIボタンの位置が固定 | Inspection |
 
@@ -110,6 +110,8 @@ type NavTab = {
 }
 
 // 歯車アイコンの設定
+// Note: FRAME2（Active Workout）での拡張プロパティ（showEndButton, elapsedTime, onEndSession）は
+// navigation_design.md の GearIconProps で詳細化される
 type GearIconConfig = {
   showBadge: boolean  // APIキー未設定時にtrue
 }
@@ -302,6 +304,40 @@ sequenceDiagram
     TrainingPage-->>User: FRAME1 Idle画面に戻る
 ```
 
+## 7.3. コンポーネント構成（Block Definition Diagram）
+
+```mermaid
+classDiagram
+    class AppLayout {
+      +GearIcon gearIcon
+      +BottomNav bottomNav
+      +Outlet outlet
+    }
+    class BottomNav {
+      +NavTab[] tabs
+      +Link aiButton
+    }
+    class GearIcon {
+      +boolean showBadge
+      +Link settingsLink
+    }
+    class TrainingPage {
+      +IdleView idleView
+      +ActiveSessionView activeView
+    }
+    class HistoryPage
+    class AIChatPage
+    class SettingsPage {
+      +XButton closeButton
+    }
+    AppLayout --> BottomNav
+    AppLayout --> GearIcon
+    AppLayout --> TrainingPage
+    AppLayout --> HistoryPage
+    AppLayout --> AIChatPage
+    SettingsPage ..> AppLayout : layout外
+```
+
 # 8. 制約事項
 
 - ルーティングは TanStack Router（ファイルベースルーティング）で実現する（A-001, DC_005）。ルートファイルは `src/routes/` 配下に配置する（CONSTITUTION 注記準拠）
@@ -311,6 +347,7 @@ sequenceDiagram
 - BottomNavのタブ構成（2タブ + AIボタン）は静的であり、セッション状態による変更は行わない（IR_001）
 - 歯車アイコンはFRAME1〜4で常時表示（layout route 内）、FRAME5では非表示（IR_002）
 - セッション永続化はワークアウトストアの永続化機能によって実現する（FR_019）
+- localStorage アクセス不可またはデータパース失敗時は、デフォルト初期状態にフォールバックし、セッションデータが失われてもアプリが動作を継続すること（T-002）
 - 各ページの中身（トレーニング詳細、履歴カレンダー、AIチャット、設定）はナビゲーションの責務外。別specで定義する
 - TypeScript strict mode を遵守する。ルートパスの型は TanStack Router が自動推論する（T-001）
 - タップターゲットは最低 44px × 44px を確保する（T-003）

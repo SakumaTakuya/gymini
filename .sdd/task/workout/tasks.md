@@ -39,7 +39,7 @@ priority: "high"
 | # | タスク | 説明 | 完了条件 | 依存 |
 |:---|:---|:---|:---|:---|
 | 2.1 | WorkoutRepository 実装 | `src/lib/workoutRepository.ts` に `save`, `remove`, `getById`, `listByDateDesc`, `listByDate` を純粋関数として実装。localStorage 読み取り時は Zod パースで検証、失敗時は `[]` フォールバック（T-002） | 全5関数のユニットテストが通る。localStorage モックで CRUD の正常系・異常系（不正JSON、空ストレージ）をカバー | 1.3 |
-| 2.2 | workoutSessionStore 実装（セッション基本） | `src/stores/workoutSessionStore.ts` に Zustand store を実装。state: `isActive`, `startedAt`, `draftExercises`。actions: `startSession`, `endSession` | `startSession()` で `isActive=true`, `startedAt` がセット、`draftExercises=[]`。`endSession()` で `WorkoutRepository.save` が呼ばれ、state がリセット。ユニットテスト通過 | 2.1 |
+| 2.2 | workoutSessionStore 実装（セッション基本 + persist） | `src/stores/workoutSessionStore.ts` に Zustand + persist store を実装。state: `isActive`, `startedAt`, `draftExercises`。actions: `startSession`, `endSession`。persist で `isActive`, `startedAt`, `draftExercises` を `gymini:workout-session` キーで永続化。`onRehydrateStorage` でエラーハンドリング（T-002） | `startSession()` で `isActive=true`, `startedAt` がセット、`draftExercises=[]`。`endSession()` で `WorkoutRepository.save` が呼ばれ、state がリセット。リロード後にセッションが復元される。ユニットテスト通過 | 2.1 |
 | 2.3 | workoutSessionStore 実装（種目・セット管理） | `addExercise`, `activateExercise`, `completeSet`, `editCompletedSet`, `deleteCompletedSet`, `toggleExerciseCard` を追加 | `addExercise`: recording 状態で追加 + 他の recording を idle 降格。`activateExercise`: idle→recording + 排他制御。`completeSet`: pendingSet→sets + 次 pendingSet 自動作成（前セット値）。`editCompletedSet`: sets→pendingSet 移動。`deleteCompletedSet`: sets から削除。`toggleExerciseCard`: collapsed↔idle 切替。全アクションのユニットテスト通過 | 2.2 |
 | 2.4 | useWorkoutSession hook 実装 | `src/hooks/useWorkoutSession.ts` に store をラップする hook を実装。`elapsedSeconds` を `setInterval` で毎秒更新（FR-032）。`searchExercises` で ExerciseRepository を内部呼出し | hook が store の全 state/action を公開。`elapsedSeconds` が `startedAt` から正しく計算される。`searchExercises` が ExerciseRepository を呼ぶ。ユニットテスト通過 | 2.3 |
 
@@ -49,22 +49,25 @@ priority: "high"
 |:---|:---|:---|:---|:---|
 | 3.1 | PendingSetRow コンポーネント | `src/components/workout/PendingSetRow.tsx`。セット番号 + 重量/回数入力フィールド + チェックボタン。左端黒バー。props: `setNumber`, `pendingSet`, `onComplete` | チェックタップで `onComplete` が呼ばれる。重量/回数の入力・表示が正しい。タップターゲット 44px 確保（T-003）。コンポーネントテスト通過 | 2.4 |
 | 3.2 | CompletedSetRow コンポーネント | `src/components/workout/CompletedSetRow.tsx`。ゴミ箱 + 重量/回数表示 + 鉛筆。props: `set`, `onEdit`, `onDelete` | ゴミ箱タップで `onDelete`、鉛筆タップで `onEdit` が呼ばれる。`bg-zinc-50 rounded-xl` スタイル適用。コンポーネントテスト通過 | 2.4 |
-| 3.3 | SessionTimer コンポーネント | `src/components/workout/SessionTimer.tsx`。pill 型で `HH:MM:SS` 表示。props: `elapsedSeconds` | 0秒→`00:00:00`、3672秒→`01:01:12` と正しくフォーマット。`ph-clock` アイコン + `animate-pulse` 適用。コンポーネントテスト通過 | - |
+| 3.3 | formatElapsedTime ユーティリティ | `src/lib/formatElapsedTime.ts` に `elapsedSeconds` → `"HH:MM:SS"` 形式のフォーマット関数を実装。navigation の GearIcon が `elapsedTime` prop として使用する | 0→`"00:00:00"`、3672→`"01:01:12"` の変換テスト通過 | - |
 | 3.4 | ExerciseCard コンポーネント | `src/components/workout/ExerciseCard.tsx`。3状態（collapsed/idle/recording）に応じた表示切替。内部で CompletedSetRow, PendingSetRow を使用。props: `draftExercise`, `exerciseIndex`, `onActivate`, `onComplete`, `onEdit`, `onDelete`, `onToggle` | collapsed: ヘッダーのみ + セット数サマリー。idle: 完了セット + 「+」ボタン。recording: 完了セット + PendingSetRow。ヘッダータップで `onToggle`。コンポーネントテスト通過 | 3.1, 3.2 |
 | 3.5 | ExerciseSearchField コンポーネント | `src/components/workout/ExerciseSearchField.tsx`。部分一致検索フィールド + 候補ドロップダウン。props: `onSelectExercise`, `searchExercises` | 入力で候補表示、選択で `onSelectExercise` コールバック。未登録種目の新規追加対応。コンポーネントテスト通過 | - |
 
 ### Phase 4: 統合（ページ）
 
+> **Note**: TrainingPage と IdleView は本モジュール（workout）が作成する。navigation タスクの 2.3 (IdleView) と 2.4 (TrainingPage) は削除済み。navigation はルートファイル（`_app/training.tsx`）のみ作成し、`component: TrainingPage` で本モジュールのコンポーネントを参照する。
+
 | # | タスク | 説明 | 完了条件 | 依存 |
 |:---|:---|:---|:---|:---|
-| 4.1 | IdlePage（FRAME1）実装 | `src/routes/index.tsx`。「トレーニングを始める」ボタン。タップで `startSession()` + `/workout` へナビゲート。日付・挨拶表示 | ボタンタップでセッション開始 + FRAME2 遷移。TanStack Router ルート定義が正しい。統合テスト通過 | 2.4, 3.3 |
-| 4.2 | ActiveWorkoutPage（FRAME2）実装 | `src/routes/workout.tsx`。終了ボタン + SessionTimer + ExerciseCard 一覧 + ExerciseSearchField を統合。`useWorkoutSession` から全 state/action を取得 | 種目追加→セット記録→終了→保存の全フロー動作。終了ボタンで `endSession()` + FRAME1 遷移。セッション未開始でアクセスした場合は FRAME1 にリダイレクト。統合テスト通過 | 3.3, 3.4, 3.5, 4.1 |
+| 4.1 | TrainingPage 実装 | `src/pages/TrainingPage.tsx`。`useWorkoutSession().isActive` で IdleView（FRAME1）/ ActiveSessionView（FRAME2）を切替。ルートファイル `src/routes/_app/training.tsx` は navigation タスクで作成済みの前提 | `isActive=false` → IdleView 表示。`isActive=true` → ActiveSessionView 表示。統合テスト通過 | 2.4, 4.2, 4.3 |
+| 4.2 | IdleView（FRAME1）実装 | `src/components/IdleView.tsx`。挨拶 + 「トレーニングを始める」ボタン。props: `onStartTraining`。ボタン: `w-[85%] h-13 bg-black text-white rounded-2xl` | ボタンタップで `onStartTraining` コールバック。タップターゲット 44px 以上。コンポーネントテスト通過 | - |
+| 4.3 | ActiveSessionView（FRAME2）実装 | `src/components/workout/ActiveSessionView.tsx`。ExerciseCard 一覧 + ExerciseSearchField を統合。`useWorkoutSession` から全 state/action を取得。終了ボタンとタイマーは navigation の GearIcon が表示するためスコープ外 | 種目追加→セット記録の全フロー動作。統合テスト通過 | 3.3, 3.4, 3.5 |
 
 ### Phase 5: テスト
 
 | # | タスク | 説明 | 完了条件 | 依存 |
 |:---|:---|:---|:---|:---|
-| 5.1 | E2E テスト | Playwright で FRAME1 → FRAME2 → 種目追加 → セット記録（チェック→自動追加→前セット値確認）→ 完了セット編集/削除 → 別種目追加（排他制御確認）→ 終了 → FRAME1 の全フローをテスト | 全 E2E テスト通過。セッションライフサイクル・3状態遷移・排他制御・タイマー表示を検証 | 4.2 |
+| 5.1 | E2E テスト | Playwright で FRAME1 → FRAME2 → 種目追加 → セット記録（チェック→自動追加→前セット値確認）→ 完了セット編集/削除 → 別種目追加（排他制御確認）→ 終了 → FRAME1 の全フローをテスト | 全 E2E テスト通過。セッションライフサイクル・3状態遷移・排他制御・タイマー表示を検証 | 4.1 |
 
 ### Phase 6: 仕上げ
 
@@ -92,14 +95,15 @@ graph TD
     subgraph "Phase 3: UIコンポーネント"
         T3_1["3.1 PendingSetRow"]
         T3_2["3.2 CompletedSetRow"]
-        T3_3["3.3 SessionTimer"]
+        T3_3["3.3 formatElapsedTime"]
         T3_4["3.4 ExerciseCard"]
         T3_5["3.5 ExerciseSearchField"]
     end
 
     subgraph "Phase 4: ページ統合"
-        T4_1["4.1 IdlePage"]
-        T4_2["4.2 ActiveWorkoutPage"]
+        T4_1["4.1 TrainingPage"]
+        T4_2["4.2 IdleView"]
+        T4_3["4.3 ActiveSessionView"]
     end
 
     subgraph "Phase 5: テスト"
@@ -121,11 +125,12 @@ graph TD
     T3_1 --> T3_4
     T3_2 --> T3_4
     T2_4 --> T4_1
-    T3_3 --> T4_1
-    T3_4 --> T4_2
-    T3_5 --> T4_2
-    T4_1 --> T4_2
-    T4_2 --> T5_1
+    T4_2 --> T4_1
+    T4_3 --> T4_1
+    T3_4 --> T4_3
+    T3_5 --> T4_3
+    T3_3 --> T4_3
+    T4_1 --> T5_1
     T5_1 --> T6_1
 ```
 
@@ -134,7 +139,9 @@ graph TD
 - **D-001 Test-First**: 各タスクの実装前にテストを書く。Phase 1〜4 の各タスクにはユニット/コンポーネントテストが含まれる
 - **recording 排他制御**: `addExercise` と `activateExercise` の両方で、他の recording 種目を idle に降格するロジックが必要。store のヘルパー関数として `deactivateCurrentRecording()` を内部的に共通化すると良い
 - **ExerciseRepository 依存**: exercise-master モジュールの `ExerciseRepository` が先行実装されている前提。未実装の場合はモック/スタブで進行可能
-- **TanStack Router**: FRAME1（`/`）と FRAME2（`/workout`）のルート定義。FRAME2 でセッション未開始の場合は FRAME1 にリダイレクト
+- **ルーティングは navigation 機能が管理**: `/training` ルートは `src/routes/_app/training.tsx` で定義（navigation タスク）。本モジュールは TrainingPage コンポーネントと内部の IdleView / ActiveSessionView を提供する
+- **タイマーと終了ボタン**: navigation の GearIcon が `showEndButton`, `elapsedTime`, `onEndSession` props で表示。本モジュールは `useWorkoutSession` の `elapsedSeconds` と `endSession` を提供する側
+- **セッション永続化**: workoutSessionStore の Zustand persist でセッション下書きを自動永続化。ページ遷移・リロード後も復元可能（navigation FR-006）
 - **T-003 Mobile-First**: 全てのタップターゲットは 44px × 44px 以上。チェックボタンは視覚サイズ `w-7 h-7` + パディングで拡張
 
 ## 参照ドキュメント
@@ -150,16 +157,16 @@ graph TD
 
 | 要求ID | 要件 | 対応タスク |
 |:---|:---|:---|
-| FR-001 | セッションの開始・終了・保存 | 2.2, 4.1, 4.2, 5.1 |
+| FR-001 | セッションの開始・終了・保存 | 2.2, 4.1, 4.2, 4.3, 5.1 |
 | FR-003 | セット単位で重量(kg)と回数を管理 | 1.2, 1.3, 3.1, 3.2 |
-| FR-005 | 1セッション内で複数の種目を連続して追加・記録 | 2.3, 3.4, 3.5, 4.2, 5.1 |
+| FR-005 | 1セッション内で複数の種目を連続して追加・記録 | 2.3, 3.4, 3.5, 4.3, 5.1 |
 | FR-006 | セット完了時に次セットへ前セットの重量・回数を自動入力 | 2.3, 3.1, 5.1 |
-| FR-028 | 種目追加時にセット入力行自動作成。チェック完了→次セット自動追加。recording排他制御 | 2.3, 3.1, 3.4, 4.2, 5.1 |
+| FR-028 | 種目追加時にセット入力行自動作成。チェック完了→次セット自動追加。recording排他制御 | 2.3, 3.1, 3.4, 4.3, 5.1 |
 | FR-029 | 完了済みセットの削除・編集 | 2.3, 3.2, 3.4, 5.1 |
 | FR-030 | 種目カードの3状態（collapsed・idle・recording）。recordingは同時に1種目のみ | 2.3, 3.4, 5.1 |
-| FR-031 | 終了ボタンでセッションを保存して終了 | 2.2, 4.2, 5.1 |
-| FR-032 | セッション経過時間をリアルタイム表示 | 2.4, 3.3, 4.2, 5.1 |
-| NFR-001 | データ整合性（localStorage永続化） | 1.2, 2.1 |
+| FR-031 | 終了ボタンでセッションを保存して終了 | 2.2, 5.1（終了ボタンUIは navigation GearIcon が担当） |
+| FR-032 | セッション経過時間をリアルタイム表示 | 2.4, 3.3, 5.1（タイマーUIは navigation GearIcon が担当） |
+| NFR-001 | データ整合性（localStorage永続化） | 1.2, 2.1, 2.2 |
 
 **カバレッジ**: 9/9 FR + 1/1 NFR = **100%**
 
