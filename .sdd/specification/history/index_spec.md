@@ -39,7 +39,7 @@ risk: "low"
 
 設計原則:
 
-- **データモデルの共有**: `WorkoutRecord` / `workoutRepository` を workout モジュールと共有し、履歴画面固有のデータ層は追加しない
+- **データモデルの共有**: `Workout` / `workoutRepository` を workout モジュールと共有し、履歴画面固有のデータ層は追加しない
 - **コンポーネント分離**: カレンダーUI、サマリー表示、空状態をそれぞれ独立したコンポーネントとする
 - **URL駆動の状態管理**: カレンダーの表示月と選択日を TanStack Router の search params で管理し、タブ切替・ブラウザバックでも状態を保持
 
@@ -79,9 +79,9 @@ risk: "low"
 | history | MonthCalendar | (component) | shadcn/ui Calendar ベースの月表示カレンダーコンポーネント |
 | history | WorkoutSummary | (component) | 選択日のワークアウト記録サマリー |
 | history | EmptyDayState | (component) | 記録なし日の空状態コンポーネント |
-| history | useWorkoutsForDate | (hook) | 指定日付のワークアウト記録を取得するフック。内部で TanStack Query + workoutRepository.listByDate() を使用 |
+| history | useWorkoutsForDate | (hook) | 指定日付のワークアウト記録（`Workout[]`）を取得するフック。内部で TanStack Query + workoutRepository.listByDate() を使用 |
 | history | DateString | (type) | "YYYY-MM-DD" 形式の branded type（Zod スキーマで検証。`src/schemas/date.ts`） |
-| history | useCalendar | selectedDate | 現在選択中の日付（DateString \| null）。search params から取得 |
+| history | useCalendar | selectedDate | 現在選択中の日付（DateString）。search params から取得。デフォルトは今日の日付（`todayDateString()`） |
 | history | useCalendar | displayMonth | 表示中の年月。search params から取得（デフォルト: 今月） |
 | history | useCalendar | goToPrevMonth() | 前月に遷移 |
 | history | useCalendar | goToNextMonth() | 次月に遷移 |
@@ -99,7 +99,7 @@ type DateString = string & { readonly __brand: 'DateString' }
 
 // カレンダーフック
 type UseCalendar = () => {
-  selectedDate: DateString | null
+  selectedDate: DateString
   displayMonth: { year: number; month: number }  // 1-indexed month
   goToPrevMonth: () => void
   goToNextMonth: () => void
@@ -164,11 +164,10 @@ function HistoryPage() {
         onNextMonth={goToNextMonth}
         onSelectDate={selectDate}
       />
-      {selectedDate && (
-        workouts.length > 0
-          ? <WorkoutSummary date={selectedDate} workouts={workouts} />
-          : <EmptyDayState date={selectedDate} onAddWorkout={handleAddWorkout} />
-      )}
+      {workouts.length > 0
+        ? <WorkoutSummary date={selectedDate} workouts={workouts} />
+        : <EmptyDayState date={selectedDate} onAddWorkout={handleAddWorkout} />
+      }
     </div>
   )
 }
@@ -190,14 +189,14 @@ sequenceDiagram
     Note over User,EmptyDayState: 画面表示時
     User->>HistoryPage: 履歴タブをタップ
     HistoryPage->>WorkoutStore: 今月のワークアウト記録を取得
-    WorkoutStore-->>HistoryPage: WorkoutRecord[]
+    WorkoutStore-->>HistoryPage: Workout[]
     HistoryPage->>MonthCalendar: 今月のカレンダーを表示（記録がある日にマーカー付き）
 
     Note over User,EmptyDayState: 日付選択（記録あり）
     User->>MonthCalendar: 記録ありの日付をタップ
     MonthCalendar->>HistoryPage: selectDate(date)
     HistoryPage->>WorkoutStore: 選択日のワークアウトを取得
-    WorkoutStore-->>HistoryPage: WorkoutRecord[]
+    WorkoutStore-->>HistoryPage: Workout[]
     HistoryPage->>WorkoutSummary: 種目・セットサマリーを表示
 
     Note over User,EmptyDayState: 日付選択（記録なし）
@@ -205,14 +204,14 @@ sequenceDiagram
     MonthCalendar->>HistoryPage: selectDate(date)
     HistoryPage->>EmptyDayState: 空状態を表示
     User->>EmptyDayState: 「追加」ボタンをタップ
-    EmptyDayState->>WorkoutStore: startSession(date)
-    Note over User: FRAME2（Active Workout）へ遷移
+    EmptyDayState->>WorkoutStore: startSession(date: DateString)
+    Note over User: FRAME2（Active Workout）へ遷移（navigate to '/'）
 
     Note over User,EmptyDayState: 月遷移
     User->>MonthCalendar: シェブロンボタンをタップ
     MonthCalendar->>HistoryPage: goToPrevMonth() / goToNextMonth()
     HistoryPage->>WorkoutStore: 遷移先月のワークアウト記録を取得
-    WorkoutStore-->>HistoryPage: WorkoutRecord[]
+    WorkoutStore-->>HistoryPage: Workout[]
     HistoryPage->>MonthCalendar: カレンダーを更新
 ```
 

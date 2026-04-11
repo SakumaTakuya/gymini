@@ -82,7 +82,7 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 
 | モジュール | インターフェース | メンバー | 概要 |
 |---------|--------------|--------|------|
-| workout | WorkoutSession | startSession() | セッションを開始し、タイマーを開始する（FR-001, FR-032） |
+| workout | WorkoutSession | startSession(date?) | セッションを開始し、タイマーを開始する。`date`（DateString）を指定した場合はその日付でセッションを開始する。省略時は今日の日付を使用する（FR-001, FR-032） |
 | workout | WorkoutSession | endSession() | セッションを保存して終了し、アイドル状態に戻る（FR-001, FR-031） |
 | workout | WorkoutSession | addExercise(exercise) | セッションに種目を追加する。セット入力行を自動作成しフォーカス。現在recording中の他種目はidleに降格（FR-005, FR-028） |
 | workout | WorkoutSession | activateExercise(exerciseIndex) | idle種目の「+」ボタンで記録中に切替。現在recording中の他種目はidleに降格（FR-028, FR-030） |

@@ -5,7 +5,7 @@ type: "spec"
 status: "active"
 sdd-phase: "specify"
 created: "2026-03-28"
-updated: "2026-04-10"
+updated: "2026-04-11"
 depends-on: ["prd-navigation"]
 tags: ["navigation", "routing", "bottom-nav", "gear-icon"]
 category: "ui"
@@ -33,7 +33,7 @@ gymini は5つの論理画面（FRAME1〜5）を持つモバイルフィット�
 
 ナビゲーション機能は以下の責務を持つ:
 
-- **ページルーティング**: 4つの論理ルート（/training, /history, /ai, /settings）を TanStack Router で管理（A-001準拠）
+- **ページルーティング**: 4つの論理ルート（/training, /history, /ai, /settings）を TanStack Router の hash history モードで管理（A-001準拠、GitHub Pages 対応）
 - **レイアウト制御**: pathless layout route により、FRAME1〜4 では BottomNav + 歯車アイコンを表示し、FRAME5（設定）では非表示にする
 - **BottomNav**: 2タブ（トレーニング / 履歴）+ AI専用pill型ボタン
 - **歯車アイコン**: FRAME1〜4の右上に固定表示。タップでFRAME5（設定）へ遷移
@@ -63,8 +63,9 @@ gymini は5つの論理画面（FRAME1〜5）を持つモバイルフィット�
 | FR-008 | BottomNavはFRAME5（設定）では非表示にする | 必須 | IR_001 | Inspection |
 | FR-009 | 歯車アイコンをFRAME1〜4の右上に固定表示する | 必須 | IR_002 | Inspection |
 | FR-010 | 歯車アイコンにAPIキー未設定時の赤バッジを表示する | 必須 | IR_002 | Inspection |
-| FR-011 | FRAME2では歯車アイコンの右隣に「終了」ボタン、ボタン群の下にタイマーpillを表示する | 必須 | IR_002 | Inspection |
-| FR-012 | 4つの論理ルート（/training, /history, /ai, /settings）をクライアントサイドで切り替える | 必須 | DC_005 | Inspection |
+| FR-011 | FRAME2では歯車アイコンの右隣に「終了」ボタン、ボタン群の下にタイマーpillを表示する。これらの要素は TrainingPage が自前でレンダリングする（GearIcon の責務外） | 必須 | IR_002 | Inspection |
+| FR-012 | 4つの論理ルート（/training, /history, /ai, /settings）を hash history モードでクライアントサイドで切り替える（GitHub Pages 対応） | 必須 | DC_005 | Inspection |
+| FR-013 | 未知のルートにアクセスした場合、/training にサイレントリダイレクトする | 必須 | - | Test |
 
 > **Note (FR-005)**: IR_002 は歯車アイコンの表示と設定画面への遷移をカバーする。戻りナビゲーションはブラウザ履歴スタック（`router.history.back()`）により実現する。直接アクセス時のフォールバックとして `/training` へ遷移する。
 
@@ -77,6 +78,7 @@ gymini は5つの論理画面（FRAME1〜5）を持つモバイルフィット�
 | NFR-001 | 操作性 | ルーティング遷移開始からナビゲーションコンポーネントの更新完了まで16ms以内（60fps相当）であること。ページコンテンツの非同期ロードは含まない | 16ms（=1フレーム@60fps） | Test |
 | NFR-002 | データ整合性 | セッション中のページ遷移・リロードでデータが失われないこと | セッションデータが完全に復元される | Test |
 | NFR-003 | レイアウト安定性 | BottomNavのレイアウトが全画面で一貫していること | タブ構成・AIボタンの位置が固定 | Inspection |
+| NFR-004 | 表示安定性 | Zustand persist の rehydration 完了前にページコンテンツを表示しない（skeleton またはブランク表示でフリッカーを防止） | rehydration 中にフリッカーが発生しない | Test |
 
 # 4. API
 
@@ -110,8 +112,8 @@ type NavTab = {
 }
 
 // 歯車アイコンの設定
-// Note: FRAME2（Active Workout）での拡張プロパティ（showEndButton, elapsedTime, onEndSession）は
-// navigation_design.md の GearIconProps で詳細化される
+// GearIcon は gear + APIキーバッジのみを担当する。
+// FRAME2 の追加要素（終了ボタン・タイマーpill）は TrainingPage が自前でレンダリングする。
 type GearIconConfig = {
   showBadge: boolean  // APIキー未設定時にtrue
 }
@@ -340,7 +342,7 @@ classDiagram
 
 # 8. 制約事項
 
-- ルーティングは TanStack Router（ファイルベースルーティング）で実現する（A-001, DC_005）。ルートファイルは `src/routes/` 配下に配置する（CONSTITUTION 注記準拠）
+- ルーティングは TanStack Router（ファイルベースルーティング + hash history モード）で実現する（A-001, DC_005）。GitHub Pages 対応のため `createHashHistory()` と basename を使用する。ルートファイルは `src/routes/` 配下に配置する（CONSTITUTION 注記準拠）
 - FRAME1〜4 のルートは pathless layout route (`_app`) の子ルートとして配置し、BottomNav / GearIcon の表示を構造的に制御する
 - FRAME5（/settings）は layout route の外に配置し、BottomNav / GearIcon を非表示にする
 - TanStack Start（SSR/SSGフレームワーク）は使用しない（A-002: 完全クライアントサイドアーキテクチャ）
@@ -351,6 +353,9 @@ classDiagram
 - 各ページの中身（トレーニング詳細、履歴カレンダー、AIチャット、設定）はナビゲーションの責務外。別specで定義する
 - TypeScript strict mode を遵守する。ルートパスの型は TanStack Router が自動推論する（T-001）
 - タップターゲットは最低 44px × 44px を確保する（T-003）
+- 未知のルートへのアクセス時は `/training` にサイレントリダイレクトする（FR-013）
+- Zustand persist の rehydration 完了まで、ページコンテンツを表示しない。skeleton またはブランク表示でフリッカーを防止する（NFR-004）
+- セッションタイマーの経過時間はカスタム Hook でカウンターとして Zustand ストアに保持する。タイマーpill の表示は TrainingPage の責務であり、GearIcon のスコープ外
 
 ---
 
@@ -364,4 +369,4 @@ classDiagram
 | FR_020 | AIチャットページ（常時アクセス可能） | FR-004, AIChatPage コンポーネント（中身は別specで定義） |
 | IR_001 | BottomNav（2タブ + AI専用ボタン） | FR-007, FR-008, BottomNav コンポーネント, layout route パターン |
 | IR_002 | 歯車アイコン（全画面右上固定 → 設定へ遷移） | FR-005, FR-009, FR-010, FR-011, GearIcon コンポーネント |
-| DC_005 | クライアントサイドSPAルーティング（4ルート） | FR-012, TanStack Router ファイルベースルーティング |
+| DC_005 | クライアントサイドSPAルーティング（hash history + basename） | FR-012, FR-013, TanStack Router hash history モード |

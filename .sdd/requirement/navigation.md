@@ -4,7 +4,7 @@ title: "ページナビゲーション"
 type: "prd"
 status: "draft"
 created: "2026-03-28"
-updated: "2026-04-06"
+updated: "2026-04-11"
 depends-on: ["prd-gymini", "prd-workout", "prd-history", "prd-ai-chat", "prd-settings"]
 tags: ["navigation", "routing", "bottom-nav"]
 category: "ui"
@@ -113,7 +113,7 @@ requirementDiagram
 
     designConstraint SPARouting {
         id: DC_005
-        text: "クライアントサイドSPAルーティング（training / history / ai / settings）"
+        text: "クライアントサイドSPAルーティング（hash history + basename、GitHub Pages 対応）"
         risk: medium
         verifymethod: inspection
     }
@@ -231,7 +231,7 @@ BottomNavのAIボタンから常時アクセス可能。APIキー未設定時も
 
 ### DC_005: クライアントサイドSPAルーティング
 
-4つの論理ルート（`training`, `history`, `ai`, `settings`）をクライアントサイドで管理。URLベースルーティングやブラウザ履歴APIは使用しない。
+4つの論理ルート（`training`, `history`, `ai`, `settings`）を TanStack Router の hash history モードで管理する。GitHub Pages 対応のため hash ルーティング（`/#/training` 形式）と basename（`/gymini/`）を使用する。
 
 **検証方法:** インスペクションによる検証
 
@@ -249,7 +249,7 @@ BottomNavのAIボタンから常時アクセス可能。APIキー未設定時も
 
 ## 7. スコープ外
 
-- URLベースルーティング（ブラウザ履歴API / ハッシュルーティング）
+- HTML5 History API ベースルーティング（GitHub Pages 非対応のため hash routing を採用）
 - ディープリンク / ブックマーク対応
 - ページ間のトランジションアニメーション
 - タブレット / デスクトップ向けレスポンシブレイアウト

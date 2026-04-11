@@ -317,8 +317,8 @@ type WorkoutSessionState = {
   draftExercises: DraftExercise[] // セッション中の種目・セット
 
   // Actions（spec WorkoutSession API に対応）
-  startSession: () => void
-  // startSession: isActive = true, startedAt = nowISODateTimeString(), draftExercises = []
+  startSession: (date?: DateString) => void
+  // startSession: isActive = true, startedAt = nowISODateTimeString(), date = date ?? todayDateString(), draftExercises = []
 
   endSession: () => void
   // endSession: draftExercises → WorkoutInput に変換 → WorkoutRepository.save

@@ -6,7 +6,7 @@ status: "draft"
 sdd-phase: "plan"
 impl-status: "not-implemented"
 created: "2026-03-28"
-updated: "2026-04-10"
+updated: "2026-04-11"
 depends-on: ["spec-navigation"]
 tags: ["navigation", "routing", "bottom-nav", "gear-icon"]
 category: "ui"
@@ -57,7 +57,7 @@ category: "ui"
 | 領域 | 採用技術 | 選定理由 |
 |------|--------|--------|
 | 言語 | TypeScript（.ts / .tsx） | T-001準拠 |
-| ルーティング | TanStack Router ^1 | A-001準拠。ファイルベースルーティング + 型安全なパス推論 + layout route パターン |
+| ルーティング | TanStack Router ^1 (hash history) | A-001準拠。ファイルベースルーティング + hash history + basename（GitHub Pages 対応）+ 型安全なパス推論 + layout route パターン |
 | ルーティング Vite プラグイン | @tanstack/router-plugin (devDep) | ファイルベースルートの自動生成（routeTree.gen.ts） |
 | セッション永続化 | Zustand persist + localStorage | workoutStore に persist ミドルウェアを追加（B-001準拠: サーバー送信なし） |
 | 状態管理 | Zustand ^5 | ワークアウト・設定の状態管理。ルーティングは TanStack Router に委譲 |
@@ -141,6 +141,8 @@ graph TD
 | `src/routes/_app/ai.tsx` | /ai ルート → AIChatPage | `/ai` | _app layout |
 | `src/routes/settings.tsx` | /settings ルート → SettingsPage | `/settings` | layout外（BottomNav なし） |
 
+> **Not Found**: `__root.tsx` の `notFoundComponent` で未知ルートを `/training` にサイレントリダイレクトする（FR-013）
+
 ### UIコンポーネント
 
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
@@ -158,7 +160,7 @@ graph TD
 | モジュール名 | 変更内容 | 配置場所 |
 |-----------|---------|--------|
 | workoutSessionStore.ts | Zustand `persist` ミドルウェア追加 | `src/stores/workoutSessionStore.ts` |
-| vite.config.ts | TanStack Router Vite plugin 追加 | `vite.config.ts` |
+| vite.config.ts | TanStack Router Vite plugin 追加 + `base: '/gymini/'`（GitHub Pages） | `vite.config.ts` |
 | main.tsx | RouterProvider でラップ | `src/main.tsx` |
 
 ### 廃止モジュール
@@ -192,7 +194,7 @@ type WorkoutSessionPersistedKeys = {
 
 ```typescript
 // -------------------------------------------------------
-// vite.config.ts（TanStack Router Vite plugin）
+// vite.config.ts（TanStack Router Vite plugin + GitHub Pages base）
 // -------------------------------------------------------
 
 import { defineConfig } from 'vite'
@@ -200,6 +202,7 @@ import react from '@vitejs/plugin-react'
 import { tanstackRouter } from '@tanstack/router-plugin/vite'
 
 export default defineConfig({
+  base: '/gymini/',
   plugins: [
     tanstackRouter({ target: 'react', autoCodeSplitting: true }),
     react(),
@@ -210,10 +213,15 @@ export default defineConfig({
 // src/main.tsx（RouterProvider）
 // -------------------------------------------------------
 
-import { createRouter, RouterProvider } from '@tanstack/react-router'
+import { createRouter, RouterProvider, createHashHistory } from '@tanstack/react-router'
 import { routeTree } from './routeTree.gen'
 
-const router = createRouter({ routeTree })
+const hashHistory = createHashHistory()
+const router = createRouter({
+  routeTree,
+  history: hashHistory,
+  basepath: '/gymini',
+})
 
 declare module '@tanstack/react-router' {
   interface Register {
@@ -229,7 +237,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 // src/routes/__root.tsx（ルートレイアウト）
 // -------------------------------------------------------
 
-import { createRootRoute, Outlet } from '@tanstack/react-router'
+import { createRootRoute, Outlet, Navigate } from '@tanstack/react-router'
 
 export const Route = createRootRoute({
   component: () => (
@@ -237,6 +245,8 @@ export const Route = createRootRoute({
       <Outlet />
     </div>
   ),
+  // FR-013: 未知ルートは /training にサイレントリダイレクト
+  notFoundComponent: () => <Navigate to="/training" />,
 })
 
 // -------------------------------------------------------
@@ -328,19 +338,16 @@ export const Route = createFileRoute('/settings')({
 //   位置: absolute top-[-2px] right-[-2px]
 //   スタイル: w-3 h-3 bg-accent rounded-full border-2 border-white
 //
-// FRAME2（Active Workout）追加要素:
-//   歯車の右隣に「終了」ボタン:
-//     text-accent text-sm font-bold bg-red-50/90 backdrop-blur-sm px-3 py-1.5 rounded-lg
-//   ボタン群の下にタイマーpill:
-//     flex items-center gap-1 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm border border-zinc-100
+// GearIcon は gear + APIキーバッジのみを担当する。
+// FRAME2 の追加要素（終了ボタン・タイマーpill）は TrainingPage が
+// absolute 配置で GearIcon の隣に自前でレンダリングする。
+// Tailwind クラスは以下を参照（TrainingPage / workout design doc で使用）:
+//   終了ボタン: text-accent text-sm font-bold bg-red-50/90 backdrop-blur-sm px-3 py-1.5 rounded-lg
+//   タイマーpill: flex items-center gap-1 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm border border-zinc-100
 //     アイコン: ph-fill ph-clock text-accent text-xs
 //     テキスト: font-outfit font-bold text-xs
 
-interface GearIconProps {
-  showEndButton?: boolean  // FRAME2のみtrue
-  elapsedTime?: string     // FRAME2のみ。"00:14:32" 形式
-  onEndSession?: () => void  // FRAME2の終了ボタン
-}
+// GearIconProps は不要（settingsStore.hasApiKey を内部で読み取る）
 
 // -------------------------------------------------------
 // SettingsPage (src/pages/SettingsPage.tsx)
@@ -414,6 +421,7 @@ interface IdleViewProps {
 | 操作性（NFR-001）: 1フレーム以内のページ切り替え | TanStack Router の SPA ルーティング + autoCodeSplitting によるルート別遅延読み込み。ルート遷移はクライアントサイド完結でネットワーク通信なし |
 | データ整合性（NFR-002）: セッションデータ永続化 | Zustand `persist` ミドルウェアで `isActive`, `startedAt`, `draftExercises` を localStorage に自動保存（`gymini:workout-session` キー）。`partialize` で永続化対象を限定。localStorage 利用不可またはパースエラー時は `onRehydrateStorage` でデフォルト初期状態へフォールバック（T-002）。詳細は workout design doc を参照 |
 | レイアウト安定性（NFR-003）: BottomNav一貫性 | pathless layout route (`_app.tsx`) により BottomNav + GearIcon を構造的に制御。FRAME5（/settings）は layout 外に配置し自動的に非表示 |
+| 表示安定性（NFR-004）: rehydration フリッカー防止 | Zustand persist の `onRehydrateStorage` コールバックと `useHydrated()` パターンで rehydration 完了を検知。完了前は skeleton / ブランク表示にし、FRAME1→FRAME2 のフリッカーを防止 |
 
 ---
 
@@ -422,7 +430,8 @@ interface IdleViewProps {
 | テストレベル | 対象 | カバレッジ目標 |
 |-----------|------|------------|
 | コンポーネントテスト | BottomNav（Link アクティブ状態、タブ切り替え、AIボタン） | FR-007 |
-| コンポーネントテスト | GearIcon（表示、バッジ表示、FRAME2の終了ボタン・タイマー） | FR-009, FR-010, FR-011 |
+| コンポーネントテスト | GearIcon（表示、バッジ表示） | FR-009, FR-010 |
+| コンポーネントテスト | TrainingPage FRAME2 拡張要素（終了ボタン・タイマーpill の absolute 配置） | FR-011 |
 | コンポーネントテスト | TrainingPage（Idle/Active 切り替え） | FR-001, FR-002 |
 | 統合テスト | ルート遷移（/training → /history → /ai → /settings → back） | FR-004, FR-005, FR-012 |
 | 統合テスト | layout route（_app 配下は BottomNav あり、/settings は BottomNav なし） | FR-007, FR-008 |
@@ -438,7 +447,7 @@ interface IdleViewProps {
 
 | 決定事項 | 選択肢 | 決定内容 | 理由 |
 |---------|--------|--------|------|
-| ルーティング方式 | TanStack Router vs Zustand 状態ベース | TanStack Router | A-001準拠。CONSTITUTION が TanStack Router を必須とし自作ルーティングを禁止。layout route で BottomNav/GearIcon の表示制御を宣言的に解決でき、`useCanGoBack` + `router.history.back()` で settings 戻りナビゲーションをネイティブに実現。12kb gzipped のコストは navigationStore + useNavigation の削減で相殺される |
+| ルーティング方式 | TanStack Router vs Zustand 状態ベース | TanStack Router (hash history) | A-001準拠。CONSTITUTION が TanStack Router を必須とし自作ルーティングを禁止。`createHashHistory()` + `basepath: '/gymini'` で GitHub Pages 対応。layout route で BottomNav/GearIcon の表示制御を宣言的に解決でき、`useCanGoBack` + `router.history.back()` で settings 戻りナビゲーションをネイティブに実現 |
 | ルーティングファイル配置 | コードベースルーティング vs ファイルベースルーティング | ファイルベース | CONSTITUTION 注記: 「`src/routes/` 配下にルートファイルを配置する」。routeTree.gen.ts の自動生成による型安全性 |
 | layout route パターン | pathless layout (`_app`) vs 手動条件分岐 | pathless layout | FRAME1〜4 は `_app/` 配下（BottomNav + GearIcon あり）、FRAME5 は `settings.tsx`（layout 外、BottomNav なし）。構造的に表示制御を解決し、手動 `{route !== 'settings' && ...}` が不要 |
 | settings 戻りナビゲーション | 自前 previousRoute 管理 vs ブラウザ履歴 | ブラウザ履歴 | `useCanGoBack()` + `router.history.back()` でネイティブに実現。自前のストア管理が不要。直接アクセス時は `/training` にフォールバック |
@@ -448,6 +457,11 @@ interface IdleViewProps {
 | workoutStore の persist 対象 | 全状態 vs ドラフトのみ | ドラフトのみ（partialize） | ストレージ消費を抑える（B-001） |
 | persist の localStorage キー | 共有 vs 別キー | 別キー `gymini:workout-session` | セッションドラフトとワークアウトデータの分離 |
 | デフォルトルート | `/` → /training リダイレクト | リダイレクト | アプリ起動時は /training を表示。__root.tsx の `beforeLoad` で `/` → `/training` にリダイレクト |
+| GearIcon の FRAME2 拡張 | GearIcon 内部で管理 vs AppLayout が props 渡し vs TrainingPage が自前レンダリング | TrainingPage が自前レンダリング | GearIcon は gear+badge のみのシンプルなコンポーネントに保つ。FRAME2 の終了ボタン・タイマーpill は TrainingPage が absolute 配置で GearIcon の隣にレンダリング。GearIcon がワークアウトドメインに結合することを避ける |
+| rehydration 中の表示 | フリッカー許容 vs skeleton 表示 vs 同期ストレージ | skeleton / ブランク表示 | Zustand persist の非同期 rehydration 完了まで `useHydrated()` パターンでコンテンツを非表示にし、FRAME1→FRAME2 のフリッカーを防止する（NFR-004） |
+| セッションタイマー計算 | startedAt ベース再計算 vs カウンター保持 | カウンター保持（カスタム Hook） | カスタム Hook（useElapsedTime 等）がカウンターを Zustand ストアに保持し、定期更新する。TrainingPage がこの Hook を使用してタイマーpill を表示。タブ遷移で Hook がアンマウントされてもストアの値は維持される |
+| 未知ルート | ブランクページ vs エラー画面 vs サイレントリダイレクト | /training にサイレントリダイレクト | __root.tsx の notFoundComponent で /training にリダイレクトする。ユーザーにエラーを見せる必要がない（FR-013） |
+| History モード | HTML5 history vs hash history | hash history + basename | GitHub Pages はサーバーサイドリダイレクトをサポートしないため、`createHashHistory()` で `/#/training` 形式の URL を使用。`basepath: '/gymini'` と Vite `base: '/gymini/'` で GitHub Pages サブパスに対応 |
 
 ## 9.2. 未解決の課題
 

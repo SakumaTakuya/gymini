@@ -150,9 +150,11 @@ export function toDateString(value: string): DateString {
   return value as DateString
 }
 
-/** 今日の日付を DateString で返す */
+/** 今日の日付を DateString で返す（ローカルタイムゾーン） */
 export function todayDateString(): DateString {
-  return new Date().toISOString().slice(0, 10) as DateString
+  const d = new Date()
+  const value = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`
+  return dateStringSchema.parse(value) as DateString
 }
 
 // カレンダーグリッド生成は react-day-picker が内部で担当するため、
@@ -192,7 +194,7 @@ export const Route = createFileRoute('/history')({
 // -------------------------------------------------------
 
 interface UseCalendarReturn {
-  selectedDate: DateString | null
+  selectedDate: DateString
   displayMonth: { year: number; month: number }
   goToPrevMonth: () => void
   goToNextMonth: () => void
@@ -203,7 +205,7 @@ interface UseCalendarReturn {
 function useCalendar(): UseCalendarReturn
 // 状態管理:
 //   displayMonth と selectedDate は Route.useSearch() から取得。
-//   デフォルト: month = 今月（"YYYY-MM"）, date = undefined（未選択）
+//   デフォルト: month = 今月（"YYYY-MM"）, date = todayDateString()（今日を自動選択）
 //
 // goToPrevMonth/goToNextMonth:
 //   navigate({ search: { month: 前/次月, date: undefined } }) で search params を更新。
@@ -233,7 +235,7 @@ function useCalendar(): UseCalendarReturn
 // useWorkoutsForDate (src/hooks/useWorkoutsForDate.ts)
 // -------------------------------------------------------
 
-function useWorkoutsForDate(date: DateString | null): WorkoutRecord[]
+function useWorkoutsForDate(date: DateString | null): Workout[]
 // TanStack Query でラップ:
 //   useQuery({
 //     queryKey: queryKeys.workoutsForDate(date),
@@ -248,7 +250,7 @@ function useWorkoutsForDate(date: DateString | null): WorkoutRecord[]
 
 interface MonthCalendarProps {
   displayMonth: { year: number; month: number }
-  selectedDate: DateString | null
+  selectedDate: DateString
   daysWithWorkouts: Set<DateString>
   onPrevMonth: () => void
   onNextMonth: () => void
@@ -287,7 +289,7 @@ interface MonthCalendarProps {
 
 interface WorkoutSummaryProps {
   date: DateString
-  workouts: WorkoutRecord[]
+  workouts: Workout[]
 }
 
 // 視覚仕様は design-system.html FRAME 3 に完全準拠すること。
@@ -353,7 +355,7 @@ interface EmptyDayStateProps {
 // -------------------------------------------------------
 
 // spec の WorkoutSummaryData 型は独立した型として定義しない。
-// WorkoutSummary は WorkoutRecord[] を直接 props で受け取り、
+// WorkoutSummary は Workout[] を直接 props で受け取り、
 // コンポーネント内で表示形式に変換する。
 
 // spec の DayCellState 型は MonthCalendar のカスタム day レンダリング内で
@@ -384,6 +386,24 @@ interface EmptyDayStateProps {
 | コンポーネントテスト | EmptyDayState（テキスト表示、追加ボタン） | FR-007, FR-008 |
 | 統合テスト | history ルート（カレンダー + サマリー連携） | 全FR |
 | E2Eテスト | 履歴画面フロー（Playwright） | 主要ユーザーフロー |
+
+### 受け入れ基準（FR別アサーション）
+
+テストID規約: `data-testid` 属性を各コンポーネントに付与し、テストから参照する。
+
+| FR | テスト対象 | パス条件（アサーション） |
+|:---|:---|:---|
+| FR-001 | MonthCalendar | 7列のグリッドが描画される。曜日ヘッダーが「日〜土」の順で表示される |
+| FR-002 | MonthCalendar | シェブロンクリック後に `displayMonth` が前月/次月に更新される。カレンダーヘッダーの年月テキストが変化する |
+| FR-003 | MonthCalendar | ワークアウトがある日付セルに `[data-testid="workout-marker"]` 要素が存在する |
+| FR-004 | MonthCalendar | 記録ありの日付セルが `text-gym-black` クラスを持つ。記録なしの日付セルが `text-gym-zinc-400` クラスを持つ |
+| FR-005 | MonthCalendar | 日付クリック後にそのセルが `ring-2 ring-gym-black` クラスを持つ。`onSelectDate` が呼ばれる |
+| FR-006 | WorkoutSummary | 種目名がテキストとして描画される。各セットが「{weight}kg × {reps}回」形式で表示される |
+| FR-007 | EmptyDayState | `[data-testid="empty-day-state"]` が描画される。「記録なし」テキストが存在する |
+| FR-008 | EmptyDayState | 追加ボタンクリック時に `onAddWorkout` が `date` 引数付きで呼ばれる |
+| FR-009 | MonthCalendar | 今日の日付セルが `bg-gym-black text-white` クラスを持つ |
+| FR-010 | MonthCalendar | 今日かつ記録ありの日付セルに `bg-gym-black` と `[data-testid="workout-marker"]` が共存する |
+| FR-011 | MonthCalendar | 未来日付のクリックで `onSelectDate` が呼ばれる |
 
 ---
 

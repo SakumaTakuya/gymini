@@ -5,7 +5,7 @@ type: "spec"
 status: "draft"
 sdd-phase: "specify"
 created: "2026-04-11"
-updated: "2026-04-12"
+updated: "2026-04-11"
 depends-on: ["prd-ai-chat"]
 tags: ["ai", "chat", "function-calling", "gemini", "phase-3"]
 category: "ai"

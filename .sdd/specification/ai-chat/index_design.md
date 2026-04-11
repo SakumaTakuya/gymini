@@ -56,7 +56,7 @@ risk: "high"
 | UIフレームワーク | React (TSX) | T-001: TypeScript Strict Mode |
 | UIコンポーネント | shadcn/ui + Radix UI | A-001: Library-First。一貫したデザインシステム |
 | スタイリング | Tailwind CSS ^4 | T-003: Mobile-First UI |
-| AI API | @google/generative-ai (Gemini SDK) | A-001: Library-First。Gemini API の公式 JavaScript SDK |
+| AI API | @google/generative-ai (Gemini SDK) | A-001: Library-First。Gemini API の公式 JavaScript SDK。モデルは `gemini-flash-latest` 固定 |
 | 状態管理 | Zustand ^5 | チャット状態管理。プロジェクト標準 |
 | ルーティング | TanStack Router ^1 | `/chat` ルート。navigation 機能が管理 |
 | マークダウン表示 | react-markdown + remark-gfm | AIの応答をマークダウンとしてレンダリング。テーブル・リスト等の表現力 |
@@ -238,15 +238,23 @@ type FunctionCallRequest = {
   args: Record<string, unknown>
 }
 
+// モデル: gemini-flash-latest 固定（高速・低コスト・Function Calling 対応）
+const GEMINI_MODEL = 'gemini-flash-latest'
+
+// API送信時の履歴上限: 直近50件（NFR-005）
+const MAX_HISTORY_MESSAGES = 50
+
 function createGeminiClient(config: GeminiClientConfig): {
   sendMessage: (
-    history: Array<{ role: 'user' | 'model'; parts: Part[] }>,
-    message: string
+    history: Array<{ role: 'user' | 'model'; parts: Part[] }>,  // Part は @google/generative-ai の型
+    message: string,
+    abortSignal?: AbortSignal  // 応答停止用
   ) => Promise<GeminiChatResponse>
 
   sendFunctionResult: (
     history: Array<{ role: 'user' | 'model'; parts: Part[] }>,
-    functionResponses: Array<{ name: string; response: unknown }>
+    functionResponses: Array<{ name: string; response: unknown }>,
+    abortSignal?: AbortSignal
   ) => Promise<GeminiChatResponse>
 }
 
@@ -402,6 +410,17 @@ function executeWriteTool(
   args: Record<string, unknown>
 ): ToolExecutionResult
 
+// saveWorkout の種目ID解決:
+// 各 exerciseName に対して ExerciseRepository.search(name) で完全一致検索。
+// 一致あり → exerciseId を使用。
+// 一致なし → { success: false, error: 'EXERCISE_NOT_FOUND', data: { missingExercises: string[] } } を返す。
+// AI はエラーを受けて「種目を登録しますか？」とユーザーに確認 → 承認後に addExercise → saveWorkout 再実行。
+
+// addExerciseToSession のセッションチェック:
+// workoutSessionStore.isActive === false の場合、
+// { success: false, error: 'SESSION_NOT_ACTIVE' } を返す。
+// AI はエラーを受けて「セッションを開始して追加しますか？」とユーザーに確認 → 承認後にまとめて実行。
+
 // -------------------------------------------------------
 // chatStore (src/stores/chatStore.ts)
 // -------------------------------------------------------
@@ -425,11 +444,13 @@ type ChatActions = {
 // -------------------------------------------------------
 
 function useChatService() {
+  // AbortController を内部で保持し、stopResponse で abort する
   // return: {
   //   messages: ChatMessage[],
   //   isLoading: boolean,
   //   error: string | null,
   //   sendMessage: (text: string) => Promise<void>,
+  //   stopResponse: () => void,          // 応答生成を中断。部分応答を破棄し isLoading = false
   //   approve: (messageId: string) => Promise<void>,
   //   reject: (messageId: string) => void,
   //   clearMessages: () => void,
@@ -454,9 +475,13 @@ async function sendMessage(text: string) {
   chatStore.addMessage({ role: 'user', content: text, ... })
   chatStore.setLoading(true)
 
+  // 2a. AbortController を作成（stopResponse で abort する）
+  abortController = new AbortController()
+
   try {
-    // 3. Gemini API に送信
-    const response = await geminiClient.sendMessage(history, text)
+    // 3. Gemini API に送信（直近50件の履歴のみ送信: NFR-005）
+    const recentHistory = history.slice(-MAX_HISTORY_MESSAGES)
+    const response = await geminiClient.sendMessage(recentHistory, text, abortController.signal)
 
     // 4. Function Call の処理
     if (response.functionCalls) {
@@ -493,10 +518,21 @@ async function sendMessage(text: string) {
       chatStore.addMessage({ role: 'assistant', content: response.text ?? '', ... })
     }
   } catch (error) {
+    // AbortError は stopResponse による正常中断なのでエラー表示しない
+    if (error instanceof DOMException && error.name === 'AbortError') {
+      return
+    }
     chatStore.setError(getErrorMessage(error))
   } finally {
     chatStore.setLoading(false)
   }
+}
+
+// stopResponse: 応答生成を中断し、部分応答を破棄する
+function stopResponse() {
+  abortController?.abort()
+  chatStore.setLoading(false)
+  // 部分的な assistant メッセージがあれば削除
 }
 ```
 
@@ -579,6 +615,11 @@ function getErrorMessage(error: unknown): string {
 | システムプロンプトの管理 | ハードコード vs 外部ファイル | geminiClient.ts 内にハードコード | システムプロンプトは実装の一部。外部ファイル化のメリットが薄い |
 | エラーメッセージの国際化 | i18n vs 日本語ハードコード | 日本語ハードコード | gymini は日本語ユーザー向けアプリ。i18n は現時点で過剰 |
 | ConfirmationBubble ボタン高さ | PRD h-9（36px） vs T-003 要件（44px） | h-11（44px）に修正 | T-003: タップターゲット最低44px。PRD の h-9 指定は T-003 違反のため h-11 を採用 |
+| Gemini モデル選択 | gemini-flash-latest vs gemini-2.5-pro vs ユーザー選択 | `gemini-flash-latest` 固定 | 高速・低コスト・Function Calling 対応。ユーザー選択は Phase 3 初期スコープでは過剰 |
+| チャット履歴のAPI送信上限 | 無制限 vs メッセージ件数制限 vs トークン数制限 | 直近50件のメッセージに制限 | トークン上限超過を防止。件数ベースは実装がシンプル。50件は通常の会話で十分な文脈量 |
+| saveWorkout の種目ID解決 | AI事前検索 vs toolExecutor内検索 vs exerciseId をAIに渡す | toolExecutor 内で ExerciseRepository.search で検索。未登録時はエラーを返しAIが登録を提案 | AIのツール呼び出し回数を最小化しつつ、ユーザー確認フローを維持（B-002） |
+| セッション未開始時の addExerciseToSession | エラーのみ vs セッション開始+追加をまとめて提案 | エラーを返し、AIが「セッションを開始して追加しますか？」と確認 | ユーザー体験を優先。1回の確認でまとめて実行可能 |
+| AI応答待ち中のユーザー操作 | 送信無効化 vs キューイング vs 停止+再送信 | 停止ボタンで応答を中断・破棄し即座に新メッセージ送信可能 | モバイルUXを優先。誤った質問をすぐ修正できる。AbortController で実装 |
 
 ## 9.2. 未解決の課題
 
