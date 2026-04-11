@@ -174,10 +174,10 @@ export function remove(id: string): void {
 
 # 8. テスト戦略
 
-| テストレベル | 対象 | カバレッジ目標 | 対応FR |
-|-----------|------|------------|--------|
 > **カバレッジ目標:** >= 80%（D-001: CONSTITUTION.md）
 
+| テストレベル | 対象 | カバレッジ目標 | 対応FR |
+|-----------|------|------------|--------|
 | ユニットテスト | ExerciseRepository.getAll | 全件取得、空データ、localStorage 破損時のフォールバック | - |
 | ユニットテスト | ExerciseRepository.search | 部分一致、空クエリで全件、大文字小文字無視 | FR-005 |
 | ユニットテスト | ExerciseRepository.create | 正常登録、重複名エラー | FR-006, FR-007 |
