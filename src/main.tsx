@@ -8,7 +8,6 @@ const hashHistory = createHashHistory()
 const router = createRouter({
   routeTree,
   history: hashHistory,
-  basepath: '/gymini',
 })
 
 declare module '@tanstack/react-router' {
