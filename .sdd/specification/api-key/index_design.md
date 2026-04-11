@@ -2,11 +2,11 @@
 id: "design-api-key"
 title: "APIキー管理"
 type: "design"
-status: "draft"
+status: "approved"
 sdd-phase: "plan"
-impl-status: "not-implemented"
+impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-11"
+updated: "2026-04-12"
 depends-on: ["spec-api-key"]
 tags: ["api-key", "byok", "settings", "phase-2"]
 category: "core"
@@ -23,12 +23,12 @@ risk: "medium"
 
 # 1. 実装ステータス
 
-**ステータス:** 🔴 未実装
+**ステータス:** 🟢 実装済み
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| settingsStore | 🔴 未実装 | Zustand ストア（APIキー永続化） |
-| loadApiKey 初期化 | 🔴 未実装 | アプリ起動時の localStorage 読み込み |
+| settingsStore | 🟢 実装済み | Zustand ストア（APIキー永続化） |
+| loadApiKey 初期化 | 🟢 実装済み | アプリ起動時の localStorage 読み込み |
 
 ---
 

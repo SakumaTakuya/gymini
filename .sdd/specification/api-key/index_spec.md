@@ -2,11 +2,11 @@
 id: "spec-api-key"
 title: "APIキー管理"
 type: "spec"
-status: "draft"
+status: "approved"
 sdd-phase: "specify"
-impl-status: "not-implemented"
+impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-11"
+updated: "2026-04-12"
 depends-on: ["prd-api-key"]
 tags: ["api-key", "byok", "settings", "phase-2"]
 category: "core"
