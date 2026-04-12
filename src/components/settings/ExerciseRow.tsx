@@ -16,7 +16,7 @@ export function ExerciseRow({ exercise, onEdit }: ExerciseRowProps) {
         type="button"
         onClick={() => onEdit(exercise)}
         aria-label={`${exercise.name}を編集`}
-        className="relative w-8 h-8 rounded-full bg-gym-zinc-50 flex items-center justify-center text-gym-zinc-400 before:absolute before:inset-[-8px] before:content-['']"
+        className="focus-ring relative w-8 h-8 rounded-full bg-gym-zinc-50 flex items-center justify-center text-gym-zinc-400 before:absolute before:inset-[-8px] before:content-['']"
       >
         <PencilSimple size={14} weight="bold" />
       </button>

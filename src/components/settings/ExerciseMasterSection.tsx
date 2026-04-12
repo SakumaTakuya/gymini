@@ -148,7 +148,7 @@ export function ExerciseMasterSection() {
                   type="button"
                   onClick={() => handleDelete(ex)}
                   aria-label={`${ex.name}を削除`}
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-accent"
+                  className="focus-ring rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-accent"
                 >
                   <Trash size={18} weight="bold" />
                 </button>
@@ -156,7 +156,7 @@ export function ExerciseMasterSection() {
                   type="button"
                   onClick={confirmEdit}
                   aria-label="編集を確定"
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-green-600"
+                  className="focus-ring rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center text-green-600"
                 >
                   <Check size={18} weight="bold" />
                 </button>
@@ -164,7 +164,7 @@ export function ExerciseMasterSection() {
                   type="button"
                   onClick={cancelEdit}
                   aria-label="編集をキャンセル"
-                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-zinc-500"
+                  className="focus-ring rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-zinc-500"
                 >
                   <X size={18} weight="bold" />
                 </button>
@@ -210,7 +210,7 @@ export function ExerciseMasterSection() {
                 type="button"
                 onClick={confirmAdd}
                 aria-label="追加を確定"
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-green-600"
+                className="focus-ring rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center text-green-600"
               >
                 <Check size={18} weight="bold" />
               </button>
@@ -218,7 +218,7 @@ export function ExerciseMasterSection() {
                 type="button"
                 onClick={cancelAdd}
                 aria-label="追加をキャンセル"
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-zinc-500"
+                className="focus-ring rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-zinc-500"
               >
                 <X size={18} weight="bold" />
               </button>
@@ -239,7 +239,7 @@ export function ExerciseMasterSection() {
             type="button"
             onClick={startAdd}
             aria-label="種目を追加"
-            className="w-full flex items-center gap-3 px-5 py-4 text-gym-black"
+            className="focus-ring w-full flex items-center gap-3 px-5 py-4 text-gym-black"
           >
             <span
               aria-hidden

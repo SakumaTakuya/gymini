@@ -101,7 +101,7 @@ export function APIKeySection() {
             type="button"
             onClick={() => setVisible((v) => !v)}
             aria-label={visible ? 'APIキーを非表示' : 'APIキーを表示'}
-            className="relative flex items-center justify-center text-gym-zinc-400 before:absolute before:inset-[-10px] before:content-['']"
+            className="focus-ring relative flex items-center justify-center text-gym-zinc-400 rounded-md before:absolute before:inset-[-10px] before:content-['']"
           >
             {visible ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
           </button>
@@ -131,7 +131,7 @@ export function APIKeySection() {
             type="button"
             onClick={handleDelete}
             aria-label="APIキーを削除"
-            className="relative text-xs font-bold text-gym-accent px-3 py-1.5 bg-red-50 rounded-lg before:absolute before:inset-[-10px] before:content-['']"
+            className="focus-ring relative text-xs font-bold text-gym-accent px-3 py-1.5 bg-red-50 rounded-lg before:absolute before:inset-[-10px] before:content-['']"
           >
             削除
           </button>
