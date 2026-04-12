@@ -1,15 +1,11 @@
 import { Ghost, Plus } from '@phosphor-icons/react'
 import { Button } from '@/components/ui/button'
+import { formatDateHeader } from '../lib/dateFormat'
 import type { DateString } from '../schemas/date'
 
 interface EmptyDayStateProps {
   date: DateString
   onAddWorkout: (date: DateString) => void
-}
-
-function formatDateHeader(date: DateString): string {
-  const [, m, d] = date.split('-').map(Number)
-  return `${m}月${d}日の記録`
 }
 
 export function EmptyDayState({ date, onAddWorkout }: EmptyDayStateProps) {
@@ -32,9 +28,9 @@ export function EmptyDayState({ date, onAddWorkout }: EmptyDayStateProps) {
           記録なし
         </p>
         <Button
-          variant="outline"
+          variant="ghost"
           onClick={() => onAddWorkout(date)}
-          className="mt-1 text-[10px] font-bold bg-white border-gym-zinc-200 shadow-sm text-gym-black px-3 py-1.5 h-auto rounded-lg hover:bg-gym-zinc-50 uppercase tracking-wider"
+          className="mt-1 text-[10px] font-bold bg-white border border-gym-zinc-200 shadow-sm text-gym-black px-3 py-1.5 h-auto rounded-lg hover:bg-gym-zinc-50 uppercase tracking-wider"
         >
           <Plus size={10} weight="bold" data-icon="inline-start" />
           追加

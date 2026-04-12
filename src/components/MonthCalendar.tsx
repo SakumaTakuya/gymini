@@ -90,11 +90,6 @@ export function MonthCalendar({
 
   const today = todayDateString()
 
-  const workoutDates = useMemo(
-    () => [...daysWithWorkouts].map((d) => new Date(d + 'T00:00:00')),
-    [daysWithWorkouts],
-  )
-
   return (
     <Card className="mx-4 rounded-[32px] p-5 shadow-soft border border-gym-zinc-100 mb-8 ring-0">
       {/* Month Header */}
@@ -140,12 +135,10 @@ export function MonthCalendar({
       <DayPicker
         mode="single"
         month={month}
-        onMonthChange={() => {}}
         selected={new Date(selectedDate + 'T00:00:00')}
         onSelect={(date) => {
           if (date) onSelectDate(toDateStr(date))
         }}
-        modifiers={{ hasWorkout: workoutDates }}
         showOutsideDays
         fixedWeeks={false}
         hideNavigation

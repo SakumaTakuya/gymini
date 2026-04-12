@@ -1,15 +1,11 @@
-import { Card, CardContent } from '@/components/ui/card'
+import { Card } from '@/components/ui/card'
+import { formatDateHeader } from '../lib/dateFormat'
 import type { DateString } from '../schemas/date'
 import type { Workout } from '../schemas/workout'
 
 interface WorkoutSummaryProps {
   date: DateString
   workouts: Workout[]
-}
-
-function formatDateHeader(date: DateString): string {
-  const [, m, d] = date.split('-').map(Number)
-  return `${m}月${d}日の記録`
 }
 
 export function WorkoutSummary({ date, workouts }: WorkoutSummaryProps) {
@@ -26,7 +22,7 @@ export function WorkoutSummary({ date, workouts }: WorkoutSummaryProps) {
           key={workout.id}
           className="mx-4 mb-6 rounded-[24px] p-5 shadow-soft border border-gym-zinc-100 ring-0"
         >
-          <CardContent className="p-0 flex flex-col gap-4">
+          <div className="flex flex-col gap-4">
             {workout.exercises.map((exercise, ei) => (
               <div key={`${workout.id}-${exercise.exerciseId}-${ei}`}>
                 {ei > 0 && <div className="h-px w-full bg-gym-zinc-100 mb-4" />}
@@ -57,7 +53,7 @@ export function WorkoutSummary({ date, workouts }: WorkoutSummaryProps) {
                 </div>
               </div>
             ))}
-          </CardContent>
+          </div>
         </Card>
       ))}
     </>
