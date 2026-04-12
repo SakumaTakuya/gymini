@@ -1,5 +1,5 @@
 import { PencilSimple, Trash } from '@phosphor-icons/react'
-import type { Exercise } from '../../types'
+import type { Exercise } from '@/types'
 
 type ExerciseRowProps = {
   exercise: Exercise

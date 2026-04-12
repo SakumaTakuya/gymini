@@ -1,7 +1,7 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { SettingsContent } from './SettingsContent'
-import { useSettingsStore } from '../../stores/settingsStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 describe('SettingsContent', () => {
   beforeEach(() => {

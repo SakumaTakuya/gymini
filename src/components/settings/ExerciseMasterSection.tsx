@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { MagnifyingGlass, Plus, Check, X } from '@phosphor-icons/react'
-import * as exerciseRepository from '../../lib/exerciseRepository'
-import type { Exercise } from '../../types'
+import * as exerciseRepository from '@/lib/exerciseRepository'
+import type { Exercise } from '@/types'
 import { ExerciseRow } from './ExerciseRow'
 import { SectionCard } from './SectionCard'
 

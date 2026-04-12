@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ExerciseMasterSection } from './ExerciseMasterSection'
-import * as exerciseRepository from '../../lib/exerciseRepository'
+import * as exerciseRepository from '@/lib/exerciseRepository'
 
 describe('ExerciseMasterSection', () => {
   beforeEach(() => {

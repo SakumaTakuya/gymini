@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
 import { Eye, EyeSlash, Trash } from '@phosphor-icons/react'
-import { useSettingsStore } from '../../stores/settingsStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { SectionCard } from './SectionCard'
 
 export function APIKeySection() {
