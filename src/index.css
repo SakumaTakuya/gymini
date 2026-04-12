@@ -1,7 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --color-accent: #ef4444;
+  --color-accent: #DE3A2B;
+  --color-gym-black: #09090b;
+  --color-gym-white: #ffffff;
+  --color-gym-zinc-50: #fafafa;
+  --color-gym-zinc-100: #f4f4f5;
+  --color-gym-zinc-200: #e4e4e7;
+  --color-gym-zinc-300: #d4d4d8;
+  --color-gym-zinc-400: #a1a1aa;
+  --color-gym-zinc-500: #71717a;
+  --color-gym-zinc-600: #52525b;
+  --color-gym-zinc-800: #27272a;
+  --color-gym-zinc-900: #18181b;
+  --color-gym-accent: #DE3A2B;
   --font-outfit: "Outfit", sans-serif;
   --font-inter: "Inter", sans-serif;
+  --font-jp: "Noto Sans JP", sans-serif;
+  --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04);
 }

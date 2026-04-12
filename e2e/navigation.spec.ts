@@ -17,7 +17,7 @@ test.describe('ナビゲーション基本動作', () => {
     // Navigate to history
     await page.getByRole('link', { name: '履歴' }).click()
     await expect(page).toHaveURL(/#\/history/)
-    await expect(page.getByRole('heading', { name: '履歴' })).toBeVisible()
+    await expect(page.getByLabel('前月')).toBeVisible()
 
     // Navigate to AI
     await page.getByRole('link', { name: 'AI' }).click()
