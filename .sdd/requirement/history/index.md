@@ -2,10 +2,10 @@
 id: "prd-history"
 title: "履歴画面"
 type: "prd"
-status: "draft"
+status: "approved"
 created: "2026-04-06"
-updated: "2026-04-06"
-depends-on: ["prd-gymini", "prd-workout", "prd-navigation"]
+updated: "2026-04-12"
+depends-on: ["prd-gymini", "prd-workout"]
 tags: ["history", "calendar", "phase-1"]
 category: "view"
 priority: "medium"

@@ -3,8 +3,7 @@ id: "spec-history"
 title: "履歴画面"
 type: "spec"
 status: "approved"
-sdd-phase: "implement"
-impl-status: "implemented"
+sdd-phase: "specify"
 created: "2026-04-07"
 updated: "2026-04-12"
 depends-on: ["prd-history"]
@@ -77,10 +76,10 @@ risk: "low"
 | モジュール | インターフェース | メンバー | 概要 |
 |---------|--------------|--------|------|
 | history | HistoryPage | (component) | 履歴画面のルートコンポーネント |
-| history | MonthCalendar | (component) | shadcn/ui Calendar ベースの月表示カレンダーコンポーネント |
+| history | MonthCalendar | (component) | react-day-picker `DayPicker` を shadcn/ui `Card` でラップした月表示カレンダーコンポーネント |
 | history | WorkoutSummary | (component) | 選択日のワークアウト記録サマリー |
 | history | EmptyDayState | (component) | 記録なし日の空状態コンポーネント |
-| history | useWorkoutsForDate | (hook) | 指定日付のワークアウト記録（`Workout[]`）を取得するフック。内部で TanStack Query + workoutRepository.listByDate() を使用 |
+| history | useWorkoutsForDate | (hook) | 指定日付のワークアウト記録（`Workout[]`）を取得するフック。引数は `DateString`（non-null）。内部で TanStack Query + workoutRepository.listByDate() を使用 |
 | history | DateString | (type) | "YYYY-MM-DD" 形式の branded type（Zod スキーマで検証。`src/schemas/date.ts`） |
 | history | useCalendar | selectedDate | 現在選択中の日付（DateString）。search params から取得。デフォルトは今日の日付（`todayDateString()`） |
 | history | useCalendar | displayMonth | 表示中の年月。search params から取得（デフォルト: 今月） |

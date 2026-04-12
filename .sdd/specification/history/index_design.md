@@ -3,7 +3,7 @@ id: "design-history"
 title: "履歴画面"
 type: "design"
 status: "approved"
-sdd-phase: "implement"
+sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-04-07"
 updated: "2026-04-12"
@@ -32,10 +32,11 @@ risk: "low"
 |-------------|--------|------|
 | useCalendar フック | 🟢 実装済み | TanStack Router search params + TanStack Query |
 | useWorkoutsForDate フック | 🟢 実装済み | TanStack Query + workoutRepository |
-| MonthCalendar コンポーネント | 🟢 実装済み | react-day-picker 不使用、自作カレンダーグリッド |
-| WorkoutSummary コンポーネント | 🟢 実装済み | FRAME 3 準拠 |
-| EmptyDayState コンポーネント | 🟢 実装済み | FRAME 3 準拠 |
-| history ルート | 🟢 実装済み | validateSearch + Zod スキーマ |
+| MonthCalendar コンポーネント | 🟢 実装済み | react-day-picker `DayPicker` 直接使用 + shadcn/ui Card でラップ |
+| WorkoutSummary コンポーネント | 🟢 実装済み | shadcn/ui Card 使用、FRAME 3 準拠 |
+| EmptyDayState コンポーネント | 🟢 実装済み | shadcn/ui Button 使用、FRAME 3 準拠 |
+| history ルート | 🟢 実装済み | `src/routes/_app/history.tsx`、validateSearch + Zod スキーマ |
+| dateFormat ユーティリティ | 🟢 実装済み | `src/lib/dateFormat.ts`、`formatDateHeader` を共通化 |
 
 ---
 
@@ -54,13 +55,15 @@ risk: "low"
 | 領域 | 採用技術 | 選定理由 |
 |------|--------|--------|
 | 言語 | TypeScript (.tsx) | プロジェクト全体がTypeScript strict mode（T-001） |
-| カレンダーUI | shadcn/ui Calendar（react-day-picker ベース） | A-001 準拠: shadcn/ui が提供するカレンダーコンポーネントを活用。`components` prop でカスタム day レンダリング（マーカー・今日強調）を実現。グリッド生成・月遷移は react-day-picker が担当 |
-| ルーティング | TanStack Router | CONSTITUTION v3.0.0 準拠。ファイルベース型安全ルーティング |
+| カレンダーUI | react-day-picker `DayPicker` を直接使用 + shadcn/ui `Card` でラップ | shadcn/ui Calendar は汎用的なカレンダー見た目で、FRAME 3 の独自スタイル（36px 丸セル、赤ドット、5状態スタイル）と噛み合わないため、DayPicker を直接 import しカスタム `DayButton` を提供。shadcn/ui Calendar コンポーネント（`src/components/ui/calendar.tsx`）は将来用に残置 |
+| ルーティング | TanStack Router | CONSTITUTION v3.0.0 準拠。ファイルベース型安全ルーティング。`src/routes/_app/history.tsx` に配置（`_app` レイアウト配下） |
 | データフェッチ/キャッシュ | TanStack Query | CONSTITUTION v3.0.0 準拠。workoutRepository をラップし、キャッシュ管理・自動再取得を実現 |
-| UIコンポーネント | shadcn/ui + Radix UI | CONSTITUTION v3.0.0 準拠。Button 等の基本コンポーネントに利用 |
+| UIコンポーネント | shadcn/ui + Radix UI | CONSTITUTION v3.0.0 準拠。Card, Button を利用 |
+| アイコン | Phosphor Icons (`@phosphor-icons/react`) | CONSTITUTION 準拠。CaretLeft/Right, Ghost, Plus を使用 |
+| バリデーション | Zod v4 | `validateSearch` で search params の型安全性を確保 |
 | 状態管理 | TanStack Router search params | 表示月・選択日をURLに保持。タブ切替・ブラウザバックで状態維持。Zustand不要 |
 | データ取得 | workoutRepository | localStorage CRUD 層。workout design doc のインターフェース仕様に準拠して新規実装（A-002, B-001） |
-| スタイリング | Tailwind CSS | プロジェクト標準のスタイリング手法 |
+| スタイリング | Tailwind CSS v4 | プロジェクト標準のスタイリング手法 |
 
 ---
 
@@ -116,12 +119,14 @@ graph TD
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
 | dateStringSchema | "YYYY-MM-DD" の Zod スキーマ + DateString branded type + ヘルパー関数。**本モジュールが定義元（canonical）。** workout 等の他モジュールはここから import する | Zod | `src/schemas/date.ts` |
-| history ルート | 履歴画面のルート定義 | useCalendar, useWorkoutsForDate, UI components | `src/routes/history.tsx` |
-| useCalendar | 表示月・選択日・ワークアウト日集合の管理 | TanStack Query, workoutRepository | `src/hooks/useCalendar.ts` |
+| history ルート | 履歴画面のルート定義。`_app` レイアウト配下に配置 | useCalendar, useWorkoutsForDate, UI components | `src/routes/_app/history.tsx` |
+| useCalendar | 表示月・選択日・ワークアウト日集合の管理 | TanStack Query, TanStack Router, workoutRepository | `src/hooks/useCalendar.ts` |
 | useWorkoutsForDate | 指定日付のワークアウト記録取得 | TanStack Query, workoutRepository | `src/hooks/useWorkoutsForDate.ts` |
-| MonthCalendar | shadcn/ui Calendar をラップし、カスタム day レンダリング（マーカー・今日強調・選択状態）を提供 | shadcn/ui Calendar（react-day-picker） | `src/components/MonthCalendar.tsx` |
-| WorkoutSummary | 選択日のワークアウト記録サマリー表示 | shadcn/ui Card | `src/components/WorkoutSummary.tsx` |
-| EmptyDayState | 記録なし日の空状態UI + 追加ボタン | shadcn/ui Button | `src/components/EmptyDayState.tsx` |
+| MonthCalendar | react-day-picker `DayPicker` を直接使用し、カスタム `DayButton`（`GymDayButton`）で5状態セル（default/hasWorkout/today/todayWithWorkout/selected）を実装。コンテナは shadcn/ui `Card` でラップ | react-day-picker, shadcn/ui Card, Phosphor Icons | `src/components/MonthCalendar.tsx` |
+| WorkoutSummary | 選択日のワークアウト記録サマリー表示 | shadcn/ui Card, dateFormat | `src/components/WorkoutSummary.tsx` |
+| EmptyDayState | 記録なし日の空状態UI + 追加ボタン | shadcn/ui Button, Phosphor Icons, dateFormat | `src/components/EmptyDayState.tsx` |
+| dateFormat | 共通日付フォーマットユーティリティ (`formatDateHeader`: "M月D日の記録") | - | `src/lib/dateFormat.ts` |
+| queryKeys | TanStack Query キーファクトリ | - | `src/lib/queryKeys.ts` |
 
 ### 前提モジュール（他機能で実装）
 
@@ -177,7 +182,7 @@ const queryKeys = {
 }
 
 // -------------------------------------------------------
-// history ルート search params 定義 (src/routes/history.tsx)
+// history ルート search params 定義 (src/routes/_app/history.tsx)
 // -------------------------------------------------------
 
 const historySearchSchema = z.object({
@@ -185,7 +190,7 @@ const historySearchSchema = z.object({
   date: dateStringSchema.optional(),                      // "YYYY-MM-DD"
 })
 
-export const Route = createFileRoute('/history')({
+export const Route = createFileRoute('/_app/history')({
   validateSearch: historySearchSchema,
 })
 
@@ -235,14 +240,21 @@ function useCalendar(): UseCalendarReturn
 // useWorkoutsForDate (src/hooks/useWorkoutsForDate.ts)
 // -------------------------------------------------------
 
-function useWorkoutsForDate(date: DateString | null): Workout[]
+function useWorkoutsForDate(date: DateString): Workout[]
 // TanStack Query でラップ:
 //   useQuery({
 //     queryKey: queryKeys.workoutsForDate(date),
-//     queryFn: () => workoutRepository.listByDate(date!),
-//     enabled: date !== null,
+//     queryFn: () => workoutRepository.listByDate(date),
 //   })
-// dateがnullの場合はクエリ無効化（enabled: false）で空配列を返す
+// 注: clarify Q4 の決定により selectedDate は常に non-null
+// （デフォルト: todayDateString()）のため、null を受け付ける必要はない
+//
+// staleTime はデフォルト（0 ではない）を採用:
+//   - 日付が切り替わればクエリキー (workoutsForDate(date)) が変わり、必然的に
+//     別クエリとして新規 fetch される
+//   - 同じ日付を再選択した場合はキャッシュが効いて即座に表示される
+//   - 対照的に daysWithWorkouts は月固定のキーのため、別画面での WO 追加/削除を
+//     反映するには staleTime: 0 + refetchOnWindowFocus が必要
 
 // -------------------------------------------------------
 // MonthCalendar (src/components/MonthCalendar.tsx)
@@ -257,31 +269,39 @@ interface MonthCalendarProps {
   onSelectDate: (date: DateString) => void
 }
 
-// shadcn/ui Calendar（react-day-picker ベース）をラップ。
+// react-day-picker の `DayPicker` を直接使用し、カスタム `DayButton`（`GymDayButton`）
+// で5状態セルを実装。コンテナは shadcn/ui `Card` でラップ。
 // 視覚仕様は design-system.html FRAME 3: History Tab に完全準拠すること。
 //
 // [カレンダーモジュール全体]
-// - コンテナ: bg-white rounded-[32px] p-5 shadow-soft border border-gym-zinc-100
+// - コンテナ: shadcn/ui Card, rounded-[32px] p-5 shadow-soft border border-gym-zinc-100 ring-0
 // - 月ヘッダー: font-outfit font-bold, 「2025年10月」形式
-//   シェブロン: w-8 h-8 rounded-full, ph-bold ph-caret-left / ph-caret-right
+//   シェブロン: w-8 h-8 rounded-full, Phosphor CaretLeft / CaretRight
 // - 曜日行: text-[10px] font-bold, 日曜のみ text-gym-accent, 他は text-gym-zinc-400
+//   （react-day-picker のデフォルト曜日行は classNames.weekdays='hidden' で非表示）
 // - グリッド: grid-cols-7 gap-y-3 gap-x-1, font-outfit text-sm font-medium
+//   （classNames.week に指定）
 //
-// [日付セルの状態別スタイル（FRAME 3 準拠）]
+// [日付セルの状態別スタイル（FRAME 3 準拠）— GymDayButton 内で実装]
 // - 全セル共通: w-9 h-9 mx-auto flex items-center justify-center rounded-full
 // - 記録なし（当月）: text-gym-zinc-400 hover:bg-gym-zinc-50
 // - 記録あり: text-gym-black hover:bg-gym-zinc-50
-//   + 赤ドット: absolute bottom-1 w-1 h-1 bg-gym-accent rounded-full
+//   + 赤ドット: data-testid="workout-marker", absolute bottom-1 w-1 h-1 bg-gym-accent rounded-full
 // - 選択中: ring-2 ring-gym-black ring-offset-2 ring-offset-white text-gym-black font-bold
 // - 今日: bg-gym-black text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)]
 //   + 赤ドット（記録あり時）: border border-gym-black 付き, bottom-[3px]
-// - 前月/次月: text-gym-zinc-200（タップ不可）
+// - 前月/次月（outside）: text-gym-zinc-200、<span> で描画（button ではない＝タップ不可）
 //
 // [react-day-picker との統合]
-// - month / onMonthChange: displayMonth の制御
-// - selected / onSelect: selectedDate の制御
-// - modifiers: { hasWorkout: [...daysWithWorkouts] } でマーカー対象日を指定
-// - components prop でカスタム day レンダリング
+// - mode="single"
+// - month: displayMonth から Date 変換して制御
+// - selected / onSelect: selectedDate の制御。onSelect 内で Date → DateString 変換
+// - showOutsideDays, hideNavigation: 月遷移は独自実装（onPrevMonth/onNextMonth）
+// - components={{ DayButton: GymDayButton }} でカスタム day レンダリング
+// - 月遷移/曜日ヘッダーは DayPicker のデフォルト UI を classNames で hidden 化し、
+//   MonthCalendar が独自にレンダリングした部品を使用
+// - weekStartsOn: react-day-picker のデフォルト（0 = 日曜始まり）が PRD の
+//   「日〜土」仕様と一致するため、明示的な指定は不要
 
 // -------------------------------------------------------
 // WorkoutSummary (src/components/WorkoutSummary.tsx)
@@ -380,7 +400,7 @@ interface EmptyDayStateProps {
 | テストレベル | 対象 | カバレッジ目標 |
 |-----------|------|------------|
 | ユニットテスト | useCalendar（月遷移、日付選択、TanStack Query連携） | 全アクション |
-| ユニットテスト | useWorkoutsForDate（null / 記録あり / 記録なし） | 全分岐 |
+| ユニットテスト | useWorkoutsForDate（記録あり / 記録なし） | 全分岐 |
 | コンポーネントテスト | MonthCalendar（カレンダー表示、月遷移、日付選択、マーカー・今日強調・選択状態の表示） | FR-001〜FR-004, FR-009, FR-010 |
 | コンポーネントテスト | WorkoutSummary（種目・セット表示） | FR-005, FR-006 |
 | コンポーネントテスト | EmptyDayState（テキスト表示、追加ボタン） | FR-007, FR-008 |
@@ -413,10 +433,10 @@ interface EmptyDayStateProps {
 
 | 決定事項 | 選択肢 | 決定内容 | 理由 |
 |---------|--------|--------|------|
-| カレンダーUI | 自作カレンダーグリッド vs shadcn/ui Calendar（react-day-picker ベース） | 自作カレンダーグリッド | 実装時の判断: shadcn/ui は Tailwind v4 プロジェクトでセットアップされておらず、react-day-picker の `components` prop によるカスタマイズは FRAME 3 の細かいスタイリング要件（5状態の日付セル、赤ドット位置制御、今日の影）に対してオーバーヘッドが大きい。自作グリッド（`getDaysInMonth` + `getFirstDayOfWeek`）は50行程度で実装でき、FRAME 3 完全準拠が容易 |
+| カレンダーUI | shadcn/ui Calendar ラッパー経由 vs react-day-picker `DayPicker` 直接使用 | `DayPicker` 直接使用 + shadcn/ui `Card` でコンテナラップ | shadcn/ui Calendar ラッパーは汎用的な見た目を前提としており、FRAME 3 の独自スタイル（36px 丸セル、赤ドットマーカー、5状態スタイル）と噛み合わない。`DayPicker` を直接 import し、`components={{ DayButton: GymDayButton }}` でカスタム day レンダリングを提供する方が classNames 上書きの複雑性を抑えられる。shadcn/ui `Card` はコンテナ部分のみに使用 |
 | ルーティング | Zustand 状態ベース vs TanStack Router | TanStack Router（ファイルベース） | CONSTITUTION v3.0.0 で TanStack Router が必須技術に指定。`src/routes/history.tsx` として定義 |
 | データフェッチ/キャッシュ | 直接 workoutRepository 呼び出し vs TanStack Query | TanStack Query | CONSTITUTION v3.0.0 準拠。staleTime: 0 で画面復帰時の自動再取得を実現。キャッシュによる2回目以降の高速表示 |
-| UIコンポーネント基盤 | 全自作 vs shadcn/ui 活用 | 全自作（Tailwind CSS + Phosphor Icons） | shadcn/ui はプロジェクトにセットアップされていないため、Tailwind CSS でFRAME 3 のスタイリングを直接実装。Phosphor Icons（@phosphor-icons/react）でアイコン表示 |
+| UIコンポーネント基盤 | 全自作 vs shadcn/ui 活用 | shadcn/ui（Card, Button）+ Phosphor Icons | CONSTITUTION v3.0.0 準拠で shadcn/ui + Radix UI を活用。Card で MonthCalendar/WorkoutSummary のコンテナを統一、Button で EmptyDayState の追加ボタンを実装。FRAME 3 準拠のスタイル上書きは `cn()` で行う。アイコンは Phosphor Icons（@phosphor-icons/react） |
 | 状態管理 | Zustand vs React useState vs TanStack Router search params | TanStack Router search params | useState はルートアンマウント時に消失。Zustand は追加ストアが必要。search params ならURL に状態が乗りタブ切替・ブラウザバックで保持され、Zod validateSearch と自然に統合できる |
 | ワークアウト日の取得方法 | 月ごとにフィルタリング vs 全件取得してメモリでフィルタ | 全件取得してメモリでフィルタ | workoutRepository.listByDateDesc() で全件取得し、表示月の日付をSetに変換。ローカルアプリで件数が限定的（数百件程度）なため、月ごとのインデックス構築は過剰 |
 | 赤ドットマーカーの色 | デザインシステム参照 | accent色（#DE3A2B / `bg-accent`） | `.sdd/design-system.html` で定義済みのアクセントカラーに準拠 |
@@ -427,6 +447,7 @@ interface EmptyDayStateProps {
 | 同日複数ワークアウト表示 | フラット統合 vs セクション分割 | セクション分割（ワークアウトごとに縦に並べる） | 各トレーニングセッションの区切りが明確になり、ユーザーが記録の時系列を把握しやすい |
 | 削除済み種目の表示 | ラベル付き vs そのまま表示 | exerciseNameをそのまま表示 | WorkoutExercise.exerciseName はスナップショットとして保存されているため、削除済みかどうかの判定コストを避ける。ユーザーにとっても過去記録の名前が変わらない方が自然 |
 | カレンダーマーカー更新 | 画面表示ごと vs 月遷移時のみ | 画面表示（フォーカス復帰）のたびに再取得 | TanStack Query の refetchOnWindowFocus + staleTime: 0 で実現。別画面でのWO追加/削除が即座に反映される |
+| useWorkoutsForDate の staleTime | 0 (即時再取得) vs デフォルト (キャッシュ活用) | デフォルト | 日付切替はクエリキー (`workoutsForDate(date)`) が変わり必然的に新規 fetch される。同じ日付の再選択ではキャッシュが効いて即座に表示できる。`daysWithWorkouts` は月固定キーのため別扱い（staleTime: 0 が必要） |
 | MonthCalendar 配置 | src/components/ | src/components/MonthCalendar.tsx | shadcn/ui Calendar をラップするコンポーネント。カスタム day レンダリングロジックを含む |
 | 日付の型表現 | 素の `string` vs `Date` vs Zod branded type | Zod branded type（`DateString`） | 素の `string` では任意の文字列が型チェックを通過する。`Date` はタイムゾーン問題・localStorage非互換。Zod branded type は境界でパースし内部は型安全に流通でき、CONSTITUTION v3.0.0 の Zod 活用方針に合致。スキーマは `src/schemas/date.ts` に配置 |
 
