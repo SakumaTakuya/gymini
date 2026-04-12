@@ -1,6 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { Eye, EyeSlash, Trash } from '@phosphor-icons/react'
 import { useSettingsStore } from '../../stores/settingsStore'
+import { SectionCard } from './SectionCard'
 
 export function APIKeySection() {
   const apiKey = useSettingsStore((s) => s.apiKey)
@@ -19,7 +20,7 @@ export function APIKeySection() {
   }
 
   return (
-    <section className="bg-white rounded-2xl p-4 shadow-sm border border-zinc-100">
+    <SectionCard>
       <h2 className="text-sm font-outfit font-bold text-zinc-500 mb-3">
         Gemini API
       </h2>
@@ -68,6 +69,6 @@ export function APIKeySection() {
           </button>
         )}
       </div>
-    </section>
+    </SectionCard>
   )
 }

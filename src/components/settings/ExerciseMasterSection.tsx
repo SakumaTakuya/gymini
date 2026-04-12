@@ -3,6 +3,7 @@ import { MagnifyingGlass, Plus, Check, X } from '@phosphor-icons/react'
 import * as exerciseRepository from '../../lib/exerciseRepository'
 import type { Exercise } from '../../types'
 import { ExerciseRow } from './ExerciseRow'
+import { SectionCard } from './SectionCard'
 
 export function ExerciseMasterSection() {
   const [query, setQuery] = useState('')
@@ -85,7 +86,7 @@ export function ExerciseMasterSection() {
   }
 
   return (
-    <section className="bg-white rounded-2xl p-4 shadow-sm border border-zinc-100">
+    <SectionCard>
       <h2 className="text-sm font-outfit font-bold text-zinc-500 mb-3">
         種目マスター
       </h2>
@@ -188,6 +189,6 @@ export function ExerciseMasterSection() {
           <span>種目を追加</span>
         </button>
       )}
-    </section>
+    </SectionCard>
   )
 }
