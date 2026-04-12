@@ -11,12 +11,7 @@ export function APIKeySection() {
   const [visible, setVisible] = useState(false)
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    if (value === '') {
-      deleteApiKey()
-    } else {
-      setApiKey(value)
-    }
+    setApiKey(e.target.value)
   }
 
   return (

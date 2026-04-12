@@ -30,7 +30,7 @@ risk: "low"
 | SettingsContent | 🟢 実装済み | 設定画面コンテンツ統合コンポーネント |
 | APIKeySection | 🟢 実装済み | APIキー管理セクションUI（空文字入力時は deleteApiKey に分岐） |
 | ExerciseMasterSection | 🟢 実装済み | 種目マスター管理セクションUI（検索・追加・編集・削除のインライン編集対応） |
-| settingsStore | 🟢 実装済み | api-key モジュールで先行実装済み（空文字 setApiKey は throw） |
+| settingsStore | 🟢 実装済み | api-key モジュールで実装済み（空文字 setApiKey は内部で deleteApiKey と同等に扱う） |
 | ExerciseRow | 🟢 実装済み | 種目一覧の1行コンポーネント（編集・削除ボタン） |
 | SectionCard | 🟢 実装済み | FRAME5 セクションカードスタイルのラッパー（shadcn Card ベース） |
 
@@ -159,8 +159,8 @@ type SettingsActions = {
 //   .sdd/specification/api-key/index_design.md §6
 //
 // 要点:
-//   - setApiKey(key): 空文字列を渡すと Error を throw。削除には deleteApiKey() を使用
-//   - deleteApiKey(): localStorage 削除 + ストア状態リセット
+//   - setApiKey(key): 通常は保存。空文字列が渡された場合は内部で deleteApiKey と同等（状態リセット + localStorage.removeItem）
+//   - deleteApiKey(): localStorage 削除 + ストア状態リセット（明示的削除用の API）
 //   - loadApiKey(): アプリ起動時にルートレイアウトで呼び出し（__root.tsx）
 
 const STORAGE_KEY = 'gymini:api-key'
@@ -224,10 +224,8 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 //   右端に目アイコン（PhEye / PhEyeSlash）ボタン
 //
 // onChange ハンドラの挙動:
-//   - 入力値が空文字列の場合 → settingsStore.deleteApiKey() を呼ぶ
-//   - それ以外の場合 → settingsStore.setApiKey(value) を呼ぶ
-//   理由: setApiKey は空文字列を受け付けず throw するため、空文字検出時は
-//        削除経路に分岐する必要がある
+//   - 常に settingsStore.setApiKey(value) を呼ぶ
+//   - 空文字列も setApiKey に渡して良い（store 側で削除扱いされるため UI 側の分岐は不要）
 //
 // ステータス行:
 //   接続済み: 🟢 text-emerald-600 text-sm
@@ -309,7 +307,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 | 種目検索のデバウンス | あり vs なし | なし | localStorage からの読み取りは十分高速。デバウンスは不要な複雑さ |
 | APIキー接続テスト | 設定時に実行 vs スキップ | スキップ（Phase 3 で実装） | Gemini API への接続テストは AIチャット機能のスコープ。設定画面は保存のみ |
 | 種目編集UI | インライン編集 vs モーダル | インライン編集 | 種目名の変更だけなのでモーダルは不要。行内の入力フィールドで直接編集。確定は PhCheck、キャンセルは PhX ボタン |
-| 空文字 setApiKey の扱い | ストア内で無視（旧方針） vs throw（現行） | throw（api-key 設計に追随） | 削除意図と空文字保存を明確に区別するため。APIKeySection の onChange ハンドラで空文字検出時は `deleteApiKey()` に分岐 |
+| 空文字 setApiKey の扱い | throw vs 内部で delete 相当 | **内部で delete 相当**（v1.2 で変更）| UI 層・将来の消費者（AI chat 等）が `setApiKey(userInput)` を直接渡しても例外にならないよう契約を単純化。明示的削除には引き続き `deleteApiKey()` を推奨 |
 | セクションカードの共通化 | 各セクションでクラス直書き vs 共通コンポーネント | 共通 `<SectionCard>` | FRAME5 のカードスタイルが 2 箇所以上で使われるため、shadcn `<Card>` をラップして一元化。将来のセクション追加にも対応 |
 
 ## 9.2. 未解決の課題
@@ -319,6 +317,12 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 ---
 
 # 10. 変更履歴
+
+## v1.2 (2026-04-12) — レビュー反映（契約修正）
+
+- `settingsStore.setApiKey` の契約を変更: 空文字列は throw せず内部で削除扱いに
+- APIKeySection の handleChange を `setApiKey(value)` 単発呼び出しに簡素化
+- §9.1 決定事項の「空文字 setApiKey の扱い」行を v1.2 方針に更新
 
 ## v1.1 (2026-04-12) — 実装反映
 
