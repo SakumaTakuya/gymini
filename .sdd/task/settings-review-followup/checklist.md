@@ -2,10 +2,11 @@
 id: "checklist-settings-review-followup"
 title: "設定画面レビュー残タスクの品質チェックリスト"
 type: "checklist"
-status: "pending"
+status: "in-progress"
 sdd-phase: "tasks"
 created: "2026-04-12"
 updated: "2026-04-12"
+last-verified: "2026-04-12"
 depends-on: ["task-settings-review-followup"]
 ticket: "settings-review-followup"
 tags: ["settings", "ux", "a11y", "tech-debt", "phase-2"]
@@ -51,46 +52,71 @@ priority: "medium"
 
 ---
 
+## 検証結果サマリー（2026-04-12 実行）
+
+| タスク | 関連 CHK | 状態 | 備考 |
+|:---|:---|:---:|:---|
+| 1.1 APIキー debounce | CHK-101, 202, 301, 401, 501, 701 | ✅ | PR #31 で実装・全テスト pass |
+| 1.2 保存中インジケータ | CHK-203, 402, 505 | ✅ | PR #31 で実装 |
+| 1.3 重複種目名 inline error | CHK-102, 203, 305, 403, 502 | ✅ | PR #31 で実装 |
+| 2.1 外部ストア駆動化 | CHK-103, 302, 404, 503, 702 | ⏸ | 未着手 (`useState<Exercise[]>` + `refresh()` が残存) |
+| 2.2 exercise-master 設計書更新 | CHK-201, 602, 604 | ⏸ | 未着手（2.1 依存） |
+| 3.1 focus-visible 規約 | CHK-303, 601 | ⏸ | 未着手（`focus-visible` は src/components/ui/button.tsx のみ） |
+| 3.2 settings focus-visible | CHK-104, 405 | ⏸ | 未着手 |
+| 3.3 全体 focus-visible | CHK-406 | ⏸ | 未着手 |
+| 3.4 shadcn Button 方針 | CHK-304, 603 | ⏸ | 未着手 |
+| 4.1 E2E `.fixme()` 整理 | CHK-504 | ⏸ | 7 件残存（`e2e/exercise-master.spec.ts`） |
+| 横断 | CHK-408, 506 | ✅ | 既存部分は規約準拠・233 tests / typecheck / lint / E2E 30+7skip pass |
+
+**全体進捗**: 実装 3/10 タスク完了、検証 12/32 項目 `✅`、20/32 `⏸`（未実装タスクのため未検証）。
+
+詳細は [verification_report.md](verification_report.md) を参照。
+
+---
+
 ## 1. 要求レビュー
 
-### CHK-101 [P1] - NFR-001（APIキー非送信）の強化
+### CHK-101 [P1] ✅ - NFR-001（APIキー非送信）の強化
 
-- [ ] 1.1 debounce 化後も APIキーが localStorage 以外に送信されていない
-- [ ] `setApiKey` の呼び出しが外部ネットワークを介していないこと（Grep で fetch/XHR の非存在を確認）
-- [ ] 中間入力状態（途中タイプ）が意図せず保存されない
+- [x] 1.1 debounce 化後も APIキーが localStorage 以外に送信されていない ✅ (PR #31)
+- [x] `setApiKey` の呼び出しが外部ネットワークを介していないこと ✅ (APIKeySection で fetch/XHR なし)
+- [x] 中間入力状態（途中タイプ）が意図せず保存されない ✅ (debounce テストで検証)
 
 **関連タスク**: 1.1 APIキー onChange 保存を debounce 化
 **検証方法**: `/check-spec api-key`、Network パネル監視、debounce 単体テスト
+**自動検証結果**: 15 tests passed (`APIKeySection.test.tsx`)、2026-04-12
 
 ---
 
-### CHK-102 [P1] - FR-009（種目の手動追加・編集・削除）のエラー可視化
+### CHK-102 [P1] ✅ - FR-009（種目の手動追加・編集・削除）のエラー可視化
 
-- [ ] 1.3 重複種目名の追加/編集で `aria-live="polite"` の inline error が表示される
-- [ ] エラー文言「この種目名は既に登録されています」が期待通り表示される
-- [ ] キャンセル/再入力でエラーが消える
+- [x] 1.3 重複種目名の追加/編集で `aria-live="polite"` の inline error が表示される ✅
+- [x] エラー文言「この種目名は既に登録されています」が期待通り表示される ✅
+- [x] キャンセル/再入力でエラーが消える ✅
+- [ ] 手動 VoiceOver 読み上げ ⚠️ 手動検証要
 
 **関連タスク**: 1.3 重複種目名の inline エラー表示
 **検証方法**: ExerciseMasterSection 単体テスト + 手動 VoiceOver 確認
+**自動検証結果**: 12 tests passed（うち重複エラー関連 5 件）、2026-04-12
 
 ---
 
-### CHK-103 [P1] - NFR-002（種目検索のリアルタイム更新）の一貫性強化
+### CHK-103 [P1] ⏸ - NFR-002（種目検索のリアルタイム更新）の一貫性強化
 
-- [ ] 2.1 他タブで種目を追加/削除したとき、現タブの一覧が自動反映される
-- [ ] `useSyncExternalStore` もしくは Zustand のいずれを採用したかが設計書に記録されている
-- [ ] `useState<Exercise[]>` + `refresh()` の手動更新が撤去されている
+- [ ] 2.1 他タブで種目を追加/削除したとき、現タブの一覧が自動反映される ⏸ 未実装
+- [ ] `useSyncExternalStore` もしくは Zustand のいずれを採用したかが設計書に記録されている ⏸ 未実装
+- [ ] `useState<Exercise[]>` + `refresh()` の手動更新が撤去されている ❌ 現状 4 箇所残存 (`ExerciseMasterSection.tsx`)
 
 **関連タスク**: 2.1 ExerciseMasterSection を外部ストア駆動に
 **検証方法**: 統合 or E2E（2 タブ並列操作）、`grep -R "setExercises" src/components/settings/`
 
 ---
 
-### CHK-104 [P2] - T-003（44px タップターゲット）の A11y 強化
+### CHK-104 [P2] ⏸ - T-003（44px タップターゲット）の A11y 強化
 
-- [ ] 3.1 で策定された focus-visible 規約が 44px tap target と両立している
-- [ ] キーボード操作時にフォーカスリングが可視化される
-- [ ] 既存の `before:inset-[-Npx]` 擬似要素拡張と衝突しない
+- [ ] 3.1 で策定された focus-visible 規約が 44px tap target と両立している ⏸ 未実装
+- [ ] キーボード操作時にフォーカスリングが可視化される ⏸ 未実装 (settings 配下の raw button に `focus-visible:*` なし)
+- [ ] 既存の `before:inset-[-Npx]` 擬似要素拡張と衝突しない ⏸ 未実装
 
 **関連タスク**: 3.1-3.3 focus-visible 適用
 **検証方法**: 手動キーボードフォーカス確認、既存テスト pass
@@ -99,32 +125,32 @@ priority: "medium"
 
 ## 2. 仕様レビュー
 
-### CHK-201 [P1] - exercise-master 設計書の更新
+### CHK-201 [P1] ⏸ - exercise-master 設計書の更新
 
-- [ ] 2.1 で採用した実装方針 (useSyncExternalStore vs Zustand) が [exercise-master/index_design.md](../../specification/exercise-master/index_design.md) に反映されている
-- [ ] 採用理由・代替案評価が記載されている
-- [ ] `impl-status` / `updated` 等の front matter が更新されている
+- [ ] 2.1 で採用した実装方針 (useSyncExternalStore vs Zustand) が [exercise-master/index_design.md](../../specification/exercise-master/index_design.md) に反映されている ⏸
+- [ ] 採用理由・代替案評価が記載されている ⏸
+- [ ] `impl-status` / `updated` 等の front matter が更新されている ⏸
 
 **関連タスク**: 2.2 exercise-master 設計書の更新
 **検証方法**: `/check-spec exercise-master` が pass
 
 ---
 
-### CHK-202 [P1] - api-key 設計書との整合性
+### CHK-202 [P1] ✅ - api-key 設計書との整合性
 
-- [ ] 1.1 で UI 側 debounce を選択した判断が api-key 設計書と矛盾しない
-- [ ] settingsStore の API 契約（純粋性維持）が守られている
-- [ ] debounce を store 側に入れない理由が PR 説明または設計書に記録されている
+- [x] 1.1 で UI 側 debounce を選択した判断が api-key 設計書と矛盾しない ✅ (store API 不変)
+- [x] settingsStore の API 契約（純粋性維持）が守られている ✅ (settingsStore.ts に変更なし、13 tests pass)
+- [x] debounce を store 側に入れない理由が PR 説明または設計書に記録されている ✅ (PR #31 説明文)
 
 **関連タスク**: 1.1 APIキー onChange 保存を debounce 化
 **検証方法**: `/check-spec api-key` が pass
 
 ---
 
-### CHK-203 [P2] - settings 設計書の補足
+### CHK-203 [P2] ⏸ - settings 設計書の補足
 
-- [ ] 必要なら 1.2 の「保存中…/保存済み」インジケータが settings 設計書に反映されている
-- [ ] 1.3 の inline error パターンが settings 設計書に反映されている
+- [ ] 必要なら 1.2 の「保存中…/保存済み」インジケータが settings 設計書に反映されている ⏸ 未反映（次の /check-spec で検討）
+- [ ] 1.3 の inline error パターンが settings 設計書に反映されている ⏸ 未反映
 
 **関連タスク**: 1.2 / 1.3
 **検証方法**: `/check-spec settings` が pass
@@ -133,18 +159,18 @@ priority: "medium"
 
 ## 3. 設計レビュー
 
-### CHK-301 [P1] - debounce 実装方針の妥当性
+### CHK-301 [P1] ✅ - debounce 実装方針の妥当性
 
-- [ ] debounce を UI 側に入れる設計判断が実装に反映されている（`useRef` + `setTimeout` or `use-debounce`）
-- [ ] 300ms が要件として妥当（連続入力途中で書き込まない）
-- [ ] unmount 時のタイマークリーンアップが実装されている
+- [x] debounce を UI 側に入れる設計判断が実装に反映されている（`useRef` + `setTimeout`） ✅
+- [x] 300ms が要件として妥当（連続入力途中で書き込まない） ✅ (DEBOUNCE_MS = 300)
+- [x] unmount 時のタイマークリーンアップが実装されている ✅ (useEffect cleanup + unmount test pass)
 
 **関連タスク**: 1.1
 **検証方法**: コードレビュー、単体テストで fake timer による挙動確認
 
 ---
 
-### CHK-302 [P1] - 外部ストア方針の選定根拠
+### CHK-302 [P1] ⏸ - 外部ストア方針の選定根拠
 
 - [ ] useSyncExternalStore と Zustand のトレードオフが比較評価されている
 - [ ] 同タブ内変更への対応（storage event が同タブで発火しない問題）が解決されている
@@ -155,7 +181,7 @@ priority: "medium"
 
 ---
 
-### CHK-303 [P1] - focus-visible 規約の設計
+### CHK-303 [P1] ⏸ - focus-visible 規約の設計
 
 - [ ] `focus-visible:ring-2 focus-visible:ring-gym-black focus-visible:ring-offset-2` のベース定義が規約化されている
 - [ ] Tailwind v4 の `@theme` 拡張を使うか、`src/index.css` にカスタムユーティリティを追加するかの判断根拠が記載されている
@@ -166,7 +192,7 @@ priority: "medium"
 
 ---
 
-### CHK-304 [P2] - shadcn Button variant 方針
+### CHK-304 [P2] ⏸ - shadcn Button variant 方針
 
 - [ ] `default | destructive | ghost | icon` の使い分けが文書化されている
 - [ ] `EmptyDayState` 以外への段階的移行計画が示されている
@@ -177,10 +203,10 @@ priority: "medium"
 
 ---
 
-### CHK-305 [P2] - エラー表示パターンの将来拡張性
+### CHK-305 [P2] ✅ - エラー表示パターンの将来拡張性
 
-- [ ] 1.3 の inline error 実装が将来の toast 基盤導入時に差し替え可能である
-- [ ] エラー文言の i18n 可能性（ハードコード文字列が最小限）
+- [x] 1.3 の inline error 実装が将来の toast 基盤導入時に差し替え可能である ✅ (state ベース、置換容易)
+- [x] エラー文言の i18n 可能性（ハードコード文字列が最小限） ✅ (DUPLICATE_ERROR_MESSAGE 定数化済み)
 
 **関連タスク**: 1.3
 **検証方法**: コードレビュー
@@ -189,40 +215,40 @@ priority: "medium"
 
 ## 4. 実装レビュー
 
-### CHK-401 [P1] - debounce 実装の品質
+### CHK-401 [P1] ✅ - debounce 実装の品質
 
-- [ ] APIKeySection の `onChange` が 300ms debounce 済み
-- [ ] 連続入力時に `localStorage.setItem` が最後の状態のみで呼ばれる
-- [ ] unmount 時に timer がクリアされる
+- [x] APIKeySection の `onChange` が 300ms debounce 済み ✅
+- [x] 連続入力時に `localStorage.setItem` が最後の状態のみで呼ばれる ✅ (spyOn テストで検証、1 回呼び出し)
+- [x] unmount 時に timer がクリアされる ✅ (専用テスト pass)
 
 **関連タスク**: 1.1
 **検証方法**: 単体テスト（fake timer）、`grep -n "setTimeout" src/components/settings/APIKeySection.tsx`
 
 ---
 
-### CHK-402 [P2] - 保存中インジケータ
+### CHK-402 [P2] ✅ - 保存中インジケータ
 
-- [ ] 入力フィールド近傍に「保存中…」/「保存済み」のステータス表示が出る
-- [ ] 表示切り替えが debounce タイミングと整合する
-- [ ] 不要に点滅しない
+- [x] 入力フィールド近傍に「保存中…」/「保存済み」のステータス表示が出る ✅
+- [x] 表示切り替えが debounce タイミングと整合する ✅ ('saving' → 300ms → 'saved' → 1.5s → 'idle')
+- [x] 不要に点滅しない ✅ (min-h-[1em] で高さ固定、レイアウトシフトなし)
 
 **関連タスク**: 1.2
 **検証方法**: 単体テスト + 目視
 
 ---
 
-### CHK-403 [P1] - 重複名 inline error の実装
+### CHK-403 [P1] ✅ - 重複名 inline error の実装
 
-- [ ] `exerciseRepository.create/update` が throw した時にエラーが inline 表示される
-- [ ] `aria-live="polite"` がエラー要素に設定されている
-- [ ] catch 文が silent に握りつぶしていない（エラー状態を state に反映）
+- [x] `exerciseRepository.create/update` が throw した時にエラーが inline 表示される ✅
+- [x] `aria-live="polite"` がエラー要素に設定されている ✅ (role="alert" と併用)
+- [x] catch 文が silent に握りつぶしていない（エラー状態を state に反映） ✅ (addError / editError state)
 
 **関連タスク**: 1.3
 **検証方法**: コードレビュー、ExerciseMasterSection 単体テスト
 
 ---
 
-### CHK-404 [P1] - 外部ストア駆動化の実装
+### CHK-404 [P1] ⏸ - 外部ストア駆動化の実装
 
 - [ ] `useState<Exercise[]>(() => exerciseRepository.getAll())` が撤去されている
 - [ ] `refresh()` のような手動更新ヘルパが撤去されている
@@ -233,7 +259,7 @@ priority: "medium"
 
 ---
 
-### CHK-405 [P1] - focus-visible 適用 (settings)
+### CHK-405 [P1] ⏸ - focus-visible 適用 (settings)
 
 - [ ] APIKeySection / ExerciseRow / ExerciseMasterSection のすべての `<button>` に規約の focus-visible クラスが適用されている
 - [ ] キーボードフォーカスで可視リングが表示される
@@ -244,7 +270,7 @@ priority: "medium"
 
 ---
 
-### CHK-406 [P2] - focus-visible 適用 (プロジェクト全体)
+### CHK-406 [P2] ⏸ - focus-visible 適用 (プロジェクト全体)
 
 - [ ] BottomNav / MonthCalendar / IdleView / EmptyDayState / WorkoutSummary の raw button に適用されている
 - [ ] 機能単位 (navigation / training / history / settings) で PR が分割されている
@@ -254,21 +280,21 @@ priority: "medium"
 
 ---
 
-### CHK-407 [P1] - 不要ハンドラの撤去
+### CHK-407 [P1] ⚠️ - 不要ハンドラの撤去
 
-- [ ] 1.1 実装後、APIKeySection の空文字分岐や古い即時保存コードが残っていない
-- [ ] 2.1 実装後、ExerciseMasterSection の `setState` + `refresh()` パターンが残っていない
+- [x] 1.1 実装後、APIKeySection の空文字分岐や古い即時保存コードが残っていない ✅ (handleChange 単発、即時保存なし)
+- [ ] 2.1 実装後、ExerciseMasterSection の `setState` + `refresh()` パターンが残っていない ⏸ 2.1 未実装のため残存
 
 **関連タスク**: 1.1 / 2.1
 **検証方法**: コードレビュー、Grep
 
 ---
 
-### CHK-408 [P2] - 規約違反の非混入
+### CHK-408 [P2] ✅ - 規約違反の非混入
 
-- [ ] 新規コードで raw Tailwind (`zinc-*`, `red-*` 等) が使われていない（`gym-*` トークン使用）
-- [ ] 新規 import がすべて `@/` alias 形式
-- [ ] Phosphor icon は `size=N` + `weight="bold"` 明示
+- [x] 新規コードで raw Tailwind (`zinc-*`, `red-*` 等) が使われていない（`gym-*` トークン使用） ✅ (settings 配下で raw token は既存の `bg-red-50` 1 件のみ、新規混入なし)
+- [x] 新規 import がすべて `@/` alias 形式 ✅ (`from '../../'` が settings/ 配下に 0 件)
+- [x] Phosphor icon は `size=N` + `weight="bold"` 明示 ✅ (新規追加なし、既存踏襲)
 
 **関連タスク**: 横断
 **検証方法**: `grep -n "from '\.\./\.\./\.\." src/components/`、lint
@@ -277,29 +303,29 @@ priority: "medium"
 
 ## 5. テストレビュー
 
-### CHK-501 [P1] - debounce の単体テスト
+### CHK-501 [P1] ✅ - debounce の単体テスト
 
-- [ ] fake timer で連続入力→最終値のみ localStorage に書かれることをテスト
-- [ ] unmount 時に保留 timer が走らないことをテスト
-- [ ] 既存 E2E「APIキーを入力すると onChange で localStorage に保存され「接続済み」になる」が pass
+- [x] fake timer で連続入力→最終値のみ localStorage に書かれることをテスト ✅ ('debounces consecutive input')
+- [x] unmount 時に保留 timer が走らないことをテスト ✅ ('does not write to localStorage when unmounted')
+- [x] 既存 E2E「APIキーを入力すると onChange で localStorage に保存され「接続済み」になる」が pass ✅ (Mobile Chrome 9/9 pass)
 
 **関連タスク**: 1.1
 **検証方法**: `npm test -- --run src/components/settings/APIKeySection.test.tsx`、Playwright
 
 ---
 
-### CHK-502 [P1] - 重複名エラーのテスト
+### CHK-502 [P1] ✅ - 重複名エラーのテスト
 
-- [ ] 重複名追加時にエラー表示される単体テスト
-- [ ] `aria-live` 属性がセットされているアクセシビリティテスト（`getByRole('alert')` or `getByText`）
-- [ ] キャンセル/再入力でエラー消失するテスト
+- [x] 重複名追加時にエラー表示される単体テスト ✅ (追加/編集両方)
+- [x] `aria-live` 属性がセットされているアクセシビリティテスト ✅ (`getByRole('alert')` + `aria-live="polite"` 検証)
+- [x] キャンセル/再入力でエラー消失するテスト ✅ (4 パターン網羅)
 
 **関連タスク**: 1.3
 **検証方法**: `npm test -- --run src/components/settings/ExerciseMasterSection.test.tsx`
 
 ---
 
-### CHK-503 [P1] - 外部ストア同期テスト
+### CHK-503 [P1] ⏸ - 外部ストア同期テスト
 
 - [ ] 他タブでの種目追加が現タブに自動反映される（統合 or E2E テスト）
 - [ ] storage event mock もしくは BroadcastChannel で検証
@@ -309,33 +335,33 @@ priority: "medium"
 
 ---
 
-### CHK-504 [P1] - `.fixme()` の解消
+### CHK-504 [P1] ⏸ - `.fixme()` の解消
 
-- [ ] `e2e/exercise-master.spec.ts` の 6 件の `test.fixme()` がすべて解消されている
-- [ ] 解消方法（有効化 or `settings.spec.ts` への統合/削除）の判断理由がコメントに記録されている
-- [ ] `npx playwright test e2e/exercise-master.spec.ts` が pass
+- [ ] `e2e/exercise-master.spec.ts` の 6 件の `test.fixme()` がすべて解消されている ❌ 現状 7 件残存
+- [ ] 解消方法（有効化 or `settings.spec.ts` への統合/削除）の判断理由がコメントに記録されている ⏸
+- [ ] `npx playwright test e2e/exercise-master.spec.ts` が pass ⚠️ 7 件 skipped（`.fixme()` のため）
 
 **関連タスク**: 4.1
 **検証方法**: `grep -n "test.fixme" e2e/` で 0 件
 
 ---
 
-### CHK-505 [P2] - 保存中インジケータのテスト
+### CHK-505 [P2] ✅ - 保存中インジケータのテスト
 
-- [ ] ステータス表示のユニットテストが存在する
-- [ ] debounce と連動した切り替えが確認できる
+- [x] ステータス表示のユニットテストが存在する ✅ ('displays 保存中…' / 'displays 保存済み')
+- [x] debounce と連動した切り替えが確認できる ✅ (fake timer で 300ms advance 後に 'saved' 検証)
 
 **関連タスク**: 1.2
 **検証方法**: `npm test -- --run src/components/settings/APIKeySection.test.tsx`
 
 ---
 
-### CHK-506 [P2] - 全体リグレッション
+### CHK-506 [P2] ✅ - 全体リグレッション
 
-- [ ] `npm test -- --run` が全 pass
-- [ ] `npm run typecheck` が pass
-- [ ] `npm run lint` が pass
-- [ ] `npx playwright test` が pass
+- [x] `npm test -- --run` が全 pass ✅ (233 tests / 31 files)
+- [x] `npm run typecheck` が pass ✅
+- [x] `npm run lint` が pass ✅ (エラー 0、coverage/ 配下の既存警告 3 件のみ)
+- [x] `npx playwright test` が pass ✅ (Mobile Chrome: 30 passed, 7 skipped = `.fixme()`)
 
 **関連タスク**: 全体
 **検証方法**: `/run-checklist settings-review-followup`
@@ -344,7 +370,7 @@ priority: "medium"
 
 ## 6. ドキュメントレビュー
 
-### CHK-601 [P1] - focus-visible 規約の文書化
+### CHK-601 [P1] ⏸ - focus-visible 規約の文書化
 
 - [ ] `.sdd/CONSTITUTION.md` または `CLAUDE.md` に規約が追記されている
 - [ ] サンプルコードが記載されている
@@ -355,7 +381,7 @@ priority: "medium"
 
 ---
 
-### CHK-602 [P2] - exercise-master 設計書の更新
+### CHK-602 [P2] ⏸ - exercise-master 設計書の更新
 
 - [ ] 2.1 実装方針が設計書に反映されている（CHK-201 と重複確認）
 - [ ] 図・シーケンスが最新である
@@ -365,7 +391,7 @@ priority: "medium"
 
 ---
 
-### CHK-603 [P2] - shadcn Button 方針書
+### CHK-603 [P2] ⏸ - shadcn Button 方針書
 
 - [ ] PR or RFC 形式で方針書が作成されている
 - [ ] variant 使い分け表がある
@@ -376,7 +402,7 @@ priority: "medium"
 
 ---
 
-### CHK-604 [P3] - 設計書 front matter の整合性
+### CHK-604 [P3] ⏸ - 設計書 front matter の整合性
 
 - [ ] 影響を受けた設計書の `updated` が更新されている
 - [ ] `impl-status` が適切（実装完了後は `implemented`）
@@ -389,17 +415,17 @@ priority: "medium"
 
 ## 7. パフォーマンスレビュー
 
-### CHK-701 [P1] - debounce による書き込み抑制
+### CHK-701 [P1] ✅ - debounce による書き込み抑制
 
-- [ ] 連続 10 文字入力時、`localStorage.setItem` 呼び出しが 1 回に収束する
-- [ ] UI が入力ブロッキングしない
+- [x] 連続 10 文字入力時、`localStorage.setItem` 呼び出しが 1 回に収束する ✅ (spyOn テストで 1 callの検証)
+- [x] UI が入力ブロッキングしない ✅ (local state 即時反映、debounce は保存のみ)
 
 **関連タスク**: 1.1
 **検証方法**: Performance タブまたはモック `setItem` のカウント
 
 ---
 
-### CHK-702 [P2] - 外部ストア subscribe のコスト
+### CHK-702 [P2] ⏸ - 外部ストア subscribe のコスト
 
 - [ ] 大量の種目（例: 500 件）でも再レンダリングが過剰に発生しない
 - [ ] selector で再レンダリング最小化されている（Zustand 採用時）
