@@ -1,3 +1,19 @@
+/**
+ * shadcn/ui の汎用 Calendar ラッパー（未使用）。
+ *
+ * 現在、履歴画面の `MonthCalendar` は FRAME 3 の独自スタイル（36px丸セル、赤ドット
+ * マーカー、5状態スタイル）と噛み合わないため、この Calendar を使わず `DayPicker` を
+ * 直接 import して自前でラップしている。
+ *
+ * 残置している理由:
+ * - shadcn エコシステム（date-picker / popover 等）を後から追加する際、`npx shadcn
+ *   add` がこのファイルを再生成または参照する可能性がある
+ * - 別機能で汎用的なカレンダー UI が必要になったときに使える
+ *
+ * もし「普通のカレンダーで十分」な用途が出てきたらここから import する。FRAME 3 準拠
+ * のカレンダーが必要な場合は `src/components/MonthCalendar.tsx` を参照。
+ */
+
 import * as React from "react"
 import {
   DayPicker,
