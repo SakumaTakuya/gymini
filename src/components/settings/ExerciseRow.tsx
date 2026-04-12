@@ -9,8 +9,10 @@ type ExerciseRowProps = {
 
 export function ExerciseRow({ exercise, onEdit, onDelete }: ExerciseRowProps) {
   return (
-    <div className="flex items-center justify-between border-b border-gym-zinc-100 py-2 last:border-b-0">
-      <span className="font-inter text-sm text-gym-black">{exercise.name}</span>
+    <div className="flex items-center justify-between px-5 py-3.5">
+      <span className="font-outfit font-semibold text-sm text-gym-black">
+        {exercise.name}
+      </span>
       <div className="flex items-center gap-1">
         <button
           type="button"

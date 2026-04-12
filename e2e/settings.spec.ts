@@ -13,7 +13,7 @@ test.describe('設定画面 - APIキー管理 (FR-003〜FR-006)', () => {
       localStorage.removeItem('gymini:api-key')
     })
     await page.goto('./#/settings')
-    await expect(page.getByRole('heading', { name: '設定' })).toBeVisible()
+    await expect(page.getByLabel('閉じる')).toBeVisible()
   })
 
   test('APIキーが未設定なら「未設定」ステータスと赤バッジ非表示（※バッジは /settings で非表示）', async ({ page }) => {
@@ -62,7 +62,7 @@ test.describe('設定画面 - 種目マスター管理 (FR-007〜FR-009)', () =>
       localStorage.setItem('gymini:exercises', JSON.stringify(exercises))
     }, SEED_EXERCISES)
     await page.goto('./#/settings')
-    await expect(page.getByRole('heading', { name: '設定' })).toBeVisible()
+    await expect(page.getByLabel('閉じる')).toBeVisible()
   })
 
   test('初期表示で全種目が並ぶ', async ({ page }) => {

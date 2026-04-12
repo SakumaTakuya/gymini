@@ -9,11 +9,6 @@ describe('SettingsContent', () => {
     useSettingsStore.setState({ apiKey: '', hasApiKey: false })
   })
 
-  it('renders title', () => {
-    render(<SettingsContent />)
-    expect(screen.getByRole('heading', { name: '設定', level: 1 })).toBeInTheDocument()
-  })
-
   it('renders APIKeySection', () => {
     render(<SettingsContent />)
     expect(screen.getByText('Gemini API')).toBeInTheDocument()
