@@ -65,10 +65,10 @@ priority: "medium"
 | 3.2 settings focus-visible | CHK-104, 405 | ⏸ | 未着手 |
 | 3.3 全体 focus-visible | CHK-406 | ⏸ | 未着手 |
 | 3.4 shadcn Button 方針 | CHK-304, 603 | ⏸ | 未着手 |
-| 4.1 E2E `.fixme()` 整理 | CHK-504 | ⏸ | 7 件残存（`e2e/exercise-master.spec.ts`） |
-| 横断 | CHK-408, 506 | ✅ | 既存部分は規約準拠・233 tests / typecheck / lint / E2E 30+7skip pass |
+| 4.1 E2E `.fixme()` 整理 | CHK-504 | ✅ | `exercise-master.spec.ts` 削除、重複エラー E2E を `settings.spec.ts` に移設 |
+| 横断 | CHK-408, 506 | ✅ | 既存部分は規約準拠・233 tests / typecheck / lint / E2E 32 pass (skipped 0) |
 
-**全体進捗**: 実装 3/10 タスク完了、検証 12/32 項目 `✅`、20/32 `⏸`（未実装タスクのため未検証）。
+**全体進捗**: 実装 4/10 タスク完了、検証 15/32 項目 `✅`、17/32 `⏸`（未実装タスクのため未検証）。
 
 詳細は [verification_report.md](verification_report.md) を参照。
 
@@ -335,11 +335,15 @@ priority: "medium"
 
 ---
 
-### CHK-504 [P1] ⏸ - `.fixme()` の解消
+### CHK-504 [P1] ✅ - `.fixme()` の解消
 
-- [ ] `e2e/exercise-master.spec.ts` の 6 件の `test.fixme()` がすべて解消されている ❌ 現状 7 件残存
-- [ ] 解消方法（有効化 or `settings.spec.ts` への統合/削除）の判断理由がコメントに記録されている ⏸
-- [ ] `npx playwright test e2e/exercise-master.spec.ts` が pass ⚠️ 7 件 skipped（`.fixme()` のため）
+- [x] `e2e/exercise-master.spec.ts` の 7 件の `test.fixme()` がすべて解消されている ✅ (ファイル削除)
+- [x] 解消方法（有効化 or `settings.spec.ts` への統合/削除）の判断理由がコメントに記録されている ✅ (PR コミットメッセージに記録)
+- [x] `npx playwright test` が pass ✅ (32 passed / 0 skipped)
+
+**内訳**:
+- Task 4.1 section 4 件: 重複 3 件削除、重複エラー 1 件を `settings.spec.ts` に E2E として追加
+- Task 4.2 section 3 件: 未実装機能（AddExerciseModal / 自動登録設定画面反映）のため削除。主要フローは `workout.spec.ts:194` が既にカバー
 
 **関連タスク**: 4.1
 **検証方法**: `grep -n "test.fixme" e2e/` で 0 件
