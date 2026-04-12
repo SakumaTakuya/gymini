@@ -6,6 +6,10 @@ describe('ExerciseSearchField', () => {
   const defaultProps = {
     onSelectExercise: vi.fn(),
     searchExercises: vi.fn().mockReturnValue([]),
+    createExercise: vi.fn().mockImplementation((name: string) => ({
+      id: `new-${name}`,
+      name,
+    })),
   }
 
   it('renders search input placeholder', () => {
@@ -72,6 +76,34 @@ describe('ExerciseSearchField', () => {
     })
 
     expect(screen.getByText(/「デッドリフト」を新規追加/)).toBeInTheDocument()
+  })
+
+  it('invokes createExercise and onSelectExercise when create option is clicked', () => {
+    const onSelectExercise = vi.fn()
+    const createExercise = vi.fn().mockReturnValue({
+      id: 'new-1',
+      name: 'デッドリフト',
+    })
+    const searchExercises = vi.fn().mockReturnValue([])
+    render(
+      <ExerciseSearchField
+        {...defaultProps}
+        onSelectExercise={onSelectExercise}
+        createExercise={createExercise}
+        searchExercises={searchExercises}
+      />,
+    )
+
+    fireEvent.change(screen.getByPlaceholderText('種目を追加...'), {
+      target: { value: 'デッドリフト' },
+    })
+    fireEvent.click(screen.getByText(/「デッドリフト」を新規追加/))
+
+    expect(createExercise).toHaveBeenCalledWith('デッドリフト')
+    expect(onSelectExercise).toHaveBeenCalledWith({
+      exerciseId: 'new-1',
+      exerciseName: 'デッドリフト',
+    })
   })
 
   it('clears input after selection', () => {

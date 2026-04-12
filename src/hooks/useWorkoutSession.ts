@@ -1,7 +1,6 @@
 import { useEffect, useState } from 'react'
-import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
-import * as ExerciseRepository from '../lib/exerciseRepository'
-import type { Exercise } from '../types'
+import { useWorkoutSessionStore } from '@/stores/workoutSessionStore'
+import { useExercises } from '@/hooks/useExercises'
 
 function calcElapsed(startedAt: string | null): number {
   if (!startedAt) return 0
@@ -10,6 +9,7 @@ function calcElapsed(startedAt: string | null): number {
 
 export function useWorkoutSession() {
   const store = useWorkoutSessionStore()
+  const { search: searchExercises, create: createExercise } = useExercises()
   const startedAt = store.startedAt
   const [elapsedSeconds, setElapsedSeconds] = useState(() => calcElapsed(startedAt))
 
@@ -19,10 +19,6 @@ export function useWorkoutSession() {
     }, 1000)
     return () => clearInterval(interval)
   }, [startedAt])
-
-  const searchExercises = (query: string): Exercise[] => {
-    return ExerciseRepository.search(query)
-  }
 
   return {
     // State
@@ -39,6 +35,7 @@ export function useWorkoutSession() {
     addExercise: store.addExercise,
     activateExercise: store.activateExercise,
     searchExercises,
+    createExercise,
 
     // Set management
     completeSet: store.completeSet,
