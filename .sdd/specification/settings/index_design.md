@@ -2,11 +2,11 @@
 id: "design-settings"
 title: "設定画面"
 type: "design"
-status: "draft"
+status: "approved"
 sdd-phase: "plan"
-impl-status: "not-implemented"
+impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-11"
+updated: "2026-04-12"
 depends-on: ["spec-settings", "design-exercise-master", "design-api-key"]
 tags: ["settings", "phase-2"]
 category: "view"
@@ -23,15 +23,16 @@ risk: "low"
 
 # 1. 実装ステータス
 
-**ステータス:** 🔴 未実装
+**ステータス:** 🟢 実装済み
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| SettingsContent | 🔴 未実装 | 設定画面コンテンツ統合コンポーネント |
-| APIKeySection | 🔴 未実装 | APIキー管理セクションUI |
-| ExerciseMasterSection | 🔴 未実装 | 種目マスター管理セクションUI |
-| settingsStore | 🔴 未実装 | APIキー永続化 Zustand ストア |
-| ExerciseRow | 🔴 未実装 | 種目一覧の1行コンポーネント |
+| SettingsContent | 🟢 実装済み | 設定画面コンテンツ統合コンポーネント |
+| APIKeySection | 🟢 実装済み | APIキー管理セクションUI（空文字入力時は deleteApiKey に分岐） |
+| ExerciseMasterSection | 🟢 実装済み | 種目マスター管理セクションUI（検索・追加・編集・削除のインライン編集対応） |
+| settingsStore | 🟢 実装済み | api-key モジュールで先行実装済み（空文字 setApiKey は throw） |
+| ExerciseRow | 🟢 実装済み | 種目一覧の1行コンポーネント（編集・削除ボタン） |
+| SectionCard | 🟢 実装済み | FRAME5 セクションカードスタイルのラッパー（shadcn Card ベース） |
 
 ---
 
@@ -101,9 +102,10 @@ graph TD
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
 | SettingsContent | 設定画面コンテンツ統合。タイトル + APIKeySection + ExerciseMasterSection | なし（子コンポーネントを配置） | `src/components/settings/SettingsContent.tsx` |
-| APIKeySection | APIキー入力・マスク切替・ステータス・削除のUI | settingsStore | `src/components/settings/APIKeySection.tsx` |
-| ExerciseMasterSection | 種目検索・一覧・追加・編集・削除のUI | ExerciseRepository | `src/components/settings/ExerciseMasterSection.tsx` |
-| ExerciseRow | 種目一覧の1行。名前 + 編集ボタン | なし（props） | `src/components/settings/ExerciseRow.tsx` |
+| APIKeySection | APIキー入力・マスク切替・ステータス・削除のUI | settingsStore, SectionCard | `src/components/settings/APIKeySection.tsx` |
+| ExerciseMasterSection | 種目検索・一覧・追加・編集・削除のUI | ExerciseRepository, SectionCard, ExerciseRow | `src/components/settings/ExerciseMasterSection.tsx` |
+| ExerciseRow | 種目一覧の1行。名前 + 編集ボタン + 削除ボタン | なし（props） | `src/components/settings/ExerciseRow.tsx` |
+| SectionCard | FRAME5 のセクションカードスタイル（`bg-white rounded-2xl p-4 shadow-sm border`）を適用する薄いラッパー。shadcn `<Card>` をベース | shadcn Card | `src/components/settings/SectionCard.tsx` |
 
 ### State Layer
 
@@ -153,6 +155,13 @@ type SettingsActions = {
 // -------------------------------------------------------
 // settingsStore (src/stores/settingsStore.ts)
 // -------------------------------------------------------
+// ※ settingsStore の詳細仕様は api-key モジュールを参照:
+//   .sdd/specification/api-key/index_design.md §6
+//
+// 要点:
+//   - setApiKey(key): 空文字列を渡すと Error を throw。削除には deleteApiKey() を使用
+//   - deleteApiKey(): localStorage 削除 + ストア状態リセット
+//   - loadApiKey(): アプリ起動時にルートレイアウトで呼び出し（__root.tsx）
 
 const STORAGE_KEY = 'gymini:api-key'
 
@@ -161,13 +170,17 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
   hasApiKey: false,
 
   setApiKey: (key: string) => {
+    if (key === '') {
+      throw new Error(
+        '空文字列は setApiKey に渡せません。削除には deleteApiKey() を使用してください。',
+      )
+    }
     try {
       localStorage.setItem(STORAGE_KEY, key)
-      set({ apiKey: key, hasApiKey: key !== '' })
     } catch {
-      // T-002: localStorage アクセスエラー時は状態のみ更新
-      set({ apiKey: key, hasApiKey: key !== '' })
+      // T-002: localStorage 書き込み失敗時も状態は更新する
     }
+    set({ apiKey: key, hasApiKey: true })
   },
 
   deleteApiKey: () => {
@@ -202,7 +215,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 // APIKeySection (src/components/settings/APIKeySection.tsx)
 // -------------------------------------------------------
 
-// セクションカード: bg-white rounded-2xl p-4 shadow-sm border border-zinc-100
+// コンテナ: <SectionCard>（FRAME5 のセクションカードスタイルを内包）
 // セクションラベル: "Gemini API" text-sm font-outfit font-bold text-zinc-500 mb-3
 //
 // 入力フィールド:
@@ -210,10 +223,16 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 //   bg-zinc-100 rounded-xl px-4 h-12 text-sm font-inter
 //   右端に目アイコン（PhEye / PhEyeSlash）ボタン
 //
+// onChange ハンドラの挙動:
+//   - 入力値が空文字列の場合 → settingsStore.deleteApiKey() を呼ぶ
+//   - それ以外の場合 → settingsStore.setApiKey(value) を呼ぶ
+//   理由: setApiKey は空文字列を受け付けず throw するため、空文字検出時は
+//        削除経路に分岐する必要がある
+//
 // ステータス行:
 //   接続済み: 🟢 text-emerald-600 text-sm
 //   未設定: text-zinc-400 text-sm
-//   右端に削除ボタン（PhTrash, text-red-500）
+//   右端に削除ボタン（PhTrash, text-red-500）。hasApiKey が true の時のみ表示
 //
 // タップターゲット: 全ボタン min-h-[44px] min-w-[44px]
 
@@ -221,22 +240,34 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 // ExerciseMasterSection (src/components/settings/ExerciseMasterSection.tsx)
 // -------------------------------------------------------
 
-// セクションカード: bg-white rounded-2xl p-4 shadow-sm border border-zinc-100
+// コンテナ: <SectionCard>
 // セクションラベル: "種目マスター" text-sm font-outfit font-bold text-zinc-500 mb-3
 //
 // 検索フィールド:
 //   PhMagnifyingGlass アイコン + input
-//   bg-zinc-100 rounded-xl px-4 h-12 text-sm font-inter
+//   bg-zinc-100 rounded-xl pl-10 pr-4 h-12 text-sm font-inter
 //   placeholder: "種目を検索..."
 //
 // 種目一覧:
-//   ExerciseRow の繰り返し
-//   各行: 種目名 (font-inter text-sm) + 編集ボタン (PhPencilSimple)
+//   通常行は <ExerciseRow>（名前 + 編集 PhPencilSimple + 削除 PhTrash）
+//   編集中の行はインラインフォーム（下記）に差し替わる
 //   区切り: border-b border-zinc-100
 //
-// 追加ボタン:
+// 追加ボタン（初期状態）:
 //   PhPlus + "種目を追加" text-sm text-zinc-500
 //   h-12 flex items-center gap-2
+//
+// インライン追加/編集フォーム:
+//   - 追加: 「種目を追加」タップで、同じ場所に入力フィールド + PhCheck + PhX を展開
+//   - 編集: ExerciseRow の編集ボタンで、対象行を同じ入力 + PhCheck + PhX に差し替え
+//   - 入力: bg-zinc-100 rounded-xl px-3 h-10 text-sm font-inter, autoFocus
+//   - PhCheck（text-emerald-600）: 確定 → exerciseRepository.create/update → 一覧再読込
+//   - PhX（text-zinc-500）: キャンセル → フォーム閉じる
+//   - 空文字確定はキャンセル扱い
+//   - 重複名・不正値は exerciseRepository が throw → UI では catch してサイレント無視
+//
+// 削除:
+//   ExerciseRow の削除ボタン → exerciseRepository.remove(id) → 一覧再読込
 //
 // タップターゲット: 全ボタン min-h-[44px] min-w-[44px]
 ```
@@ -259,7 +290,8 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 | ユニットテスト | settingsStore（setApiKey, deleteApiKey, loadApiKey, hasApiKey 派生） | 全操作 | FR-004, FR-006 |
 | コンポーネントテスト | APIKeySection（入力、マスク切替、削除、ステータス表示） | 主要インタラクション | FR-003, FR-004, FR-005, FR-006 |
 | コンポーネントテスト | ExerciseMasterSection（検索、一覧表示、追加、編集、削除） | 主要インタラクション | FR-007, FR-008, FR-009 |
-| コンポーネントテスト | ExerciseRow（表示、編集ボタンクリック） | 基本表示 | FR-007 |
+| コンポーネントテスト | ExerciseRow（表示、編集ボタンクリック、削除ボタンクリック） | 基本表示 | FR-007 |
+| コンポーネントテスト | SectionCard（FRAME5 クラスの適用、className マージ） | スタイル適用 | FR-003, FR-007 |
 | 統合テスト | SettingsContent（APIKeySection + ExerciseMasterSection の統合表示） | 画面統合 | FR-003, FR-007 |
 | E2Eテスト | 歯車アイコン → 設定画面 → APIキー入力 → 種目追加 → Xボタンで戻る | 全体フロー | FR-001〜FR-009 |
 
@@ -276,7 +308,9 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 | 設定画面の構造 | 単一コンポーネント vs セクション分割 | セクション分割（APIKeySection + ExerciseMasterSection） | ドメインごとに独立。テスタビリティ向上。将来のセクション追加が容易 |
 | 種目検索のデバウンス | あり vs なし | なし | localStorage からの読み取りは十分高速。デバウンスは不要な複雑さ |
 | APIキー接続テスト | 設定時に実行 vs スキップ | スキップ（Phase 3 で実装） | Gemini API への接続テストは AIチャット機能のスコープ。設定画面は保存のみ |
-| 種目編集UI | インライン編集 vs モーダル | インライン編集 | 種目名の変更だけなのでモーダルは不要。行内の入力フィールドで直接編集 |
+| 種目編集UI | インライン編集 vs モーダル | インライン編集 | 種目名の変更だけなのでモーダルは不要。行内の入力フィールドで直接編集。確定は PhCheck、キャンセルは PhX ボタン |
+| 空文字 setApiKey の扱い | ストア内で無視（旧方針） vs throw（現行） | throw（api-key 設計に追随） | 削除意図と空文字保存を明確に区別するため。APIKeySection の onChange ハンドラで空文字検出時は `deleteApiKey()` に分岐 |
+| セクションカードの共通化 | 各セクションでクラス直書き vs 共通コンポーネント | 共通 `<SectionCard>` | FRAME5 のカードスタイルが 2 箇所以上で使われるため、shadcn `<Card>` をラップして一元化。将来のセクション追加にも対応 |
 
 ## 9.2. 未解決の課題
 
@@ -285,6 +319,14 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 ---
 
 # 10. 変更履歴
+
+## v1.1 (2026-04-12) — 実装反映
+
+- `settingsStore.setApiKey` の挙動を実装（api-key 設計）に追随: 空文字列は throw
+- APIKeySection の onChange 挙動を明記（空文字入力時は `deleteApiKey()` に分岐）
+- ExerciseMasterSection のインライン追加/編集フォームの UI 仕様を追記
+- `SectionCard` をモジュールに追加（FRAME5 カードスタイルの共通コンポーネント）
+- 9.1 決定事項に「空文字 setApiKey の扱い」「セクションカードの共通化」を追加
 
 ## v1.0 (2026-04-11) — 初版
 
