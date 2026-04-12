@@ -59,16 +59,16 @@ priority: "medium"
 | 1.1 APIキー debounce | CHK-101, 202, 301, 401, 501, 701 | ✅ | PR #31 で実装・全テスト pass |
 | 1.2 保存中インジケータ | CHK-203, 402, 505 | ✅ | PR #31 で実装 |
 | 1.3 重複種目名 inline error | CHK-102, 203, 305, 403, 502 | ✅ | PR #31 で実装 |
-| 2.1 外部ストア駆動化 | CHK-103, 302, 404, 503, 702 | ⏸ | 未着手 (`useState<Exercise[]>` + `refresh()` が残存) |
-| 2.2 exercise-master 設計書更新 | CHK-201, 602, 604 | ⏸ | 未着手（2.1 依存） |
+| 2.1 外部ストア駆動化 | CHK-103, 302, 404, 503, 702 | ✅ | `useExerciseStore` + `useExercises` hook で UI → Hook → Repository の層分け実現 |
+| 2.2 exercise-master 設計書更新 | CHK-201, 602, 604 | ✅ | v2.1 として hook 層追加・依存方向図修正・選定理由記録 |
 | 3.1 focus-visible 規約 | CHK-303, 601 | ⏸ | 未着手（`focus-visible` は src/components/ui/button.tsx のみ） |
 | 3.2 settings focus-visible | CHK-104, 405 | ⏸ | 未着手 |
 | 3.3 全体 focus-visible | CHK-406 | ⏸ | 未着手 |
 | 3.4 shadcn Button 方針 | CHK-304, 603 | ⏸ | 未着手 |
 | 4.1 E2E `.fixme()` 整理 | CHK-504 | ✅ | `exercise-master.spec.ts` 削除、重複エラー E2E を `settings.spec.ts` に移設 |
-| 横断 | CHK-408, 506 | ✅ | 既存部分は規約準拠・233 tests / typecheck / lint / E2E 32 pass (skipped 0) |
+| 横断 | CHK-408, 506 | ✅ | 既存部分は規約準拠・247 tests / typecheck / lint / E2E 32 pass (skipped 0) |
 
-**全体進捗**: 実装 4/10 タスク完了、検証 15/32 項目 `✅`、17/32 `⏸`（未実装タスクのため未検証）。
+**全体進捗**: 実装 6/10 タスク完了、検証 24/32 項目 `✅`、8/32 `⏸`（3.x focus-visible / shadcn Button 規約未着手）。
 
 詳細は [verification_report.md](verification_report.md) を参照。
 
@@ -101,11 +101,11 @@ priority: "medium"
 
 ---
 
-### CHK-103 [P1] ⏸ - NFR-002（種目検索のリアルタイム更新）の一貫性強化
+### CHK-103 [P1] ✅ - NFR-002（種目検索のリアルタイム更新）の一貫性強化
 
-- [ ] 2.1 他タブで種目を追加/削除したとき、現タブの一覧が自動反映される ⏸ 未実装
-- [ ] `useSyncExternalStore` もしくは Zustand のいずれを採用したかが設計書に記録されている ⏸ 未実装
-- [ ] `useState<Exercise[]>` + `refresh()` の手動更新が撤去されている ❌ 現状 4 箇所残存 (`ExerciseMasterSection.tsx`)
+- [x] 2.1 他タブで種目を追加/削除したとき、現タブの一覧が自動反映される ✅ (storage event テスト pass)
+- [x] `useSyncExternalStore` もしくは Zustand のいずれを採用したかが設計書に記録されている ✅ (v2.1 設計判断に Zustand 選定記録)
+- [x] `useState<Exercise[]>` + `refresh()` の手動更新が撤去されている ✅ (ExerciseMasterSection から消失)
 
 **関連タスク**: 2.1 ExerciseMasterSection を外部ストア駆動に
 **検証方法**: 統合 or E2E（2 タブ並列操作）、`grep -R "setExercises" src/components/settings/`
@@ -125,11 +125,11 @@ priority: "medium"
 
 ## 2. 仕様レビュー
 
-### CHK-201 [P1] ⏸ - exercise-master 設計書の更新
+### CHK-201 [P1] ✅ - exercise-master 設計書の更新
 
-- [ ] 2.1 で採用した実装方針 (useSyncExternalStore vs Zustand) が [exercise-master/index_design.md](../../specification/exercise-master/index_design.md) に反映されている ⏸
-- [ ] 採用理由・代替案評価が記載されている ⏸
-- [ ] `impl-status` / `updated` 等の front matter が更新されている ⏸
+- [x] 2.1 で採用した実装方針 (Zustand) が [exercise-master/index_design.md](../../specification/exercise-master/index_design.md) に反映されている ✅ (v2.1)
+- [x] 採用理由・代替案評価が記載されている ✅ (§9.1 設計判断表 + §10 v2.1 変更履歴の背景説明)
+- [x] `updated` front matter 更新済み ✅ (2026-04-11 → 2026-04-12)
 
 **関連タスク**: 2.2 exercise-master 設計書の更新
 **検証方法**: `/check-spec exercise-master` が pass
@@ -170,7 +170,7 @@ priority: "medium"
 
 ---
 
-### CHK-302 [P1] ⏸ - 外部ストア方針の選定根拠
+### CHK-302 [P1] ✅ - 外部ストア方針の選定根拠
 
 - [ ] useSyncExternalStore と Zustand のトレードオフが比較評価されている
 - [ ] 同タブ内変更への対応（storage event が同タブで発火しない問題）が解決されている
@@ -248,7 +248,7 @@ priority: "medium"
 
 ---
 
-### CHK-404 [P1] ⏸ - 外部ストア駆動化の実装
+### CHK-404 [P1] ✅ - 外部ストア駆動化の実装
 
 - [ ] `useState<Exercise[]>(() => exerciseRepository.getAll())` が撤去されている
 - [ ] `refresh()` のような手動更新ヘルパが撤去されている
@@ -280,10 +280,10 @@ priority: "medium"
 
 ---
 
-### CHK-407 [P1] ⚠️ - 不要ハンドラの撤去
+### CHK-407 [P1] ✅ - 不要ハンドラの撤去
 
-- [x] 1.1 実装後、APIKeySection の空文字分岐や古い即時保存コードが残っていない ✅ (handleChange 単発、即時保存なし)
-- [ ] 2.1 実装後、ExerciseMasterSection の `setState` + `refresh()` パターンが残っていない ⏸ 2.1 未実装のため残存
+- [x] 1.1 実装後、APIKeySection の空文字分岐や古い即時保存コードが残っていない ✅
+- [x] 2.1 実装後、ExerciseMasterSection の `setState` + `refresh()` パターンが残っていない ✅ (useExercises hook に移行)
 
 **関連タスク**: 1.1 / 2.1
 **検証方法**: コードレビュー、Grep
@@ -325,7 +325,7 @@ priority: "medium"
 
 ---
 
-### CHK-503 [P1] ⏸ - 外部ストア同期テスト
+### CHK-503 [P1] ✅ - 外部ストア同期テスト
 
 - [ ] 他タブでの種目追加が現タブに自動反映される（統合 or E2E テスト）
 - [ ] storage event mock もしくは BroadcastChannel で検証
@@ -385,7 +385,7 @@ priority: "medium"
 
 ---
 
-### CHK-602 [P2] ⏸ - exercise-master 設計書の更新
+### CHK-602 [P2] ✅ - exercise-master 設計書の更新
 
 - [ ] 2.1 実装方針が設計書に反映されている（CHK-201 と重複確認）
 - [ ] 図・シーケンスが最新である
@@ -429,7 +429,7 @@ priority: "medium"
 
 ---
 
-### CHK-702 [P2] ⏸ - 外部ストア subscribe のコスト
+### CHK-702 [P2] ⚠️ - 外部ストア subscribe のコスト
 
 - [ ] 大量の種目（例: 500 件）でも再レンダリングが過剰に発生しない
 - [ ] selector で再レンダリング最小化されている（Zustand 採用時）
