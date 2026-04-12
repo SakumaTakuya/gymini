@@ -2,11 +2,11 @@
 id: "design-settings"
 title: "設定画面"
 type: "design"
-status: "draft"
+status: "approved"
 sdd-phase: "plan"
-impl-status: "not-implemented"
+impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-11"
+updated: "2026-04-12"
 depends-on: ["spec-settings", "design-exercise-master", "design-api-key"]
 tags: ["settings", "phase-2"]
 category: "view"
@@ -23,15 +23,15 @@ risk: "low"
 
 # 1. 実装ステータス
 
-**ステータス:** 🔴 未実装
+**ステータス:** 🟢 実装済み
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| SettingsContent | 🔴 未実装 | 設定画面コンテンツ統合コンポーネント |
-| APIKeySection | 🔴 未実装 | APIキー管理セクションUI |
-| ExerciseMasterSection | 🔴 未実装 | 種目マスター管理セクションUI |
-| settingsStore | 🔴 未実装 | APIキー永続化 Zustand ストア |
-| ExerciseRow | 🔴 未実装 | 種目一覧の1行コンポーネント |
+| SettingsContent | 🟢 実装済み | 設定画面コンテンツ統合コンポーネント |
+| APIKeySection | 🟢 実装済み | APIキー管理セクションUI |
+| ExerciseMasterSection | 🟢 実装済み | 種目マスター管理セクションUI（検索・追加・編集・削除のインライン編集対応） |
+| settingsStore | 🟢 実装済み | api-key モジュールで先行実装済み |
+| ExerciseRow | 🟢 実装済み | 種目一覧の1行コンポーネント |
 
 ---
 

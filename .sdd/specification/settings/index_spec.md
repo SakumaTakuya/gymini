@@ -2,11 +2,11 @@
 id: "spec-settings"
 title: "設定画面"
 type: "spec"
-status: "draft"
+status: "approved"
 sdd-phase: "specify"
-impl-status: "not-implemented"
+impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-11"
+updated: "2026-04-12"
 depends-on: ["prd-settings"]
 tags: ["settings", "phase-2"]
 category: "view"

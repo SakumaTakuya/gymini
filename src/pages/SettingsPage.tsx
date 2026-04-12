@@ -1,5 +1,6 @@
 import { useRouter, useCanGoBack } from '@tanstack/react-router'
 import { X } from '@phosphor-icons/react'
+import { SettingsContent } from '../components/settings/SettingsContent'
 
 export function SettingsPage() {
   const router = useRouter()
@@ -22,10 +23,7 @@ export function SettingsPage() {
       >
         <X size={16} weight="bold" className="text-zinc-500" />
       </button>
-      <div className="p-4 pt-24">
-        <h1 className="text-xl font-bold">設定</h1>
-        <p className="text-zinc-500 mt-2">設定ページ（プレースホルダー）</p>
-      </div>
+      <SettingsContent />
     </div>
   )
 }
