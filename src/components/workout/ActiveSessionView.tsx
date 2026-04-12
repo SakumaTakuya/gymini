@@ -1,4 +1,4 @@
-import { useWorkoutSession } from '../../hooks/useWorkoutSession'
+import { useWorkoutSession } from '@/hooks/useWorkoutSession'
 import { ExerciseCard } from './ExerciseCard'
 import { ExerciseSearchField } from './ExerciseSearchField'
 
@@ -13,6 +13,7 @@ export function ActiveSessionView() {
     toggleExerciseCard,
     updatePendingSet,
     searchExercises,
+    createExercise,
   } = useWorkoutSession()
 
   return (
@@ -38,6 +39,7 @@ export function ActiveSessionView() {
       <ExerciseSearchField
         onSelectExercise={addExercise}
         searchExercises={searchExercises}
+        createExercise={createExercise}
       />
     </div>
   )

@@ -1,7 +1,6 @@
 import { useState } from 'react'
 import { Plus } from '@phosphor-icons/react'
-import type { Exercise } from '../../types'
-import * as ExerciseRepository from '../../lib/exerciseRepository'
+import type { Exercise } from '@/types'
 
 type ExerciseSearchFieldProps = {
   onSelectExercise: (exercise: {
@@ -9,11 +8,13 @@ type ExerciseSearchFieldProps = {
     exerciseName: string
   }) => void
   searchExercises: (query: string) => Exercise[]
+  createExercise: (name: string) => Exercise
 }
 
 export function ExerciseSearchField({
   onSelectExercise,
   searchExercises,
+  createExercise,
 }: ExerciseSearchFieldProps) {
   const [query, setQuery] = useState('')
   const [candidates, setCandidates] = useState<Exercise[]>([])
@@ -45,7 +46,7 @@ export function ExerciseSearchField({
     const trimmed = query.trim()
     if (!trimmed) return
     try {
-      const newExercise = ExerciseRepository.create(trimmed)
+      const newExercise = createExercise(trimmed)
       onSelectExercise({
         exerciseId: newExercise.id,
         exerciseName: newExercise.name,

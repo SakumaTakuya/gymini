@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
 import { MagnifyingGlass, Plus, Check, X, Trash } from '@phosphor-icons/react'
-import * as exerciseRepository from '@/lib/exerciseRepository'
+import { useExercises } from '@/hooks/useExercises'
 import type { Exercise } from '@/types'
 import { ExerciseRow } from './ExerciseRow'
 import { SectionCard } from './SectionCard'
@@ -12,10 +12,8 @@ function isDuplicateNameError(err: unknown): boolean {
 }
 
 export function ExerciseMasterSection() {
+  const { search, create, update, remove } = useExercises()
   const [query, setQuery] = useState('')
-  const [exercises, setExercises] = useState<Exercise[]>(() =>
-    exerciseRepository.getAll(),
-  )
   const [adding, setAdding] = useState(false)
   const [newName, setNewName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
@@ -23,18 +21,10 @@ export function ExerciseMasterSection() {
   const [addError, setAddError] = useState<string | null>(null)
   const [editError, setEditError] = useState<string | null>(null)
 
-  const refresh = (nextQuery = query) => {
-    setExercises(
-      nextQuery.trim() === ''
-        ? exerciseRepository.getAll()
-        : exerciseRepository.search(nextQuery),
-    )
-  }
+  const visibleExercises = search(query)
 
   const handleQueryChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    setQuery(value)
-    refresh(value)
+    setQuery(e.target.value)
   }
 
   const startAdd = () => {
@@ -56,15 +46,13 @@ export function ExerciseMasterSection() {
       return
     }
     try {
-      exerciseRepository.create(trimmed)
-      refresh()
+      create(trimmed)
       cancelAdd()
     } catch (err) {
       if (isDuplicateNameError(err)) {
         setAddError(DUPLICATE_ERROR_MESSAGE)
         return
       }
-      // 重複以外のエラーは握りつぶさず、フォームを閉じる
       cancelAdd()
     }
   }
@@ -96,8 +84,7 @@ export function ExerciseMasterSection() {
       return
     }
     try {
-      exerciseRepository.update(editingId, trimmed)
-      refresh()
+      update(editingId, trimmed)
       cancelEdit()
     } catch (err) {
       if (isDuplicateNameError(err)) {
@@ -116,8 +103,7 @@ export function ExerciseMasterSection() {
   }
 
   const handleDelete = (exercise: Exercise) => {
-    exerciseRepository.remove(exercise.id)
-    refresh()
+    remove(exercise.id)
   }
 
   return (
@@ -144,7 +130,7 @@ export function ExerciseMasterSection() {
 
       {/* 中段: 種目一覧（divide-y で区切り） */}
       <div className="divide-y divide-gym-zinc-100">
-        {exercises.map((ex) =>
+        {visibleExercises.map((ex) =>
           editingId === ex.id ? (
             <div key={ex.id} className="px-3 py-2">
               <div className="flex items-center gap-1">

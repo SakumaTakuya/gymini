@@ -2,6 +2,7 @@ import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useWorkoutSession } from './useWorkoutSession'
 import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
+import { useExerciseStore } from '../stores/exerciseStore'
 
 function resetStore() {
   useWorkoutSessionStore.setState({
@@ -10,6 +11,7 @@ function resetStore() {
     date: null,
     draftExercises: [],
   })
+  useExerciseStore.setState({ exercises: [] })
 }
 
 describe('useWorkoutSession', () => {
@@ -97,7 +99,7 @@ describe('useWorkoutSession', () => {
   })
 
   describe('searchExercises', () => {
-    it('calls ExerciseRepository.search', () => {
+    it('delegates to useExercises().search', () => {
       // Add some exercises to localStorage
       localStorage.setItem(
         'gymini:exercises',
@@ -111,6 +113,23 @@ describe('useWorkoutSession', () => {
       const found = result.current.searchExercises('ベンチ')
       expect(found).toHaveLength(1)
       expect(found[0].name).toBe('ベンチプレス')
+    })
+  })
+
+  describe('createExercise', () => {
+    it('creates a new exercise via useExercises().create', () => {
+      const { result } = renderHook(() => useWorkoutSession())
+
+      let created: { id: string; name: string } | undefined
+      act(() => {
+        created = result.current.createExercise('デッドリフト')
+      })
+
+      expect(created?.name).toBe('デッドリフト')
+      // exerciseStore にも反映されている
+      expect(
+        useExerciseStore.getState().exercises.some((e) => e.name === 'デッドリフト'),
+      ).toBe(true)
     })
   })
 })
