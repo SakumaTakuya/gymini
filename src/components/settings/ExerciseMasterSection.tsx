@@ -5,6 +5,12 @@ import type { Exercise } from '@/types'
 import { ExerciseRow } from './ExerciseRow'
 import { SectionCard } from './SectionCard'
 
+const DUPLICATE_ERROR_MESSAGE = 'この種目名は既に登録されています'
+
+function isDuplicateNameError(err: unknown): boolean {
+  return err instanceof Error && err.message.startsWith('Duplicate name:')
+}
+
 export function ExerciseMasterSection() {
   const [query, setQuery] = useState('')
   const [exercises, setExercises] = useState<Exercise[]>(() =>
@@ -14,6 +20,8 @@ export function ExerciseMasterSection() {
   const [newName, setNewName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
   const [editName, setEditName] = useState('')
+  const [addError, setAddError] = useState<string | null>(null)
+  const [editError, setEditError] = useState<string | null>(null)
 
   const refresh = (nextQuery = query) => {
     setExercises(
@@ -32,11 +40,13 @@ export function ExerciseMasterSection() {
   const startAdd = () => {
     setAdding(true)
     setNewName('')
+    setAddError(null)
   }
 
   const cancelAdd = () => {
     setAdding(false)
     setNewName('')
+    setAddError(null)
   }
 
   const confirmAdd = () => {
@@ -48,20 +58,34 @@ export function ExerciseMasterSection() {
     try {
       exerciseRepository.create(trimmed)
       refresh()
-    } catch {
-      // 重複などのエラーは UI で無視（将来的にはエラー表示を追加）
+      cancelAdd()
+    } catch (err) {
+      if (isDuplicateNameError(err)) {
+        setAddError(DUPLICATE_ERROR_MESSAGE)
+        return
+      }
+      // 重複以外のエラーは握りつぶさず、フォームを閉じる
+      cancelAdd()
     }
-    cancelAdd()
+  }
+
+  const handleNewNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setNewName(e.target.value)
+    if (addError !== null) {
+      setAddError(null)
+    }
   }
 
   const startEdit = (exercise: Exercise) => {
     setEditingId(exercise.id)
     setEditName(exercise.name)
+    setEditError(null)
   }
 
   const cancelEdit = () => {
     setEditingId(null)
     setEditName('')
+    setEditError(null)
   }
 
   const confirmEdit = () => {
@@ -74,10 +98,21 @@ export function ExerciseMasterSection() {
     try {
       exerciseRepository.update(editingId, trimmed)
       refresh()
-    } catch {
-      // 重複などのエラーは UI で無視
+      cancelEdit()
+    } catch (err) {
+      if (isDuplicateNameError(err)) {
+        setEditError(DUPLICATE_ERROR_MESSAGE)
+        return
+      }
+      cancelEdit()
     }
-    cancelEdit()
+  }
+
+  const handleEditNameChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setEditName(e.target.value)
+    if (editError !== null) {
+      setEditError(null)
+    }
   }
 
   const handleDelete = (exercise: Exercise) => {
@@ -111,42 +146,53 @@ export function ExerciseMasterSection() {
       <div className="divide-y divide-gym-zinc-100">
         {exercises.map((ex) =>
           editingId === ex.id ? (
-            <div
-              key={ex.id}
-              className="flex items-center gap-1 px-3 py-2"
-            >
-              <input
-                type="text"
-                value={editName}
-                onChange={(e) => setEditName(e.target.value)}
-                aria-label="種目名を編集"
-                className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-sm font-inter text-gym-black"
-                autoFocus
-              />
-              <button
-                type="button"
-                onClick={() => handleDelete(ex)}
-                aria-label={`${ex.name}を削除`}
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-accent"
-              >
-                <Trash size={18} weight="bold" />
-              </button>
-              <button
-                type="button"
-                onClick={confirmEdit}
-                aria-label="編集を確定"
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-green-600"
-              >
-                <Check size={18} weight="bold" />
-              </button>
-              <button
-                type="button"
-                onClick={cancelEdit}
-                aria-label="編集をキャンセル"
-                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-zinc-500"
-              >
-                <X size={18} weight="bold" />
-              </button>
+            <div key={ex.id} className="px-3 py-2">
+              <div className="flex items-center gap-1">
+                <input
+                  type="text"
+                  value={editName}
+                  onChange={handleEditNameChange}
+                  aria-label="種目名を編集"
+                  aria-invalid={editError !== null || undefined}
+                  aria-describedby={editError !== null ? 'edit-error' : undefined}
+                  className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-sm font-inter text-gym-black"
+                  autoFocus
+                />
+                <button
+                  type="button"
+                  onClick={() => handleDelete(ex)}
+                  aria-label={`${ex.name}を削除`}
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-accent"
+                >
+                  <Trash size={18} weight="bold" />
+                </button>
+                <button
+                  type="button"
+                  onClick={confirmEdit}
+                  aria-label="編集を確定"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-green-600"
+                >
+                  <Check size={18} weight="bold" />
+                </button>
+                <button
+                  type="button"
+                  onClick={cancelEdit}
+                  aria-label="編集をキャンセル"
+                  className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-zinc-500"
+                >
+                  <X size={18} weight="bold" />
+                </button>
+              </div>
+              {editError !== null && (
+                <p
+                  id="edit-error"
+                  role="alert"
+                  aria-live="polite"
+                  className="mt-1 text-xs font-medium text-gym-accent"
+                >
+                  {editError}
+                </p>
+              )}
             </div>
           ) : (
             <ExerciseRow
@@ -161,32 +207,46 @@ export function ExerciseMasterSection() {
       {/* 下段: 追加ボタン / 追加フォーム（border-t 区切り） */}
       <div className="border-t border-gym-zinc-100">
         {adding ? (
-          <div className="flex items-center gap-2 px-5 py-2">
-            <input
-              type="text"
-              value={newName}
-              onChange={(e) => setNewName(e.target.value)}
-              aria-label="新しい種目名"
-              placeholder="種目名"
-              className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-sm font-inter text-gym-black"
-              autoFocus
-            />
-            <button
-              type="button"
-              onClick={confirmAdd}
-              aria-label="追加を確定"
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-green-600"
-            >
-              <Check size={18} weight="bold" />
-            </button>
-            <button
-              type="button"
-              onClick={cancelAdd}
-              aria-label="追加をキャンセル"
-              className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-zinc-500"
-            >
-              <X size={18} weight="bold" />
-            </button>
+          <div className="px-5 py-2">
+            <div className="flex items-center gap-2">
+              <input
+                type="text"
+                value={newName}
+                onChange={handleNewNameChange}
+                aria-label="新しい種目名"
+                aria-invalid={addError !== null || undefined}
+                aria-describedby={addError !== null ? 'add-error' : undefined}
+                placeholder="種目名"
+                className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-sm font-inter text-gym-black"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={confirmAdd}
+                aria-label="追加を確定"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-green-600"
+              >
+                <Check size={18} weight="bold" />
+              </button>
+              <button
+                type="button"
+                onClick={cancelAdd}
+                aria-label="追加をキャンセル"
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-zinc-500"
+              >
+                <X size={18} weight="bold" />
+              </button>
+            </div>
+            {addError !== null && (
+              <p
+                id="add-error"
+                role="alert"
+                aria-live="polite"
+                className="mt-1 text-xs font-medium text-gym-accent"
+              >
+                {addError}
+              </p>
+            )}
           </div>
         ) : (
           <button

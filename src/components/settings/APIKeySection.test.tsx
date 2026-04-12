@@ -1,5 +1,5 @@
-import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
+import { render, screen, act } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { APIKeySection } from './APIKeySection'
 import { useSettingsStore } from '@/stores/settingsStore'
@@ -8,6 +8,10 @@ describe('APIKeySection', () => {
   beforeEach(() => {
     localStorage.clear()
     useSettingsStore.setState({ apiKey: '', hasApiKey: false })
+  })
+
+  afterEach(() => {
+    vi.useRealTimers()
   })
 
   it('displays Gemini API section label', () => {
@@ -35,16 +39,93 @@ describe('APIKeySection', () => {
     expect(input).toHaveAttribute('type', 'password')
   })
 
-  it('saves key to store on change (onChange 即保存)', async () => {
-    const user = userEvent.setup()
+  it('saves key to store after 300ms debounce', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     render(<APIKeySection />)
     const input = screen.getByLabelText('Gemini APIキー')
 
     await user.type(input, 'AIzaSy-new-key')
 
+    // debounce 前: store には反映されていない
+    expect(useSettingsStore.getState().apiKey).toBe('')
+    expect(localStorage.getItem('gymini:api-key')).toBeNull()
+
+    // 300ms 経過で保存確定
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300)
+    })
+
     expect(useSettingsStore.getState().apiKey).toBe('AIzaSy-new-key')
     expect(useSettingsStore.getState().hasApiKey).toBe(true)
     expect(localStorage.getItem('gymini:api-key')).toBe('AIzaSy-new-key')
+  })
+
+  it('debounces consecutive input so only the last value is persisted', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
+    render(<APIKeySection />)
+    const input = screen.getByLabelText('Gemini APIキー')
+
+    await user.type(input, 'abc')
+    await user.type(input, 'def')
+
+    // 最後の入力から 300ms 経過するまで書き込みは発生しない
+    expect(setItemSpy).not.toHaveBeenCalledWith('gymini:api-key', expect.any(String))
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300)
+    })
+
+    const apiKeyCalls = setItemSpy.mock.calls.filter(([k]) => k === 'gymini:api-key')
+    expect(apiKeyCalls).toHaveLength(1)
+    expect(apiKeyCalls[0][1]).toBe('abcdef')
+    expect(useSettingsStore.getState().apiKey).toBe('abcdef')
+  })
+
+  it('displays "保存中…" while debounce is pending', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(<APIKeySection />)
+    const input = screen.getByLabelText('Gemini APIキー')
+
+    await user.type(input, 'a')
+
+    expect(screen.getByText('保存中…')).toBeInTheDocument()
+  })
+
+  it('displays "保存済み" after debounce fires', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    render(<APIKeySection />)
+    const input = screen.getByLabelText('Gemini APIキー')
+
+    await user.type(input, 'a')
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(300)
+    })
+
+    expect(screen.getByText('保存済み')).toBeInTheDocument()
+  })
+
+  it('does not write to localStorage when unmounted before debounce fires', async () => {
+    vi.useFakeTimers({ shouldAdvanceTime: true })
+    const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
+    const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
+    const { unmount } = render(<APIKeySection />)
+    const input = screen.getByLabelText('Gemini APIキー')
+
+    await user.type(input, 'abc')
+    unmount()
+
+    await act(async () => {
+      await vi.advanceTimersByTimeAsync(1000)
+    })
+
+    const apiKeyCalls = setItemSpy.mock.calls.filter(([k]) => k === 'gymini:api-key')
+    expect(apiKeyCalls).toHaveLength(0)
+    expect(useSettingsStore.getState().apiKey).toBe('')
   })
 
   it('shows connected status when key is set', () => {
