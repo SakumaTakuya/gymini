@@ -112,4 +112,39 @@ test.describe('設定画面 - 種目マスター管理 (FR-007〜FR-009)', () =>
     )
     expect(stored.some((e: { name: string }) => e.name === 'デッドリフト')).toBe(false)
   })
+
+  test('重複種目名で追加しようとすると aria-live エラーが表示される (FR-009 強化)', async ({ page }) => {
+    await page.getByRole('button', { name: '種目を追加' }).click()
+    await page.getByLabel('新しい種目名').fill('ベンチプレス')
+    await page.getByRole('button', { name: '追加を確定' }).click()
+
+    const alert = page.getByRole('alert')
+    await expect(alert).toHaveText('この種目名は既に登録されています')
+    await expect(alert).toHaveAttribute('aria-live', 'polite')
+
+    // 重複は登録されない（seed の 1 件のみ）
+    const stored = await page.evaluate(() =>
+      JSON.parse(localStorage.getItem('gymini:exercises') ?? '[]'),
+    )
+    expect(stored.filter((e: { name: string }) => e.name === 'ベンチプレス')).toHaveLength(1)
+
+    // 入力を変更するとエラーが消える
+    await page.getByLabel('新しい種目名').fill('ベンチプレス改')
+    await expect(page.getByRole('alert')).toBeHidden()
+  })
+
+  test('重複する名前に編集しようとすると aria-live エラーが表示される (FR-009 強化)', async ({ page }) => {
+    await page.getByRole('button', { name: 'ベンチプレスを編集' }).click()
+    const editInput = page.getByLabel('種目名を編集')
+    await editInput.fill('スクワット')
+    await page.getByRole('button', { name: '編集を確定' }).click()
+
+    await expect(page.getByRole('alert')).toHaveText('この種目名は既に登録されています')
+    // 編集モードが維持される
+    await expect(page.getByLabel('種目名を編集')).toBeVisible()
+
+    // キャンセルするとエラーが消える
+    await page.getByRole('button', { name: '編集をキャンセル' }).click()
+    await expect(page.getByRole('alert')).toBeHidden()
+  })
 })
