@@ -75,7 +75,7 @@ APIキー管理機能が外部（他モジュール・UIレイヤー）に公開
 |---------|--------------|--------|------|
 | api-key | settingsStore | apiKey | 保存済みAPIキー文字列。未設定時は空文字列 |
 | api-key | settingsStore | hasApiKey | APIキーが設定済みかどうかの派生値（`boolean`） |
-| api-key | settingsStore | setApiKey(key) | APIキーを localStorage に保存し、ストア状態を更新する。空文字列（`''`）の渡しは禁止。削除には `deleteApiKey()` を使用すること |
+| api-key | settingsStore | setApiKey(key) | APIキーを localStorage に保存し、ストア状態を更新する。空文字列（`''`）が渡された場合は内部で削除扱いとなり `deleteApiKey()` と同等の動作をする（明示的削除は `deleteApiKey()` 推奨）|
 | api-key | settingsStore | deleteApiKey() | APIキーを localStorage から削除し、ストア状態をリセットする |
 | api-key | settingsStore | loadApiKey() | localStorage から保存済みAPIキーを読み込み、ストア状態を反映する |
 
@@ -92,7 +92,7 @@ type SettingsState = {
 
 // settingsStore のアクション
 type SettingsActions = {
-  setApiKey: (key: string) => void    // 保存（localStorage + ストア更新）。空文字列の渡し禁止、削除には deleteApiKey() を使用すること
+  setApiKey: (key: string) => void    // 保存（localStorage + ストア更新）。空文字列が渡された場合は内部で削除扱い（deleteApiKey と同等）
   deleteApiKey: () => void            // 削除（localStorage + ストアリセット）
   loadApiKey: () => void              // 読み込み（localStorage → ストア反映）
 }

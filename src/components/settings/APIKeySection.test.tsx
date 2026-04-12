@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { APIKeySection } from './APIKeySection'
-import { useSettingsStore } from '../../stores/settingsStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 
 describe('APIKeySection', () => {
   beforeEach(() => {
@@ -98,12 +98,15 @@ describe('APIKeySection', () => {
     useSettingsStore.setState({ apiKey: 'AIzaSy-test', hasApiKey: true })
     render(<APIKeySection />)
 
+    // 目アイコンボタンは入力の zinc-100 ピル（h-11=44px）内に配置され、
+    // before:absolute before:inset-[-10px] で擬似要素によるクリック領域拡張を行う
     const toggle = screen.getByRole('button', { name: 'APIキーを表示' })
-    const deleteBtn = screen.getByRole('button', { name: 'APIキーを削除' })
+    expect(toggle.className).toContain('before:absolute')
+    expect(toggle.className).toMatch(/before:inset-\[-?\d+px\]/)
 
-    expect(toggle.className).toContain('min-h-[44px]')
-    expect(toggle.className).toContain('min-w-[44px]')
-    expect(deleteBtn.className).toContain('min-h-[44px]')
-    expect(deleteBtn.className).toContain('min-w-[44px]')
+    // 削除はテキストボタンで、before:inset-[-10px] で外側にクリック領域を拡張
+    const deleteBtn = screen.getByRole('button', { name: 'APIキーを削除' })
+    expect(deleteBtn.className).toContain('before:absolute')
+    expect(deleteBtn.className).toMatch(/before:inset-\[-?\d+px\]/)
   })
 })

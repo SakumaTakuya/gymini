@@ -19,8 +19,15 @@ describe('settingsStore', () => {
       expect(localStorage.getItem('gymini:api-key')).toBe('AIzaSy-test-key')
     })
 
-    it('throws error when called with empty string', () => {
-      expect(() => useSettingsStore.getState().setApiKey('')).toThrow()
+    it('resets store and localStorage when called with empty string', () => {
+      localStorage.setItem('gymini:api-key', 'pre-existing')
+      useSettingsStore.setState({ apiKey: 'pre-existing', hasApiKey: true })
+
+      useSettingsStore.getState().setApiKey('')
+
+      expect(useSettingsStore.getState().apiKey).toBe('')
+      expect(useSettingsStore.getState().hasApiKey).toBe(false)
+      expect(localStorage.getItem('gymini:api-key')).toBeNull()
     })
 
     it('updates store state even when localStorage write fails (NFR-002)', () => {

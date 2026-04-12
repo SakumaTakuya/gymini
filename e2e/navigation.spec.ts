@@ -34,7 +34,8 @@ test.describe('ナビゲーション基本動作', () => {
     const gearLink = page.locator('a[href*="settings"]')
     await gearLink.click()
     await expect(page).toHaveURL(/#\/settings/)
-    await expect(page.getByRole('heading', { name: '設定' })).toBeVisible()
+    // 設定画面にはタイトル見出しがないため、閉じるボタンの存在で到達を確認
+    await expect(page.getByLabel('閉じる')).toBeVisible()
 
     // BottomNav should not be visible on settings page
     await expect(page.getByRole('link', { name: 'トレ' })).not.toBeVisible()
@@ -84,7 +85,8 @@ test.describe('BottomNav レイアウト', () => {
 
   test('FRAME5 (settings) では BottomNav が非表示 (FR-008)', async ({ page }) => {
     await page.goto('./#/settings')
-    await expect(page.getByRole('heading', { name: '設定' })).toBeVisible()
+    // 設定画面にはタイトル見出しがないため、閉じるボタンの存在で到達を確認
+    await expect(page.getByLabel('閉じる')).toBeVisible()
     await expect(page.getByRole('link', { name: 'トレ' })).not.toBeVisible()
   })
 })

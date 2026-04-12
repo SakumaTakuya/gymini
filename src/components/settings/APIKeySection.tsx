@@ -1,6 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
-import { Eye, EyeSlash, Trash } from '@phosphor-icons/react'
-import { useSettingsStore } from '../../stores/settingsStore'
+import { Eye, EyeSlash } from '@phosphor-icons/react'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { SectionCard } from './SectionCard'
 
 export function APIKeySection() {
@@ -11,61 +11,61 @@ export function APIKeySection() {
   const [visible, setVisible] = useState(false)
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value
-    if (value === '') {
-      deleteApiKey()
-    } else {
-      setApiKey(value)
-    }
+    setApiKey(e.target.value)
   }
 
   return (
-    <SectionCard>
-      <h2 className="text-sm font-outfit font-bold text-zinc-500 mb-3">
-        Gemini API
-      </h2>
-
-      <div className="relative">
-        <input
-          id="api-key-input"
-          aria-label="Gemini APIキー"
-          type={visible ? 'text' : 'password'}
-          value={apiKey}
-          onChange={handleChange}
-          className="w-full bg-zinc-100 rounded-xl px-4 pr-12 h-12 text-sm font-inter"
-          placeholder="APIキーを入力"
-        />
-        <button
-          type="button"
-          onClick={() => setVisible((v) => !v)}
-          aria-label={visible ? 'APIキーを非表示' : 'APIキーを表示'}
-          className="absolute right-1 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-zinc-500"
-        >
-          {visible ? <EyeSlash size={20} /> : <Eye size={20} />}
-        </button>
+    <SectionCard label="Gemini API">
+      {/* 上段: 小見出し + 入力行 */}
+      <div className="px-5 py-4">
+        <p className="text-xs font-medium text-gym-zinc-500 mb-2">APIキー</p>
+        <div className="flex items-center gap-2 bg-gym-zinc-100 rounded-xl px-4 h-11 border border-gym-zinc-200">
+          <input
+            id="api-key-input"
+            aria-label="Gemini APIキー"
+            type={visible ? 'text' : 'password'}
+            value={apiKey}
+            onChange={handleChange}
+            className="flex-1 bg-transparent text-sm font-medium outline-none text-gym-black font-mono tracking-wider"
+            placeholder="APIキーを入力"
+          />
+          <button
+            type="button"
+            onClick={() => setVisible((v) => !v)}
+            aria-label={visible ? 'APIキーを非表示' : 'APIキーを表示'}
+            className="relative flex items-center justify-center text-gym-zinc-400 before:absolute before:inset-[-10px] before:content-['']"
+          >
+            {visible ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
+          </button>
+        </div>
       </div>
 
-      <div className="mt-3 flex items-center justify-between">
-        {hasApiKey ? (
-          <span className="text-sm text-emerald-600 flex items-center gap-1">
-            <span
-              aria-hidden
-              className="inline-block w-2 h-2 rounded-full bg-emerald-500"
-            />
-            接続済み
-          </span>
-        ) : (
-          <span className="text-sm text-zinc-400">未設定</span>
-        )}
+      {/* 下段: ステータス + 削除（border-t で区切り） */}
+      <div className="border-t border-gym-zinc-100 px-5 py-3 flex items-center justify-between">
+        <div className="flex items-center gap-2">
+          {hasApiKey ? (
+            <>
+              <span
+                aria-hidden
+                className="inline-block w-2 h-2 rounded-full bg-green-500"
+              />
+              <span className="text-xs font-medium text-gym-zinc-500">
+                接続済み
+              </span>
+            </>
+          ) : (
+            <span className="text-xs font-medium text-gym-zinc-400">未設定</span>
+          )}
+        </div>
 
         {hasApiKey && (
           <button
             type="button"
             onClick={deleteApiKey}
             aria-label="APIキーを削除"
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-red-500"
+            className="relative text-xs font-bold text-gym-accent px-3 py-1.5 bg-red-50 rounded-lg before:absolute before:inset-[-10px] before:content-['']"
           >
-            <Trash size={20} />
+            削除
           </button>
         )}
       </div>
