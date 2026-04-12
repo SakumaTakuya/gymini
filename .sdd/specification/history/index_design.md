@@ -248,6 +248,13 @@ function useWorkoutsForDate(date: DateString): Workout[]
 //   })
 // 注: clarify Q4 の決定により selectedDate は常に non-null
 // （デフォルト: todayDateString()）のため、null を受け付ける必要はない
+//
+// staleTime はデフォルト（0 ではない）を採用:
+//   - 日付が切り替わればクエリキー (workoutsForDate(date)) が変わり、必然的に
+//     別クエリとして新規 fetch される
+//   - 同じ日付を再選択した場合はキャッシュが効いて即座に表示される
+//   - 対照的に daysWithWorkouts は月固定のキーのため、別画面での WO 追加/削除を
+//     反映するには staleTime: 0 + refetchOnWindowFocus が必要
 
 // -------------------------------------------------------
 // MonthCalendar (src/components/MonthCalendar.tsx)
@@ -293,6 +300,8 @@ interface MonthCalendarProps {
 // - components={{ DayButton: GymDayButton }} でカスタム day レンダリング
 // - 月遷移/曜日ヘッダーは DayPicker のデフォルト UI を classNames で hidden 化し、
 //   MonthCalendar が独自にレンダリングした部品を使用
+// - weekStartsOn: react-day-picker のデフォルト（0 = 日曜始まり）が PRD の
+//   「日〜土」仕様と一致するため、明示的な指定は不要
 
 // -------------------------------------------------------
 // WorkoutSummary (src/components/WorkoutSummary.tsx)
@@ -438,6 +447,7 @@ interface EmptyDayStateProps {
 | 同日複数ワークアウト表示 | フラット統合 vs セクション分割 | セクション分割（ワークアウトごとに縦に並べる） | 各トレーニングセッションの区切りが明確になり、ユーザーが記録の時系列を把握しやすい |
 | 削除済み種目の表示 | ラベル付き vs そのまま表示 | exerciseNameをそのまま表示 | WorkoutExercise.exerciseName はスナップショットとして保存されているため、削除済みかどうかの判定コストを避ける。ユーザーにとっても過去記録の名前が変わらない方が自然 |
 | カレンダーマーカー更新 | 画面表示ごと vs 月遷移時のみ | 画面表示（フォーカス復帰）のたびに再取得 | TanStack Query の refetchOnWindowFocus + staleTime: 0 で実現。別画面でのWO追加/削除が即座に反映される |
+| useWorkoutsForDate の staleTime | 0 (即時再取得) vs デフォルト (キャッシュ活用) | デフォルト | 日付切替はクエリキー (`workoutsForDate(date)`) が変わり必然的に新規 fetch される。同じ日付の再選択ではキャッシュが効いて即座に表示できる。`daysWithWorkouts` は月固定キーのため別扱い（staleTime: 0 が必要） |
 | MonthCalendar 配置 | src/components/ | src/components/MonthCalendar.tsx | shadcn/ui Calendar をラップするコンポーネント。カスタム day レンダリングロジックを含む |
 | 日付の型表現 | 素の `string` vs `Date` vs Zod branded type | Zod branded type（`DateString`） | 素の `string` では任意の文字列が型チェックを通過する。`Date` はタイムゾーン問題・localStorage非互換。Zod branded type は境界でパースし内部は型安全に流通でき、CONSTITUTION v3.0.0 の Zod 活用方針に合致。スキーマは `src/schemas/date.ts` に配置 |
 
