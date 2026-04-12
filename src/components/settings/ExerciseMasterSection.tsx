@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
-import { MagnifyingGlass, Plus, Check, X } from '@phosphor-icons/react'
+import { MagnifyingGlass, Plus, Check, X, Trash } from '@phosphor-icons/react'
 import * as exerciseRepository from '@/lib/exerciseRepository'
 import type { Exercise } from '@/types'
 import { ExerciseRow } from './ExerciseRow'
@@ -113,7 +113,7 @@ export function ExerciseMasterSection() {
           editingId === ex.id ? (
             <div
               key={ex.id}
-              className="flex items-center gap-2 px-5 py-2"
+              className="flex items-center gap-1 px-3 py-2"
             >
               <input
                 type="text"
@@ -123,6 +123,14 @@ export function ExerciseMasterSection() {
                 className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-sm font-inter text-gym-black"
                 autoFocus
               />
+              <button
+                type="button"
+                onClick={() => handleDelete(ex)}
+                aria-label={`${ex.name}を削除`}
+                className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-accent"
+              >
+                <Trash size={18} weight="bold" />
+              </button>
               <button
                 type="button"
                 onClick={confirmEdit}
@@ -145,7 +153,6 @@ export function ExerciseMasterSection() {
               key={ex.id}
               exercise={ex}
               onEdit={startEdit}
-              onDelete={handleDelete}
             />
           ),
         )}
@@ -186,10 +193,15 @@ export function ExerciseMasterSection() {
             type="button"
             onClick={startAdd}
             aria-label="種目を追加"
-            className="min-h-[44px] w-full flex items-center gap-2 px-5 py-4 text-sm text-gym-zinc-500"
+            className="w-full flex items-center gap-3 px-5 py-4 text-gym-black"
           >
-            <Plus size={18} weight="bold" />
-            <span>種目を追加</span>
+            <span
+              aria-hidden
+              className="w-8 h-8 rounded-full bg-gym-black flex items-center justify-center flex-shrink-0"
+            >
+              <Plus size={16} weight="bold" className="text-white" />
+            </span>
+            <span className="font-outfit font-semibold text-sm">種目を追加</span>
           </button>
         )}
       </div>

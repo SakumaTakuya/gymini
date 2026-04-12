@@ -74,10 +74,12 @@ describe('ExerciseMasterSection', () => {
     expect(screen.queryByText('ベンチプレス')).not.toBeInTheDocument()
   })
 
-  it('deletes an exercise via delete button', async () => {
+  it('deletes an exercise via delete button inside edit mode', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
 
+    // 削除は編集モードに入ってから行う（design-system 準拠）
+    await user.click(screen.getByRole('button', { name: 'デッドリフトを編集' }))
     await user.click(screen.getByRole('button', { name: 'デッドリフトを削除' }))
 
     expect(screen.queryByText('デッドリフト')).not.toBeInTheDocument()

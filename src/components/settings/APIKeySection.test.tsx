@@ -104,9 +104,9 @@ describe('APIKeySection', () => {
     expect(toggle.className).toContain('before:absolute')
     expect(toggle.className).toMatch(/before:inset-\[-?\d+px\]/)
 
-    // 削除ボタンは通常のサイズ指定で 44px を確保
+    // 削除はテキストボタンで、before:inset-[-10px] で外側にクリック領域を拡張
     const deleteBtn = screen.getByRole('button', { name: 'APIキーを削除' })
-    expect(deleteBtn.className).toContain('min-h-[44px]')
-    expect(deleteBtn.className).toContain('min-w-[44px]')
+    expect(deleteBtn.className).toContain('before:absolute')
+    expect(deleteBtn.className).toMatch(/before:inset-\[-?\d+px\]/)
   })
 })

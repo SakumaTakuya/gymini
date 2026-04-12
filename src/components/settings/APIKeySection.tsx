@@ -1,5 +1,5 @@
 import { useState, type ChangeEvent } from 'react'
-import { Eye, EyeSlash, Trash } from '@phosphor-icons/react'
+import { Eye, EyeSlash } from '@phosphor-icons/react'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { SectionCard } from './SectionCard'
 
@@ -63,9 +63,9 @@ export function APIKeySection() {
             type="button"
             onClick={deleteApiKey}
             aria-label="APIキーを削除"
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-accent"
+            className="relative text-xs font-bold text-gym-accent px-3 py-1.5 bg-red-50 rounded-lg before:absolute before:inset-[-10px] before:content-['']"
           >
-            <Trash size={20} weight="bold" />
+            削除
           </button>
         )}
       </div>

@@ -101,7 +101,9 @@ test.describe('設定画面 - 種目マスター管理 (FR-007〜FR-009)', () =>
     await expect(page.getByText('ベンチプレス')).toBeHidden()
   })
 
-  test('削除ボタンで種目が一覧から消える (FR-009)', async ({ page }) => {
+  test('編集モード内の削除ボタンで種目が一覧から消える (FR-009)', async ({ page }) => {
+    // 削除は編集モードに入ってから行う（design-system 準拠）
+    await page.getByRole('button', { name: 'デッドリフトを編集' }).click()
     await page.getByRole('button', { name: 'デッドリフトを削除' }).click()
 
     await expect(page.getByText('デッドリフト')).toBeHidden()
