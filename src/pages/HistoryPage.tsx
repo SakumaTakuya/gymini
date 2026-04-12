@@ -1,8 +1,47 @@
+import { useNavigate } from '@tanstack/react-router'
+import { useCalendar } from '../hooks/useCalendar'
+import { useWorkoutsForDate } from '../hooks/useWorkoutsForDate'
+import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
+import { MonthCalendar } from '../components/MonthCalendar'
+import { WorkoutSummary } from '../components/WorkoutSummary'
+import { EmptyDayState } from '../components/EmptyDayState'
+import type { DateString } from '../schemas/date'
+
 export function HistoryPage() {
+  const {
+    selectedDate,
+    displayMonth,
+    goToPrevMonth,
+    goToNextMonth,
+    selectDate,
+    daysWithWorkouts,
+  } = useCalendar()
+
+  const workouts = useWorkoutsForDate(selectedDate)
+  const startSession = useWorkoutSessionStore((s) => s.startSession)
+  const navigate = useNavigate()
+
+  const handleAddWorkout = (date: DateString) => {
+    startSession(date)
+    navigate({ to: '/training' })
+  }
+
   return (
-    <div className="p-4">
-      <h1 className="text-xl font-bold">履歴</h1>
-      <p className="text-zinc-500 mt-2">履歴ページ（プレースホルダー）</p>
+    <div className="flex-1 bg-gym-zinc-50 pt-16 pb-32 overflow-y-auto">
+      <MonthCalendar
+        displayMonth={displayMonth}
+        selectedDate={selectedDate}
+        daysWithWorkouts={daysWithWorkouts}
+        onPrevMonth={goToPrevMonth}
+        onNextMonth={goToNextMonth}
+        onSelectDate={selectDate}
+      />
+
+      {workouts.length > 0 ? (
+        <WorkoutSummary date={selectedDate} workouts={workouts} />
+      ) : (
+        <EmptyDayState date={selectedDate} onAddWorkout={handleAddWorkout} />
+      )}
     </div>
   )
 }

@@ -1,0 +1,100 @@
+import { useCallback, useMemo } from 'react'
+import { useNavigate, useSearch } from '@tanstack/react-router'
+import { useQuery } from '@tanstack/react-query'
+import { todayDateString } from '../schemas/date'
+import type { DateString } from '../schemas/date'
+import { queryKeys } from '../lib/queryKeys'
+import * as WorkoutRepository from '../lib/workoutRepository'
+
+export interface UseCalendarReturn {
+  selectedDate: DateString
+  displayMonth: { year: number; month: number }
+  goToPrevMonth: () => void
+  goToNextMonth: () => void
+  selectDate: (date: DateString) => void
+  daysWithWorkouts: Set<DateString>
+}
+
+function parseMonth(month: string | undefined): { year: number; month: number } {
+  if (month) {
+    const match = month.match(/^(\d{4})-(\d{2})$/)
+    if (match) {
+      return { year: Number(match[1]), month: Number(match[2]) }
+    }
+  }
+  const now = new Date()
+  return { year: now.getFullYear(), month: now.getMonth() + 1 }
+}
+
+function formatMonth(year: number, month: number): string {
+  return `${year}-${String(month).padStart(2, '0')}`
+}
+
+export function useCalendar(): UseCalendarReturn {
+  const search = useSearch({ strict: false }) as {
+    month?: string
+    date?: string
+  }
+  const navigate = useNavigate()
+
+  const displayMonth = useMemo(() => parseMonth(search.month), [search.month])
+
+  const selectedDate: DateString = (search.date as DateString) ?? todayDateString()
+
+  const goToPrevMonth = useCallback(() => {
+    const prev =
+      displayMonth.month === 1
+        ? { year: displayMonth.year - 1, month: 12 }
+        : { year: displayMonth.year, month: displayMonth.month - 1 }
+    navigate({
+      to: '.',
+      search: { month: formatMonth(prev.year, prev.month) },
+    } as never)
+  }, [displayMonth, navigate])
+
+  const goToNextMonth = useCallback(() => {
+    const next =
+      displayMonth.month === 12
+        ? { year: displayMonth.year + 1, month: 1 }
+        : { year: displayMonth.year, month: displayMonth.month + 1 }
+    navigate({
+      to: '.',
+      search: { month: formatMonth(next.year, next.month) },
+    } as never)
+  }, [displayMonth, navigate])
+
+  const selectDate = useCallback(
+    (date: DateString) => {
+      navigate({
+        to: '.',
+        search: (prev: Record<string, unknown>) => ({
+          ...prev,
+          date,
+        }),
+      } as never)
+    },
+    [navigate],
+  )
+
+  const { data: daysWithWorkouts = new Set<DateString>() } = useQuery({
+    queryKey: queryKeys.workoutDates(displayMonth.year, displayMonth.month),
+    queryFn: () => {
+      const all = WorkoutRepository.listByDateDesc()
+      const filtered = all.filter((w) => {
+        const [y, m] = w.date.split('-').map(Number)
+        return y === displayMonth.year && m === displayMonth.month
+      })
+      return new Set(filtered.map((w) => w.date as DateString))
+    },
+    staleTime: 0,
+  })
+
+  return {
+    selectedDate,
+    displayMonth,
+    goToPrevMonth,
+    goToNextMonth,
+    selectDate,
+    daysWithWorkouts,
+  }
+}

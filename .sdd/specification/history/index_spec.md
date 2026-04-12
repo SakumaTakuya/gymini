@@ -2,11 +2,11 @@
 id: "spec-history"
 title: "履歴画面"
 type: "spec"
-status: "draft"
-sdd-phase: "specify"
-impl-status: "not-implemented"
+status: "approved"
+sdd-phase: "implement"
+impl-status: "implemented"
 created: "2026-04-07"
-updated: "2026-04-09"
+updated: "2026-04-12"
 depends-on: ["prd-history"]
 tags: ["history", "calendar", "phase-1"]
 category: "view"

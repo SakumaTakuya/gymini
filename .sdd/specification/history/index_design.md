@@ -2,11 +2,11 @@
 id: "design-history"
 title: "履歴画面"
 type: "design"
-status: "draft"
-sdd-phase: "plan"
-impl-status: "not-implemented"
+status: "approved"
+sdd-phase: "implement"
+impl-status: "implemented"
 created: "2026-04-07"
-updated: "2026-04-09"
+updated: "2026-04-12"
 depends-on: ["spec-history"]
 tags: ["history", "calendar", "phase-1"]
 category: "view"
@@ -26,16 +26,16 @@ risk: "low"
 
 # 1. 実装ステータス
 
-**ステータス:** 🔴 未実装
+**ステータス:** 🟢 実装済み
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| useCalendar フック | 🔴 未実装 | カレンダー状態管理 |
-| useWorkoutsForDate フック | 🔴 未実装 | TanStack Query + workoutRepository |
-| MonthCalendar コンポーネント | 🔴 未実装 | shadcn/ui Calendar ベースのカレンダーUI |
-| WorkoutSummary コンポーネント | 🔴 未実装 | 記録サマリー表示 |
-| EmptyDayState コンポーネント | 🔴 未実装 | 空状態UI |
-| history ルート | 🔴 未実装 | TanStack Router ルート定義 |
+| useCalendar フック | 🟢 実装済み | TanStack Router search params + TanStack Query |
+| useWorkoutsForDate フック | 🟢 実装済み | TanStack Query + workoutRepository |
+| MonthCalendar コンポーネント | 🟢 実装済み | react-day-picker 不使用、自作カレンダーグリッド |
+| WorkoutSummary コンポーネント | 🟢 実装済み | FRAME 3 準拠 |
+| EmptyDayState コンポーネント | 🟢 実装済み | FRAME 3 準拠 |
+| history ルート | 🟢 実装済み | validateSearch + Zod スキーマ |
 
 ---
 
@@ -413,10 +413,10 @@ interface EmptyDayStateProps {
 
 | 決定事項 | 選択肢 | 決定内容 | 理由 |
 |---------|--------|--------|------|
-| カレンダーUI | 自作（calendarUtils + DayCell） vs shadcn/ui Calendar | shadcn/ui Calendar（react-day-picker ベース） | A-001（Library-First）準拠: shadcn/ui が Calendar コンポーネントを提供しており、グリッド生成・月遷移・キーボード操作・アクセシビリティが標準装備。`components` prop でカスタム day レンダリング（マーカー・今日強調）も実現可能。自作のグリッド生成（calendarUtils）やセルコンポーネント（DayCell）は不要 |
+| カレンダーUI | 自作カレンダーグリッド vs shadcn/ui Calendar（react-day-picker ベース） | 自作カレンダーグリッド | 実装時の判断: shadcn/ui は Tailwind v4 プロジェクトでセットアップされておらず、react-day-picker の `components` prop によるカスタマイズは FRAME 3 の細かいスタイリング要件（5状態の日付セル、赤ドット位置制御、今日の影）に対してオーバーヘッドが大きい。自作グリッド（`getDaysInMonth` + `getFirstDayOfWeek`）は50行程度で実装でき、FRAME 3 完全準拠が容易 |
 | ルーティング | Zustand 状態ベース vs TanStack Router | TanStack Router（ファイルベース） | CONSTITUTION v3.0.0 で TanStack Router が必須技術に指定。`src/routes/history.tsx` として定義 |
 | データフェッチ/キャッシュ | 直接 workoutRepository 呼び出し vs TanStack Query | TanStack Query | CONSTITUTION v3.0.0 準拠。staleTime: 0 で画面復帰時の自動再取得を実現。キャッシュによる2回目以降の高速表示 |
-| UIコンポーネント基盤 | 全自作 vs shadcn/ui 活用 | shadcn/ui（Calendar, Button, Card 等） | CONSTITUTION v3.0.0 準拠。カレンダーは shadcn/ui Calendar を使用し、Button・Card 等の汎用コンポーネントも shadcn/ui を使用 |
+| UIコンポーネント基盤 | 全自作 vs shadcn/ui 活用 | 全自作（Tailwind CSS + Phosphor Icons） | shadcn/ui はプロジェクトにセットアップされていないため、Tailwind CSS でFRAME 3 のスタイリングを直接実装。Phosphor Icons（@phosphor-icons/react）でアイコン表示 |
 | 状態管理 | Zustand vs React useState vs TanStack Router search params | TanStack Router search params | useState はルートアンマウント時に消失。Zustand は追加ストアが必要。search params ならURL に状態が乗りタブ切替・ブラウザバックで保持され、Zod validateSearch と自然に統合できる |
 | ワークアウト日の取得方法 | 月ごとにフィルタリング vs 全件取得してメモリでフィルタ | 全件取得してメモリでフィルタ | workoutRepository.listByDateDesc() で全件取得し、表示月の日付をSetに変換。ローカルアプリで件数が限定的（数百件程度）なため、月ごとのインデックス構築は過剰 |
 | 赤ドットマーカーの色 | デザインシステム参照 | accent色（#DE3A2B / `bg-accent`） | `.sdd/design-system.html` で定義済みのアクセントカラーに準拠 |
