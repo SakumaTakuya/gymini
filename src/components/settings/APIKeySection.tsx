@@ -16,7 +16,7 @@ export function APIKeySection() {
 
   return (
     <SectionCard>
-      <h2 className="text-sm font-outfit font-bold text-zinc-500 mb-3">
+      <h2 className="text-sm font-outfit font-bold text-gym-zinc-500 mb-3">
         Gemini API
       </h2>
 
@@ -27,30 +27,30 @@ export function APIKeySection() {
           type={visible ? 'text' : 'password'}
           value={apiKey}
           onChange={handleChange}
-          className="w-full bg-zinc-100 rounded-xl px-4 pr-12 h-12 text-sm font-inter"
+          className="w-full bg-gym-zinc-100 rounded-xl px-4 pr-12 h-12 text-sm font-inter"
           placeholder="APIキーを入力"
         />
         <button
           type="button"
           onClick={() => setVisible((v) => !v)}
           aria-label={visible ? 'APIキーを非表示' : 'APIキーを表示'}
-          className="absolute right-1 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-zinc-500"
+          className="absolute right-1 top-1/2 -translate-y-1/2 min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-zinc-500"
         >
-          {visible ? <EyeSlash size={20} /> : <Eye size={20} />}
+          {visible ? <EyeSlash size={20} weight="bold" /> : <Eye size={20} weight="bold" />}
         </button>
       </div>
 
       <div className="mt-3 flex items-center justify-between">
         {hasApiKey ? (
-          <span className="text-sm text-emerald-600 flex items-center gap-1">
+          <span className="text-sm text-gym-zinc-500 flex items-center gap-2">
             <span
               aria-hidden
-              className="inline-block w-2 h-2 rounded-full bg-emerald-500"
+              className="inline-block w-2 h-2 rounded-full bg-green-500"
             />
             接続済み
           </span>
         ) : (
-          <span className="text-sm text-zinc-400">未設定</span>
+          <span className="text-sm text-gym-zinc-400">未設定</span>
         )}
 
         {hasApiKey && (
@@ -58,9 +58,9 @@ export function APIKeySection() {
             type="button"
             onClick={deleteApiKey}
             aria-label="APIキーを削除"
-            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-red-500"
+            className="min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-accent"
           >
-            <Trash size={20} />
+            <Trash size={20} weight="bold" />
           </button>
         )}
       </div>

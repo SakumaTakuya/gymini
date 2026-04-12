@@ -10,7 +10,7 @@ export function SectionCard({
   return (
     <Card
       className={cn(
-        'bg-white rounded-2xl p-4 shadow-sm border border-zinc-100 ring-0 gap-0',
+        'bg-white rounded-[20px] p-4 shadow-soft border border-gym-zinc-100 ring-0 gap-0',
         className,
       )}
       {...props}
