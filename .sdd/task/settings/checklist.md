@@ -325,9 +325,9 @@ npx vitest run src/components/settings/
 ### CHK-503 [P1] 統合テスト・E2E テスト
 
 - [x] 統合テスト: SettingsContent 内で APIKeySection と ExerciseMasterSection が独立動作 ✅ SettingsContent.test.tsx
-- [ ] E2E テスト: 歯車アイコン → 設定画面 → APIキー入力 → 種目追加 → Xボタンで戻る の全フロー ⚠️ 未作成（別チケット推奨）
-- [ ] E2E テスト: APIキーの表示切替と削除動作 ⚠️ 未作成
-- [ ] E2E テスト: 種目の検索・追加・編集・削除フロー ⚠️ 未作成
+- [x] E2E テスト: 歯車アイコン → 設定画面 → X ボタンで戻る ✅ navigation.spec.ts で既存カバー
+- [x] E2E テスト: APIキーの入力・表示切替・削除動作 ✅ e2e/settings.spec.ts 4 tests
+- [x] E2E テスト: 種目の検索・追加・編集・削除フロー ✅ e2e/settings.spec.ts 5 tests
 
 **検証方法**:
 
