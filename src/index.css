@@ -23,6 +23,10 @@
   --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
 
+@utility focus-ring {
+  @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gym-black focus-visible:ring-offset-2 focus-visible:ring-offset-white;
+}
+
 @theme inline {
   --font-heading: "Outfit", sans-serif;
   --font-sans: "Inter", "Noto Sans JP", sans-serif;

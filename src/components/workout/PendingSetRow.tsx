@@ -44,9 +44,10 @@ export function PendingSetRow({
         </div>
       </div>
       <button
+        type="button"
         onClick={onComplete}
         aria-label="完了"
-        className="w-7 h-7 rounded bg-black text-white flex items-center justify-center shadow-md min-h-[44px] min-w-[44px]"
+        className="focus-ring w-7 h-7 rounded bg-black text-white flex items-center justify-center shadow-md min-h-[44px] min-w-[44px]"
       >
         <Check size={12} weight="bold" />
       </button>

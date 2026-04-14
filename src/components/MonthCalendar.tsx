@@ -54,7 +54,7 @@ function GymDayButton({
     <button
       {...props}
       className={cn(
-        'relative w-9 h-9 mx-auto flex items-center justify-center rounded-full cursor-pointer',
+        'focus-ring relative w-9 h-9 mx-auto flex items-center justify-center rounded-full cursor-pointer',
         isToday && 'bg-gym-black text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)]',
         !isToday && isSelected && 'ring-2 ring-gym-black ring-offset-2 ring-offset-white text-gym-black font-bold',
         !isToday && !isSelected && hasWorkout && 'text-gym-black hover:bg-gym-zinc-50',
@@ -95,8 +95,9 @@ export function MonthCalendar({
       {/* Month Header */}
       <div className="flex justify-between items-center mb-6 px-2">
         <button
+          type="button"
           onClick={onPrevMonth}
-          className="w-8 h-8 rounded-full flex items-center justify-center text-gym-zinc-400 hover:bg-gym-zinc-50 transition-colors"
+          className="focus-ring w-8 h-8 rounded-full flex items-center justify-center text-gym-zinc-400 hover:bg-gym-zinc-50 transition-colors"
           aria-label="前月"
         >
           <CaretLeft weight="bold" />
@@ -108,8 +109,9 @@ export function MonthCalendar({
           <span className="font-jp text-sm font-bold text-gym-zinc-400">月</span>
         </h2>
         <button
+          type="button"
           onClick={onNextMonth}
-          className="w-8 h-8 rounded-full flex items-center justify-center text-gym-zinc-400 hover:bg-gym-zinc-50 transition-colors"
+          className="focus-ring w-8 h-8 rounded-full flex items-center justify-center text-gym-zinc-400 hover:bg-gym-zinc-50 transition-colors"
           aria-label="次月"
         >
           <CaretRight weight="bold" />

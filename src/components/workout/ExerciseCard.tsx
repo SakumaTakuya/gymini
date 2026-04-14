@@ -96,9 +96,10 @@ export function ExerciseCard({
           {!isRecording && (
             <div className="flex justify-center py-1">
               <button
+                type="button"
                 onClick={onActivate}
                 aria-label="追加"
-                className="w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500 min-h-[44px] min-w-[44px]"
+                className="focus-ring w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500 min-h-[44px] min-w-[44px]"
               >
                 <Plus size={14} weight="bold" />
               </button>

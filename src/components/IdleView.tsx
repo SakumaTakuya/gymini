@@ -33,8 +33,9 @@ export function IdleView({ onStartTraining }: IdleViewProps) {
           フリーでトレーニングの記録を開始します。
         </p>
         <button
+          type="button"
           onClick={onStartTraining}
-          className="w-[85%] h-13 bg-black text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-[0_8px_30px_-6px_rgba(0,0,0,0.3)] active:scale-95 transition-transform"
+          className="focus-ring w-[85%] h-13 bg-black text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-[0_8px_30px_-6px_rgba(0,0,0,0.3)] active:scale-95 transition-transform"
         >
           <Lightning size={20} weight="bold" className="text-accent" />
           トレーニングを始める

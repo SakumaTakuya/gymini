@@ -88,16 +88,18 @@ export function ExerciseSearchField({
           {candidates.map((exercise) => (
             <button
               key={exercise.id}
+              type="button"
               onClick={() => handleSelect(exercise)}
-              className="w-full text-left px-4 py-3 text-sm font-medium text-black hover:bg-zinc-50 first:rounded-t-xl last:rounded-b-xl"
+              className="focus-ring w-full text-left px-4 py-3 text-sm font-medium text-black hover:bg-zinc-50 first:rounded-t-xl last:rounded-b-xl"
             >
               {exercise.name}
             </button>
           ))}
           {!hasExactMatch && query.trim() && (
             <button
+              type="button"
               onClick={handleCreateNew}
-              className="w-full text-left px-4 py-3 text-sm font-medium text-zinc-500 hover:bg-zinc-50 border-t border-zinc-100 last:rounded-b-xl"
+              className="focus-ring w-full text-left px-4 py-3 text-sm font-medium text-zinc-500 hover:bg-zinc-50 border-t border-zinc-100 last:rounded-b-xl"
             >
               「{query.trim()}」を新規追加
             </button>

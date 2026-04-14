@@ -11,9 +11,10 @@ export function CompletedSetRow({ set, onEdit, onDelete }: CompletedSetRowProps)
   return (
     <div className="flex items-center gap-3 py-2 px-2 bg-zinc-50 rounded-xl">
       <button
+        type="button"
         onClick={onDelete}
         aria-label="削除"
-        className="w-6 h-6 flex items-center justify-center text-zinc-300 flex-shrink-0 min-h-[44px] min-w-[44px]"
+        className="focus-ring rounded-md w-6 h-6 flex items-center justify-center text-zinc-300 flex-shrink-0 min-h-[44px] min-w-[44px]"
       >
         <Trash size={14} weight="bold" />
       </button>
@@ -28,9 +29,10 @@ export function CompletedSetRow({ set, onEdit, onDelete }: CompletedSetRowProps)
         </p>
       </div>
       <button
+        type="button"
         onClick={onEdit}
         aria-label="編集"
-        className="w-6 h-6 flex items-center justify-center text-zinc-400 flex-shrink-0 min-h-[44px] min-w-[44px]"
+        className="focus-ring rounded-md w-6 h-6 flex items-center justify-center text-zinc-400 flex-shrink-0 min-h-[44px] min-w-[44px]"
       >
         <PencilSimple size={14} weight="bold" />
       </button>
