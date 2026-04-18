@@ -21,7 +21,10 @@ export function AIChatPage() {
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
-    bottomRef.current?.scrollIntoView({ behavior: 'smooth' })
+    const el = bottomRef.current
+    if (el && typeof el.scrollIntoView === 'function') {
+      el.scrollIntoView({ behavior: 'smooth' })
+    }
   }, [messages.length, isLoading])
 
   return (
