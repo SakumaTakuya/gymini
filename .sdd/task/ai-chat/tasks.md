@@ -2,10 +2,10 @@
 id: "task-ai-chat"
 title: "AIチャット × Function Calling"
 type: "task"
-status: "pending"
-sdd-phase: "tasks"
+status: "completed"
+sdd-phase: "implement"
 created: "2026-04-11"
-updated: "2026-04-11"
+updated: "2026-04-19"
 depends-on: ["design-ai-chat"]
 tags: ["ai", "chat", "function-calling", "gemini", "phase-3"]
 category: "ai"

@@ -2,11 +2,11 @@
 id: "spec-ai-chat"
 title: "AIチャット × Function Calling"
 type: "spec"
-status: "draft"
-sdd-phase: "specify"
-impl-status: "not-implemented"
+status: "implemented"
+sdd-phase: "implement"
+impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-11"
+updated: "2026-04-19"
 depends-on: ["prd-ai-chat"]
 tags: ["ai", "chat", "function-calling", "gemini", "phase-3"]
 category: "ai"

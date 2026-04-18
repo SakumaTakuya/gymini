@@ -2,11 +2,11 @@
 id: "design-ai-chat"
 title: "AIチャット × Function Calling"
 type: "design"
-status: "draft"
-sdd-phase: "plan"
-impl-status: "not-implemented"
+status: "implemented"
+sdd-phase: "implement"
+impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-11"
+updated: "2026-04-19"
 depends-on: ["spec-ai-chat", "design-workout", "design-exercise-master", "design-api-key"]
 tags: ["ai", "chat", "function-calling", "gemini", "phase-3"]
 category: "ai"
@@ -23,19 +23,19 @@ risk: "high"
 
 # 1. 実装ステータス
 
-**ステータス:** 🔴 未実装
+**ステータス:** 🟢 実装済み（2026-04-19）
 
 | モジュール/機能 | ステータス | 備考 |
 |-------------|--------|------|
-| chatStore (Zustand) | 🔴 未実装 | State Layer: チャットメッセージ・ローディング・エラー状態 |
-| geminiClient | 🔴 未実装 | Data Layer: Gemini API クライアント（Function Calling 対応） |
-| toolDefinitions | 🔴 未実装 | Data Layer: Gemini API に渡すツール定義 |
-| toolExecutor | 🔴 未実装 | Data Layer: ツール実行ディスパッチャー |
-| useChatService | 🔴 未実装 | Hook Layer: チャット送受信ユースケース |
-| ChatPage | 🔴 未実装 | UI Layer: チャット画面 |
-| ChatBubble | 🔴 未実装 | UI Layer: メッセージバブル（user/assistant） |
-| ConfirmationBubble | 🔴 未実装 | UI Layer: 書き込み確認インラインUI |
-| ChatInput | 🔴 未実装 | UI Layer: メッセージ入力バー |
+| chatStore (Zustand) | 🟢 実装済み | `src/stores/chatStore.ts`（persist 未使用で B-001 準拠） |
+| geminiClient | 🟢 実装済み | `src/lib/geminiClient.ts`（`gemini-flash-latest` 固定、履歴 50 件制限、AbortSignal 対応） |
+| toolDefinitions | 🟢 実装済み | `src/lib/toolDefinitions.ts`（8 ツール FunctionDeclaration + isReadTool/isWriteTool） |
+| toolExecutor | 🟢 実装済み | `src/lib/toolExecutor.ts`（読み取り5・書き込み3、種目ID解決、セッション状態チェック） |
+| useChatService | 🟢 実装済み | `src/hooks/useChatService.ts`（sendMessage/stopResponse/approve/reject/clearMessages） |
+| ChatPage（AIChatPage） | 🟢 実装済み | `src/pages/AIChatPage.tsx`（`/_app/ai` ルート、APIキー未設定ガイド、自動スクロール） |
+| ChatBubble | 🟢 実装済み | `src/components/chat/ChatBubble.tsx`（user/assistant + react-markdown） |
+| ConfirmationBubble | 🟢 実装済み | `src/components/chat/ConfirmationBubble.tsx`（h-11 インラインボタン、T-003 準拠） |
+| ChatInput | 🟢 実装済み | `src/components/chat/ChatInput.tsx`（Enter 送信、Shift+Enter 改行、停止ボタン） |
 
 ---
 
