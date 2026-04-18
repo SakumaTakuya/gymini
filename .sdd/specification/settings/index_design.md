@@ -6,7 +6,7 @@ status: "approved"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-12"
+updated: "2026-04-18"
 depends-on: ["spec-settings", "design-exercise-master", "design-api-key"]
 tags: ["settings", "phase-2"]
 category: "view"
@@ -76,8 +76,13 @@ graph TD
         ER_UI[ExerciseRow]
     end
 
+    subgraph "Hook Layer（外部モジュール経由）"
+        UEX[useExercises<br/>hook]
+    end
+
     subgraph "State Layer"
         SS[settingsStore<br/>Zustand]
+        ES[exerciseStore<br/>Zustand]
     end
 
     subgraph "Data Layer"
@@ -90,7 +95,9 @@ graph TD
     SC --> EMS
     EMS --> ER_UI
     AKS --> SS
-    EMS --> ExR
+    EMS --> UEX
+    UEX --> ES
+    ES --> ExR
     SS --> LS
     ExR --> LS
 ```
@@ -101,11 +108,19 @@ graph TD
 
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
-| SettingsContent | 設定画面コンテンツ統合。タイトル + APIKeySection + ExerciseMasterSection | なし（子コンポーネントを配置） | `src/components/settings/SettingsContent.tsx` |
-| APIKeySection | APIキー入力・マスク切替・ステータス・削除のUI | settingsStore, SectionCard | `src/components/settings/APIKeySection.tsx` |
-| ExerciseMasterSection | 種目検索・一覧・追加・編集・削除のUI | ExerciseRepository, SectionCard, ExerciseRow | `src/components/settings/ExerciseMasterSection.tsx` |
-| ExerciseRow | 種目一覧の1行。名前 + 編集ボタン + 削除ボタン | なし（props） | `src/components/settings/ExerciseRow.tsx` |
-| SectionCard | FRAME5 のセクションカードスタイル（`bg-white rounded-2xl p-4 shadow-sm border`）を適用する薄いラッパー。shadcn `<Card>` をベース | shadcn Card | `src/components/settings/SectionCard.tsx` |
+| SettingsContent | 設定画面コンテンツ統合。APIKeySection + ExerciseMasterSection（画面内タイトルなし・FRAME5 準拠） | なし（子コンポーネントを配置） | `src/components/settings/SettingsContent.tsx` |
+| APIKeySection | APIキー入力・マスク切替・ステータス・削除のUI。debounce + saveStatus の可視フィードバック | settingsStore, SectionCard | `src/components/settings/APIKeySection.tsx` |
+| ExerciseMasterSection | 種目検索・一覧・追加・編集・削除のUI | useExercises (hook), SectionCard, ExerciseRow | `src/components/settings/ExerciseMasterSection.tsx` |
+| ExerciseRow | 種目一覧の1行。名前 + 編集ボタンのみ（design-system.html FRAME5 準拠。削除は編集モード時のインラインフォーム内で提供） | なし（props） | `src/components/settings/ExerciseRow.tsx` |
+| SectionCard | FRAME5 のセクションカード（`bg-white rounded-[20px] shadow-soft border border-gym-zinc-100 overflow-hidden`）を適用する薄いラッパー。shadcn `<Card>` をベース。`label` prop はカード外側に `text-[10px] font-bold text-gym-zinc-400 uppercase tracking-widest` で描画 | shadcn Card | `src/components/settings/SectionCard.tsx` |
+
+### Hook Layer（外部モジュール）
+
+| モジュール名 | 責務 | 提供元 | 配置場所 |
+|-----------|------|--------|--------|
+| useExercises | 種目マスターの公開 hook。`{ exercises, search, create, update, remove }` を提供。内部で exerciseStore を subscribe し、他タブの localStorage 変更にも追従 | exercise-master モジュール | `src/hooks/useExercises.ts` |
+
+> **Note**: UI（ExerciseMasterSection）は `ExerciseRepository` を直接 import せず、`useExercises()` 経由でのみアクセスする（UI→Hook→Store→Repository の一貫性を確保）。
 
 ### State Layer
 
@@ -119,7 +134,7 @@ graph TD
 
 | モジュール名 | 責務 | 提供元 | 配置場所 |
 |-----------|------|--------|--------|
-| ExerciseRepository | 種目CRUDの永続化 | exercise-master モジュール | `src/lib/exerciseRepository.ts` |
+| ExerciseRepository | 種目CRUDの永続化。**UI から直接 import してはならない**（`useExercises` 経由のみ） | exercise-master モジュール | `src/lib/exerciseRepository.ts` |
 
 ### 既存モジュールの変更
 
@@ -170,10 +185,15 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
   hasApiKey: false,
 
   setApiKey: (key: string) => {
+    // v1.2: 空文字列は「削除」として扱う（UI 層からの空文字 onChange を許容）
     if (key === '') {
-      throw new Error(
-        '空文字列は setApiKey に渡せません。削除には deleteApiKey() を使用してください。',
-      )
+      try {
+        localStorage.removeItem(STORAGE_KEY)
+      } catch {
+        // T-002: localStorage 削除失敗時も状態はリセットする
+      }
+      set({ apiKey: '', hasApiKey: false })
+      return
     }
     try {
       localStorage.setItem(STORAGE_KEY, key)
@@ -208,64 +228,76 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 // -------------------------------------------------------
 
 // Props: なし（内部で各セクションを配置）
-// レイアウト: px-4 pt-20 pb-8 space-y-6
-// タイトル: "設定" text-2xl font-outfit font-bold
+// レイアウト: pt-16 pb-12 px-4 space-y-6（design-system.html FRAME5 準拠）
+// タイトル表示なし: FRAME5 は右上の閉じる X ボタン（navigation の SettingsPage が提供）のみで、
+//                  設定画面内部にはタイトルヘッダを置かない
 
 // -------------------------------------------------------
 // APIKeySection (src/components/settings/APIKeySection.tsx)
 // -------------------------------------------------------
 
-// コンテナ: <SectionCard>（FRAME5 のセクションカードスタイルを内包）
-// セクションラベル: "Gemini API" text-sm font-outfit font-bold text-zinc-500 mb-3
+// コンテナ: <SectionCard label="Gemini API">（ラベルはカード外側 text-[10px] uppercase tracking-widest）
 //
 // 入力フィールド:
 //   type: password (default) / text (visible)
-//   bg-zinc-100 rounded-xl px-4 h-12 text-sm font-inter
+//   bg-gym-zinc-100 rounded-xl px-4 h-11 border border-gym-zinc-200（design-system.html FRAME5 準拠）
 //   右端に目アイコン（PhEye / PhEyeSlash）ボタン
 //
-// onChange ハンドラの挙動:
-//   - 常に settingsStore.setApiKey(value) を呼ぶ
+// onChange ハンドラの挙動（debounce ベース、v1.3 追加）:
+//   - ローカル state（localValue）で即時入力反映
+//   - 300ms debounce 後に settingsStore.setApiKey(value) を実行
+//   - 保存ステータスを 'idle' → 'saving'（入力中）→ 'saved'（保存完了）→ 'idle'（1500ms 後）で遷移
+//   - 'saving' / 'saved' は aria-live="polite" の小テキストで可視フィードバック
 //   - 空文字列も setApiKey に渡して良い（store 側で削除扱いされるため UI 側の分岐は不要）
+//   - unmount 時に pending な setTimeout は必ず clearTimeout（副作用漏れ防止）
+//   - 削除ボタン押下時は pending debounce timer をキャンセルし、localValue をクリアして deleteApiKey() を呼ぶ
 //
-// ステータス行:
-//   接続済み: 🟢 text-emerald-600 text-sm
-//   未設定: text-zinc-400 text-sm
-//   右端に削除ボタン（PhTrash, text-red-500）。hasApiKey が true の時のみ表示
+// ステータス行（border-t で区切り、セクションカードの下段）:
+//   接続済み: 緑ドット（w-2 h-2 rounded-full bg-green-500）+ "接続済み" text-xs text-gym-zinc-500
+//   未設定: "未設定" text-xs text-gym-zinc-400
+//   右端に削除ボタン（"削除" text-xs font-bold text-gym-accent bg-red-50 rounded-lg）。hasApiKey が true の時のみ表示
 //
-// タップターゲット: 全ボタン min-h-[44px] min-w-[44px]
+// タップターゲット: 全ボタン before:absolute before:inset-[-10px] で 44px 確保（通常の min-h/min-w でも可）
 
 // -------------------------------------------------------
 // ExerciseMasterSection (src/components/settings/ExerciseMasterSection.tsx)
 // -------------------------------------------------------
 
-// コンテナ: <SectionCard>
-// セクションラベル: "種目マスター" text-sm font-outfit font-bold text-zinc-500 mb-3
+// コンテナ: <SectionCard label="種目マスター">（ラベルはカード外側 text-[10px] uppercase tracking-widest）
 //
-// 検索フィールド:
+// データ参照: useExercises() フックから { search, create, update, remove } を取得（後述 Hook Layer 参照）
+//   ※ ExerciseRepository を UI から直接 import することは禁止（useExercises() 経由のみ）
+//
+// 検索フィールド（border-b で区切り、セクションカードの上段）:
 //   PhMagnifyingGlass アイコン + input
-//   bg-zinc-100 rounded-xl pl-10 pr-4 h-12 text-sm font-inter
+//   bg-gym-zinc-100 rounded-xl px-4 h-10 text-sm（design-system.html FRAME5 準拠）
 //   placeholder: "種目を検索..."
+//   onChange で setQuery のみ実行し、search(query) で都度フィルタ（Repository 呼び出しなし、state 派生）
 //
 // 種目一覧:
-//   通常行は <ExerciseRow>（名前 + 編集 PhPencilSimple + 削除 PhTrash）
+//   通常行は <ExerciseRow>（名前 + 編集 PhPencilSimple のみ、design-system.html FRAME5 準拠）
 //   編集中の行はインラインフォーム（下記）に差し替わる
-//   区切り: border-b border-zinc-100
+//   削除操作は編集モード時のインラインフォーム内で提供（通常行には置かない）
+//   区切り: divide-y divide-gym-zinc-100
 //
 // 追加ボタン（初期状態）:
 //   PhPlus + "種目を追加" text-sm text-zinc-500
 //   h-12 flex items-center gap-2
 //
 // インライン追加/編集フォーム:
-//   - 追加: 「種目を追加」タップで、同じ場所に入力フィールド + PhCheck + PhX を展開
-//   - 編集: ExerciseRow の編集ボタンで、対象行を同じ入力 + PhCheck + PhX に差し替え
-//   - 入力: bg-zinc-100 rounded-xl px-3 h-10 text-sm font-inter, autoFocus
-//   - PhCheck（text-emerald-600）: 確定 → exerciseRepository.create/update → 一覧再読込
-//   - PhX（text-zinc-500）: キャンセル → フォーム閉じる
-//   - 空文字確定はキャンセル扱い
-//   - 重複名・不正値は exerciseRepository が throw → UI では catch してサイレント無視
-//
-// 削除:
-//   ExerciseRow の削除ボタン → exerciseRepository.remove(id) → 一覧再読込
+//   - 追加: 「種目を追加」タップで、同じ場所に入力 + PhCheck + PhX を展開
+//   - 編集: ExerciseRow の編集ボタンで、対象行を「入力 + PhTrash + PhCheck + PhX」に差し替え
+//          （通常行には削除ボタンを置かず、編集モード中にのみ削除を提供する design-system.html 準拠）
+//   - 入力: bg-gym-zinc-100 rounded-xl px-3 h-10 text-sm, autoFocus
+//   - PhTrash（text-gym-accent、編集モード時のみ）: 削除 → useExercises().remove(id)
+//   - PhCheck（text-green-600）: 確定 → useExercises().create/update → 一覧は hook が自動再購読
+//   - PhX（text-gym-zinc-500）: キャンセル → フォーム閉じる
+//   - 空文字確定はキャンセル扱い（trim 後の空文字を検出）
+//   - 重複名エラー:
+//       - Repository が throw する `Duplicate name: ...` を UI で catch
+//       - インラインフォーム直下に "この種目名は既に登録されています" を role="alert" + aria-live="polite" で表示
+//       - 入力再変更で自動クリア
+//       - その他の不正値（throw するが Duplicate 以外）はサイレント無視してフォームを閉じる
 //
 // タップターゲット: 全ボタン min-h-[44px] min-w-[44px]
 ```
@@ -277,7 +309,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 | 要件 | 実現方針 |
 |------|--------|
 | セキュリティ（NFR-001）: APIキーの保護 | settingsStore が localStorage のみで永続化。外部通信なし。`type="password"` でデフォルトマスク |
-| 操作性（NFR-002）: 検索のリアルタイム更新 | `useState` で検索クエリを管理し、`onChange` のたびに ExerciseRepository.search() を呼び出し。デバウンスなし（ローカルデータのため即時フィルタ可能） |
+| 操作性（NFR-002）: 検索のリアルタイム更新 | `useState` で検索クエリを管理し、`useExercises().search(query)` による state 派生フィルタで都度再計算（Repository 直呼出なし）。デバウンスなし（ローカル state のため即時反映可能） |
 
 ---
 
@@ -288,7 +320,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 | ユニットテスト | settingsStore（setApiKey, deleteApiKey, loadApiKey, hasApiKey 派生） | 全操作 | FR-004, FR-006 |
 | コンポーネントテスト | APIKeySection（入力、マスク切替、削除、ステータス表示） | 主要インタラクション | FR-003, FR-004, FR-005, FR-006 |
 | コンポーネントテスト | ExerciseMasterSection（検索、一覧表示、追加、編集、削除） | 主要インタラクション | FR-007, FR-008, FR-009 |
-| コンポーネントテスト | ExerciseRow（表示、編集ボタンクリック、削除ボタンクリック） | 基本表示 | FR-007 |
+| コンポーネントテスト | ExerciseRow（表示、編集ボタンクリック） | 基本表示 | FR-007 |
 | コンポーネントテスト | SectionCard（FRAME5 クラスの適用、className マージ） | スタイル適用 | FR-003, FR-007 |
 | 統合テスト | SettingsContent（APIKeySection + ExerciseMasterSection の統合表示） | 画面統合 | FR-003, FR-007 |
 | E2Eテスト | 歯車アイコン → 設定画面 → APIキー入力 → 種目追加 → Xボタンで戻る | 全体フロー | FR-001〜FR-009 |
@@ -309,6 +341,9 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 | 種目編集UI | インライン編集 vs モーダル | インライン編集 | 種目名の変更だけなのでモーダルは不要。行内の入力フィールドで直接編集。確定は PhCheck、キャンセルは PhX ボタン |
 | 空文字 setApiKey の扱い | throw vs 内部で delete 相当 | **内部で delete 相当**（v1.2 で変更）| UI 層・将来の消費者（AI chat 等）が `setApiKey(userInput)` を直接渡しても例外にならないよう契約を単純化。明示的削除には引き続き `deleteApiKey()` を推奨 |
 | セクションカードの共通化 | 各セクションでクラス直書き vs 共通コンポーネント | 共通 `<SectionCard>` | FRAME5 のカードスタイルが 2 箇所以上で使われるため、shadcn `<Card>` をラップして一元化。将来のセクション追加にも対応 |
+| APIキーの保存タイミング（v1.3 再検討） | onChange 即保存 vs debounce | **300ms debounce + 可視フィードバック**（'saving' → 'saved' → 'idle'）| キー1文字ごとに localStorage 書き込みが走るのは無駄。300ms 無入力で確定し、保存状態を aria-live で可視化することで「自動保存されているか不安」という UX 課題も解消 |
+| 種目データのUIアクセス | Repository 直参照 vs Hook 経由 | **`useExercises` フック経由のみ**（v1.3）| Repository 直参照は一貫性の崩れ（他タブ変更の取りこぼし・subscribe 漏れ）を招く。UI→Hook→Store→Repository に統一 |
+| 重複名エラーの UX | サイレント無視 vs インライン表示 | **インラインエラーメッセージ**（v1.3）| サイレント無視はユーザに「なぜ登録されないか」が伝わらない。`Duplicate name:` prefix で識別し、フォーム直下に role="alert" で表示、再入力で自動クリア。それ以外の throw は従来通りサイレント |
 
 ## 9.2. 未解決の課題
 
@@ -317,6 +352,34 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 ---
 
 # 10. 変更履歴
+
+## v1.3 (2026-04-18) — 実装整合 & design-system.html 反映
+
+**design-system.html FRAME5 準拠**:
+
+- **SettingsContent**: 画面内タイトル「設定」の記述を削除し、レイアウトを `pt-16 pb-12 px-4 space-y-6` に修正（右上 X ボタンのみ・画面内ヘッダなし）
+- **ExerciseRow**: 通常行の責務を「名前 + 編集ボタンのみ」に修正。削除は編集モード時のインラインフォーム内で提供
+- **SectionCard**: ラベル位置をカード外側（`text-[10px] uppercase tracking-widest`）、カードスタイルを `rounded-[20px] shadow-soft border border-gym-zinc-100 overflow-hidden` に更新
+- **APIKeySection / ExerciseMasterSection**: 入力フィールドの高さを `h-11` / `h-10`、配色を `gym-zinc-*`・`bg-green-500`・`text-gym-accent` に正規化
+
+**アーキテクチャ整合**:
+
+- **Hook Layer 追加**: ExerciseMasterSection の種目データアクセスを `useExercises()` フック経由に統一（Repository 直参照禁止）。§4.1 mermaid 図・§4.2 モジュール表にも反映
+- **settingsStore.setApiKey 空文字挙動**: §6 サンプル TypeScript を v1.2 契約（空文字 = 内部で削除扱い）に追従。従来は §6 が throw 版のまま stale していた
+
+**UX 強化（未記載だった実装を明文化）**:
+
+- **APIKeySection debounce + saveStatus**: 300ms debounce + `'idle'` / `'saving'` / `'saved'` の aria-live 可視フィードバックを §6 と §9.1 に追記
+- **重複名エラー UX**: ExerciseMasterSection の追加/編集で `Duplicate name:` を catch し、インラインフォーム直下に role="alert" でエラーメッセージ表示。それ以外の throw は従来通りサイレント
+
+**§9.1 決定事項追加**: 「APIキーの保存タイミング（v1.3 再検討）」「種目データのUIアクセス」「重複名エラーの UX」の 3 行を追加
+
+**spec-reviewer 指摘反映（v1.3 フォロー）**:
+
+- spec §7.3 シーケンス図を `useExercises → ExerciseStore → ExerciseRepository` の 3 段に更新（Hook 層を図示）
+- design §7 NFR-002 の実現方針を「`useExercises().search(query)` による state 派生フィルタ」に訂正（§6 との矛盾解消）
+- spec §8 制約に「T-002: localStorage / JSON アクセスは try-catch でエラーハンドリング」「種目マスターへの UI アクセスは useExercises 経由のみ」を追加
+- spec §6 使用例の `onEdit={...}` プレースホルダを型付きシグネチャに置換
 
 ## v1.2 (2026-04-12) — レビュー反映（契約修正）
 
