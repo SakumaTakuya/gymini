@@ -244,13 +244,20 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 //   右端に目アイコン（PhEye / PhEyeSlash）ボタン
 //
 // onChange ハンドラの挙動（debounce ベース、v1.3 追加）:
-//   - ローカル state（localValue）で即時入力反映
-//   - 300ms debounce 後に settingsStore.setApiKey(value) を実行
+//   - ローカル state（localValue）で入力値を即時反映し UI ブロッキングを防止
+//   - 300ms debounce（useRef + setTimeout）後に settingsStore.setApiKey(value) を実行
 //   - 保存ステータスを 'idle' → 'saving'（入力中）→ 'saved'（保存完了）→ 'idle'（1500ms 後）で遷移
 //   - 'saving' / 'saved' は aria-live="polite" の小テキストで可視フィードバック
 //   - 空文字列も setApiKey に渡して良い（store 側で削除扱いされるため UI 側の分岐は不要）
 //   - unmount 時に pending な setTimeout は必ず clearTimeout（副作用漏れ防止）
 //   - 削除ボタン押下時は pending debounce timer をキャンセルし、localValue をクリアして deleteApiKey() を呼ぶ
+//
+// 保存ステータスインジケータ:
+//   type SaveStatus = 'idle' | 'saving' | 'saved'
+//   - 入力中: 「保存中…」を表示（aria-live="polite" でスクリーンリーダー通知）
+//   - debounce 完了（300ms 後）: 「保存済み」を表示
+//   - 1500ms 後: 非表示（idle）に戻る
+//   - min-h-[1em] で高さ固定し、表示切替時のレイアウトシフトを防止
 //
 // ステータス行（border-t で区切り、セクションカードの下段）:
 //   接続済み: 緑ドット（w-2 h-2 rounded-full bg-green-500）+ "接続済み" text-xs text-gym-zinc-500
@@ -258,6 +265,7 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 //   右端に削除ボタン（"削除" text-xs font-bold text-gym-accent bg-red-50 rounded-lg）。hasApiKey が true の時のみ表示
 //
 // タップターゲット: 全ボタン before:absolute before:inset-[-10px] で 44px 確保（通常の min-h/min-w でも可）
+// フォーカス: raw <button> には focus-ring ユーティリティを付与（T-003 キーボード操作対応）
 
 // -------------------------------------------------------
 // ExerciseMasterSection (src/components/settings/ExerciseMasterSection.tsx)
@@ -293,13 +301,16 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 //   - PhCheck（text-green-600）: 確定 → useExercises().create/update → 一覧は hook が自動再購読
 //   - PhX（text-gym-zinc-500）: キャンセル → フォーム閉じる
 //   - 空文字確定はキャンセル扱い（trim 後の空文字を検出）
-//   - 重複名エラー:
-//       - Repository が throw する `Duplicate name: ...` を UI で catch
-//       - インラインフォーム直下に "この種目名は既に登録されています" を role="alert" + aria-live="polite" で表示
-//       - 入力再変更で自動クリア
+//   - 重複名エラーの inline 表示:
+//       - Repository が throw する `Duplicate name:` prefix を `isDuplicateNameError()` で判定
+//       - `addError` / `editError` state で管理し、フォーム直下に role="alert" + aria-live="polite" で表示
+//       - エラー文言: 「この種目名は既に登録されています」（`DUPLICATE_ERROR_MESSAGE` 定数）
+//       - 入力変更時・キャンセル時に自動クリア
+//       - `aria-invalid` + `aria-describedby` で入力フィールドとエラーを紐付け
 //       - その他の不正値（throw するが Duplicate 以外）はサイレント無視してフォームを閉じる
 //
 // タップターゲット: 全ボタン min-h-[44px] min-w-[44px]
+// フォーカス: 全 raw <button> に focus-ring ユーティリティを付与（T-003）
 ```
 
 ---
@@ -308,8 +319,9 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 
 | 要件 | 実現方針 |
 |------|--------|
-| セキュリティ（NFR-001）: APIキーの保護 | settingsStore が localStorage のみで永続化。外部通信なし。`type="password"` でデフォルトマスク |
-| 操作性（NFR-002）: 検索のリアルタイム更新 | `useState` で検索クエリを管理し、`useExercises().search(query)` による state 派生フィルタで都度再計算（Repository 直呼出なし）。デバウンスなし（ローカル state のため即時反映可能） |
+| セキュリティ（NFR-001）: APIキーの保護 | settingsStore が localStorage のみで永続化。外部通信なし。`type="password"` でデフォルトマスク。300ms debounce で途中入力状態の意図しない保存も抑制 |
+| 操作性（NFR-002）: 検索のリアルタイム更新 | `useExercises` hook 経由で Zustand store の種目一覧を取得し、`search(query)` は `useMemo` でメモ化した state 派生フィルタで都度再計算（Repository 直呼出なし）。他タブ変更は `storage` event で自動同期。デバウンスなし |
+| アクセシビリティ（T-003）: フォーカスリング | 全 raw `<button>` に `focus-ring` ユーティリティ（`focus-visible:ring-2 ring-gym-black ring-offset-2`）を適用。キーボード操作時のみ表示 |
 
 ---
 
@@ -341,9 +353,9 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 | 種目編集UI | インライン編集 vs モーダル | インライン編集 | 種目名の変更だけなのでモーダルは不要。行内の入力フィールドで直接編集。確定は PhCheck、キャンセルは PhX ボタン |
 | 空文字 setApiKey の扱い | throw vs 内部で delete 相当 | **内部で delete 相当**（v1.2 で変更）| UI 層・将来の消費者（AI chat 等）が `setApiKey(userInput)` を直接渡しても例外にならないよう契約を単純化。明示的削除には引き続き `deleteApiKey()` を推奨 |
 | セクションカードの共通化 | 各セクションでクラス直書き vs 共通コンポーネント | 共通 `<SectionCard>` | FRAME5 のカードスタイルが 2 箇所以上で使われるため、shadcn `<Card>` をラップして一元化。将来のセクション追加にも対応 |
-| APIキーの保存タイミング（v1.3 再検討） | onChange 即保存 vs debounce | **300ms debounce + 可視フィードバック**（'saving' → 'saved' → 'idle'）| キー1文字ごとに localStorage 書き込みが走るのは無駄。300ms 無入力で確定し、保存状態を aria-live で可視化することで「自動保存されているか不安」という UX 課題も解消 |
-| 種目データのUIアクセス | Repository 直参照 vs Hook 経由 | **`useExercises` フック経由のみ**（v1.3）| Repository 直参照は一貫性の崩れ（他タブ変更の取りこぼし・subscribe 漏れ）を招く。UI→Hook→Store→Repository に統一 |
-| 重複名エラーの UX | サイレント無視 vs インライン表示 | **インラインエラーメッセージ**（v1.3）| サイレント無視はユーザに「なぜ登録されないか」が伝わらない。`Duplicate name:` prefix で識別し、フォーム直下に role="alert" で表示、再入力で自動クリア。それ以外の throw は従来通りサイレント |
+| APIキーの保存タイミング（v1.3 再検討） | onChange 即保存 vs debounce | **UI 側 300ms debounce + 可視フィードバック**（'saving' → 'saved' → 'idle'）| キー1文字ごとに localStorage 書き込みが走るのは無駄。300ms 無入力で確定（`useRef` + `setTimeout` で実装、store の純粋性は維持）。保存状態を aria-live で可視化することで「自動保存されているか不安」という UX 課題も解消 |
+| 種目データのUIアクセス | Repository 直参照 vs Hook 経由 | **`useExercises` フック経由のみ**（v1.3）| Repository 直参照は一貫性の崩れ（他タブ変更の取りこぼし・subscribe 漏れ）を招く。UI→Hook→Store→Repository に統一し、同タブ内の複数コンシューマ（ExerciseMasterSection / ExerciseSearchField 等）間で状態を自動同期 |
+| 重複名エラーの UX | サイレント無視 vs インライン表示 | **インラインエラーメッセージ**（v1.3）| サイレント無視はユーザに「なぜ登録されないか」が伝わらない。`Duplicate name:` prefix で識別し、フォーム直下に `role="alert"` + `aria-live="polite"` で視覚・SR 両方に通知、再入力で自動クリア。それ以外の throw は従来通りサイレント。将来の toast 基盤導入時に差し替え可能な state ベース設計 |
 
 ## 9.2. 未解決の課題
 
@@ -364,15 +376,19 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 
 **アーキテクチャ整合**:
 
-- **Hook Layer 追加**: ExerciseMasterSection の種目データアクセスを `useExercises()` フック経由に統一（Repository 直参照禁止）。§4.1 mermaid 図・§4.2 モジュール表にも反映
+- **Hook Layer 追加**: ExerciseMasterSection の種目データアクセスを `useExercises()` フック経由に統一（Repository 直参照禁止、`useState` + `refresh()` は撤去）。§4.1 mermaid 図・§4.2 モジュール表にも反映
 - **settingsStore.setApiKey 空文字挙動**: §6 サンプル TypeScript を v1.2 契約（空文字 = 内部で削除扱い）に追従。従来は §6 が throw 版のまま stale していた
 
-**UX 強化（未記載だった実装を明文化）**:
+**UX 強化（実装済み機能の仕様反映）**:
 
-- **APIKeySection debounce + saveStatus**: 300ms debounce + `'idle'` / `'saving'` / `'saved'` の aria-live 可視フィードバックを §6 と §9.1 に追記
-- **重複名エラー UX**: ExerciseMasterSection の追加/編集で `Duplicate name:` を catch し、インラインフォーム直下に role="alert" でエラーメッセージ表示。それ以外の throw は従来通りサイレント
+- **APIKeySection debounce + saveStatus**: 300ms debounce（`useRef` + `setTimeout`）+ `SaveStatus = 'idle' | 'saving' | 'saved'` の aria-live 可視フィードバック（1500ms ホールド）を §6 と §9.1 に追記
+- **重複名エラー UX**: ExerciseMasterSection の追加/編集で `Duplicate name:` を `isDuplicateNameError()` で判定 → インラインフォーム直下に `role="alert"` + `aria-live="polite"` でエラーメッセージ表示、`aria-invalid` + `aria-describedby` で入力フィールドと紐付け。それ以外の throw は従来通りサイレント
+- **T-003 フォーカスリング**: 全 raw `<button>` に `focus-ring` ユーティリティを適用する方針を §6 / §7 に明記
 
-**§9.1 決定事項追加**: 「APIキーの保存タイミング（v1.3 再検討）」「種目データのUIアクセス」「重複名エラーの UX」の 3 行を追加
+**§7 非機能要件・§9.1 決定事項**:
+
+- §7 に debounce / Zustand hook / focus-ring 方針を追記
+- §9.1 に「APIキーの保存タイミング（v1.3 再検討）」「種目データのUIアクセス」「重複名エラーの UX」の 3 行を追加
 
 **spec-reviewer 指摘反映（v1.3 フォロー）**:
 
