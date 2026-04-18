@@ -22,7 +22,7 @@ test.describe('ナビゲーション基本動作', () => {
     // Navigate to AI
     await page.getByRole('link', { name: 'AI' }).click()
     await expect(page).toHaveURL(/#\/ai/)
-    await expect(page.getByRole('heading', { name: 'AI チャット' })).toBeVisible()
+    await expect(page.getByRole('heading', { name: 'AIコーチ' })).toBeVisible()
 
     // Navigate back to training
     await page.getByRole('link', { name: 'トレ' }).click()
