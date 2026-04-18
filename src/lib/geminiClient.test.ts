@@ -46,64 +46,70 @@ describe('createGeminiClient', () => {
     )
   })
 
-  test('sendMessage returns text response', async () => {
+  test('generate returns text response', async () => {
     generateContentMock.mockResolvedValueOnce(makeResponse('hello'))
     const client = createGeminiClient({ apiKey: 'key' })
-    const result = await client.sendMessage([], 'hi')
+    const result = await client.generate([
+      { role: 'user', parts: [{ text: 'hi' }] },
+    ])
     expect(result).toEqual({ text: 'hello', functionCalls: null })
   })
 
-  test('sendMessage returns functionCalls', async () => {
+  test('generate returns functionCalls', async () => {
     generateContentMock.mockResolvedValueOnce(
       makeResponse('', [{ name: 'getRecentWorkouts', args: { count: 3 } }]),
     )
     const client = createGeminiClient({ apiKey: 'key' })
-    const result = await client.sendMessage([], 'show latest')
+    const result = await client.generate([
+      { role: 'user', parts: [{ text: 'show latest' }] },
+    ])
     expect(result.functionCalls).toEqual([
       { name: 'getRecentWorkouts', args: { count: 3 } },
     ])
   })
 
-  test('sendMessage truncates history to last 50 messages', async () => {
+  test('generate truncates contents to last 50', async () => {
     generateContentMock.mockResolvedValueOnce(makeResponse('ok'))
     const client = createGeminiClient({ apiKey: 'key' })
     const longHistory = Array.from({ length: 80 }, (_, i) => ({
       role: i % 2 === 0 ? ('user' as const) : ('model' as const),
       parts: [{ text: `msg-${i}` }],
     }))
-    await client.sendMessage(longHistory, 'now')
+    await client.generate(longHistory)
     const call = generateContentMock.mock.calls[0][0] as {
       contents: Array<{ role: string; parts: Array<{ text?: string }> }>
     }
-    expect(call.contents).toHaveLength(MAX_HISTORY_MESSAGES + 1)
+    expect(call.contents).toHaveLength(MAX_HISTORY_MESSAGES)
     expect(call.contents[0].parts[0].text).toBe('msg-30')
-    expect(call.contents[call.contents.length - 1].parts[0].text).toBe('now')
+    expect(call.contents[call.contents.length - 1].parts[0].text).toBe('msg-79')
   })
 
-  test('sendMessage passes abort signal', async () => {
+  test('generate passes abort signal', async () => {
     generateContentMock.mockResolvedValueOnce(makeResponse('ok'))
     const client = createGeminiClient({ apiKey: 'key' })
     const ctrl = new AbortController()
-    await client.sendMessage([], 'x', ctrl.signal)
+    await client.generate(
+      [{ role: 'user', parts: [{ text: 'x' }] }],
+      ctrl.signal,
+    )
     const opts = generateContentMock.mock.calls[0][1]
     expect(opts).toEqual({ signal: ctrl.signal })
   })
 
-  test('sendFunctionResult sends functionResponse parts', async () => {
-    generateContentMock.mockResolvedValueOnce(makeResponse('done'))
-    const client = createGeminiClient({ apiKey: 'key' })
-    await client.sendFunctionResult([], [
-      { name: 'getExercises', response: { list: [] } },
-    ])
-    const call = generateContentMock.mock.calls[0][0] as {
-      contents: Array<{ role: string; parts: Array<{ functionResponse?: { name: string; response: unknown } }> }>
-    }
-    const lastContent = call.contents[call.contents.length - 1]
-    expect(lastContent.role).toBe('user')
-    expect(lastContent.parts[0].functionResponse).toEqual({
-      name: 'getExercises',
-      response: { list: [] },
+  test('generate returns null text when response throws', async () => {
+    generateContentMock.mockResolvedValueOnce({
+      response: {
+        text: () => {
+          throw new Error('no text')
+        },
+        functionCalls: () => null,
+      },
     })
+    const client = createGeminiClient({ apiKey: 'key' })
+    const result = await client.generate([
+      { role: 'user', parts: [{ text: 'x' }] },
+    ])
+    expect(result.text).toBeNull()
   })
 })
 

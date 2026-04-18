@@ -2,7 +2,6 @@ import {
   GoogleGenerativeAI,
   type Content,
   type FunctionDeclaration,
-  type Part,
 } from '@google/generative-ai'
 import { TOOL_DECLARATIONS } from './toolDefinitions'
 
@@ -45,25 +44,14 @@ export type GeminiChatResponse = {
   functionCalls: FunctionCallRequest[] | null
 }
 
-export type GeminiHistoryEntry = {
-  role: 'user' | 'model'
-  parts: Part[]
-}
-
 export type GeminiClientConfig = {
   apiKey: string
   toolDeclarations?: FunctionDeclaration[]
 }
 
 export type GeminiClient = {
-  sendMessage: (
-    history: GeminiHistoryEntry[],
-    message: string,
-    abortSignal?: AbortSignal,
-  ) => Promise<GeminiChatResponse>
-  sendFunctionResult: (
-    history: GeminiHistoryEntry[],
-    functionResponses: Array<{ name: string; response: unknown }>,
+  generate: (
+    contents: Content[],
     abortSignal?: AbortSignal,
   ) => Promise<GeminiChatResponse>
 }
@@ -80,58 +68,31 @@ export function createGeminiClient(config: GeminiClientConfig): GeminiClient {
     systemInstruction: SYSTEM_INSTRUCTION,
   })
 
-  async function generate(
-    contents: Content[],
-    abortSignal?: AbortSignal,
-  ): Promise<GeminiChatResponse> {
-    const result = await model.generateContent(
-      { contents },
-      abortSignal ? { signal: abortSignal } : undefined,
-    )
-    const response = result.response
-    const functionCalls = response.functionCalls() ?? null
-    const text = (() => {
-      try {
-        return response.text() || null
-      } catch {
-        return null
-      }
-    })()
-    return {
-      text,
-      functionCalls: functionCalls
-        ? functionCalls.map((fc) => ({
-            name: fc.name,
-            args: fc.args as Record<string, unknown>,
-          }))
-        : null,
-    }
-  }
-
-  function trim(history: GeminiHistoryEntry[]): GeminiHistoryEntry[] {
-    return history.slice(-MAX_HISTORY_MESSAGES)
-  }
-
   return {
-    async sendMessage(history, message, abortSignal) {
-      const contents: Content[] = [
-        ...trim(history),
-        { role: 'user', parts: [{ text: message }] },
-      ]
-      return generate(contents, abortSignal)
-    },
-    async sendFunctionResult(history, functionResponses, abortSignal) {
-      const parts: Part[] = functionResponses.map((fr) => ({
-        functionResponse: {
-          name: fr.name,
-          response: (fr.response ?? {}) as object,
-        },
-      }))
-      const contents: Content[] = [
-        ...trim(history),
-        { role: 'user', parts },
-      ]
-      return generate(contents, abortSignal)
+    async generate(contents, abortSignal) {
+      const trimmed = contents.slice(-MAX_HISTORY_MESSAGES)
+      const result = await model.generateContent(
+        { contents: trimmed },
+        abortSignal ? { signal: abortSignal } : undefined,
+      )
+      const response = result.response
+      const functionCalls = response.functionCalls() ?? null
+      const text = (() => {
+        try {
+          return response.text() || null
+        } catch {
+          return null
+        }
+      })()
+      return {
+        text,
+        functionCalls: functionCalls
+          ? functionCalls.map((fc) => ({
+              name: fc.name,
+              args: fc.args as Record<string, unknown>,
+            }))
+          : null,
+      }
     },
   }
 }
