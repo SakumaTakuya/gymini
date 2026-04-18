@@ -5,7 +5,7 @@ type: "checklist"
 status: "in-progress"
 sdd-phase: "tasks"
 created: "2026-04-12"
-updated: "2026-04-13"
+updated: "2026-04-18"
 last-verified: "2026-04-13"
 depends-on: ["task-settings-review-followup"]
 ticket: "settings-review-followup"
@@ -68,7 +68,7 @@ priority: "medium"
 | 4.1 E2E `.fixme()` 整理 | CHK-504 | ✅ | `exercise-master.spec.ts` 削除、重複エラー E2E を `settings.spec.ts` に移設 |
 | 横断 | CHK-408, 506 | ✅ | 既存部分は規約準拠・247 tests / typecheck / lint / E2E 32 pass (skipped 0) |
 
-**全体進捗**: 実装 10/10 タスク完了、検証 31/32 項目 `✅`、1/32 `⚠️`（CHK-702 大量種目のパフォーマンス実測は未計測）。
+**全体進捗**: 実装 10/10 タスク完了、検証 32/32 項目 `✅`（CHK-203 設計書補足を 2026-04-18 に反映）、CHK-702 の大量種目パフォーマンス実測は手動推奨。
 
 詳細は [verification_report.md](verification_report.md) を参照。
 
@@ -147,10 +147,10 @@ priority: "medium"
 
 ---
 
-### CHK-203 [P2] ⏸ - settings 設計書の補足
+### CHK-203 [P2] ✅ - settings 設計書の補足
 
-- [ ] 必要なら 1.2 の「保存中…/保存済み」インジケータが settings 設計書に反映されている ⏸ 未反映（次の /check-spec で検討）
-- [ ] 1.3 の inline error パターンが settings 設計書に反映されている ⏸ 未反映
+- [x] 1.2 の「保存中…/保存済み」インジケータが settings 設計書に反映されている ✅ (v1.3 §6 APIKeySection に追記)
+- [x] 1.3 の inline error パターンが settings 設計書に反映されている ✅ (v1.3 §6 ExerciseMasterSection に追記)
 
 **関連タスク**: 1.2 / 1.3
 **検証方法**: `/check-spec settings` が pass

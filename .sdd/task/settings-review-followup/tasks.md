@@ -2,10 +2,10 @@
 id: "task-settings-review-followup"
 title: "設定画面レビュー指摘の残対応"
 type: "task"
-status: "pending"
+status: "completed"
 sdd-phase: "tasks"
 created: "2026-04-12"
-updated: "2026-04-12"
+updated: "2026-04-18"
 depends-on: ["design-settings", "design-api-key", "design-exercise-master"]
 ticket: "settings-review-followup"
 tags: ["settings", "ux", "a11y", "tech-debt", "phase-2"]
