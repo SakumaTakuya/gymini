@@ -6,7 +6,7 @@ status: "approved"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-12"
+updated: "2026-04-18"
 depends-on: ["spec-settings", "design-exercise-master", "design-api-key"]
 tags: ["settings", "phase-2"]
 category: "view"
@@ -224,8 +224,17 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 //   右端に目アイコン（PhEye / PhEyeSlash）ボタン
 //
 // onChange ハンドラの挙動:
-//   - 常に settingsStore.setApiKey(value) を呼ぶ
+//   - localValue（useState）で入力値を即時反映し、UIブロッキングを防止
+//   - 300ms debounce（useRef + setTimeout）で settingsStore.setApiKey(value) を呼ぶ
+//   - unmount 時に pending timer を cleanup（副作用漏れ防止）
 //   - 空文字列も setApiKey に渡して良い（store 側で削除扱いされるため UI 側の分岐は不要）
+//
+// 保存ステータスインジケータ:
+//   type SaveStatus = 'idle' | 'saving' | 'saved'
+//   - 入力中: 「保存中…」を表示（aria-live="polite" でスクリーンリーダー通知）
+//   - debounce 完了（300ms 後）: 「保存済み」を表示
+//   - 1500ms 後: 非表示（idle）に戻る
+//   - min-h-[1em] で高さ固定し、表示切替時のレイアウトシフトを防止
 //
 // ステータス行:
 //   接続済み: 🟢 text-emerald-600 text-sm
@@ -262,7 +271,12 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 //   - PhCheck（text-emerald-600）: 確定 → exerciseRepository.create/update → 一覧再読込
 //   - PhX（text-zinc-500）: キャンセル → フォーム閉じる
 //   - 空文字確定はキャンセル扱い
-//   - 重複名・不正値は exerciseRepository が throw → UI では catch してサイレント無視
+//   - 重複名エラーの inline 表示:
+//     isDuplicateNameError() で "Duplicate name:" prefix を判定
+//     addError / editError state で管理。role="alert" aria-live="polite" で通知
+//     エラー文言: 「この種目名は既に登録されています」（DUPLICATE_ERROR_MESSAGE 定数）
+//     入力変更時にエラーをクリア。キャンセル時もクリア
+//     aria-invalid + aria-describedby で入力フィールドとエラーを紐付け
 //
 // 削除:
 //   ExerciseRow の削除ボタン → exerciseRepository.remove(id) → 一覧再読込
@@ -276,8 +290,9 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 
 | 要件 | 実現方針 |
 |------|--------|
-| セキュリティ（NFR-001）: APIキーの保護 | settingsStore が localStorage のみで永続化。外部通信なし。`type="password"` でデフォルトマスク |
-| 操作性（NFR-002）: 検索のリアルタイム更新 | `useState` で検索クエリを管理し、`onChange` のたびに ExerciseRepository.search() を呼び出し。デバウンスなし（ローカルデータのため即時フィルタ可能） |
+| セキュリティ（NFR-001）: APIキーの保護 | settingsStore が localStorage のみで永続化。外部通信なし。`type="password"` でデフォルトマスク。300ms debounce で途中入力状態の意図しない保存を抑制 |
+| 操作性（NFR-002）: 検索のリアルタイム更新 | `useExercises` hook 経由で Zustand store の種目一覧を取得。search() は `useMemo` でメモ化。他タブ変更は `storage` event で自動同期 |
+| アクセシビリティ（T-003）: フォーカスリング | 全 raw `<button>` に `focus-ring` ユーティリティ（`focus-visible:ring-2 ring-gym-black ring-offset-2`）を適用。キーボード操作時のみ表示 |
 
 ---
 
@@ -309,6 +324,9 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 | 種目編集UI | インライン編集 vs モーダル | インライン編集 | 種目名の変更だけなのでモーダルは不要。行内の入力フィールドで直接編集。確定は PhCheck、キャンセルは PhX ボタン |
 | 空文字 setApiKey の扱い | throw vs 内部で delete 相当 | **内部で delete 相当**（v1.2 で変更）| UI 層・将来の消費者（AI chat 等）が `setApiKey(userInput)` を直接渡しても例外にならないよう契約を単純化。明示的削除には引き続き `deleteApiKey()` を推奨 |
 | セクションカードの共通化 | 各セクションでクラス直書き vs 共通コンポーネント | 共通 `<SectionCard>` | FRAME5 のカードスタイルが 2 箇所以上で使われるため、shadcn `<Card>` をラップして一元化。将来のセクション追加にも対応 |
+| APIキー保存の debounce | 即時保存 vs debounce | **UI 側 300ms debounce**（v1.3 で変更）| store の純粋性を維持しつつ、連続入力時の localStorage 書き込みを抑制。`useRef` + `setTimeout` で実装。保存中/保存済みインジケータで状態をフィードバック |
+| 重複種目名のエラー表示 | サイレント無視 vs inline error | **inline error**（v1.3 で変更）| `role="alert"` + `aria-live="polite"` で視覚・スクリーンリーダー両方に通知。将来の toast 基盤導入時に差し替え可能な state ベース設計 |
+| 種目データの取得方法 | `useState` + `refresh()` vs Hook 層 | **`useExercises` hook 経由**（v1.3 で変更）| 同タブ内の複数コンシューマ（ExerciseMasterSection / ExerciseSearchField）間で状態を同期。Zustand store を単一キャッシュ層とし、mutation を全 subscriber に自動伝播 |
 
 ## 9.2. 未解決の課題
 
@@ -317,6 +335,15 @@ const useSettingsStore = create<SettingsState & SettingsActions>()((set) => ({
 ---
 
 # 10. 変更履歴
+
+## v1.3 (2026-04-18) — レビュー残タスク反映
+
+- APIKeySection の onChange を 300ms debounce 化（UI 側 `useRef` + `setTimeout`）
+- 保存ステータスインジケータ（「保存中…」/「保存済み」）の仕様を §6 に追記
+- ExerciseMasterSection の重複種目名 inline error パターンを §6 に追記
+- 種目データ取得を `useExercises` hook 経由に変更（`useState` + `refresh()` 撤去）
+- §7 非機能要件を更新: debounce / Zustand hook / focus-ring 追記
+- §9.1 決定事項に debounce / inline error / hook 層採用を追加
 
 ## v1.2 (2026-04-12) — レビュー反映（契約修正）
 
