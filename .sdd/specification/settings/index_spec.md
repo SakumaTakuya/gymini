@@ -6,7 +6,7 @@ status: "approved"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-12"
+updated: "2026-04-18"
 depends-on: ["prd-settings"]
 tags: ["settings", "phase-2"]
 category: "view"
@@ -84,9 +84,10 @@ gymini は歯車アイコンから全画面（FRAME1〜4）でアクセス可能
 |---------|--------------|--------|------|
 | settings | SettingsContent | (component) | 設定画面のコンテンツ部分。APIキーセクション + 種目マスターセクションを統合 |
 | settings | APIKeySection | (component) | APIキー管理セクション。settingsStore を使用 |
-| settings | ExerciseMasterSection | (component) | 種目マスター管理セクション。exerciseRepository を使用 |
+| settings | ExerciseMasterSection | (component) | 種目マスター管理セクション。`useExercises` フックを使用（`ExerciseRepository` 直参照禁止） |
 | settings | settingsStore | hasApiKey, apiKey, setApiKey, deleteApiKey | APIキーの永続化（`src/stores/settingsStore.ts`）。navigation GearIcon からも参照（B-001: localStorage のみ） |
-| exercise-master (外部) | ExerciseRepository | list, add, update, remove, search | 種目CRUDの永続化。設定画面から参照 |
+| exercise-master (外部) | useExercises | exercises, search, create, update, remove | 種目マスターの公開フック。UI はこのフック経由でのみ種目データにアクセスする |
+| exercise-master (外部) | ExerciseRepository | list, add, update, remove, search | 種目CRUDの永続化層。UI から直接 import することは禁止（`useExercises` 経由のみ） |
 
 ## 4.1. 型定義
 
@@ -116,10 +117,10 @@ type Exercise = {
 ```tsx
 // SettingsContent - 設定画面のコンテンツ
 // navigation の SettingsPage 内で使用される
+// レイアウトは design-system.html FRAME5 準拠（画面内タイトルは無し・右上 X ボタンのみ）
 function SettingsContent() {
   return (
-    <div className="px-4 pt-20 pb-8 space-y-6">
-      <h1 className="text-2xl font-outfit font-bold">設定</h1>
+    <div className="pt-16 pb-12 px-4 space-y-6">
       <APIKeySection />
       <ExerciseMasterSection />
     </div>
@@ -127,41 +128,66 @@ function SettingsContent() {
 }
 
 // APIKeySection - APIキー管理セクション
+// 入力は 300ms debounce で settingsStore.setApiKey に伝搬し、
+// 'idle' → 'saving' → 'saved'（1500ms）の保存ステータスを aria-live で可視化
 function APIKeySection() {
   const { apiKey, hasApiKey, setApiKey, deleteApiKey } = useSettingsStore()
   const [visible, setVisible] = useState(false)
+  const [localValue, setLocalValue] = useState(apiKey)
+  const [saveStatus, setSaveStatus] = useState<'idle' | 'saving' | 'saved'>('idle')
+
+  const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
+    setLocalValue(e.target.value)
+    setSaveStatus('saving')
+    debounce(() => {
+      setApiKey(e.target.value)  // 空文字列は store 側で削除扱い
+      setSaveStatus('saved')
+      hold(1500, () => setSaveStatus('idle'))
+    }, 300)
+  }
 
   return (
-    <section>
-      <h2>Gemini API</h2>
-      <input
-        type={visible ? 'text' : 'password'}
-        value={apiKey}
-        onChange={(e) => setApiKey(e.target.value)}
-      />
+    <SectionCard label="Gemini API">
+      <input type={visible ? 'text' : 'password'} value={localValue} onChange={handleChange} />
+      <span aria-live="polite">{saveStatus === 'saving' ? '保存中…' : saveStatus === 'saved' ? '保存済み' : ''}</span>
       <button onClick={() => setVisible(!visible)}>
         {visible ? <PhEyeSlash /> : <PhEye />}
       </button>
-      <StatusBadge status={hasApiKey ? 'connected' : 'not-set'} />
+      <StatusDot connected={hasApiKey} />
       {hasApiKey && <button onClick={deleteApiKey}>削除</button>}
-    </section>
+    </SectionCard>
   )
 }
 
 // ExerciseMasterSection - 種目マスター管理セクション
+// 種目データは useExercises フック経由（Repository 直参照 NG）
+// 重複名エラーは Duplicate name: を catch してインライン表示
 function ExerciseMasterSection() {
+  const { search, create, update, remove } = useExercises()
   const [query, setQuery] = useState('')
-  const exercises = useExerciseList(query)
+  const [addError, setAddError] = useState<string | null>(null)
+  const visibleExercises = search(query)
+
+  const handleAdd = (name: string) => {
+    try {
+      create(name)
+    } catch (err) {
+      if (isDuplicateNameError(err)) setAddError('この種目名は既に登録されています')
+    }
+  }
 
   return (
-    <section>
-      <h2>種目マスター</h2>
-      <input placeholder="種目を検索..." value={query} onChange={...} />
-      {exercises.map(ex => (
-        <ExerciseRow key={ex.id} exercise={ex} />
+    <SectionCard label="種目マスター">
+      <input placeholder="種目を検索..." value={query} onChange={(e) => setQuery(e.target.value)} />
+      {visibleExercises.map((ex) => (
+        <ExerciseRow
+          key={ex.id}
+          exercise={ex}
+          onEdit={(target: Exercise) => setEditingId(target.id)}
+        />
       ))}
-      <AddExerciseButton />
-    </section>
+      <AddExerciseButton onConfirm={handleAdd} error={addError} />
+    </SectionCard>
   )
 }
 ```
@@ -217,19 +243,26 @@ sequenceDiagram
 sequenceDiagram
     participant User
     participant ExerciseMasterSection
+    participant useExercises
+    participant ExerciseStore
     participant ExerciseRepository
     participant LocalStorage
 
-    Note over User,LocalStorage: 種目検索
+    Note over User,LocalStorage: 種目検索（state 派生フィルタ）
     User->>ExerciseMasterSection: 検索フィールドに入力
-    ExerciseMasterSection->>ExerciseRepository: search(query)
-    ExerciseRepository-->>ExerciseMasterSection: フィルタ済み種目一覧
+    ExerciseMasterSection->>ExerciseMasterSection: setQuery(value)
+    ExerciseMasterSection->>useExercises: search(query)
+    useExercises-->>ExerciseMasterSection: フィルタ済み種目一覧（state 派生・Repository 非呼出）
     ExerciseMasterSection-->>User: リアルタイム更新
 
     Note over User,LocalStorage: 種目追加
     User->>ExerciseMasterSection: 「種目を追加」タップ
-    ExerciseMasterSection->>ExerciseRepository: add(name)
+    ExerciseMasterSection->>useExercises: create(name)
+    useExercises->>ExerciseStore: create(name)
+    ExerciseStore->>ExerciseRepository: add(name)
     ExerciseRepository->>LocalStorage: 保存
+    ExerciseStore-->>useExercises: 一覧を購読更新
+    useExercises-->>ExerciseMasterSection: 一覧が自動再描画
     ExerciseMasterSection-->>User: 一覧に追加表示
 ```
 
@@ -240,8 +273,10 @@ sequenceDiagram
 - APIキーは localStorage にのみ保存する。外部サーバーに送信しない（B-001）
 - APIキーのバリデーション（Gemini API への接続テスト）はスコープ外。Phase 3（AIチャット）で実装。`APIKeyStatus` に `'error'` 状態を追加するのも Phase 3 スコープ
 - 種目マスターデータは localStorage に保存する（B-001, A-002）
+- 種目マスターへの UI アクセスは `useExercises` フック経由のみ（`ExerciseRepository` 直 import 禁止）
 - 設定画面のコンテンツは SettingsPage の children または内部コンポーネントとして配置する
 - TypeScript strict mode を遵守する（T-001）
+- localStorage / JSON アクセスは try-catch でエラーハンドリングし、失敗時もストア状態は一貫性を保つ（T-002）
 - 全タップターゲットは最低 44px x 44px を確保する（T-003）
 
 ---
