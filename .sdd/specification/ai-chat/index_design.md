@@ -58,8 +58,9 @@ risk: "high"
 | スタイリング | Tailwind CSS ^4 | T-003: Mobile-First UI |
 | AI API | @google/generative-ai (Gemini SDK) | A-001: Library-First。Gemini API の公式 JavaScript SDK。モデルは `gemini-flash-latest` 固定 |
 | 状態管理 | Zustand ^5 | チャット状態管理。プロジェクト標準 |
-| ルーティング | TanStack Router ^1 | `/chat` ルート。navigation 機能が管理 |
+| ルーティング | TanStack Router ^1 | `/_app/ai` ルート（hash mode）。navigation 機能が管理 |
 | マークダウン表示 | react-markdown + remark-gfm | AIの応答をマークダウンとしてレンダリング。テーブル・リスト等の表現力 |
+| マークダウン整形スタイル | `src/index.css` の `@utility chat-markdown`（独自定義）| Tailwind typography プラグインは未導入。チャット内に必要な要素（p / ul / ol / table / code / blockquote / a）に絞った最小スタイルを Tailwind の `@utility` で提供することで依存追加を回避 |
 
 ---
 
@@ -623,6 +624,8 @@ function getErrorMessage(error: unknown): string {
 - **Gemini API のモック**: `vi.mock('@google/generative-ai')` で SDK をモック。テストではネットワーク呼び出しを行わない
 - **toolExecutor のテスト**: WorkoutRepository / ExerciseRepository は `vi.mock` で localStorage 層をモック
 - **chatStore のリセット**: 各テスト前に `useChatStore.setState({ messages: [], isLoading: false, error: null })` でリセット
+- **page-level コンポーネントテスト**: AIChatPage では `vi.mock('@tanstack/react-router')` で `<Link>` を素の `<a>` に差し替え、Router Provider 無しで単体レンダリングする
+- **DOM API ガード**: jsdom が `Element.scrollIntoView` を提供しないため、AIChatPage の自動スクロール副作用は `typeof el.scrollIntoView === 'function'` で保護する
 
 ---
 
