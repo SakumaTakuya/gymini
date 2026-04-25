@@ -12,7 +12,6 @@ type ChatActions = {
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   updatePendingAction: (messageId: string, status: PendingActionStatus) => void
-  updateMessageContent: (messageId: string, content: string) => void
   removeMessage: (messageId: string) => void
   clearMessages: () => void
 }
@@ -40,14 +39,6 @@ export const useChatStore = create<ChatState & ChatActions>()((set) => ({
         msg.id === messageId && msg.pendingAction
           ? { ...msg, pendingAction: { ...msg.pendingAction, status } }
           : msg,
-      ),
-    }))
-  },
-
-  updateMessageContent: (messageId, content) => {
-    set((state) => ({
-      messages: state.messages.map((msg) =>
-        msg.id === messageId ? { ...msg, content } : msg,
       ),
     }))
   },

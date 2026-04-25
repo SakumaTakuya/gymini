@@ -6,7 +6,7 @@ status: "implemented"
 sdd-phase: "implement"
 impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-19"
+updated: "2026-04-25"
 depends-on: ["prd-ai-chat"]
 tags: ["ai", "chat", "function-calling", "gemini", "phase-3"]
 category: "ai"

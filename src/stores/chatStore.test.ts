@@ -73,13 +73,6 @@ describe('chatStore', () => {
     expect(useChatStore.getState().messages[0]).toEqual(msg)
   })
 
-  test('updateMessageContent replaces content', () => {
-    const msg = makeMessage({ id: 'm-1', content: 'old' })
-    useChatStore.getState().addMessage(msg)
-    useChatStore.getState().updateMessageContent('m-1', 'new')
-    expect(useChatStore.getState().messages[0].content).toBe('new')
-  })
-
   test('removeMessage filters out matching id', () => {
     useChatStore.getState().addMessage(makeMessage({ id: 'a' }))
     useChatStore.getState().addMessage(makeMessage({ id: 'b' }))
