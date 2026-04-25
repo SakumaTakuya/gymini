@@ -42,6 +42,7 @@ export type FunctionCallRequest = {
 export type GeminiChatResponse = {
   text: string | null
   functionCalls: FunctionCallRequest[] | null
+  modelContent: Content | null
 }
 
 export type GeminiClientConfig = {
@@ -90,6 +91,14 @@ export function createGeminiClient(config: GeminiClientConfig): GeminiClient {
           return null
         }
       })()
+      const modelContent = (() => {
+        const candidate = response.candidates?.[0]
+        if (!candidate?.content) return null
+        return {
+          role: 'model',
+          parts: candidate.content.parts ?? [],
+        } satisfies Content
+      })()
       return {
         text,
         functionCalls: functionCalls
@@ -98,6 +107,7 @@ export function createGeminiClient(config: GeminiClientConfig): GeminiClient {
               args: fc.args as Record<string, unknown>,
             }))
           : null,
+        modelContent,
       }
     },
   }

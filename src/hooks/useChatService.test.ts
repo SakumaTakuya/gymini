@@ -12,14 +12,18 @@ vi.mock('../lib/exerciseRepository')
 vi.mock('../lib/workoutRepository')
 
 function mockClient(
-  responses: Array<GeminiChatResponse | Error>,
+  responses: Array<Partial<GeminiChatResponse> | Error>,
 ): GeminiClient {
   let i = 0
   return {
     generate: vi.fn(async () => {
       const r = responses[i++]
       if (r instanceof Error) throw r
-      return r
+      return {
+        text: r.text ?? null,
+        functionCalls: r.functionCalls ?? null,
+        modelContent: r.modelContent ?? null,
+      }
     }),
   }
 }

@@ -26,10 +26,18 @@ function makeResponse(
   text: string | null,
   functionCalls: Array<{ name: string; args: Record<string, unknown> }> | null = null,
 ) {
+  const parts: Array<Record<string, unknown>> = []
+  if (text) parts.push({ text })
+  if (functionCalls) {
+    for (const fc of functionCalls) {
+      parts.push({ functionCall: { ...fc, thoughtSignature: 'sig-stub' } })
+    }
+  }
   return {
     response: {
       text: () => text ?? '',
       functionCalls: () => functionCalls,
+      candidates: [{ content: { role: 'model', parts } }],
     },
   }
 }
@@ -52,7 +60,27 @@ describe('createGeminiClient', () => {
     const result = await client.generate([
       { role: 'user', parts: [{ text: 'hi' }] },
     ])
-    expect(result).toEqual({ text: 'hello', functionCalls: null })
+    expect(result.text).toBe('hello')
+    expect(result.functionCalls).toBeNull()
+    expect(result.modelContent).toEqual({
+      role: 'model',
+      parts: [{ text: 'hello' }],
+    })
+  })
+
+  test('generate exposes raw model content with thought signatures preserved', async () => {
+    generateContentMock.mockResolvedValueOnce(
+      makeResponse(null, [{ name: 'getRecentWorkouts', args: { count: 3 } }]),
+    )
+    const client = createGeminiClient({ apiKey: 'key' })
+    const result = await client.generate([
+      { role: 'user', parts: [{ text: 'show' }] },
+    ])
+    expect(result.modelContent?.role).toBe('model')
+    const fcPart = result.modelContent?.parts.find(
+      (p) => 'functionCall' in p && p.functionCall !== undefined,
+    ) as { functionCall: { thoughtSignature?: string } } | undefined
+    expect(fcPart?.functionCall.thoughtSignature).toBe('sig-stub')
   })
 
   test('generate returns functionCalls', async () => {
@@ -103,6 +131,7 @@ describe('createGeminiClient', () => {
           throw new Error('no text')
         },
         functionCalls: () => null,
+        candidates: [],
       },
     })
     const client = createGeminiClient({ apiKey: 'key' })
@@ -110,6 +139,7 @@ describe('createGeminiClient', () => {
       { role: 'user', parts: [{ text: 'x' }] },
     ])
     expect(result.text).toBeNull()
+    expect(result.modelContent).toBeNull()
   })
 })
 

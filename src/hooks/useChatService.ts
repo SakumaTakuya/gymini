@@ -139,14 +139,18 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           }
 
           if (readCalls.length > 0) {
+            // Gemini 2.5 系では functionCall に thought_signature が付与されており、
+            // フォローアップで再構築するとシグネチャが欠落して 400 になる。
+            // SDK が返した modelContent をそのまま送り返す。
+            const modelTurn: Content = firstResponse.modelContent ?? {
+              role: 'model',
+              parts: readCalls.map((fc) => ({
+                functionCall: { name: fc.name, args: fc.args },
+              })),
+            }
             const followUpContents: Content[] = [
               ...baseContents,
-              {
-                role: 'model',
-                parts: readCalls.map((fc) => ({
-                  functionCall: { name: fc.name, args: fc.args },
-                })),
-              },
+              modelTurn,
               {
                 role: 'user',
                 parts: readResults.map((r) => ({
