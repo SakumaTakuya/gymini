@@ -2,14 +2,17 @@
 id: "checklist-ai-chat"
 title: "AIチャット × Function Calling 品質チェックリスト"
 type: "checklist"
-status: "draft"
+status: "verified"
 created: "2026-04-18"
-updated: "2026-04-18"
+updated: "2026-04-25"
 depends-on: ["spec-ai-chat", "design-ai-chat", "task-ai-chat"]
 tags: ["ai", "chat", "function-calling", "gemini", "phase-3"]
 category: "ai"
 priority: "high"
 ---
+
+> **自動検証結果（2026-04-25）**: P0 全 22 件 PASS / P1 主要項目 PASS。詳細は [verification_report.md](./verification_report.md) を参照。手動確認が残るのは実 API シナリオ（CHK103, CHK504, CHK505, CHK802）。
+
 
 # 品質チェックリスト: AIチャット × Function Calling
 
