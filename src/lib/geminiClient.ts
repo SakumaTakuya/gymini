@@ -42,6 +42,7 @@ export type FunctionCallRequest = {
 export type GeminiChatResponse = {
   text: string | null
   functionCalls: FunctionCallRequest[] | null
+  modelContent: Content | null
 }
 
 export type GeminiClientConfig = {
@@ -76,13 +77,27 @@ export function createGeminiClient(config: GeminiClientConfig): GeminiClient {
         abortSignal ? { signal: abortSignal } : undefined,
       )
       const response = result.response
-      const functionCalls = response.functionCalls() ?? null
+      const functionCalls = (() => {
+        try {
+          return response.functionCalls() ?? null
+        } catch {
+          return null
+        }
+      })()
       const text = (() => {
         try {
           return response.text() || null
         } catch {
           return null
         }
+      })()
+      const modelContent = (() => {
+        const candidate = response.candidates?.[0]
+        if (!candidate?.content) return null
+        return {
+          role: 'model',
+          parts: candidate.content.parts ?? [],
+        } satisfies Content
       })()
       return {
         text,
@@ -92,6 +107,7 @@ export function createGeminiClient(config: GeminiClientConfig): GeminiClient {
               args: fc.args as Record<string, unknown>,
             }))
           : null,
+        modelContent,
       }
     },
   }
@@ -101,11 +117,26 @@ export function getErrorMessage(error: unknown): string {
   if (error instanceof Error) {
     const msg = error.message
 
-    if (msg.includes('API_KEY_INVALID') || msg.includes('401')) {
+    if (
+      msg.includes('API_KEY_INVALID') ||
+      msg.includes('UNAUTHENTICATED') ||
+      /\b401\b/.test(msg)
+    ) {
       return 'APIキーが無効です。設定画面で正しいAPIキーを入力してください。'
     }
-    if (msg.includes('429') || msg.includes('RATE_LIMIT') || msg.includes('quota')) {
+    if (
+      /\b429\b/.test(msg) ||
+      msg.includes('RATE_LIMIT') ||
+      msg.includes('RESOURCE_EXHAUSTED') ||
+      msg.includes('quota')
+    ) {
       return 'リクエスト制限に達しました。しばらく待ってから再度お試しください。'
+    }
+    if (msg.includes('SAFETY') || msg.includes('blocked')) {
+      return '安全フィルターにより応答できませんでした。表現を変えてお試しください。'
+    }
+    if (/\b400\b/.test(msg) || msg.includes('INVALID_ARGUMENT')) {
+      return 'リクエスト形式に問題が発生しました。会話をクリアしてやり直してください。'
     }
     if (
       msg.includes('fetch') ||

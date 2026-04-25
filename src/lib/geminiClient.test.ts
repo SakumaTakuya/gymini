@@ -26,10 +26,18 @@ function makeResponse(
   text: string | null,
   functionCalls: Array<{ name: string; args: Record<string, unknown> }> | null = null,
 ) {
+  const parts: Array<Record<string, unknown>> = []
+  if (text) parts.push({ text })
+  if (functionCalls) {
+    for (const fc of functionCalls) {
+      parts.push({ functionCall: { ...fc, thoughtSignature: 'sig-stub' } })
+    }
+  }
   return {
     response: {
       text: () => text ?? '',
       functionCalls: () => functionCalls,
+      candidates: [{ content: { role: 'model', parts } }],
     },
   }
 }
@@ -52,7 +60,27 @@ describe('createGeminiClient', () => {
     const result = await client.generate([
       { role: 'user', parts: [{ text: 'hi' }] },
     ])
-    expect(result).toEqual({ text: 'hello', functionCalls: null })
+    expect(result.text).toBe('hello')
+    expect(result.functionCalls).toBeNull()
+    expect(result.modelContent).toEqual({
+      role: 'model',
+      parts: [{ text: 'hello' }],
+    })
+  })
+
+  test('generate exposes raw model content with thought signatures preserved', async () => {
+    generateContentMock.mockResolvedValueOnce(
+      makeResponse(null, [{ name: 'getRecentWorkouts', args: { count: 3 } }]),
+    )
+    const client = createGeminiClient({ apiKey: 'key' })
+    const result = await client.generate([
+      { role: 'user', parts: [{ text: 'show' }] },
+    ])
+    expect(result.modelContent?.role).toBe('model')
+    const fcPart = result.modelContent?.parts.find(
+      (p) => 'functionCall' in p && p.functionCall !== undefined,
+    ) as { functionCall: { thoughtSignature?: string } } | undefined
+    expect(fcPart?.functionCall.thoughtSignature).toBe('sig-stub')
   })
 
   test('generate returns functionCalls', async () => {
@@ -103,6 +131,7 @@ describe('createGeminiClient', () => {
           throw new Error('no text')
         },
         functionCalls: () => null,
+        candidates: [],
       },
     })
     const client = createGeminiClient({ apiKey: 'key' })
@@ -110,6 +139,7 @@ describe('createGeminiClient', () => {
       { role: 'user', parts: [{ text: 'x' }] },
     ])
     expect(result.text).toBeNull()
+    expect(result.modelContent).toBeNull()
   })
 })
 
@@ -119,8 +149,18 @@ describe('getErrorMessage', () => {
     expect(msg).toMatch(/APIキー/)
   })
 
-  test('maps 401 to key error', () => {
+  test('maps standalone 401 to key error', () => {
     const msg = getErrorMessage(new Error('HTTP 401 unauthorized'))
+    expect(msg).toMatch(/APIキー/)
+  })
+
+  test('does not misclassify 4011 as 401', () => {
+    const msg = getErrorMessage(new Error('error code 4011 something'))
+    expect(msg).not.toMatch(/APIキー/)
+  })
+
+  test('maps UNAUTHENTICATED to key error', () => {
+    const msg = getErrorMessage(new Error('UNAUTHENTICATED'))
     expect(msg).toMatch(/APIキー/)
   })
 
@@ -129,9 +169,26 @@ describe('getErrorMessage', () => {
     expect(msg).toMatch(/リクエスト制限/)
   })
 
-  test('maps RATE_LIMIT to rate limit', () => {
-    const msg = getErrorMessage(new Error('RATE_LIMIT_EXCEEDED'))
-    expect(msg).toMatch(/リクエスト制限/)
+  test('maps RATE_LIMIT / RESOURCE_EXHAUSTED to rate limit', () => {
+    expect(getErrorMessage(new Error('RATE_LIMIT_EXCEEDED'))).toMatch(/リクエスト制限/)
+    expect(getErrorMessage(new Error('RESOURCE_EXHAUSTED quota hit'))).toMatch(
+      /リクエスト制限/,
+    )
+  })
+
+  test('maps SAFETY filter blocks', () => {
+    expect(getErrorMessage(new Error('Response was blocked: SAFETY'))).toMatch(
+      /安全フィルター/,
+    )
+  })
+
+  test('maps 400 / INVALID_ARGUMENT to bad request guidance', () => {
+    expect(getErrorMessage(new Error('HTTP 400 INVALID_ARGUMENT'))).toMatch(
+      /会話をクリア/,
+    )
+    expect(
+      getErrorMessage(new Error('Server returned INVALID_ARGUMENT')),
+    ).toMatch(/会話をクリア/)
   })
 
   test('maps fetch/network to network error', () => {
