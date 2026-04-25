@@ -283,4 +283,84 @@ describe('useChatService', () => {
     expect(useChatStore.getState().messages).toEqual([])
     expect(client.generate).not.toHaveBeenCalled()
   })
+
+  test('merges consecutive assistant messages and drops leading model when sending history', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    useChatStore.setState({
+      messages: [
+        {
+          id: 'a',
+          role: 'assistant',
+          content: '最初の挨拶',
+          timestamp: '2026-04-19T00:00:00+09:00' as never,
+        },
+        {
+          id: 'b',
+          role: 'assistant',
+          content: '結果メッセージ',
+          timestamp: '2026-04-19T00:00:01+09:00' as never,
+        },
+      ],
+      isLoading: false,
+      error: null,
+    })
+    const client = mockClient([{ text: 'ok', functionCalls: null }])
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => client }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('hi')
+    })
+    const generateMock = client.generate as ReturnType<typeof vi.fn>
+    const contents = generateMock.mock.calls[0][0] as Array<{
+      role: 'user' | 'model'
+      parts: Array<{ text?: string }>
+    }>
+    expect(contents).toEqual([
+      { role: 'user', parts: [{ text: 'hi' }] },
+    ])
+  })
+
+  test('merges assistant messages between user turns into a single model turn', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    useChatStore.setState({
+      messages: [
+        {
+          id: 'u1',
+          role: 'user',
+          content: '記録して',
+          timestamp: '2026-04-19T00:00:00+09:00' as never,
+        },
+        {
+          id: 'a1',
+          role: 'assistant',
+          content: '記録しますか？',
+          timestamp: '2026-04-19T00:00:01+09:00' as never,
+        },
+        {
+          id: 'a2',
+          role: 'assistant',
+          content: '記録しました！',
+          timestamp: '2026-04-19T00:00:02+09:00' as never,
+        },
+      ],
+      isLoading: false,
+      error: null,
+    })
+    const client = mockClient([{ text: 'ok', functionCalls: null }])
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => client }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('次は？')
+    })
+    const generateMock = client.generate as ReturnType<typeof vi.fn>
+    const contents = generateMock.mock.calls[0][0] as Array<{
+      role: 'user' | 'model'
+      parts: Array<{ text?: string }>
+    }>
+    expect(contents.map((c) => c.role)).toEqual(['user', 'model', 'user'])
+    expect(contents[1].parts[0].text).toContain('記録しますか？')
+    expect(contents[1].parts[0].text).toContain('記録しました！')
+  })
 })

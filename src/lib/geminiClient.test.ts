@@ -119,8 +119,18 @@ describe('getErrorMessage', () => {
     expect(msg).toMatch(/APIキー/)
   })
 
-  test('maps 401 to key error', () => {
+  test('maps standalone 401 to key error', () => {
     const msg = getErrorMessage(new Error('HTTP 401 unauthorized'))
+    expect(msg).toMatch(/APIキー/)
+  })
+
+  test('does not misclassify 4011 as 401', () => {
+    const msg = getErrorMessage(new Error('error code 4011 something'))
+    expect(msg).not.toMatch(/APIキー/)
+  })
+
+  test('maps UNAUTHENTICATED to key error', () => {
+    const msg = getErrorMessage(new Error('UNAUTHENTICATED'))
     expect(msg).toMatch(/APIキー/)
   })
 
@@ -129,9 +139,26 @@ describe('getErrorMessage', () => {
     expect(msg).toMatch(/リクエスト制限/)
   })
 
-  test('maps RATE_LIMIT to rate limit', () => {
-    const msg = getErrorMessage(new Error('RATE_LIMIT_EXCEEDED'))
-    expect(msg).toMatch(/リクエスト制限/)
+  test('maps RATE_LIMIT / RESOURCE_EXHAUSTED to rate limit', () => {
+    expect(getErrorMessage(new Error('RATE_LIMIT_EXCEEDED'))).toMatch(/リクエスト制限/)
+    expect(getErrorMessage(new Error('RESOURCE_EXHAUSTED quota hit'))).toMatch(
+      /リクエスト制限/,
+    )
+  })
+
+  test('maps SAFETY filter blocks', () => {
+    expect(getErrorMessage(new Error('Response was blocked: SAFETY'))).toMatch(
+      /安全フィルター/,
+    )
+  })
+
+  test('maps 400 / INVALID_ARGUMENT to bad request guidance', () => {
+    expect(getErrorMessage(new Error('HTTP 400 INVALID_ARGUMENT'))).toMatch(
+      /会話をクリア/,
+    )
+    expect(
+      getErrorMessage(new Error('Server returned INVALID_ARGUMENT')),
+    ).toMatch(/会話をクリア/)
   })
 
   test('maps fetch/network to network error', () => {
