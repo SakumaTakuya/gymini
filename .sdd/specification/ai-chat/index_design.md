@@ -6,7 +6,7 @@ status: "implemented"
 sdd-phase: "implement"
 impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-19"
+updated: "2026-04-25"
 depends-on: ["spec-ai-chat", "design-workout", "design-exercise-master", "design-api-key"]
 tags: ["ai", "chat", "function-calling", "gemini", "phase-3"]
 category: "ai"
@@ -128,8 +128,8 @@ UIは Hook Layer だけを知る。State Layer・Data Layer は hooks の実装�
 
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
-| geminiClient | Gemini API との通信。チャット履歴管理、Function Calling 対応 | @google/generative-ai, settingsStore | `src/lib/geminiClient.ts` |
-| toolDefinitions | Gemini API に渡す Function Calling のツール定義（スキーマ） | なし | `src/lib/toolDefinitions.ts` |
+| geminiClient | Gemini API との通信。`generate(contents, abortSignal?)` 単一メソッドを公開（履歴は呼出側が組み立てる）| @google/generative-ai, settingsStore | `src/lib/geminiClient.ts` |
+| toolDefinitions | Gemini API に渡す Function Calling のツール定義（スキーマ）と `isWriteTool/isReadTool` の判定ヘルパー | なし | `src/lib/toolDefinitions.ts` |
 | toolExecutor | ツール名とパラメータを受け取り、対応する Repository/Store メソッドを呼び出すディスパッチャー | WorkoutRepository, ExerciseRepository, workoutSessionStore | `src/lib/toolExecutor.ts` |
 
 ### State Layer（Hook の実装詳細）
@@ -148,10 +148,10 @@ UIは Hook Layer だけを知る。State Layer・Data Layer は hooks の実装�
 
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
-| ChatPage | `/chat` ルートのページコンポーネント。メッセージ一覧 + 入力バー | useChatService | `src/pages/ChatPage.tsx` |
+| AIChatPage | `/_app/ai` ルートのページコンポーネント。メッセージ一覧 + 入力バー + APIキー未設定ガイド | useChatService, useSettingsStore | `src/pages/AIChatPage.tsx` |
 | ChatBubble | チャットメッセージバブル（user/assistant 両対応） | なし（props） | `src/components/chat/ChatBubble.tsx` |
-| ConfirmationBubble | 書き込み確認インラインUI（ボタン付きバブル）。インラインボタンのタップターゲットは h-11（44px）以上（T-003）。PRD の h-9 指定は T-003 違反のため h-11 に修正すること | なし（props） | `src/components/chat/ConfirmationBubble.tsx` |
-| ChatInput | メッセージ入力バー（BottomNav 上固定） | なし（props） | `src/components/chat/ChatInput.tsx` |
+| ConfirmationBubble | 書き込み確認インラインUI（ボタン付きバブル）。インラインボタンのタップターゲットは h-11（44px）以上（T-003）。PRD の h-9 指定は T-003 違反のため h-11 に修正済み | なし（props） | `src/components/chat/ConfirmationBubble.tsx` |
+| ChatInput | メッセージ入力バー（BottomNav 上固定）| なし（props） | `src/components/chat/ChatInput.tsx` |
 
 ---
 
@@ -225,12 +225,13 @@ import { GoogleGenerativeAI } from '@google/generative-ai'
 
 type GeminiClientConfig = {
   apiKey: string
-  toolDeclarations: ToolDeclaration[]  // toolDefinitions から取得
+  toolDeclarations?: FunctionDeclaration[]  // 省略時は toolDefinitions の TOOL_DECLARATIONS
 }
 
 type GeminiChatResponse = {
   text: string | null
   functionCalls: FunctionCallRequest[] | null
+  modelContent: Content | null  // Gemini 2.5 系の thoughtSignature を保持して返送に再利用
 }
 
 type FunctionCallRequest = {
@@ -244,17 +245,12 @@ const GEMINI_MODEL = 'gemini-flash-latest'
 // API送信時の履歴上限: 直近50件（NFR-005）
 const MAX_HISTORY_MESSAGES = 50
 
+// 単一メソッド設計: Function Calling の往復で必要となる contents の組み立ては
+// Hook 側 (useChatService) が責任を持つ。geminiClient はステートレスな送信窓口に徹する。
 function createGeminiClient(config: GeminiClientConfig): {
-  sendMessage: (
-    history: Array<{ role: 'user' | 'model'; parts: Part[] }>,  // Part は @google/generative-ai の型
-    message: string,
-    abortSignal?: AbortSignal  // 応答停止用
-  ) => Promise<GeminiChatResponse>
-
-  sendFunctionResult: (
-    history: Array<{ role: 'user' | 'model'; parts: Part[] }>,
-    functionResponses: Array<{ name: string; response: unknown }>,
-    abortSignal?: AbortSignal
+  generate: (
+    contents: Content[],         // Content は @google/generative-ai の型
+    abortSignal?: AbortSignal,   // 応答停止用
   ) => Promise<GeminiChatResponse>
 }
 
@@ -436,6 +432,7 @@ type ChatActions = {
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   updatePendingAction: (messageId: string, status: PendingActionStatus) => void
+  removeMessage: (messageId: string) => void   // stopResponse 時に未確定の assistant メッセージを撤去するために使用
   clearMessages: () => void
 }
 
@@ -479,17 +476,20 @@ async function sendMessage(text: string) {
   abortController = new AbortController()
 
   try {
-    // 3. Gemini API に送信（直近50件の履歴のみ送信: NFR-005）
-    const recentHistory = history.slice(-MAX_HISTORY_MESSAGES)
-    const response = await geminiClient.sendMessage(recentHistory, text, abortController.signal)
+    // 3. ChatMessage[] を Gemini Content[] に変換し、Gemini API に送信
+    //    - 同 role の連続は parts 連結でマージ（user/model 厳密交互制約への準拠）
+    //    - 先頭が model のときは破棄（user 起点でないと 400）
+    //    - 直近50件のみ送信（NFR-005）— トリミングは geminiClient 側で実施
+    const baseContents = messagesToContents(chatStore.getState().messages)
+    const firstResponse = await geminiClient.generate(baseContents, abortController.signal)
 
     // 4. Function Call の処理
-    if (response.functionCalls) {
+    if (firstResponse.functionCalls) {
       // 4a. 読み取りツールを全て先に実行し、結果を収集する
       const readResults: Array<{ name: string; args: Record<string, unknown>; result: ToolExecutionResult }> = []
       let writeCall: FunctionCallRequest | null = null
 
-      for (const fc of response.functionCalls) {
+      for (const fc of firstResponse.functionCalls) {
         if (isWriteTool(fc.name)) {
           // 書き込みツールは最初の1つだけ保持（同時に1つまで）
           if (!writeCall) writeCall = fc
@@ -502,12 +502,12 @@ async function sendMessage(text: string) {
 
       // 4b. 書き込みツールがある場合 → PendingAction を作成し確認待ち
       if (writeCall) {
-        // 読み取り結果があれば toolCalls に含める
+        cancelExistingPending()  // 既存の pending を自動 reject（同時 1 件まで）
         const pendingAction = createPendingAction(writeCall)
         chatStore.addMessage({
           role: 'assistant',
-          content: response.text ?? '',
-          toolCalls: readResults.map(r => ({ toolName: r.name, args: r.args, result: r.result })),
+          content: firstResponse.text ?? pendingAction.description,
+          toolCalls: readResults.length > 0 ? readResults : undefined,
           pendingAction,
           ...
         })
@@ -517,26 +517,40 @@ async function sendMessage(text: string) {
 
       // 4c. 読み取りツールのみ → 全結果を Gemini API に返送
       if (readResults.length > 0) {
-        const followUp = await geminiClient.sendFunctionResult(history,
-          readResults.map(r => ({ name: r.name, response: r.result })),
-          abortController.signal
-        )
+        // Gemini 2.5 系の thoughtSignature を保持するため、SDK が返した modelContent を
+        // そのまま model ターンとして再利用する（再構築すると 400 エラー）
+        const modelTurn = firstResponse.modelContent ?? {
+          role: 'model',
+          parts: readResults.map(r => ({ functionCall: { name: r.name, args: r.args } })),
+        }
+        const followUpContents = [
+          ...baseContents,
+          modelTurn,
+          {
+            role: 'user',
+            parts: readResults.map(r => ({
+              functionResponse: { name: r.name, response: r.result },
+            })),
+          },
+        ]
+        const followUp = await geminiClient.generate(followUpContents, abortController.signal)
         chatStore.addMessage({
           role: 'assistant',
           content: followUp.text ?? '',
-          toolCalls: readResults.map(r => ({ toolName: r.name, args: r.args, result: r.result })),
+          toolCalls: readResults,
           ...
         })
       }
     } else {
       // テキスト応答のみ
-      chatStore.addMessage({ role: 'assistant', content: response.text ?? '', ... })
+      chatStore.addMessage({ role: 'assistant', content: firstResponse.text ?? '', ... })
     }
   } catch (error) {
     // AbortError は stopResponse による正常中断なのでエラー表示しない
-    if (error instanceof DOMException && error.name === 'AbortError') {
+    if (isAbortError(error)) {
       return
     }
+    console.error('[ai-chat] Gemini API error:', error)
     chatStore.setError(getErrorMessage(error))
   } finally {
     chatStore.setLoading(false)
@@ -635,6 +649,9 @@ function getErrorMessage(error: unknown): string {
 | saveWorkout の種目ID解決 | AI事前検索 vs toolExecutor内検索 vs exerciseId をAIに渡す | toolExecutor 内で ExerciseRepository.search で検索。未登録時はエラーを返しAIが登録を提案 | AIのツール呼び出し回数を最小化しつつ、ユーザー確認フローを維持（B-002） |
 | セッション未開始時の addExerciseToSession | エラーのみ vs セッション開始+追加をまとめて提案 | エラーを返し、AIが「セッションを開始して追加しますか？」と確認 | ユーザー体験を優先。1回の確認でまとめて実行可能 |
 | AI応答待ち中のユーザー操作 | 送信無効化 vs キューイング vs 停止+再送信 | 停止ボタンで応答を中断・破棄し即座に新メッセージ送信可能 | モバイルUXを優先。誤った質問をすぐ修正できる。AbortController で実装 |
+| geminiClient の API 形状（fix PR #40 で確定）| `sendMessage` + `sendFunctionResult` の 2 メソッド vs `generate(contents)` 単一 | `generate(contents, abortSignal?)` 単一 | Function Calling の往復で必要となる contents（model の functionCall パート + user の functionResponse パート）の組み立て責務を Hook 側に集約することで、SDK 依存を最小化しテスト容易性を確保 |
+| Function Calling フォローアップでの model ターン構築（fix PR #40 で確定）| `response.functionCalls()` から再構築 vs `response.candidates[0].content` をそのまま再利用 | `modelContent` を `GeminiChatResponse` で公開し、Hook はそれをそのまま `model` ターンとして送り返す | Gemini 2.5 系（`gemini-flash-latest`）は functionCall パートに `thoughtSignature` を付与する。再構築するとシグネチャが欠落して 400 を返すため、SDK が返した content を不変に保つ必要がある |
+| ChatMessage→Content 変換時の連続 role 処理（fix PR #40 で確定）| 素直な 1:1 マップ vs 連続 model のマージ + 先頭 model 除去 | 同 role 連続を本文連結でマージし、先頭が model の場合は破棄 | Gemini API は user/model 厳密交互を要求し、approve/reject 後の結果メッセージで model が連続すると次の send が 400 になる。マージで履歴の意味は保持しつつ API 制約を満たす |
 
 ## 9.2. 未解決の課題
 
