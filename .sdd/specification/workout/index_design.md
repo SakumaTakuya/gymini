@@ -6,7 +6,7 @@ status: "approved"
 sdd-phase: "plan"
 impl-status: "implemented"
 created: "2026-03-08"
-updated: "2026-04-12"
+updated: "2026-04-26"
 depends-on: ["spec-workout", "design-navigation"]
 tags: ["workout", "session", "phase-1", "react", "typescript", "zustand", "localstorage"]
 category: "core"
@@ -33,7 +33,7 @@ risk: "high"
 | TrainingPage | 🟢 実装済み | UI Layer: isActive で IdleView/ActiveSessionView 切替 |
 | IdleView (FRAME1) | 🟢 実装済み | UI Layer: セッション未開始画面 |
 | ActiveSessionView (FRAME2) | 🟢 実装済み | UI Layer: セッション記録画面 |
-| ExerciseCard | 🟢 実装済み | UI Layer: 種目カード（3状態） |
+| ExerciseCard | 🟢 実装済み | UI Layer: 種目カード（3状態）+ 三点メニュー（並べ替え・削除） |
 | CompletedSetRow | 🟢 実装済み | UI Layer: 完了済みセット行 |
 | PendingSetRow | 🟢 実装済み | UI Layer: 入力中セット行 |
 | ExerciseSearchField | 🟢 実装済み | UI Layer: 種目検索・追加フィールド |
@@ -312,6 +312,7 @@ type WorkoutSessionState = {
   // State
   isActive: boolean                       // セッション中かどうか
   startedAt: ISODateTimeString | null     // セッション開始時刻
+  date: DateString | null                 // セッション対象日付（startSession で設定、endSession でリセット）
   draftExercises: DraftExercise[] // セッション中の種目・セット
 
   // Actions（spec WorkoutSession API に対応）
@@ -320,7 +321,7 @@ type WorkoutSessionState = {
 
   endSession: () => void
   // endSession: draftExercises → WorkoutInput に変換 → WorkoutRepository.save
-  // 完了後 isActive = false, startedAt = null, draftExercises = [] にリセット
+  // 完了後 isActive = false, startedAt = null, date = null, draftExercises = [] にリセット
 
   addExercise: (exercise: { exerciseId: string; exerciseName: string }) => void
   // 種目カードを recording 状態で追加。pendingSet を { weight: 0, reps: 0 } で初期化。
@@ -330,6 +331,13 @@ type WorkoutSessionState = {
   // idle 種目の「+」ボタン: pendingSet を初期化し cardState → recording。
   // 現在 recording 中の他種目があれば pendingSet を消去し idle に降格（FR-028, FR-030）
 
+  deleteExercise: (exerciseIndex: number) => void
+  // 三点メニュー「削除」: draftExercises から指定インデックスの種目を除去（FR-030）
+
+  reorderExercise: (exerciseIndex: number, direction: 'up' | 'down') => void
+  // 三点メニュー「上へ移動」/「下へ移動」: 指定インデックスの種目を隣と入れ替え（FR-030）
+  // 先頭種目の 'up' / 末尾種目の 'down' は無操作
+
   completeSet: (exerciseIndex: number, set: WorkoutSet) => void
   // チェックボタン: pendingSet → sets[] に追加、次の pendingSet を前セット値で初期化（FR-028, FR-006）
 
@@ -338,6 +346,9 @@ type WorkoutSessionState = {
 
   deleteCompletedSet: (exerciseIndex: number, setIndex: number) => void
   // ゴミ箱: sets[setIndex] を削除（FR-029）
+
+  updatePendingSet: (exerciseIndex: number, pendingSet: Partial<WorkoutSet>) => void
+  // 入力中セット行の重量・回数変更をリアルタイムに反映（PendingSetRow の onChange）
 
   toggleExerciseCard: (exerciseIndex: number) => void
   // カードヘッダータップ: collapsed ↔ 元の状態 を切り替え（FR-030）
@@ -389,15 +400,19 @@ function useWorkoutSession() {
   //   startSession: () => void,
   //   endSession: () => void,
   //
-  //   // Exercise management（FR-005, FR-028）
+  //   // Exercise management（FR-005, FR-028, FR-030）
   //   addExercise: (exercise: { exerciseId: string; exerciseName: string }) => void,  // recording状態で追加。他のrecordingはidleに降格
   //   activateExercise: (exerciseIndex: number) => void,  // idle種目の「+」ボタン。他のrecordingはidleに降格
+  //   deleteExercise: (exerciseIndex: number) => void,    // 三点メニュー「削除」
+  //   reorderExercise: (exerciseIndex: number, direction: 'up' | 'down') => void,  // 三点メニュー「並べ替え」
   //   searchExercises: (query: string) => Exercise[],  // ExerciseRepository を内部で呼ぶ
+  //   createExercise: (name: string) => Exercise,       // ExerciseRepository を内部で呼ぶ
   //
   //   // Set management（FR-028, FR-006, FR-029）
   //   completeSet: (exerciseIndex: number, set: WorkoutSet) => void,
   //   editCompletedSet: (exerciseIndex: number, setIndex: number) => void,
   //   deleteCompletedSet: (exerciseIndex: number, setIndex: number) => void,
+  //   updatePendingSet: (exerciseIndex: number, pendingSet: Partial<WorkoutSet>) => void,  // 入力中セット行のリアルタイム更新
   //
   //   // Card state（FR-030）
   //   toggleExerciseCard: (exerciseIndex: number) => void,
@@ -437,6 +452,8 @@ function useWorkoutSession() {
 | 別種目がrecordingに | `recording` | `idle` | 自動降格（pendingSet消去） | - |
 | ヘッダータップ | `idle`/`recording` | `collapsed` | `toggleExerciseCard` | - |
 | ヘッダータップ | `collapsed` | `idle` | `toggleExerciseCard` | - |
+| 三点メニュー「削除」 | 任意 | -（リストから除去） | `deleteExercise` | - |
+| 三点メニュー「上へ/下へ」 | 任意 | 任意（順序変更） | `reorderExercise` | - |
 
 ### セッションタイマーの実現方針（FR-032）
 
