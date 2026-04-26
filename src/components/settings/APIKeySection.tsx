@@ -94,7 +94,7 @@ export function APIKeySection() {
             type={visible ? 'text' : 'password'}
             value={localValue}
             onChange={handleChange}
-            className="flex-1 bg-transparent text-sm font-medium outline-none text-gym-black font-mono tracking-wider"
+            className="flex-1 bg-transparent text-base font-medium outline-none text-gym-black font-mono tracking-wider"
             placeholder="APIキーを入力"
           />
           <button

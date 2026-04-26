@@ -79,7 +79,7 @@ export function ExerciseSearchField({
             setTimeout(() => setShowDropdown(false), 200)
           }}
           placeholder="種目を追加..."
-          className="flex-1 bg-transparent outline-none text-sm font-medium text-black placeholder:text-zinc-500"
+          className="flex-1 bg-transparent outline-none text-base font-medium text-black placeholder:text-zinc-500"
         />
       </div>
 

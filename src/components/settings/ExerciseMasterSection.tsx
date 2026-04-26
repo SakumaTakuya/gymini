@@ -123,7 +123,7 @@ export function ExerciseMasterSection() {
             onChange={handleQueryChange}
             placeholder="種目を検索..."
             aria-label="種目を検索"
-            className="flex-1 bg-transparent text-sm outline-none text-gym-black placeholder-gym-zinc-400"
+            className="flex-1 bg-transparent text-base outline-none text-gym-black placeholder-gym-zinc-400"
           />
         </div>
       </div>
@@ -141,7 +141,7 @@ export function ExerciseMasterSection() {
                   aria-label="種目名を編集"
                   aria-invalid={editError !== null || undefined}
                   aria-describedby={editError !== null ? 'edit-error' : undefined}
-                  className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-sm font-inter text-gym-black"
+                  className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-base font-inter text-gym-black"
                   autoFocus
                 />
                 <button
@@ -203,7 +203,7 @@ export function ExerciseMasterSection() {
                 aria-invalid={addError !== null || undefined}
                 aria-describedby={addError !== null ? 'add-error' : undefined}
                 placeholder="種目名"
-                className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-sm font-inter text-gym-black"
+                className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-base font-inter text-gym-black"
                 autoFocus
               />
               <button
