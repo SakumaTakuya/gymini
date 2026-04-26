@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test'
+import { test, expect, type Page } from '@playwright/test'
 
 const SEED_EXERCISES = [
   { id: 'ex-1', name: 'ベンチプレス' },
@@ -15,6 +15,18 @@ test.beforeEach(async ({ page }) => {
   }, SEED_EXERCISES)
   await page.reload()
 })
+
+async function startSession(page: Page) {
+  await page.getByRole('button', { name: /トレーニングを始める/ }).click()
+  await page.getByPlaceholder('種目を追加...').fill('ベンチ')
+  await page.getByText('ベンチプレス', { exact: true }).click()
+}
+
+async function recordSet(page: Page, weight: string, reps: string) {
+  await page.locator('input[type="number"]').first().fill(weight)
+  await page.locator('input[type="number"]').last().fill(reps)
+  await page.getByRole('button', { name: '完了' }).click()
+}
 
 test.describe('待機画面 (FRAME1)', () => {
   test('「トレーニングを始める」ボタンが表示される', async ({ page }) => {
@@ -202,5 +214,95 @@ test.describe('トレーニング記録フロー', () => {
 
     // 種目カードが表示される
     await expect(page.getByText('ラットプルダウン')).toBeVisible()
+  })
+})
+
+test.describe('セット編集バグ修正', () => {
+  const completedRows = (page: Page) => page.locator('.bg-zinc-50.rounded-xl')
+
+  test('編集完了後にセットが元の位置に戻る（末尾追加されない）', async ({ page }) => {
+    await startSession(page)
+    await recordSet(page, '60', '10') // index 0
+    await recordSet(page, '65', '8')  // index 1
+    await recordSet(page, '70', '6')  // index 2
+
+    // 1番目のセット（60kg）を編集
+    await page.getByRole('button', { name: '編集' }).first().click()
+
+    // 編集中: 完了済みは2行（65, 70）、入力欄は60
+    await expect(completedRows(page)).toHaveCount(2)
+    await expect(page.locator('input[type="number"]').first()).toHaveValue('60')
+
+    // 62kgに変更して完了
+    await page.locator('input[type="number"]').first().fill('62')
+    await page.getByRole('button', { name: '完了' }).click()
+
+    // 完了済みが3行に戻る
+    await expect(completedRows(page)).toHaveCount(3)
+    // 1行目が62kg（元の位置）であること
+    await expect(completedRows(page).nth(0)).toContainText('62')
+    // 2行目が65kg（末尾に移動していないこと）
+    await expect(completedRows(page).nth(1)).toContainText('65')
+    await expect(completedRows(page).nth(2)).toContainText('70')
+  })
+
+  test('編集中に別セットのペンを押してもセットが消えない', async ({ page }) => {
+    await startSession(page)
+    await recordSet(page, '60', '10') // A
+    await recordSet(page, '65', '8')  // B
+
+    // A（index 0）を編集開始 → sets=[B], pendingSet=A
+    await page.getByRole('button', { name: '編集' }).first().click()
+    await expect(completedRows(page)).toHaveCount(1)
+
+    // B（現在 index 0）のペンを押す → A が復元され B が編集対象に
+    await page.getByRole('button', { name: '編集' }).first().click()
+
+    // A が完了済みに復元されている
+    await expect(completedRows(page)).toHaveCount(1)
+    await expect(completedRows(page).first()).toContainText('60')
+    // B の値が入力欄に表示されている
+    await expect(page.locator('input[type="number"]').first()).toHaveValue('65')
+  })
+
+  test('編集中に別エクサイズを追加してもセットが消えない', async ({ page }) => {
+    await startSession(page)
+    await recordSet(page, '60', '10')
+    await recordSet(page, '65', '8')
+
+    // 1番目のセットを編集開始（sets=[65], pendingSet=60）
+    await page.getByRole('button', { name: '編集' }).first().click()
+    await expect(completedRows(page)).toHaveCount(1)
+
+    // 新種目を追加 → deactivateRecording が走り編集中セットが復元されるはず
+    await page.getByPlaceholder('種目を追加...').fill('スクワット')
+    await page.getByText('スクワット', { exact: true }).click()
+
+    // ベンチプレスの完了済みセットが2件に戻っている
+    await expect(completedRows(page)).toHaveCount(2)
+    await expect(completedRows(page).nth(0)).toContainText('60')
+    await expect(completedRows(page).nth(1)).toContainText('65')
+  })
+
+  test('編集中にカードを折りたたんでもセットが消えない', async ({ page }) => {
+    await startSession(page)
+    await recordSet(page, '60', '10')
+    await recordSet(page, '65', '8')
+
+    // 1番目のセットを編集開始
+    await page.getByRole('button', { name: '編集' }).first().click()
+    await expect(completedRows(page)).toHaveCount(1)
+
+    // ヘッダーをクリックしてカードを折りたたむ
+    await page.getByText('ベンチプレス').click()
+
+    // 折りたたみ状態: 2 Sets と表示される（セットが失われていない）
+    await expect(page.getByText(/2 Sets/)).toBeVisible()
+
+    // 展開する
+    await page.getByText('ベンチプレス').click()
+
+    // 2件の完了済みセットが表示される
+    await expect(completedRows(page)).toHaveCount(2)
   })
 })

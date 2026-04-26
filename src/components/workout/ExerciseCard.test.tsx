@@ -9,6 +9,7 @@ const baseDraft: DraftExercise = {
   sets: [],
   pendingSet: null,
   cardState: 'idle',
+  editingSetIndex: null,
 }
 
 const defaultProps = {

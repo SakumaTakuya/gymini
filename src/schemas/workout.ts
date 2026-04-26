@@ -47,4 +47,5 @@ export type DraftExercise = {
   sets: WorkoutSet[]
   pendingSet: WorkoutSet | null
   cardState: ExerciseCardState
+  editingSetIndex: number | null
 }
