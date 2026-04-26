@@ -50,7 +50,7 @@ export function ChatInput({
           rows={1}
           className={cn(
             'focus-ring flex-1 resize-none bg-transparent outline-none',
-            'text-sm text-black placeholder:text-zinc-400',
+            'text-base text-black placeholder:text-zinc-400',
             'min-h-[36px] max-h-32 py-1.5 px-1',
           )}
         />
