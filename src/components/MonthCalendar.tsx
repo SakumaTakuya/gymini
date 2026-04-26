@@ -118,21 +118,6 @@ export function MonthCalendar({
         </button>
       </div>
 
-      {/* Weekday Headers */}
-      <div className="grid grid-cols-7 gap-1 text-center mb-3">
-        {WEEKDAY_LABELS.map((day, i) => (
-          <div
-            key={day}
-            className={cn(
-              'text-[10px] font-bold',
-              i === 0 ? 'text-gym-accent' : 'text-gym-zinc-400',
-            )}
-          >
-            {day}
-          </div>
-        ))}
-      </div>
-
       {/* Calendar Grid via react-day-picker */}
       <DayPicker
         mode="single"
@@ -144,12 +129,18 @@ export function MonthCalendar({
         showOutsideDays
         fixedWeeks={false}
         hideNavigation
+        formatters={{
+          formatWeekdayName: (day) => WEEKDAY_LABELS[day.getDay()],
+        }}
         classNames={{
-          months: '',
-          month: '',
+          months: 'w-full',
+          month: 'w-full',
           month_caption: 'hidden',
           nav: 'hidden',
-          weekdays: 'hidden',
+          month_grid: 'w-full',
+          weekdays: 'grid grid-cols-7 gap-1 text-center mb-3 [&>:first-child]:text-gym-accent',
+          weekday: 'text-[10px] font-bold text-gym-zinc-400 text-center',
+          weeks: 'w-full',
           week: 'grid grid-cols-7 gap-y-3 gap-x-1 text-center font-outfit text-sm font-medium',
           day: '',
           root: 'w-full',
