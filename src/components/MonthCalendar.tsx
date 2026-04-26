@@ -137,6 +137,7 @@ export function MonthCalendar({
           month: 'w-full',
           month_caption: 'hidden',
           nav: 'hidden',
+          month_grid: 'w-full',
           weekdays: 'grid grid-cols-7 gap-1 text-center mb-3 [&>:first-child]:text-gym-accent',
           weekday: 'text-[10px] font-bold text-gym-zinc-400 text-center',
           weeks: 'w-full',
