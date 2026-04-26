@@ -37,8 +37,9 @@ export function BottomNav() {
       ))}
       <Link
         to="/ai"
-        className="flex items-center gap-1.5 px-4 h-11 rounded-2xl bg-black text-white border border-zinc-800 min-h-[44px] min-w-[44px]"
-        activeProps={{ className: 'flex items-center gap-1.5 px-4 h-11 rounded-2xl bg-accent text-white shadow-lg shadow-red-200 min-h-[44px] min-w-[44px]' }}
+        className="flex items-center gap-1.5 px-4 h-11 rounded-2xl min-h-[44px] min-w-[44px]"
+        activeProps={{ className: 'bg-gym-accent text-white shadow-lg shadow-red-200' }}
+        inactiveProps={{ className: 'bg-black text-white border border-zinc-800' }}
       >
         <Robot size={20} weight="bold" />
         <span className="text-xs font-bold">AI</span>
