@@ -69,14 +69,11 @@ test.describe('トレーニング記録フロー', () => {
     const completedRows = page.locator('.bg-zinc-50.rounded-xl')
     await expect(completedRows).toHaveCount(2)
 
-    // 終了ボタン（navigation GearIcon のスコープ外のため、ストア操作でシミュレート）
-    await page.evaluate(() => {
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
-      const store = (window as any).__zustand_workout_session
-      if (store) store.getState().endSession()
-    })
-    // If GearIcon end button isn't available, use store directly
-    // For now check that the session persists via store
+    // 終了ボタンを押してFRAME1に戻る
+    await page.getByRole('button', { name: '終了' }).click()
+    await expect(
+      page.getByRole('button', { name: /トレーニングを始める/ }),
+    ).toBeVisible()
   })
 
   test('複数種目の排他制御: 新種目追加で前の種目が idle に降格', async ({
