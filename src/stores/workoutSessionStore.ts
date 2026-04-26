@@ -17,6 +17,8 @@ type WorkoutSessionState = {
   endSession: () => void
   addExercise: (exercise: { exerciseId: string; exerciseName: string }) => void
   activateExercise: (exerciseIndex: number) => void
+  deleteExercise: (exerciseIndex: number) => void
+  reorderExercise: (exerciseIndex: number, direction: 'up' | 'down') => void
   completeSet: (exerciseIndex: number, set: WorkoutSet) => void
   editCompletedSet: (exerciseIndex: number, setIndex: number) => void
   deleteCompletedSet: (exerciseIndex: number, setIndex: number) => void
@@ -69,6 +71,25 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
           startedAt: null,
           date: null,
           draftExercises: [],
+        })
+      },
+
+      deleteExercise: (exerciseIndex) => {
+        set((state) => ({
+          draftExercises: state.draftExercises.filter((_, i) => i !== exerciseIndex),
+        }))
+      },
+
+      reorderExercise: (exerciseIndex, direction) => {
+        set((state) => {
+          const exercises = [...state.draftExercises]
+          const targetIndex = direction === 'up' ? exerciseIndex - 1 : exerciseIndex + 1
+          if (targetIndex < 0 || targetIndex >= exercises.length) return state
+          ;[exercises[exerciseIndex], exercises[targetIndex]] = [
+            exercises[targetIndex],
+            exercises[exerciseIndex],
+          ]
+          return { draftExercises: exercises }
         })
       },
 

@@ -17,6 +17,7 @@ const defaultProps = {
   onComplete: vi.fn(),
   onEdit: vi.fn(),
   onDelete: vi.fn(),
+  onDeleteExercise: vi.fn(),
   onToggle: vi.fn(),
   onWeightChange: vi.fn(),
   onRepsChange: vi.fn(),

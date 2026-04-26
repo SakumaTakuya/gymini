@@ -1,4 +1,5 @@
-import { CaretDown, CaretUp, DotsThree, Plus } from '@phosphor-icons/react'
+import { ArrowDown, ArrowUp, CaretDown, CaretUp, DotsThree, Plus, Trash } from '@phosphor-icons/react'
+import { useState } from 'react'
 import type { DraftExercise, WorkoutSet } from '../../schemas/workout'
 import { CompletedSetRow } from './CompletedSetRow'
 import { PendingSetRow } from './PendingSetRow'
@@ -9,6 +10,9 @@ type ExerciseCardProps = {
   onComplete: (set: WorkoutSet) => void
   onEdit: (setIndex: number) => void
   onDelete: (setIndex: number) => void
+  onDeleteExercise: () => void
+  onMoveUp?: () => void
+  onMoveDown?: () => void
   onToggle: () => void
   onWeightChange: (weight: number) => void
   onRepsChange: (reps: number) => void
@@ -20,6 +24,9 @@ export function ExerciseCard({
   onComplete,
   onEdit,
   onDelete,
+  onDeleteExercise,
+  onMoveUp,
+  onMoveDown,
   onToggle,
   onWeightChange,
   onRepsChange,
@@ -27,6 +34,7 @@ export function ExerciseCard({
   const { exerciseName, sets, pendingSet, cardState } = draftExercise
   const isCollapsed = cardState === 'collapsed'
   const isRecording = cardState === 'recording'
+  const [menuOpen, setMenuOpen] = useState(false)
 
   return (
     <div
@@ -41,8 +49,49 @@ export function ExerciseCard({
         }`}
         onClick={onToggle}
       >
-        <div className="w-8 h-8 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-500 flex-shrink-0">
-          <DotsThree size={16} weight="bold" />
+        <div className="relative flex-shrink-0">
+          <button
+            type="button"
+            aria-label="種目メニュー"
+            className="focus-ring w-8 h-8 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-500"
+            onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v) }}
+            onBlur={() => { setTimeout(() => setMenuOpen(false), 150) }}
+          >
+            <DotsThree size={16} weight="bold" />
+          </button>
+          {menuOpen && (
+            <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-zinc-200 z-50 py-1 min-w-[140px]">
+              {onMoveUp && (
+                <button
+                  type="button"
+                  className="focus-ring flex items-center gap-2 w-full px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50"
+                  onClick={(e) => { e.stopPropagation(); onMoveUp(); setMenuOpen(false) }}
+                >
+                  <ArrowUp size={14} weight="bold" />
+                  上へ移動
+                </button>
+              )}
+              {onMoveDown && (
+                <button
+                  type="button"
+                  className="focus-ring flex items-center gap-2 w-full px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50"
+                  onClick={(e) => { e.stopPropagation(); onMoveDown(); setMenuOpen(false) }}
+                >
+                  <ArrowDown size={14} weight="bold" />
+                  下へ移動
+                </button>
+              )}
+              {(onMoveUp || onMoveDown) && <div className="my-1 border-t border-zinc-100" />}
+              <button
+                type="button"
+                className="focus-ring flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
+                onClick={(e) => { e.stopPropagation(); onDeleteExercise(); setMenuOpen(false) }}
+              >
+                <Trash size={14} weight="bold" />
+                削除
+              </button>
+            </div>
+          )}
         </div>
         <div className="flex-1">
           <h3 className="font-outfit font-bold text-lg text-black">
