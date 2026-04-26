@@ -34,6 +34,8 @@ export function useWorkoutSession() {
     // Exercise management
     addExercise: store.addExercise,
     activateExercise: store.activateExercise,
+    deleteExercise: store.deleteExercise,
+    reorderExercise: store.reorderExercise,
     searchExercises,
     createExercise,
 

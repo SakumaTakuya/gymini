@@ -7,6 +7,8 @@ export function ActiveSessionView() {
     draftExercises,
     addExercise,
     activateExercise,
+    deleteExercise,
+    reorderExercise,
     completeSet,
     editCompletedSet,
     deleteCompletedSet,
@@ -38,6 +40,9 @@ export function ActiveSessionView() {
           onComplete={(set) => completeSet(i, set)}
           onEdit={(setIndex) => editCompletedSet(i, setIndex)}
           onDelete={(setIndex) => deleteCompletedSet(i, setIndex)}
+          onDeleteExercise={() => deleteExercise(i)}
+          onMoveUp={i > 0 ? () => reorderExercise(i, 'up') : undefined}
+          onMoveDown={i < draftExercises.length - 1 ? () => reorderExercise(i, 'down') : undefined}
           onToggle={() => toggleExerciseCard(i)}
           onWeightChange={(weight) => updatePendingSet(i, { weight })}
           onRepsChange={(reps) => updatePendingSet(i, { reps })}
