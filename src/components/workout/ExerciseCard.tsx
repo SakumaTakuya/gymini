@@ -44,17 +44,16 @@ export function ExerciseCard({
     >
       {/* Header */}
       <div
-        className={`flex items-center gap-3 cursor-pointer ${
+        className={`flex items-center gap-3 ${
           !isCollapsed ? 'mb-4 border-b border-zinc-50 pb-3' : ''
         }`}
-        onClick={onToggle}
       >
         <div className="relative flex-shrink-0">
           <button
             type="button"
             aria-label="種目メニュー"
-            className="focus-ring w-8 h-8 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-500"
-            onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v) }}
+            className="focus-ring w-8 h-8 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-500 min-h-[44px] min-w-[44px]"
+            onClick={() => setMenuOpen((v) => !v)}
             onBlur={() => { setTimeout(() => setMenuOpen(false), 150) }}
           >
             <DotsThree size={16} weight="bold" />
@@ -93,22 +92,28 @@ export function ExerciseCard({
             </div>
           )}
         </div>
-        <div className="flex-1">
-          <h3 className="font-outfit font-bold text-lg text-black">
-            {exerciseName}
-          </h3>
-          {isCollapsed && sets.length > 0 && (
-            <p className="text-[10px] text-zinc-400 font-medium uppercase mt-0.5">
-              {sets.length} Sets &bull; Last: {sets[sets.length - 1].weight}kg x{' '}
-              {sets[sets.length - 1].reps}
-            </p>
+        <button
+          type="button"
+          className="focus-ring flex flex-1 items-center gap-3 min-h-[44px] text-left"
+          onClick={onToggle}
+        >
+          <div className="flex-1">
+            <h3 className="font-outfit font-bold text-lg text-black">
+              {exerciseName}
+            </h3>
+            {isCollapsed && sets.length > 0 && (
+              <p className="text-[10px] text-zinc-400 font-medium uppercase mt-0.5">
+                {sets.length} Sets &bull; Last: {sets[sets.length - 1].weight}kg x{' '}
+                {sets[sets.length - 1].reps}
+              </p>
+            )}
+          </div>
+          {isCollapsed ? (
+            <CaretDown size={16} weight="bold" className="text-zinc-400 flex-shrink-0" />
+          ) : (
+            <CaretUp size={16} weight="bold" className="text-zinc-400 flex-shrink-0" />
           )}
-        </div>
-        {isCollapsed ? (
-          <CaretDown size={16} weight="bold" className="text-zinc-400 flex-shrink-0" />
-        ) : (
-          <CaretUp size={16} weight="bold" className="text-zinc-400 flex-shrink-0" />
-        )}
+        </button>
       </div>
 
       {/* Body */}
