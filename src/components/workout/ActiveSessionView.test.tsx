@@ -49,4 +49,17 @@ describe('ActiveSessionView', () => {
     // ExerciseCard should appear
     expect(screen.getByText('ベンチプレス')).toBeInTheDocument()
   })
+
+  it('renders 終了 button', () => {
+    useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
+    render(<ActiveSessionView />)
+    expect(screen.getByRole('button', { name: '終了' })).toBeInTheDocument()
+  })
+
+  it('clicking 終了 button ends the session', () => {
+    useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
+    render(<ActiveSessionView />)
+    fireEvent.click(screen.getByRole('button', { name: '終了' }))
+    expect(useWorkoutSessionStore.getState().isActive).toBe(false)
+  })
 })
