@@ -53,7 +53,7 @@ export function ExerciseCard({
           <button
             type="button"
             aria-label="種目メニュー"
-            className="focus-ring w-8 h-8 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-500"
+            className="focus-ring w-8 h-8 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-500 min-h-[44px] min-w-[44px]"
             onClick={(e) => { e.stopPropagation(); setMenuOpen((v) => !v) }}
             onBlur={() => { setTimeout(() => setMenuOpen(false), 150) }}
           >
