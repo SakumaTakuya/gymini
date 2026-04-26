@@ -24,10 +24,21 @@ type WorkoutSessionState = {
   toggleExerciseCard: (exerciseIndex: number) => void
 }
 
+// Restores a set being edited back into the sets array at its original index.
+// Returns the exercise unchanged if no edit is in progress.
+function restoreEditingSet(e: DraftExercise): DraftExercise {
+  if (e.editingSetIndex != null && e.pendingSet !== null) {
+    const i = e.editingSetIndex
+    const restored = [...e.sets.slice(0, i), e.pendingSet, ...e.sets.slice(i)]
+    return { ...e, sets: restored, pendingSet: null, editingSetIndex: null }
+  }
+  return { ...e, pendingSet: null, editingSetIndex: null }
+}
+
 function deactivateRecording(exercises: DraftExercise[]): DraftExercise[] {
   return exercises.map((e) =>
     e.cardState === 'recording'
-      ? { ...e, cardState: 'idle' as const, pendingSet: null }
+      ? { ...restoreEditingSet(e), cardState: 'idle' as const }
       : e,
   )
 }
@@ -81,6 +92,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             sets: [],
             pendingSet: { weight: 0, reps: 0 },
             cardState: 'recording',
+            editingSetIndex: null,
           }
           return { draftExercises: [...deactivated, newExercise] }
         })
@@ -100,6 +112,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             ...target,
             cardState: 'recording',
             pendingSet: { ...lastSet },
+            editingSetIndex: null,
           }
           return { draftExercises: updated }
         })
@@ -110,10 +123,20 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
           const exercises = [...state.draftExercises]
           const target = exercises[exerciseIndex]
           if (!target) return state
+          // If editing an existing set, reinsert at original position; otherwise append.
+          const newSets =
+            target.editingSetIndex != null
+              ? [
+                  ...target.sets.slice(0, target.editingSetIndex),
+                  completedSet,
+                  ...target.sets.slice(target.editingSetIndex),
+                ]
+              : [...target.sets, completedSet]
           exercises[exerciseIndex] = {
             ...target,
-            sets: [...target.sets, completedSet],
+            sets: newSets,
             pendingSet: { ...completedSet },
+            editingSetIndex: null,
           }
           return { draftExercises: exercises }
         })
@@ -121,17 +144,33 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
 
       editCompletedSet: (exerciseIndex, setIndex) => {
         set((state) => {
+          const originalExercise = state.draftExercises[exerciseIndex]
           const deactivated = deactivateRecording(state.draftExercises)
           const exercises = [...deactivated]
           const target = exercises[exerciseIndex]
-          if (!target || setIndex >= target.sets.length) return state
-          const setToEdit = target.sets[setIndex]
-          const newSets = target.sets.filter((_, i) => i !== setIndex)
+          if (!target) return state
+
+          // After deactivateRecording restored any in-progress edit on this exercise,
+          // the displayed setIndex may be off by one if the restored set was inserted
+          // at or before the clicked position.
+          const restoredIdx =
+            originalExercise.cardState === 'recording'
+              ? (originalExercise.editingSetIndex ?? null)
+              : null
+          const adjustedSetIndex =
+            restoredIdx != null && restoredIdx <= setIndex
+              ? setIndex + 1
+              : setIndex
+
+          if (adjustedSetIndex >= target.sets.length) return state
+          const setToEdit = target.sets[adjustedSetIndex]
+          const newSets = target.sets.filter((_, i) => i !== adjustedSetIndex)
           exercises[exerciseIndex] = {
             ...target,
             sets: newSets,
             pendingSet: { ...setToEdit },
             cardState: 'recording',
+            editingSetIndex: adjustedSetIndex,
           }
           return { draftExercises: exercises }
         })
@@ -171,8 +210,10 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
           if (target.cardState === 'collapsed') {
             exercises[exerciseIndex] = { ...target, cardState: 'idle' }
           } else {
+            // Restore any in-progress edit before collapsing so the set is not lost.
+            const restored = restoreEditingSet(target)
             exercises[exerciseIndex] = {
-              ...target,
+              ...restored,
               cardState: 'collapsed',
               pendingSet: null,
             }

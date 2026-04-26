@@ -96,6 +96,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].cardState).toBe('recording')
       expect(draftExercises[0].pendingSet).toEqual({ weight: 0, reps: 0 })
       expect(draftExercises[0].sets).toEqual([])
+      expect(draftExercises[0].editingSetIndex).toBeNull()
     })
 
     it('deactivates current recording exercise when adding new one', () => {
@@ -110,6 +111,28 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].cardState).toBe('idle')
       expect(draftExercises[0].pendingSet).toBeNull()
       expect(draftExercises[1].cardState).toBe('recording')
+    })
+
+    it('restores set being edited when new exercise is added', () => {
+      const { startSession, addExercise, completeSet } =
+        useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      completeSet(0, { weight: 60, reps: 10 })
+      completeSet(0, { weight: 65, reps: 8 })
+
+      // Start editing first set
+      useWorkoutSessionStore.getState().editCompletedSet(0, 0)
+      // Adding a new exercise should restore the set being edited
+      useWorkoutSessionStore
+        .getState()
+        .addExercise({ exerciseId: 'squat', exerciseName: 'スクワット' })
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].sets).toHaveLength(2)
+      expect(draftExercises[0].sets[0]).toEqual({ weight: 60, reps: 10 })
+      expect(draftExercises[0].sets[1]).toEqual({ weight: 65, reps: 8 })
+      expect(draftExercises[0].pendingSet).toBeNull()
     })
   })
 
@@ -129,6 +152,7 @@ describe('workoutSessionStore', () => {
       const { draftExercises } = useWorkoutSessionStore.getState()
       expect(draftExercises[0].cardState).toBe('recording')
       expect(draftExercises[0].pendingSet).toEqual({ weight: 0, reps: 0 })
+      expect(draftExercises[0].editingSetIndex).toBeNull()
       expect(draftExercises[1].cardState).toBe('idle')
       expect(draftExercises[1].pendingSet).toBeNull()
     })
@@ -182,6 +206,29 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].sets[1]).toEqual({ weight: 65, reps: 8 })
       expect(draftExercises[0].pendingSet).toEqual({ weight: 65, reps: 8 })
     })
+
+    it('reinserts edited set at original position instead of appending', () => {
+      const { startSession, addExercise, completeSet } =
+        useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      completeSet(0, { weight: 60, reps: 10 }) // index 0
+      completeSet(0, { weight: 65, reps: 8 })  // index 1
+      completeSet(0, { weight: 70, reps: 6 })  // index 2
+
+      // Edit the first set (index 0)
+      useWorkoutSessionStore.getState().editCompletedSet(0, 0)
+      // Complete the edit with new values
+      useWorkoutSessionStore.getState().completeSet(0, { weight: 62, reps: 10 })
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].sets).toHaveLength(3)
+      // Edited set must be back at index 0, not appended at the end
+      expect(draftExercises[0].sets[0]).toEqual({ weight: 62, reps: 10 })
+      expect(draftExercises[0].sets[1]).toEqual({ weight: 65, reps: 8 })
+      expect(draftExercises[0].sets[2]).toEqual({ weight: 70, reps: 6 })
+      expect(draftExercises[0].editingSetIndex).toBeNull()
+    })
   })
 
   describe('editCompletedSet', () => {
@@ -202,6 +249,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].sets[0]).toEqual({ weight: 65, reps: 8 })
       expect(draftExercises[0].pendingSet).toEqual({ weight: 60, reps: 10 })
       expect(draftExercises[0].cardState).toBe('recording')
+      expect(draftExercises[0].editingSetIndex).toBe(0)
     })
 
     it('deactivates other recording exercises', () => {
@@ -221,6 +269,30 @@ describe('workoutSessionStore', () => {
       const { draftExercises } = useWorkoutSessionStore.getState()
       expect(draftExercises[0].cardState).toBe('recording')
       expect(draftExercises[1].cardState).toBe('idle')
+    })
+
+    it('restores first set and correctly edits second when pen clicked twice', () => {
+      const { startSession, addExercise, completeSet } =
+        useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      completeSet(0, { weight: 60, reps: 10 }) // A - index 0
+      completeSet(0, { weight: 65, reps: 8 })  // B - index 1
+      completeSet(0, { weight: 70, reps: 6 })  // C - index 2
+
+      // First: edit A (index 0). sets become [B, C], pendingSet = A
+      useWorkoutSessionStore.getState().editCompletedSet(0, 0)
+
+      // Second: click pen on C which is now at displayed index 1 in [B, C]
+      // This should restore A first, then edit C
+      useWorkoutSessionStore.getState().editCompletedSet(0, 1)
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      // C is now in pendingSet, A and B should be in sets
+      expect(draftExercises[0].pendingSet).toEqual({ weight: 70, reps: 6 })
+      expect(draftExercises[0].sets).toHaveLength(2)
+      expect(draftExercises[0].sets[0]).toEqual({ weight: 60, reps: 10 }) // A restored
+      expect(draftExercises[0].sets[1]).toEqual({ weight: 65, reps: 8 })  // B
     })
   })
 
@@ -285,6 +357,26 @@ describe('workoutSessionStore', () => {
       expect(
         useWorkoutSessionStore.getState().draftExercises[0].cardState,
       ).toBe('idle')
+    })
+
+    it('restores set being edited when card is collapsed', () => {
+      const { startSession, addExercise, completeSet } =
+        useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      completeSet(0, { weight: 60, reps: 10 })
+      completeSet(0, { weight: 65, reps: 8 })
+
+      // Start editing first set
+      useWorkoutSessionStore.getState().editCompletedSet(0, 0)
+      // Collapse the card without completing the edit
+      useWorkoutSessionStore.getState().toggleExerciseCard(0)
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].cardState).toBe('collapsed')
+      expect(draftExercises[0].sets).toHaveLength(2)
+      expect(draftExercises[0].sets[0]).toEqual({ weight: 60, reps: 10 })
+      expect(draftExercises[0].sets[1]).toEqual({ weight: 65, reps: 8 })
     })
   })
 })
