@@ -1,4 +1,5 @@
 import { Lightning, Barbell } from '@phosphor-icons/react'
+import { GearIcon } from './GearIcon'
 
 type IdleViewProps = {
   onStartTraining: () => void
@@ -14,6 +15,7 @@ export function IdleView({ onStartTraining }: IdleViewProps) {
 
   return (
     <div className="flex-1 bg-zinc-50 pt-16 px-6 relative flex flex-col">
+      <GearIcon className="absolute top-12 right-4 z-30" />
       <div className="flex items-center mb-12 gap-3">
         <div>
           <p className="text-xs text-zinc-500 font-medium">{dateStr}</p>

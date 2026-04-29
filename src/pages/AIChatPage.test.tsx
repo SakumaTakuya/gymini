@@ -46,6 +46,14 @@ describe('AIChatPage', () => {
     expect(screen.getByRole('link', { name: /設定画面へ/ })).toBeInTheDocument()
   })
 
+  test('renders gear link to settings', () => {
+    render(<AIChatPage />)
+    const settingsLink = screen
+      .getAllByRole('link')
+      .find((l) => l.getAttribute('href') === '/settings')
+    expect(settingsLink).toBeDefined()
+  })
+
   test('enables input when key is set', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     render(<AIChatPage />)

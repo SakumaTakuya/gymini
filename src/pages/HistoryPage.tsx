@@ -5,6 +5,7 @@ import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
 import { MonthCalendar } from '../components/MonthCalendar'
 import { WorkoutSummary } from '../components/WorkoutSummary'
 import { EmptyDayState } from '../components/EmptyDayState'
+import { GearIcon } from '../components/GearIcon'
 import type { DateString } from '../schemas/date'
 
 export function HistoryPage() {
@@ -28,6 +29,7 @@ export function HistoryPage() {
 
   return (
     <div className="flex-1 bg-gym-zinc-50 pt-16 pb-32 overflow-y-auto">
+      <GearIcon className="absolute top-12 right-4 z-30" />
       <MonthCalendar
         displayMonth={displayMonth}
         selectedDate={selectedDate}

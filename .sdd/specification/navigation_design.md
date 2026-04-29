@@ -27,7 +27,7 @@ category: "ui"
 |-------------|--------|------|
 | TanStack Router セットアップ | 🟢 実装済み | Vite plugin + routeTree 自動生成 |
 | __root.tsx (��ートレイアウト) | 🟢 実装済み | ルートの Outlet + notFoundComponent |
-| _app.tsx (pathless layout) | 🟢 実装済み | GearIcon + Outlet + BottomNav + rehydration ガード |
+| _app.tsx (pathless layout) | 🟢 実装済み | Outlet + BottomNav + rehydration ガード（GearIcon は各ページが自前で配置） |
 | _app/training.tsx | ���� 実装済み | プレースホルダー（workout タスクで詳細実装） |
 | _app/history.tsx | 🟢 実装済み | FRAME3: プレースホルダー（中身は別design） |
 | _app/ai.tsx | 🟢 実装済み | FRAME4: プレースホルダー（中身は別design） |
@@ -42,7 +42,7 @@ category: "ui"
 
 - **CONSTITUTION 完全準拠**: TanStack Router によるファイルベースルーティング（A-001）。自作ルーティング禁止に従う
 - **PRD 完全準拠**: 5つの論理画面（FRAME1〜5）、4ルート、BottomNav（2タブ + AIボタン）、歯車アイコン
-- **宣言的レイアウト制御**: pathless layout route により BottomNav / GearIcon の表示を構造的に制御する
+- **宣言的レイアウト制御**: pathless layout route により BottomNav の表示を構造的に制御する。GearIcon は各ページが自前で `absolute` 配置でレンダリングし、FRAME ごとに異なる chrome 構成（FRAME2 の `SessionHeader` 等）を実現する
 - **デザインシステム準拠**: `.sdd/design-system.html` のレイアウト・スタイルを忠実に再現する
 - **セッション安全性**: ページ遷移やリロードでセッションデータが失われない（B-001: ローカルストレージ完結）
 - **TypeScript strict mode**: TanStack Router の型推論 + strict mode で型安全を確保する（T-001）
@@ -132,7 +132,7 @@ graph TD
 | ファイル | 責務 | URLパス | レイアウト |
 |---------|------|--------|----------|
 | `src/routes/__root.tsx` | ルートレイアウト（Outlet のみ） | - | - |
-| `src/routes/_app.tsx` | pathless layout: GearIcon + Outlet + BottomNav | - (URLセグメントなし) | BottomNav + GearIcon あり |
+| `src/routes/_app.tsx` | pathless layout: Outlet + BottomNav | - (URLセグメントなし) | BottomNav あり（GearIcon は各ページが自前で配置） |
 | `src/routes/_app/training.tsx` | /training ルート → TrainingPage | `/training` | _app layout |
 | `src/routes/_app/history.tsx` | /history ルート → HistoryPage | `/history` | _app layout |
 | `src/routes/_app/ai.tsx` | /ai ルート → AIChatPage | `/ai` | _app layout |
@@ -145,7 +145,7 @@ graph TD
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
 | BottomNav | 2タブ（トレ / 履歴）+ AI専用pill型ボタン | TanStack Router Link | `src/components/BottomNav.tsx` |
-| GearIcon | 歯車アイコン + APIキー未設定バッジ | TanStack Router Link, settingsStore | `src/components/GearIcon.tsx` |
+| GearIcon | 歯車アイコン + APIキー未設定バッジ。`className` prop で配置を消費側に委譲する純粋プレゼンテーション | TanStack Router Link, settingsStore | `src/components/GearIcon.tsx` |
 | TrainingPage | トレーニングページ（Idle/Active 切り替え）。**workout モジュールが実装** | useWorkoutSession | `src/pages/TrainingPage.tsx` |
 | IdleView | Idle画面（挨拶・開始ボタン）。**workout モジュールが実装** | なし（props: onStartTraining） | `src/components/IdleView.tsx` |
 | HistoryPage | 履歴ページ（プレースホルダー。中身は別design） | なし | `src/pages/HistoryPage.tsx` |
@@ -247,7 +247,8 @@ export const Route = createRootRoute({
 })
 
 // -------------------------------------------------------
-// src/routes/_app.tsx（pathless layout: BottomNav + GearIcon）
+// src/routes/_app.tsx（pathless layout: BottomNav のみ）
+// GearIcon は各ページが自前で配置する（FRAME ごとに異なる chrome のため）
 // -------------------------------------------------------
 
 import { createFileRoute, Outlet } from '@tanstack/react-router'
@@ -259,7 +260,6 @@ export const Route = createFileRoute('/_app')({
 function AppLayout() {
   return (
     <>
-      <GearIcon />
       <main className="flex-1 pb-24">
         <Outlet />
       </main>
@@ -325,26 +325,25 @@ export const Route = createFileRoute('/settings')({
 // TanStack Router の Link to="/settings" を使用
 //
 // Tailwind クラス（design-system.html / PRD IR_002 準拠）:
-//   位置: absolute top-12 right-4 z-30
-//   ボタン: w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm
-//          shadow-sm border border-zinc-100
-//          p-0 min-h-[44px] min-w-[44px]（T-003: 視覚サイズ36px + タッチ領域44px）
+//   ボタン基本: w-9 h-9 rounded-full bg-white/80 backdrop-blur-sm
+//             shadow-sm border border-zinc-100
+//             min-h-[44px] min-w-[44px]（T-003: 視覚サイズ36px + タッチ領域44px）
 //   アイコン: ph ph-gear text-base text-zinc-500
+//
+// 配置は className prop 経由で消費側が指定する（FRAME ごとに異なるため）:
+//   FRAME1/3/4: <GearIcon className="absolute top-12 right-4 z-30" />
+//   FRAME2: SessionHeader 内部で配置クラス無しで使用（コンテナ側で制御）
 //
 // APIキー未設定バッジ:
 //   位置: absolute top-[-2px] right-[-2px]
 //   スタイル: w-3 h-3 bg-accent rounded-full border-2 border-white
 //
 // GearIcon は gear + APIキーバッジのみを担当する。
-// FRAME2 の追加要素（終了ボタン・タイマーpill）は TrainingPage が
-// absolute 配置で GearIcon の隣に自前でレンダリングする。
-// Tailwind クラスは以下を参照（TrainingPage / workout design doc で使用）:
-//   終了ボタン: text-accent text-sm font-bold bg-red-50/90 backdrop-blur-sm px-3 py-1.5 rounded-lg
-//   タイマーpill: flex items-center gap-1 bg-white/80 backdrop-blur-sm px-2 py-1 rounded-lg shadow-sm border border-zinc-100
-//     アイコン: ph-fill ph-clock text-accent text-xs
-//     テキスト: font-outfit font-bold text-xs
+// FRAME2 の右上 chrome（歯車 + 終了ボタン + タイマーpill）は
+// SessionHeader (src/components/workout/SessionHeader.tsx) が
+// 単一の flex-col コンテナとして design-system.html L558-569 を再現する。
 
-// GearIconProps は不要（settingsStore.hasApiKey を内部で読み取る）
+type GearIconProps = { className?: string }
 
 // -------------------------------------------------------
 // SettingsPage (src/pages/SettingsPage.tsx)
@@ -417,7 +416,7 @@ interface IdleViewProps {
 |------|--------|
 | 操作性（NFR-001）: 1フレーム以内のページ切り替え | TanStack Router の SPA ルーティング + autoCodeSplitting によるルート別遅延読み込み。ルート遷移はクライアントサイド完結でネットワーク通信なし |
 | データ整合性（NFR-002）: セッションデータ永続化 | Zustand `persist` ミドルウェアで `isActive`, `startedAt`, `draftExercises` を localStorage に自動保存（`gymini:workout-session` キー）。`partialize` で永続化対象を限定。localStorage 利用不可またはパースエラー時は `onRehydrateStorage` でデフォルト初期状態へフォールバック（T-002）。詳細は workout design doc を参照 |
-| レイアウト安定性（NFR-003）: BottomNav一貫性 | pathless layout route (`_app.tsx`) により BottomNav + GearIcon を構造的に制御。FRAME5（/settings）は layout 外に配置し自動的に非表示 |
+| レイアウト安定性（NFR-003）: BottomNav一貫性 | pathless layout route (`_app.tsx`) により BottomNav を構造的に制御。FRAME5（/settings）は layout 外に配置し自動的に非表示。GearIcon は FRAME ごとの chrome 構成（FRAME2 は SessionHeader 内）を尊重するため、各ページが自前で配置する |
 | 表示安定性（NFR-004）: rehydration フリッカー防止 | Zustand persist の `onRehydrateStorage` コールバックと `useHydrated()` パターンで rehydration 完了を検知。完了前は skeleton / ブランク表示にし、FRAME1→FRAME2 のフリッカーを防止 |
 
 ---
@@ -427,8 +426,9 @@ interface IdleViewProps {
 | テストレベル | 対象 | カバレッジ目標 |
 |-----------|------|------------|
 | コンポーネントテスト | BottomNav（Link アクティブ状態、タブ切り替え、AIボタン） | FR-007 |
-| コンポーネントテスト | GearIcon（表示、バッジ表示） | FR-009, FR-010 |
-| コンポーネントテスト | TrainingPage FRAME2 拡張要素（終了ボタン・タイマーpill の absolute 配置） | FR-011 |
+| コンポーネントテスト | GearIcon（表示、バッジ表示、className prop 反映） | FR-009, FR-010 |
+| コンポーネントテスト | SessionHeader（GearIcon + 終了ボタン + タイマー pill の単一コンテナ描画、props 駆動） | FR-011 |
+| コンポーネントテスト | TrainingPage（FRAME1/FRAME2 切替時の chrome 組み立て）| FR-001, FR-002, FR-011 |
 | コンポーネントテスト | TrainingPage（Idle/Active 切り替え） | FR-001, FR-002 |
 | 統合テスト | ルート遷移（/training → /history → /ai → /settings → back） | FR-004, FR-005, FR-012 |
 | 統合テスト | layout route（_app 配下は BottomNav あり、/settings は BottomNav なし） | FR-007, FR-008 |
@@ -454,7 +454,7 @@ interface IdleViewProps {
 | workoutStore の persist 対象 | 全状態 vs ドラフトのみ | ドラフトのみ（partialize） | ストレージ消費を抑える（B-001） |
 | persist の localStorage キー | 共有 vs 別キー | 別キー `gymini:workout-session` | セッションドラフトとワークアウトデータの分離 |
 | デフォルトルート | `/` → /training リダイレクト | リダイレクト | アプリ起動時は /training を表示。__root.tsx の `beforeLoad` で `/` → `/training` にリダイレクト |
-| GearIcon の FRAME2 拡張 | GearIcon 内部で管理 vs AppLayout が props 渡し vs TrainingPage が自前レンダリング | TrainingPage が自前レンダリング | GearIcon は gear+badge のみのシンプルなコンポーネントに保つ。FRAME2 の終了ボタン・タイマーpill は TrainingPage が absolute 配置で GearIcon の隣にレンダリング。GearIcon がワークアウトドメインに結合することを避ける |
+| GearIcon の配置責務 | `_app.tsx` 全体共通 vs 各ページ自前 | 各ページ自前（GearIcon が `className` prop で配置を受け取る） | FRAME ごとに chrome 構成が異なる（FRAME2 のみ歯車+終了+タイマーの単一コンテナ）ため、pathless layout で global に固定する旧設計より、各ページが自分の chrome を所有する方がテスタビリティ・一貫性・保守性で優れる。FRAME2 は `SessionHeader` が GearIcon を内包し、design-system.html L558-569 と同一の DOM 構造を実現する |
 | rehydration 中の表示 | フリッカー許容 vs skeleton 表示 vs 同期ストレージ | skeleton / ブランク表示 | Zustand persist の非同期 rehydration 完了まで `useHydrated()` パターンでコンテンツを非表示にし、FRAME1→FRAME2 のフリッカーを防止する（NFR-004） |
 | セッションタイマー計算 | startedAt ベース再計算 vs カウンター保持 | カウンター保持（カスタム Hook） | カスタム Hook（useElapsedTime 等）がカウンターを Zustand ストアに保持し、定期更新する。TrainingPage がこの Hook を使用してタイマーpill を表示。タブ遷移で Hook がアンマウントされてもストアの値は維持される |
 | 未知ルート | ブランクページ vs エラー画面 vs サイレントリダイレクト | /training にサイレントリダイレクト | __root.tsx の notFoundComponent で /training にリダイレクトする。ユーザーにエラーを見せる必要がない（FR-013） |
