@@ -106,7 +106,8 @@ graph TD
     subgraph "UI Layer"
         TP[TrainingPage]
         IV[IdleView<br/>FRAME1]
-        AWV[ActiveSessionView<br/>FRAME2]
+        SH[SessionHeader<br/>FRAME2 chrome]
+        AWV[ActiveSessionView<br/>FRAME2 body]
         EC[ExerciseCard]
         CSR[CompletedSetRow]
         PSR[PendingSetRow]
@@ -129,6 +130,7 @@ graph TD
 
     TR --> TP
     TP --> IV
+    TP --> SH
     TP --> AWV
     TP --> HWS
     AWV --> EC
@@ -419,6 +421,24 @@ function useWorkoutSession() {
   //   // Card state（FR-030）
   //   toggleExerciseCard: (exerciseIndex: number) => void,
   // }
+}
+
+// -------------------------------------------------------
+// SessionHeader (src/components/workout/SessionHeader.tsx)
+// FRAME2 の右上 chrome を design-system.html L558-569 と同一の
+// 単一 flex-col コンテナで描画する純粋プレゼンテーション。
+// store/hook を知らず、props 駆動でテスト容易性を保つ。
+// -------------------------------------------------------
+
+type SessionHeaderProps = {
+  elapsedSeconds: number          // useWorkoutSession().elapsedSeconds を TrainingPage が渡す（FR-032）
+  onEndSession: () => void        // useWorkoutSession().endSession を TrainingPage が渡す（FR-001, FR-031）
+}
+
+function SessionHeader(props: SessionHeaderProps): JSX.Element {
+  // 内部で <GearIcon />（配置クラス無し）+ 終了 <button> + タイマー <div> を
+  // <div className="absolute top-12 right-4 z-30 flex flex-col items-end gap-1"> に配置。
+  // タイマー表示は formatElapsedTime(elapsedSeconds) で "HH:MM:SS" に変換。
 }
 ```
 
