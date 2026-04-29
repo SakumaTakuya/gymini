@@ -28,7 +28,6 @@ function createTestRouter(initialPath = '/training') {
     id: '_app',
     component: () => (
       <>
-        <GearIcon />
         <main className="flex-1 pb-24">
           <Outlet />
         </main>
@@ -40,19 +39,34 @@ function createTestRouter(initialPath = '/training') {
   const trainingRoute = createRoute({
     getParentRoute: () => appLayoutRoute,
     path: '/training',
-    component: () => <div data-testid="training-page">トレーニング</div>,
+    component: () => (
+      <div data-testid="training-page">
+        <GearIcon className="absolute top-12 right-4 z-30" />
+        トレーニング
+      </div>
+    ),
   })
 
   const historyRoute = createRoute({
     getParentRoute: () => appLayoutRoute,
     path: '/history',
-    component: () => <div data-testid="history-page">履歴</div>,
+    component: () => (
+      <div data-testid="history-page">
+        <GearIcon className="absolute top-12 right-4 z-30" />
+        履歴
+      </div>
+    ),
   })
 
   const aiRoute = createRoute({
     getParentRoute: () => appLayoutRoute,
     path: '/ai',
-    component: () => <div data-testid="ai-page">AI チャット</div>,
+    component: () => (
+      <div data-testid="ai-page">
+        <GearIcon className="absolute top-12 right-4 z-30" />
+        AI チャット
+      </div>
+    ),
   })
 
   const settingsRoute = createRoute({

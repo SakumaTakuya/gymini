@@ -4,6 +4,7 @@ import { Robot, SignIn } from '@phosphor-icons/react'
 import { ChatBubble } from '../components/chat/ChatBubble'
 import { ChatInput } from '../components/chat/ChatInput'
 import { ConfirmationBubble } from '../components/chat/ConfirmationBubble'
+import { GearIcon } from '../components/GearIcon'
 import { useChatService } from '../hooks/useChatService'
 import { useSettingsStore } from '../stores/settingsStore'
 
@@ -29,6 +30,7 @@ export function AIChatPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-zinc-50">
+      <GearIcon className="absolute top-12 right-4 z-30" />
       <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-zinc-200/50 px-4 py-3">
         <div className="flex items-center gap-2">
           <Robot size={20} weight="bold" />

@@ -33,6 +33,7 @@ risk: "high"
 | TrainingPage | 🟢 実装済み | UI Layer: isActive で IdleView/ActiveSessionView 切替 |
 | IdleView (FRAME1) | 🟢 実装済み | UI Layer: セッション未開始画面 |
 | ActiveSessionView (FRAME2) | 🟢 実装済み | UI Layer: セッション記録画面 |
+| SessionHeader | 🟢 実装済み | UI Layer: FRAME2 の右上 chrome（歯車 + 終了ボタン + タイマー pill）。props 駆動の純粋なプレゼンテーション部品 |
 | ExerciseCard | 🟢 実装済み | UI Layer: 種目カード（3状態）+ 三点メニュー（並べ替え・削除） |
 | CompletedSetRow | 🟢 実装済み | UI Layer: 完了済みセット行 |
 | PendingSetRow | 🟢 実装済み | UI Layer: 入力中セット行 |
@@ -105,7 +106,8 @@ graph TD
     subgraph "UI Layer"
         TP[TrainingPage]
         IV[IdleView<br/>FRAME1]
-        AWV[ActiveSessionView<br/>FRAME2]
+        SH[SessionHeader<br/>FRAME2 chrome]
+        AWV[ActiveSessionView<br/>FRAME2 body]
         EC[ExerciseCard]
         CSR[CompletedSetRow]
         PSR[PendingSetRow]
@@ -128,6 +130,7 @@ graph TD
 
     TR --> TP
     TP --> IV
+    TP --> SH
     TP --> AWV
     TP --> HWS
     AWV --> EC
@@ -143,7 +146,7 @@ graph TD
 
 UIは Hook Layer だけを知る。State Layer・Data Layer は hooks の実装詳細であり、UI から直接参照しない。
 
-> **ルーティング**: `/training` ルートは navigation 機能（`src/routes/_app/training.tsx`）が管理する。FRAME1/FRAME2 の切替は `TrainingPage` コンポーネント内で `useWorkoutSession().isActive` により行い、URL は変わらない。セッションタイマーと「終了」ボタンは navigation の `GearIcon` コンポーネントが props 経由で表示する（[navigation_design.md](../navigation_design.md) 参照）。
+> **ルーティング**: `/training` ルートは navigation 機能（`src/routes/_app/training.tsx`）が管理する。FRAME1/FRAME2 の切替は `TrainingPage` コンポーネント内で `useWorkoutSession().isActive` により行い、URL は変わらない。FRAME2 の右上 chrome（歯車 + 終了ボタン + タイマー pill）は `TrainingPage` が `SessionHeader` を組み込むことで実現する。`SessionHeader` は props 駆動の純粋プレゼンテーション部品で、`useWorkoutSession` から取得した `elapsedSeconds` と `endSession` を `TrainingPage` 経由で受け取る（[navigation_design.md](../navigation_design.md) 参照）。
 
 ## 4.2. モジュール分割
 
@@ -178,15 +181,16 @@ UIは Hook Layer だけを知る。State Layer・Data Layer は hooks の実装�
 
 | モジュール名 | 責務 | 依存関係 | 配置場所 |
 |-----------|------|---------|--------|
-| TrainingPage | `/training` ルートのページコンポーネント。`isActive` で IdleView / ActiveSessionView を切替 | useWorkoutSession | `src/pages/TrainingPage.tsx` |
-| IdleView | FRAME1: セッション未開始画面。挨拶 + 「トレーニングを始める」ボタン | なし（props: `onStartTraining`） | `src/components/IdleView.tsx` |
-| ActiveSessionView | FRAME2: セッション記録画面。種目カード一覧 + 種目追加フィールド | useWorkoutSession | `src/components/workout/ActiveSessionView.tsx` |
+| TrainingPage | `/training` ルートのページコンポーネント。`isActive` で SessionHeader+ActiveSessionView / IdleView を切替 | useWorkoutSession | `src/pages/TrainingPage.tsx` |
+| IdleView | FRAME1: セッション未開始画面。挨拶 + 「トレーニングを始める」ボタン + 歯車（自前で `<GearIcon className="absolute top-12 right-4 z-30" />` を配置） | GearIcon（props: `onStartTraining`） | `src/components/IdleView.tsx` |
+| SessionHeader | FRAME2 の右上 chrome: 歯車 + 終了ボタン + タイマー pill を design-system.html L558-569 と同一の単一 flex-col コンテナで描画。store/hook を知らない props 駆動の純粋プレゼンテーション | GearIcon（props: `elapsedSeconds`, `onEndSession`） | `src/components/workout/SessionHeader.tsx` |
+| ActiveSessionView | FRAME2: セッション本文（種目カード一覧 + 種目追加フィールド）。chrome は SessionHeader が担当 | useWorkoutSession | `src/components/workout/ActiveSessionView.tsx` |
 | ExerciseCard | 種目カード（3状態: collapsed/idle/recording） | なし（props） | `src/components/workout/ExerciseCard.tsx` |
 | CompletedSetRow | 完了済みセット行（ゴミ箱 + 値表示 + 鉛筆） | なし（props） | `src/components/workout/CompletedSetRow.tsx` |
 | PendingSetRow | 入力中セット行（セット番号 + 重量/回数入力 + チェックボタン） | なし（props） | `src/components/workout/PendingSetRow.tsx` |
 | ExerciseSearchField | 種目検索・追加フィールド | なし（props） | `src/components/workout/ExerciseSearchField.tsx` |
 
-> **Note**: セッションタイマー（pill型）と「終了」ボタンはナビゲーション機能の `GearIcon` コンポーネントが表示する。`GearIcon` は `showEndButton`, `elapsedTime`, `onEndSession` props を受け取り、FRAME2 時に header area に配置する（[navigation_design.md](../navigation_design.md) 参照）。本モジュールでは `useWorkoutSession` の `elapsedSeconds` と `endSession` を提供する側の責務を持つ。
+> **Note**: FRAME2 の右上 chrome（歯車 + 終了ボタン + タイマー pill）は `SessionHeader` コンポーネントが単一の flex-col コンテナで描画する（design-system.html L558-569 と同一構造）。`SessionHeader` は `elapsedSeconds`, `onEndSession` の 2 props のみで store/hook を知らず、内部で `GearIcon` を再利用する。組み立ては `TrainingPage` が `useWorkoutSession` の値を渡して行う（[navigation_design.md](../navigation_design.md) 参照）。
 
 ---
 
@@ -418,6 +422,24 @@ function useWorkoutSession() {
   //   toggleExerciseCard: (exerciseIndex: number) => void,
   // }
 }
+
+// -------------------------------------------------------
+// SessionHeader (src/components/workout/SessionHeader.tsx)
+// FRAME2 の右上 chrome を design-system.html L558-569 と同一の
+// 単一 flex-col コンテナで描画する純粋プレゼンテーション。
+// store/hook を知らず、props 駆動でテスト容易性を保つ。
+// -------------------------------------------------------
+
+type SessionHeaderProps = {
+  elapsedSeconds: number          // useWorkoutSession().elapsedSeconds を TrainingPage が渡す（FR-032）
+  onEndSession: () => void        // useWorkoutSession().endSession を TrainingPage が渡す（FR-001, FR-031）
+}
+
+function SessionHeader(props: SessionHeaderProps): JSX.Element {
+  // 内部で <GearIcon />（配置クラス無し）+ 終了 <button> + タイマー <div> を
+  // <div className="absolute top-12 right-4 z-30 flex flex-col items-end gap-1"> に配置。
+  // タイマー表示は formatElapsedTime(elapsedSeconds) で "HH:MM:SS" に変換。
+}
 ```
 
 ---
@@ -472,7 +494,7 @@ useEffect(() => {
 }, [startedAt])
 ```
 
-`elapsedSeconds` は `useWorkoutSession` が返す。表示は navigation の `GearIcon` コンポーネントが `elapsedTime` prop（`"HH:MM:SS"` 形式）として受け取り、header area にタイマーpillとして表示する。フォーマット変換は `_app.tsx` の AppLayout（または TrainingPage）で行う。
+`elapsedSeconds` は `useWorkoutSession` が返す。`TrainingPage` が `<SessionHeader elapsedSeconds={elapsedSeconds} onEndSession={endSession} />` として受け渡し、`SessionHeader` 内で `formatElapsedTime(elapsedSeconds)` により `"HH:MM:SS"` 形式に変換してタイマー pill として表示する。
 
 ---
 
@@ -514,7 +536,7 @@ useEffect(() => {
 | 最初のセット入力行 | 「+」ボタンで手動追加 vs 種目追加時に自動作成 | 自動作成 + フォーカス | 種目追加→「+」タップの2ステップを1ステップに削減。2セット目以降はチェック後に自動追加されるので、最初のセットも自動が一貫性ある |
 | タイマーの更新方式 | setInterval vs requestAnimationFrame | setInterval（1秒間隔） | 秒単位の表示で十分。requestAnimationFrame はオーバースペック |
 | FRAME1/FRAME2 の画面遷移 | 別ルート vs 状態切替 | `/training` 内の状態切替 | FRAME1/FRAME2 は同一ルート内で `isActive` による切替。ルーティングは navigation 機能が管理（[navigation_design.md](../navigation_design.md)）。URL が変わらないため、セッション中の誤ナビゲーションを防止 |
-| セッションタイマー・終了ボタンの配置 | ページ内 vs header area | header area（GearIcon） | navigation の GearIcon が `showEndButton`, `elapsedTime`, `onEndSession` props で表示。design-system.html 準拠。全画面共通の header area に統一 |
+| セッションタイマー・終了ボタンの配置 | GearIcon が props で表示 vs ActiveSessionView 内に配置 vs SessionHeader 抽出 | `SessionHeader` 抽出 | design-system.html L558-569 の単一 flex-col コンテナを忠実に再現。`GearIcon` は再利用部品として中で組み込み、外側は store/hook を知らない props 駆動の純粋プレゼンテーション。`TrainingPage` が `useWorkoutSession` から取得した値を渡す。テスタビリティ・一貫性・保守性を最優先。各 FRAME が「自分の chrome を所有」するモデルに統一（IdleView/HistoryPage/AIChatPage は自前で GearIcon を absolute 配置） |
 | セッションデータ永続化 | 都度保存 vs persist | Zustand persist | ページ遷移・リロード時のセッション復元。navigation spec FR-006, NFR-002 準拠。`partialize` で `isActive`, `startedAt`, `draftExercises` のみ永続化 |
 | localStorage 読み取り検証 | 型アサーション vs Zod パース | Zod パース | T-002: No Runtime Errors。不正データによるクラッシュを防止 |
 | 日付・日時の型表現 | 素の `string` vs Zod branded type | Zod branded type（`DateString`, `ISODateTimeString`） | history モジュールと同じパターン。素の `string` では任意の文字列が型チェックを通過する。branded type は境界でパースし内部は型安全に流通でき、Zod 活用方針に合致。`src/schemas/date.ts` で history と共有 |

@@ -50,16 +50,10 @@ describe('ActiveSessionView', () => {
     expect(screen.getByText('ベンチプレス')).toBeInTheDocument()
   })
 
-  it('renders 終了 button', () => {
+  it('does not render session chrome (delegated to TrainingPage/SessionHeader)', () => {
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
     render(<ActiveSessionView />)
-    expect(screen.getByRole('button', { name: '終了' })).toBeInTheDocument()
-  })
-
-  it('clicking 終了 button ends the session', () => {
-    useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
-    render(<ActiveSessionView />)
-    fireEvent.click(screen.getByRole('button', { name: '終了' }))
-    expect(useWorkoutSessionStore.getState().isActive).toBe(false)
+    expect(screen.queryByRole('button', { name: '終了' })).not.toBeInTheDocument()
+    expect(screen.queryByText(/^\d\d:\d\d:\d\d$/)).not.toBeInTheDocument()
   })
 })

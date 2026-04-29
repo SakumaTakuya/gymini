@@ -1,5 +1,4 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
-import { GearIcon } from '../components/GearIcon'
 import { BottomNav } from '../components/BottomNav'
 import { useHydrated } from '../hooks/useHydrated'
 
@@ -16,7 +15,6 @@ function AppLayout() {
 
   return (
     <>
-      <GearIcon />
       <main className="flex-1 pb-24">
         <Outlet />
       </main>

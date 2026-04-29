@@ -105,4 +105,13 @@ describe('HistoryPage integration', () => {
     expect(header.textContent).toContain('2026')
     expect(header.textContent).toContain('3')
   })
+
+  it('renders gear link to settings', async () => {
+    renderWithRouter()
+    await screen.findByLabelText('前月')
+    const settingsLink = screen
+      .getAllByRole('link')
+      .find((l) => l.getAttribute('href')?.includes('settings'))
+    expect(settingsLink).toBeDefined()
+  })
 })

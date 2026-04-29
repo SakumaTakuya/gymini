@@ -2,13 +2,17 @@ import { Link } from '@tanstack/react-router'
 import { Gear } from '@phosphor-icons/react'
 import { useSettingsStore } from '../stores/settingsStore'
 
-export function GearIcon() {
+type Props = {
+  className?: string
+}
+
+export function GearIcon({ className = '' }: Props) {
   const hasApiKey = useSettingsStore((s) => s.hasApiKey)
 
   return (
     <Link
       to="/settings"
-      className="absolute top-12 right-4 z-30 w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm border border-zinc-100"
+      className={`relative w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm border border-zinc-100 ${className}`.trim()}
     >
       <Gear size={16} className="text-zinc-500" />
       {!hasApiKey && (

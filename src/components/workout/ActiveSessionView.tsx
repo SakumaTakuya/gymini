@@ -16,18 +16,10 @@ export function ActiveSessionView() {
     updatePendingSet,
     searchExercises,
     createExercise,
-    endSession,
   } = useWorkoutSession()
 
   return (
     <div className="flex-1 bg-zinc-50 pt-16 pb-32 overflow-y-auto">
-      <button
-        type="button"
-        onClick={endSession}
-        className="absolute top-12 right-16 z-30 text-accent font-bold bg-red-50 px-3 py-1.5 rounded-lg focus-ring"
-      >
-        終了
-      </button>
       <div className="px-6 mb-6">
         <h1 className="text-2xl font-bold font-outfit">ワークアウト</h1>
       </div>
