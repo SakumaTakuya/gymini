@@ -6,6 +6,7 @@ import { MonthCalendar } from '../components/MonthCalendar'
 import { WorkoutSummary } from '../components/WorkoutSummary'
 import { EmptyDayState } from '../components/EmptyDayState'
 import { GearIcon } from '../components/GearIcon'
+import { AppHeaderContent } from '../components/AppHeaderContext'
 import type { DateString } from '../schemas/date'
 
 export function HistoryPage() {
@@ -28,22 +29,24 @@ export function HistoryPage() {
   }
 
   return (
-    <div className="flex-1 bg-gym-zinc-50 pt-16 pb-32 overflow-y-auto">
-      <GearIcon className="absolute top-12 right-4 z-30" />
-      <MonthCalendar
-        displayMonth={displayMonth}
-        selectedDate={selectedDate}
-        daysWithWorkouts={daysWithWorkouts}
-        onPrevMonth={goToPrevMonth}
-        onNextMonth={goToNextMonth}
-        onSelectDate={selectDate}
-      />
+    <>
+      <AppHeaderContent title="履歴" trailing={<GearIcon />} />
+      <div className="flex-1 bg-gym-zinc-50 pb-32 overflow-y-auto">
+        <MonthCalendar
+          displayMonth={displayMonth}
+          selectedDate={selectedDate}
+          daysWithWorkouts={daysWithWorkouts}
+          onPrevMonth={goToPrevMonth}
+          onNextMonth={goToNextMonth}
+          onSelectDate={selectDate}
+        />
 
-      {workouts.length > 0 ? (
-        <WorkoutSummary date={selectedDate} workouts={workouts} />
-      ) : (
-        <EmptyDayState date={selectedDate} onAddWorkout={handleAddWorkout} />
-      )}
-    </div>
+        {workouts.length > 0 ? (
+          <WorkoutSummary date={selectedDate} workouts={workouts} />
+        ) : (
+          <EmptyDayState date={selectedDate} onAddWorkout={handleAddWorkout} />
+        )}
+      </div>
+    </>
   )
 }

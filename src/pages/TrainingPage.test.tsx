@@ -9,6 +9,7 @@ import {
   Outlet,
 } from '@tanstack/react-router'
 import { TrainingPage } from './TrainingPage'
+import { AppHeaderProvider } from '../components/AppHeaderContext'
 import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import type { DateString, ISODateTimeString } from '../schemas/date'
@@ -26,9 +27,9 @@ function resetStore() {
 function renderTrainingPage() {
   const rootRoute = createRootRoute({
     component: () => (
-      <div style={{ position: 'relative' }}>
+      <AppHeaderProvider>
         <Outlet />
-      </div>
+      </AppHeaderProvider>
     ),
   })
   const trainingRoute = createRoute({

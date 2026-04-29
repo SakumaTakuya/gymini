@@ -45,8 +45,10 @@ gymini は5つの論理画面（FRAME1〜5）を持つモバイルフィット�
 
 - **常時アクセス可能なAI**: AIボタンはBottomNavに常時表示され、どの画面からもワンタップでAIチャットへ遷移可能
 - **設定への統一アクセス**: 歯車アイコンは全画面共通で、ブラウザ履歴によるネイティブな戻りナビゲーションを提供
-- **宣言的レイアウト**: layout route パターンにより BottomNav / GearIcon の表示制御を構造的に解決する（手動条件分岐ではなく）
+- **宣言的レイアウト**: layout route パターンにより BottomNav / AppHeader の表示制御を構造的に解決する（手動条件分岐ではなく）
 - **型安全ルーティング**: TanStack Router の型推論により、ルートパスの型安全性を確保する（A-001, T-001）
+
+> **Note**: 全画面共通の上部 chrome（タイトル・leading/trailing slot）は別仕様 [app-header_spec.md](app-header_spec.md) で定義する。本 spec は BottomNav と GearIcon の機能要件、layout route 構造、セッション永続化を所有する。
 
 # 3. 要求定義
 
@@ -62,9 +64,9 @@ gymini は5つの論理画面（FRAME1〜5）を持つモバイルフィット�
 | FR-006 | セッションデータをページ遷移・リロード間で永続化する | 必須 | FR_019 | Test |
 | FR-007 | BottomNavで Training / History タブと AI ボタンを常に表示する（FRAME1〜4） | 必須 | IR_001 | Inspection |
 | FR-008 | BottomNavはFRAME5（設定）では非表示にする | 必須 | IR_001 | Inspection |
-| FR-009 | 歯車アイコンをFRAME1〜4の右上に固定表示する | 必須 | IR_002 | Inspection |
+| FR-009 | 歯車アイコンをFRAME1〜4の AppHeader trailing slot に表示する（配置仕様は [app-header_spec.md](app-header_spec.md) AH-FR-007 を参照） | 必須 | IR_002 | Inspection |
 | FR-010 | 歯車アイコンにAPIキー未設定時の赤バッジを表示する | 必須 | IR_002 | Inspection |
-| FR-011 | FRAME2では歯車アイコンの右隣に「終了」ボタン、ボタン群の下にタイマーpillを表示する。これらの要素は TrainingPage が自前でレンダリングする（GearIcon の責務外） | 必須 | IR_002 | Inspection |
+| FR-011 | FRAME2 では AppHeader の `session-active` variant を使用し、trailing slot に終了ボタンとタイマーpillを並べる（配置仕様は [app-header_spec.md](app-header_spec.md) AH-FR-005, AH-FR-009 を参照） | 必須 | IR_002 | Inspection |
 | FR-012 | 4つの論理ルート（/training, /history, /ai, /settings）を hash history モードでクライアントサイドで切り替える（GitHub Pages 対応） | 必須 | DC_005 | Inspection |
 | FR-013 | 未知のルートにアクセスした場合、/training にサイレントリダイレクトする | 必須 | - | Test |
 

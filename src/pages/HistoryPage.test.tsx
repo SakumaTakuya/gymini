@@ -12,6 +12,7 @@ import {
 import { z } from 'zod'
 import { dateStringSchema } from '../schemas/date'
 import { HistoryPage } from './HistoryPage'
+import { AppHeaderProvider } from '../components/AppHeaderContext'
 import * as WorkoutRepository from '../lib/workoutRepository'
 import type { DateString } from '../schemas/date'
 import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
@@ -46,7 +47,9 @@ function renderWithRouter(searchParams: Record<string, string> = {}) {
 
   render(
     <QueryClientProvider client={queryClient}>
-      <RouterProvider router={router as never} />
+      <AppHeaderProvider>
+        <RouterProvider router={router as never} />
+      </AppHeaderProvider>
     </QueryClientProvider>,
   )
 
