@@ -73,6 +73,71 @@ describe('ExerciseCard', () => {
     })
   })
 
+  describe('三点メニュー', () => {
+    it('初期状態ではメニューが非表示', () => {
+      render(<ExerciseCard {...defaultProps} />)
+      expect(screen.queryByText('削除')).not.toBeInTheDocument()
+    })
+
+    it('三点ボタンをクリックするとメニューが開く', () => {
+      render(<ExerciseCard {...defaultProps} />)
+      fireEvent.click(screen.getByRole('button', { name: '種目メニュー' }))
+      expect(screen.getByText('削除')).toBeInTheDocument()
+    })
+
+    it('削除をクリックすると onDeleteExercise が呼ばれメニューが閉じる', () => {
+      const onDeleteExercise = vi.fn()
+      render(<ExerciseCard {...defaultProps} onDeleteExercise={onDeleteExercise} />)
+      fireEvent.click(screen.getByRole('button', { name: '種目メニュー' }))
+      fireEvent.click(screen.getByText('削除'))
+      expect(onDeleteExercise).toHaveBeenCalledOnce()
+      expect(screen.queryByText('削除')).not.toBeInTheDocument()
+    })
+
+    it('onMoveUp が渡されると「上へ移動」を表示する', () => {
+      render(<ExerciseCard {...defaultProps} onMoveUp={vi.fn()} />)
+      fireEvent.click(screen.getByRole('button', { name: '種目メニュー' }))
+      expect(screen.getByText('上へ移動')).toBeInTheDocument()
+    })
+
+    it('onMoveUp がない場合（先頭種目）は「上へ移動」を表示しない', () => {
+      render(<ExerciseCard {...defaultProps} onMoveDown={vi.fn()} />)
+      fireEvent.click(screen.getByRole('button', { name: '種目メニュー' }))
+      expect(screen.queryByText('上へ移動')).not.toBeInTheDocument()
+      expect(screen.getByText('下へ移動')).toBeInTheDocument()
+    })
+
+    it('onMoveDown がない場合（末尾種目）は「下へ移動」を表示しない', () => {
+      render(<ExerciseCard {...defaultProps} onMoveUp={vi.fn()} />)
+      fireEvent.click(screen.getByRole('button', { name: '種目メニュー' }))
+      expect(screen.queryByText('下へ移動')).not.toBeInTheDocument()
+      expect(screen.getByText('上へ移動')).toBeInTheDocument()
+    })
+
+    it('「上へ移動」をクリックすると onMoveUp が呼ばれる', () => {
+      const onMoveUp = vi.fn()
+      render(<ExerciseCard {...defaultProps} onMoveUp={onMoveUp} />)
+      fireEvent.click(screen.getByRole('button', { name: '種目メニュー' }))
+      fireEvent.click(screen.getByText('上へ移動'))
+      expect(onMoveUp).toHaveBeenCalledOnce()
+    })
+
+    it('「下へ移動」をクリックすると onMoveDown が呼ばれる', () => {
+      const onMoveDown = vi.fn()
+      render(<ExerciseCard {...defaultProps} onMoveDown={onMoveDown} />)
+      fireEvent.click(screen.getByRole('button', { name: '種目メニュー' }))
+      fireEvent.click(screen.getByText('下へ移動'))
+      expect(onMoveDown).toHaveBeenCalledOnce()
+    })
+
+    it('三点ボタンをクリックしても onToggle が呼ばれない', () => {
+      const onToggle = vi.fn()
+      render(<ExerciseCard {...defaultProps} onToggle={onToggle} />)
+      fireEvent.click(screen.getByRole('button', { name: '種目メニュー' }))
+      expect(onToggle).not.toHaveBeenCalled()
+    })
+  })
+
   describe('recording state', () => {
     it('shows completed sets and pending set row', () => {
       const draft: DraftExercise = {
