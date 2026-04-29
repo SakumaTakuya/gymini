@@ -314,6 +314,102 @@ describe('workoutSessionStore', () => {
     })
   })
 
+  describe('deleteExercise', () => {
+    it('指定インデックスの種目を削除する', () => {
+      const { startSession, addExercise } = useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      addExercise({ exerciseId: 'squat', exerciseName: 'スクワット' })
+
+      useWorkoutSessionStore.getState().deleteExercise(0)
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises).toHaveLength(1)
+      expect(draftExercises[0].exerciseId).toBe('squat')
+    })
+
+    it('末尾の種目を削除できる', () => {
+      const { startSession, addExercise } = useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      addExercise({ exerciseId: 'squat', exerciseName: 'スクワット' })
+
+      useWorkoutSessionStore.getState().deleteExercise(1)
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises).toHaveLength(1)
+      expect(draftExercises[0].exerciseId).toBe('bench')
+    })
+
+    it('唯一の種目を削除するとリストが空になる', () => {
+      const { startSession, addExercise } = useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+
+      useWorkoutSessionStore.getState().deleteExercise(0)
+
+      expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(0)
+    })
+  })
+
+  describe('reorderExercise', () => {
+    it('up で指定種目と前の種目が入れ替わる', () => {
+      const { startSession, addExercise } = useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      addExercise({ exerciseId: 'squat', exerciseName: 'スクワット' })
+      addExercise({ exerciseId: 'dead', exerciseName: 'デッドリフト' })
+
+      useWorkoutSessionStore.getState().reorderExercise(1, 'up')
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].exerciseId).toBe('squat')
+      expect(draftExercises[1].exerciseId).toBe('bench')
+      expect(draftExercises[2].exerciseId).toBe('dead')
+    })
+
+    it('down で指定種目と次の種目が入れ替わる', () => {
+      const { startSession, addExercise } = useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      addExercise({ exerciseId: 'squat', exerciseName: 'スクワット' })
+      addExercise({ exerciseId: 'dead', exerciseName: 'デッドリフト' })
+
+      useWorkoutSessionStore.getState().reorderExercise(1, 'down')
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].exerciseId).toBe('bench')
+      expect(draftExercises[1].exerciseId).toBe('dead')
+      expect(draftExercises[2].exerciseId).toBe('squat')
+    })
+
+    it('先頭種目に up しても順序が変わらない', () => {
+      const { startSession, addExercise } = useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      addExercise({ exerciseId: 'squat', exerciseName: 'スクワット' })
+
+      useWorkoutSessionStore.getState().reorderExercise(0, 'up')
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].exerciseId).toBe('bench')
+      expect(draftExercises[1].exerciseId).toBe('squat')
+    })
+
+    it('末尾種目に down しても順序が変わらない', () => {
+      const { startSession, addExercise } = useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      addExercise({ exerciseId: 'squat', exerciseName: 'スクワット' })
+
+      useWorkoutSessionStore.getState().reorderExercise(1, 'down')
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].exerciseId).toBe('bench')
+      expect(draftExercises[1].exerciseId).toBe('squat')
+    })
+  })
+
   describe('toggleExerciseCard', () => {
     it('collapses idle card', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
