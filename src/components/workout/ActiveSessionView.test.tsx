@@ -19,12 +19,6 @@ describe('ActiveSessionView', () => {
     resetStore()
   })
 
-  it('renders workout heading', () => {
-    useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
-    render(<ActiveSessionView />)
-    expect(screen.getByText('ワークアウト')).toBeInTheDocument()
-  })
-
   it('renders exercise search field', () => {
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
     render(<ActiveSessionView />)

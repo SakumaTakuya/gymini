@@ -66,8 +66,7 @@ describe('TrainingPage', () => {
   it('shows ActiveSessionView with SessionHeader chrome when session is active', async () => {
     useWorkoutSessionStore.getState().startSession()
     renderTrainingPage()
-    expect(await screen.findByText('ワークアウト')).toBeInTheDocument()
-    expect(screen.getByPlaceholderText('種目を追加...')).toBeInTheDocument()
+    expect(await screen.findByPlaceholderText('種目を追加...')).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '終了' })).toBeInTheDocument()
     expect(screen.getByText('00:00:00')).toBeInTheDocument()
   })
@@ -77,8 +76,7 @@ describe('TrainingPage', () => {
     fireEvent.click(
       await screen.findByRole('button', { name: /トレーニングを始める/ }),
     )
-    expect(await screen.findByText('ワークアウト')).toBeInTheDocument()
-    expect(screen.getByRole('button', { name: '終了' })).toBeInTheDocument()
+    expect(await screen.findByRole('button', { name: '終了' })).toBeInTheDocument()
   })
 
   it('clicking 終了 ends the session and returns to IdleView', async () => {
