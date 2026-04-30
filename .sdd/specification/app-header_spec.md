@@ -6,7 +6,7 @@ status: "active"
 sdd-phase: "specify"
 impl-status: "implemented"
 created: "2026-04-29"
-updated: "2026-04-29"
+updated: "2026-04-30"
 depends-on: ["prd-app-header", "spec-navigation"]
 tags: ["navigation", "ui", "app-shell", "header"]
 category: "ui"
@@ -61,7 +61,7 @@ AppHeader は以下の責務を持つ:
 | ID | 要件 | 優先度 | PRD参照 | 検証方法 |
 |----|------|--------|---------|---------|
 | AH-FR-001 | AppHeader は AppLayout（`_app.tsx`）に1度だけマウントされ、FRAME1〜4 の遷移時にも DOM が維持される | 必須 | IR_003 | Inspection |
-| AH-FR-002 | 全画面でタイトル（`<h1>`）を必須表示する | 必須 | IR_004 | Test |
+| AH-FR-002 | タイトル（`<h1>`）はセッション中（FRAME2）と設定（FRAME5）のみ表示する。トップレベルページ（FRAME1 idle, 3, 4）は trailing アクションのみを持つピルを表示し、タイトルを省略する | 必須 | IR_004 | Test |
 | AH-FR-003 | leading（左アイコン）/ trailing（右操作群）スロットを提供し、各画面が内容を渡せる | 必須 | IR_005 | Test |
 | AH-FR-004 | `default`/`session-active`/`modal` の3 variant を提供し、高さと余白を切り替える | 必須 | IR_006 | Test |
 | AH-FR-005 | session-active variant では `min-h-14 py-2` で複数要素（タイマー/終了/歯車）が trailing に並ぶことを許容する | 必須 | IR_006 | Test |
@@ -112,7 +112,7 @@ export type AppHeaderProps = {
 export function AppHeaderProvider(props: { children: React.ReactNode }): JSX.Element
 
 export function AppHeaderContent(props: {
-  title: string
+  title?: string              // 省略時は左ピルを非表示
   leading?: React.ReactNode
   trailing?: React.ReactNode
   variant?: AppHeaderVariant
@@ -154,31 +154,27 @@ function AppLayout() {
   )
 }
 
-// HistoryPage.tsx — layout 配下の画面
+// HistoryPage.tsx — trailing のみ（タイトルなし）
 function HistoryPage() {
   return (
     <>
-      <AppHeaderContent title="履歴" trailing={<GearIcon />} />
+      <AppHeaderContent trailing={<GearIcon />} />
       <div className="flex-1">{/* ... */}</div>
     </>
   )
 }
 
-// AIChatPage.tsx — leading + trailing
+// AIChatPage.tsx — trailing のみ（タイトル・leading なし）
 function AIChatPage() {
   return (
     <div className="flex flex-col min-h-screen bg-zinc-50">
-      <AppHeaderContent
-        title="AIコーチ"
-        leading={<Robot size={20} weight="bold" />}
-        trailing={<GearIcon />}
-      />
+      <AppHeaderContent trailing={<GearIcon />} />
       {/* ... */}
     </div>
   )
 }
 
-// TrainingPage.tsx — session-active variant + 動的な timer
+// TrainingPage.tsx — idle は trailing のみ、session-active はタイトル + trailing
 function TrainingPage() {
   const { isActive, elapsedSeconds, endSession } = useWorkoutSession()
   if (isActive) {
@@ -203,19 +199,19 @@ function TrainingPage() {
   }
   return (
     <>
-      <AppHeaderContent title="トレーニング" trailing={<GearIcon />} />
+      <AppHeaderContent trailing={<GearIcon />} />
       <IdleView onStartTraining={...} />
     </>
   )
 }
 
-// SettingsPage.tsx — layout 外。AppHeader を直接呼び出す
+// SettingsPage.tsx — layout 外。AppHeader を直接呼び出す（pt-16 で余白確保）
 function SettingsPage() {
   const router = useRouter()
   const canGoBack = useCanGoBack()
   const handleClose = () => canGoBack ? router.history.back() : router.navigate({ to: '/training' })
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="min-h-screen bg-zinc-50 pt-16">
       <AppHeader
         title="設定"
         variant="modal"
@@ -268,8 +264,8 @@ sequenceDiagram
     Router->>HistoryPage: unmount
     HistoryPage->>Header: <AppHeaderContent> cleanup → variant=default 復帰、portal 解除
     Router->>AIChatPage: mount
-    AIChatPage->>Header: <AppHeaderContent title="AIコーチ" leading={<Robot/>} trailing={<GearIcon/>} />
-    Header-->>User: タイトル更新（"履歴" → "AIコーチ"）
+    AIChatPage->>Header: <AppHeaderContent trailing={<GearIcon/>} />
+    Header-->>User: 右ピルが ⚙ のみに更新（タイトルなし）
 ```
 
 ## 7.3. session-active variant とタイマー反応性
@@ -298,7 +294,9 @@ sequenceDiagram
 - 歯車アイコン（IR_002）は AppHeader の trailing slot 経由で表示することを必須とする。画面側で `absolute` 配置することは禁止
 - 終了ボタン・タイマーpill（FRAME2）は TrainingPage が trailing slot 内に組み込む。SessionHeader コンポーネントは廃止
 - variant `modal` は意味的マーカーとしての役割が中心であり、視覚的には default と同一（高さ h-14）
-- 視覚スペック（高さ・色・タイポグラフィ）は AppHeader が単一の所有者となり、画面側からの上書きは `className` 経由で trailing/leading 内のみ許可する
+- 視覚スペック（形状・高さ・色・タイポグラフィ）は AppHeader が単一の所有者となり、画面側からの上書きは `className` 経由で trailing/leading 内のみ許可する
+- ヘッダーは `fixed` ポジショニングのため、ページ側は `pt-16` を確保してコンテンツがピルの下に隠れないようにする（`_app.tsx` の `<main>` で一括適用）
+- トップレベルページ（FRAME1 idle, FRAME3, FRAME4）は `title` を省略し、左ピルを非表示にする。`leading` も使用しない
 - TypeScript strict mode を遵守（T-001）
 - タップ領域は最低 44×44px（T-003）
 - raw `<button>` には `focus-ring` を適用（CLAUDE.md キーボードフォーカス規約）
@@ -310,7 +308,7 @@ sequenceDiagram
 | PRD要求ID | 要件 | Spec対応箇所 |
 |----------|------|------------|
 | IR_003 | AppHeader の単一マウント | AH-FR-001, §6 使用例（_app.tsx） |
-| IR_004 | タイトル必須表示 | AH-FR-002, §6 使用例 |
+| IR_004 | タイトル表示（条件付き） | AH-FR-002, §6 使用例 |
 | IR_005 | leading / trailing スロット | AH-FR-003, §6 使用例 |
 | IR_006 | variant（default/session-active/modal）| AH-FR-004, AH-FR-005, AH-FR-009, AH-FR-010 |
 | IR_007 | 設定画面のスコープ | AH-FR-006, §6 SettingsPage 例 |

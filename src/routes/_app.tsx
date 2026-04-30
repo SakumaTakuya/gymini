@@ -16,7 +16,7 @@ function AppLayout() {
 
   return (
     <AppHeaderProvider>
-      <main className="flex-1 pb-24">
+      <main className="flex-1 pb-24 pt-16">
         <Outlet />
       </main>
       <BottomNav />

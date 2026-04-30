@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
-import { Robot, SignIn } from '@phosphor-icons/react'
+import { SignIn } from '@phosphor-icons/react'
 import { ChatBubble } from '../components/chat/ChatBubble'
 import { ChatInput } from '../components/chat/ChatInput'
 import { ConfirmationBubble } from '../components/chat/ConfirmationBubble'
@@ -31,11 +31,7 @@ export function AIChatPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-zinc-50">
-      <AppHeaderContent
-        title="AIコーチ"
-        leading={<Robot size={20} weight="bold" />}
-        trailing={<GearIcon />}
-      />
+      <AppHeaderContent trailing={<GearIcon />} />
 
       <main className="flex-1 pb-40 pt-2">
         {messages.length === 0 && !error && (
