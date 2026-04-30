@@ -20,10 +20,6 @@ export function ActiveSessionView() {
 
   return (
     <div className="flex-1 bg-zinc-50 pt-16 pb-32 overflow-y-auto">
-      <div className="px-6 mb-6">
-        <h1 className="text-2xl font-bold font-outfit">ワークアウト</h1>
-      </div>
-
       {draftExercises.map((draft, i) => (
         <ExerciseCard
           key={`${draft.exerciseId}-${i}`}
