@@ -82,6 +82,28 @@ describe('workoutSessionStore', () => {
       expect(workouts[0].exercises[0].exerciseId).toBe('bench')
       expect(workouts[0].exercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
     })
+
+    it('restores set being edited when ending session without pressing 完了', () => {
+      const { startSession, addExercise, completeSet, editCompletedSet, endSession } =
+        useWorkoutSessionStore.getState()
+
+      startSession('2026-03-08' as DateString)
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      completeSet(0, { weight: 60, reps: 10 })
+      completeSet(0, { weight: 65, reps: 8 })
+
+      // Click edit on first set without completing the edit
+      editCompletedSet(0, 0)
+      // End the session immediately
+      endSession()
+
+      const raw = localStorage.getItem('gymini:workouts')
+      const workouts = JSON.parse(raw!)
+      expect(workouts[0].exercises[0].sets).toEqual([
+        { weight: 60, reps: 10 },
+        { weight: 65, reps: 8 },
+      ])
+    })
   })
 
   describe('addExercise', () => {
