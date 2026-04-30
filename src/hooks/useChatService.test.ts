@@ -127,6 +127,93 @@ describe('useChatService', () => {
     })
   })
 
+  test('read-tool follow-up returns write call: creates pending action', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    vi.mocked(ExerciseRepository.getAll).mockReturnValue([
+      { id: 'ex-1', name: 'ベンチプレス' },
+    ])
+    const client = mockClient([
+      {
+        text: null,
+        functionCalls: [{ name: 'getExercises', args: {} }],
+      },
+      {
+        text: null,
+        functionCalls: [
+          {
+            name: 'saveWorkout',
+            args: {
+              date: '2026-04-30',
+              exercises: [
+                {
+                  exerciseName: 'ベンチプレス',
+                  sets: [{ weight: 60, reps: 10 }],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ])
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => client }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('今日ベンチプレス60kg10回3セットやった')
+    })
+    const msgs = useChatStore.getState().messages
+    const last = msgs[msgs.length - 1]
+    expect(last.pendingAction).toMatchObject({
+      type: 'saveWorkout',
+      status: 'pending',
+    })
+    expect(last.content).not.toBe(EMPTY_RESPONSE_FALLBACK)
+    expect(client.generate).toHaveBeenCalledTimes(2)
+  })
+
+  test('read-tool follow-up returns write call with text: uses text as content', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    vi.mocked(ExerciseRepository.getAll).mockReturnValue([
+      { id: 'ex-1', name: 'ベンチプレス' },
+    ])
+    const client = mockClient([
+      {
+        text: null,
+        functionCalls: [{ name: 'getExercises', args: {} }],
+      },
+      {
+        text: '記録しますか？',
+        functionCalls: [
+          {
+            name: 'saveWorkout',
+            args: {
+              date: '2026-04-30',
+              exercises: [
+                {
+                  exerciseName: 'ベンチプレス',
+                  sets: [{ weight: 60, reps: 10 }],
+                },
+              ],
+            },
+          },
+        ],
+      },
+    ])
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => client }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('今日ベンチプレス60kg10回3セットやった')
+    })
+    const msgs = useChatStore.getState().messages
+    const last = msgs[msgs.length - 1]
+    expect(last.content).toBe('記録しますか？')
+    expect(last.pendingAction).toMatchObject({
+      type: 'saveWorkout',
+      status: 'pending',
+    })
+  })
+
   test('executes read tool and sends follow-up request', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     vi.mocked(WorkoutRepository.listByDateDesc).mockReturnValue([])

@@ -6,7 +6,7 @@ status: "implemented"
 sdd-phase: "implement"
 impl-status: "implemented"
 created: "2026-04-11"
-updated: "2026-04-25"
+updated: "2026-04-30"
 depends-on: ["spec-ai-chat", "design-workout", "design-exercise-master", "design-api-key"]
 tags: ["ai", "chat", "function-calling", "gemini", "phase-3"]
 category: "ai"
@@ -535,9 +535,28 @@ async function sendMessage(text: string) {
           },
         ]
         const followUp = await geminiClient.generate(followUpContents, abortController.signal)
+
+        // フォローアップで書き込みツールが呼ばれた場合（例: getExercises → saveWorkout の 2 ホップ）
+        // 第 1 レスポンスと同様に PendingAction を作成して確認待ちにする
+        if (followUp.functionCalls?.length > 0) {
+          const followWriteCall = followUp.functionCalls.find(fc => isWriteTool(fc.name))
+          if (followWriteCall) {
+            cancelExistingPending()
+            const pendingAction = createPendingAction(followWriteCall)
+            chatStore.addMessage({
+              role: 'assistant',
+              content: followUp.text ?? pendingAction.description,
+              toolCalls: readResults.length > 0 ? readResults : undefined,
+              pendingAction,
+              ...
+            })
+            return
+          }
+        }
+
         chatStore.addMessage({
           role: 'assistant',
-          content: followUp.text ?? '',
+          content: followUp.text ?? EMPTY_RESPONSE_FALLBACK,
           toolCalls: readResults,
           ...
         })
