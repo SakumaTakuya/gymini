@@ -190,7 +190,7 @@ export function UserProfileSection() {
               onChange={handleGoalChange}
               className="w-full bg-transparent text-base font-medium outline-none text-gym-black appearance-none cursor-pointer focus-ring rounded-lg"
             >
-              <option value="">未設定</option>
+              <option value="">選択してください</option>
               {TRAINING_GOALS.map((goal) => (
                 <option key={goal} value={goal}>
                   {TRAINING_GOAL_LABELS[goal]}
