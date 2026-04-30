@@ -4,7 +4,7 @@ title: "アプリヘッダー（AppHeader）"
 type: "prd"
 status: "draft"
 created: "2026-04-29"
-updated: "2026-04-29"
+updated: "2026-04-30"
 depends-on: ["prd-gymini", "prd-navigation"]
 tags: ["navigation", "ui", "app-shell", "header"]
 category: "ui"
@@ -68,7 +68,7 @@ requirementDiagram
 
     interfaceRequirement HeaderTitle {
         id: IR_004
-        text: "全画面でタイトル（<h1>）を必須表示する"
+        text: "タイトル（<h1>）はセッション中（FRAME2）と設定（FRAME5）のみ必須表示。トップレベルページ（FRAME1, 3, 4）はアクションピルのみを表示し、タイトルは省略する"
         risk: low
         verifymethod: inspection
     }
@@ -96,7 +96,7 @@ requirementDiagram
 
     designConstraint VisualSpec {
         id: DC_006
-        text: "高さ56px（h-14）、frosted background（bg-white/80 backdrop-blur-xl）、border-bottom 統一"
+        text: "フローティングピル形状（rounded-full, h-11, fixed top-3）、frosted background（bg-white/80 backdrop-blur-xl）、border 統一。全幅バーは廃止"
         risk: low
         verifymethod: inspection
     }
@@ -122,18 +122,18 @@ AppHeader は `AppLayout`（`_app.tsx`）に1度だけマウントされる。Bo
 
 **検証方法:** インスペクションによる検証
 
-### IR_004: タイトル必須表示
+### IR_004: タイトル表示（条件付き）
 
-全画面（FRAME1〜5）で `<h1>` タイトルを表示する。`AIChatPage` のみが持っていたヘッダータイトルを全画面に展開する。
+BottomNav がタブ選択状態を視覚的に示すため、トップレベルページ（FRAME1 idle, 3, 4）ではヘッダーにタイトルを表示せず、アクションボタン専用のピルとする。タイトルは文脈が BottomNav で判断できないページのみ表示する。
 
 **画面別タイトル:**
 
 | FRAME | 画面 | タイトル |
 |:------|:-----|:---------|
-| FRAME1 | Training Idle | `トレーニング` |
+| FRAME1 | Training Idle | 表示しない（BottomNav で判別可能） |
 | FRAME2 | Active Workout | `セッション中` |
-| FRAME3 | History | `履歴` |
-| FRAME4 | AI Chat | `AIコーチ` |
+| FRAME3 | History | 表示しない（BottomNav で判別可能） |
+| FRAME4 | AI Chat | 表示しない（BottomNav で判別可能） |
 | FRAME5 | Settings | `設定` |
 
 **検証方法:** インスペクションによる検証
@@ -149,7 +149,7 @@ AppHeader は `AppLayout`（`_app.tsx`）に1度だけマウントされる。Bo
 | FRAME1 | — | `<GearIcon/>` |
 | FRAME2 | — | TimerPill + 終了ボタン + GearIcon |
 | FRAME3 | — | `<GearIcon/>` |
-| FRAME4 | `<Robot/>` | `<GearIcon/>` |
+| FRAME4 | — | `<GearIcon/>` |
 | FRAME5 | — | X 閉じるボタン |
 
 **検証方法:** インスペクションによる検証
@@ -178,11 +178,16 @@ FRAME5（`/settings`）は `_app` レイアウト外に配置されているた�
 
 ### DC_006: 視覚スペック
 
-- 高さ: 56px（`h-14`）。session-active variant のみ `min-h-14 py-2` で可変
+- 形状: `rounded-full`（ピル）、`fixed` ポジショニング。全幅バー（`sticky h-14`）は廃止
+- 高さ: `h-11`（44px）。session-active のみ `min-h-[44px] py-1.5` で可変
+- 位置: デフォルト variant は `top-3`（`pt-3`）、左右は `px-4` マージン
 - 背景: `bg-white/80 backdrop-blur-xl`（frosted）
-- 境界: `border-b border-zinc-200/60`
+- 境界: `border border-zinc-200/60`（`border-b` ではなく全周）
+- shadow: `shadow-sm`
 - z-index: 30（BottomNav より下、モーダルより上）
-- タイトル: `font-outfit font-bold text-base text-zinc-900 truncate`
+- `pointer-events-none` でオーバーレイ、ピル要素自体は `pointer-events-auto`
+- コンテンツ領域: ページ側は `pt-16` を確保してピルの下に隠れないようにする
+- タイトル: `font-outfit font-bold text-base text-zinc-900 truncate`（表示する場合）
 - タップ領域: trailing 内の操作要素は最低 44×44px を確保（T-003）
 - フォーカス: trailing の raw `<button>` には `focus-ring` を適用（CLAUDE.md 規約）
 
