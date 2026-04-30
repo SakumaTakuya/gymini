@@ -3,6 +3,7 @@ import type { Content } from '@google/generative-ai'
 import type { DateString } from '../schemas/date'
 import {
   createGeminiClient,
+  buildSystemInstruction,
   getErrorMessage,
   type FunctionCallRequest,
   type GeminiClient,
@@ -15,6 +16,7 @@ import {
 } from '../lib/toolExecutor'
 import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useUserProfileStore } from '../stores/userProfileStore'
 import { nowISODateTimeString } from '../schemas/date'
 import type {
   ChatMessage,
@@ -23,7 +25,7 @@ import type {
   ToolCallResult,
 } from '../types/chat'
 
-type CreateClient = (apiKey: string) => GeminiClient
+type CreateClient = (apiKey: string, systemInstruction?: string) => GeminiClient
 
 export const EMPTY_RESPONSE_FALLBACK =
   'うまく応答を生成できませんでした。もう少し詳しく教えていただけますか？（例: 「今日ベンチプレス60kg10回3セットやった」のように記録内容を含めて入力すると保存できます）'
@@ -41,10 +43,10 @@ export function useChatService(options: UseChatServiceOptions = {}) {
   const pendingAssistantIdRef = useRef<string | null>(null)
 
   const createClient = useCallback<CreateClient>(
-    (apiKey) =>
+    (apiKey, systemInstruction) =>
       options.createClient
-        ? options.createClient(apiKey)
-        : createGeminiClient({ apiKey }),
+        ? options.createClient(apiKey, systemInstruction)
+        : createGeminiClient({ apiKey, systemInstruction }),
     [options],
   )
 
@@ -69,6 +71,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       if (trimmed === '') return
 
       const settings = useSettingsStore.getState()
+      const { profile } = useUserProfileStore.getState()
       if (!settings.hasApiKey) {
         useChatStore
           .getState()
@@ -94,7 +97,8 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       chat.setLoading(true)
 
       try {
-        const client = createClient(settings.apiKey)
+        const systemInstruction = buildSystemInstruction(profile)
+        const client = createClient(settings.apiKey, systemInstruction)
         const baseContents = messagesToContents(
           useChatStore.getState().messages,
         )

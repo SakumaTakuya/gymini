@@ -4,9 +4,18 @@ import {
   type FunctionDeclaration,
 } from '@google/generative-ai'
 import { TOOL_DECLARATIONS } from './toolDefinitions'
+import type { TrainingGoal, UserProfile } from '../stores/userProfileStore'
 
 export const GEMINI_MODEL = 'gemini-flash-latest'
 export const MAX_HISTORY_MESSAGES = 50
+
+const TRAINING_GOAL_LABELS: Record<TrainingGoal, string> = {
+  muscle_gain: '筋肥大（サイズアップ）',
+  strength: '筋力アップ（パワー）',
+  fat_loss: '減量・ダイエット',
+  maintenance: '維持・健康増進',
+  performance: '競技パフォーマンス向上',
+}
 
 const SYSTEM_INSTRUCTION = `あなたは筋トレをサポートする日本語のAIコーチです。
 
@@ -47,9 +56,41 @@ export type GeminiChatResponse = {
   modelContent: Content | null
 }
 
+export function buildSystemInstruction(profile: UserProfile | null): string {
+  if (!profile) return SYSTEM_INSTRUCTION
+
+  const { birthYear, weightKg, heightCm, trainingGoal } = profile
+  if (birthYear === null && weightKg === null && heightCm === null && trainingGoal === null) {
+    return SYSTEM_INSTRUCTION
+  }
+
+  const lines: string[] = []
+  if (birthYear !== null) {
+    const age = new Date().getFullYear() - birthYear
+    lines.push(`- 年齢: ${age}歳（${birthYear}年生まれ）`)
+  }
+  if (weightKg !== null) {
+    lines.push(`- 体重: ${weightKg}kg`)
+  }
+  if (heightCm !== null) {
+    let line = `- 身長: ${heightCm}cm`
+    if (weightKg !== null) {
+      const bmi = weightKg / Math.pow(heightCm / 100, 2)
+      line += `（BMI: ${bmi.toFixed(1)}）`
+    }
+    lines.push(line)
+  }
+  if (trainingGoal !== null) {
+    lines.push(`- トレーニング目的: ${TRAINING_GOAL_LABELS[trainingGoal]}`)
+  }
+
+  return `${SYSTEM_INSTRUCTION}\n\n## ユーザープロフィール\n${lines.join('\n')}\n\n上記の情報を踏まえてアドバイスやメニュー提案を個人化してください。`
+}
+
 export type GeminiClientConfig = {
   apiKey: string
   toolDeclarations?: FunctionDeclaration[]
+  systemInstruction?: string
 }
 
 export type GeminiClient = {
@@ -68,7 +109,7 @@ export function createGeminiClient(config: GeminiClientConfig): GeminiClient {
         functionDeclarations: config.toolDeclarations ?? TOOL_DECLARATIONS,
       },
     ],
-    systemInstruction: SYSTEM_INSTRUCTION,
+    systemInstruction: config.systemInstruction ?? SYSTEM_INSTRUCTION,
   })
 
   return {
