@@ -305,4 +305,31 @@ test.describe('セット編集バグ修正', () => {
     // 2件の完了済みセットが表示される
     await expect(completedRows(page)).toHaveCount(2)
   })
+
+  test('編集中に終了ボタンを押してもセットが消えない', async ({ page }) => {
+    await startSession(page)
+    await recordSet(page, '60', '10')
+    await recordSet(page, '65', '8')
+
+    // 1番目のセットを編集開始（完了は押さない）
+    await page.getByRole('button', { name: '編集' }).first().click()
+    await expect(completedRows(page)).toHaveCount(1)
+
+    // 完了を押さずに終了する
+    await page.getByRole('button', { name: '終了' }).click()
+
+    // 保存されたワークアウトに 2 セットが残っていること
+    const sets = await page.evaluate(() => {
+      const raw = localStorage.getItem('gymini:workouts')
+      if (!raw) return null
+      const workouts = JSON.parse(raw) as Array<{
+        exercises: Array<{ sets: Array<{ weight: number; reps: number }> }>
+      }>
+      return workouts[0]?.exercises[0]?.sets ?? null
+    })
+    expect(sets).toEqual([
+      { weight: 60, reps: 10 },
+      { weight: 65, reps: 8 },
+    ])
+  })
 })

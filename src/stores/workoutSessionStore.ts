@@ -66,9 +66,12 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
         const { draftExercises, startedAt, date } = get()
         if (startedAt && date) {
           const now = nowISODateTimeString()
+          // Restore any in-progress edit so a set being edited is not lost
+          // when the user ends the session without pressing 完了.
+          const finalized = draftExercises.map(restoreEditingSet)
           WorkoutRepository.save({
             date,
-            exercises: draftExercises.map((e) => ({
+            exercises: finalized.map((e) => ({
               exerciseId: e.exerciseId,
               exerciseName: e.exerciseName,
               sets: e.sets,
