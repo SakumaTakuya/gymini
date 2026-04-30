@@ -165,6 +165,38 @@ export function useChatService(options: UseChatServiceOptions = {}) {
               },
             ]
             const follow = await client.generate(followUpContents, ctrl.signal)
+
+            if (follow.functionCalls && follow.functionCalls.length > 0) {
+              const { writeCall: followWriteCall } = partitionFunctionCalls(
+                follow.functionCalls,
+              )
+              if (followWriteCall) {
+                cancelExistingPending()
+                const pendingAction = buildPendingAction(followWriteCall)
+                if (!pendingAction) {
+                  useChatStore
+                    .getState()
+                    .setError('書き込み操作の内容を解釈できませんでした。')
+                  return
+                }
+                const assistantMessage: ChatMessage = {
+                  id: crypto.randomUUID(),
+                  role: 'assistant',
+                  content:
+                    follow.text && follow.text.trim() !== ''
+                      ? follow.text
+                      : pendingAction.description,
+                  timestamp: nowISODateTimeString(),
+                  toolCalls: readResults.length > 0 ? readResults : undefined,
+                  pendingAction,
+                }
+                pendingAssistantIdRef.current = assistantMessage.id
+                useChatStore.getState().addMessage(assistantMessage)
+                pendingAssistantIdRef.current = null
+                return
+              }
+            }
+
             const assistantMessage: ChatMessage = {
               id: crypto.randomUUID(),
               role: 'assistant',
