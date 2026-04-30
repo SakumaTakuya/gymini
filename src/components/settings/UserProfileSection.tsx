@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useRef, useState, useEffect, type ChangeEvent } from 'react'
 import { useUserProfileStore, TRAINING_GOALS, type TrainingGoal, type UserProfile } from '@/stores/userProfileStore'
 import { SectionCard } from './SectionCard'
 
@@ -21,33 +21,29 @@ function toNumberOrNull(value: string): number | null {
 }
 
 export function UserProfileSection() {
-  const profile = useUserProfileStore((s) => s.profile)
   const setProfile = useUserProfileStore((s) => s.setProfile)
 
-  const [localBirthYear, setLocalBirthYear] = useState(
-    profile.birthYear !== null ? String(profile.birthYear) : '',
-  )
-  const [localWeightKg, setLocalWeightKg] = useState(
-    profile.weightKg !== null ? String(profile.weightKg) : '',
-  )
-  const [localHeightCm, setLocalHeightCm] = useState(
-    profile.heightCm !== null ? String(profile.heightCm) : '',
-  )
-  const [localTrainingGoal, setLocalTrainingGoal] = useState<TrainingGoal | ''>(
-    profile.trainingGoal ?? '',
-  )
+  // __root.tsx の loadProfile() は設定画面遷移前に実行済みのため、
+  // lazy initializer でマウント時点の確定値を取得できる
+  const [localBirthYear, setLocalBirthYear] = useState(() => {
+    const { birthYear } = useUserProfileStore.getState().profile
+    return birthYear !== null ? String(birthYear) : ''
+  })
+  const [localWeightKg, setLocalWeightKg] = useState(() => {
+    const { weightKg } = useUserProfileStore.getState().profile
+    return weightKg !== null ? String(weightKg) : ''
+  })
+  const [localHeightCm, setLocalHeightCm] = useState(() => {
+    const { heightCm } = useUserProfileStore.getState().profile
+    return heightCm !== null ? String(heightCm) : ''
+  })
+  const [localTrainingGoal, setLocalTrainingGoal] = useState<TrainingGoal | ''>(() => {
+    return useUserProfileStore.getState().profile.trainingGoal ?? ''
+  })
   const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
 
   const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
   const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  // 外部からの変更（loadProfile）を入力欄に反映
-  useEffect(() => {
-    setLocalBirthYear(profile.birthYear !== null ? String(profile.birthYear) : '')
-    setLocalWeightKg(profile.weightKg !== null ? String(profile.weightKg) : '')
-    setLocalHeightCm(profile.heightCm !== null ? String(profile.heightCm) : '')
-    setLocalTrainingGoal(profile.trainingGoal ?? '')
-  }, [profile])
 
   useEffect(() => {
     return () => {
