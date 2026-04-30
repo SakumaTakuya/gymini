@@ -36,7 +36,7 @@ export function TrainingPage() {
 
   return (
     <>
-      <AppHeaderContent title="トレーニング" trailing={<GearIcon />} />
+      <AppHeaderContent trailing={<GearIcon />} />
       <IdleView onStartTraining={() => startSession()} />
     </>
   )

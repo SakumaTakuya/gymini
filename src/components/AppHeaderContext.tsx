@@ -7,7 +7,7 @@ import {
   type ReactNode,
 } from 'react'
 import { createPortal } from 'react-dom'
-import { APP_HEADER_VARIANT_HEIGHT, type AppHeaderVariant } from './AppHeader'
+import { type AppHeaderVariant } from './AppHeader'
 
 type ContextValue = {
   setTitleHost: (el: HTMLElement | null) => void
@@ -18,6 +18,8 @@ type ContextValue = {
   trailingHost: HTMLElement | null
   variant: AppHeaderVariant
   setVariant: (v: AppHeaderVariant) => void
+  showLeftPill: boolean
+  setShowLeftPill: (v: boolean) => void
 }
 
 const AppHeaderContext = createContext<ContextValue | null>(null)
@@ -31,6 +33,7 @@ export function AppHeaderProvider({ children }: ProviderProps) {
   const [leadingHost, setLeadingHost] = useState<HTMLElement | null>(null)
   const [trailingHost, setTrailingHost] = useState<HTMLElement | null>(null)
   const [variant, setVariant] = useState<AppHeaderVariant>('default')
+  const [showLeftPill, setShowLeftPill] = useState(false)
 
   const value = useMemo<ContextValue>(
     () => ({
@@ -42,30 +45,47 @@ export function AppHeaderProvider({ children }: ProviderProps) {
       trailingHost,
       variant,
       setVariant,
+      showLeftPill,
+      setShowLeftPill,
     }),
-    [titleHost, leadingHost, trailingHost, variant],
+    [titleHost, leadingHost, trailingHost, variant, showLeftPill],
   )
-
-  const heightClass = APP_HEADER_VARIANT_HEIGHT[variant]
 
   return (
     <AppHeaderContext.Provider value={value}>
       <header
         role="banner"
         data-variant={variant}
-        className={`sticky top-0 z-30 px-4 ${heightClass} flex items-center justify-between bg-white/80 backdrop-blur-xl border-b border-zinc-200/60`}
+        className="fixed top-0 left-0 right-0 z-30 pointer-events-none px-4 pt-3 flex items-start justify-between"
       >
-        <div className="flex items-center gap-2 min-w-0">
-          <span ref={setLeadingHost} className="contents" />
-          <h1
-            ref={setTitleHost}
-            className="font-outfit font-bold text-base text-zinc-900 truncate"
-          />
-        </div>
-        <div
-          ref={setTrailingHost}
-          className="flex items-center gap-2 shrink-0"
-        />
+        {variant === 'session-active' ? (
+          <div className="w-full flex items-center justify-between rounded-full bg-white/80 backdrop-blur-xl border border-zinc-200/60 shadow-sm px-4 min-h-[44px] py-1.5 pointer-events-auto">
+            <div className="flex items-center gap-2 min-w-0">
+              <span ref={setLeadingHost} className="contents" />
+              <h1
+                ref={setTitleHost}
+                className="font-outfit font-bold text-base text-zinc-900 truncate"
+              />
+            </div>
+            <div ref={setTrailingHost} className="flex items-center gap-2 shrink-0" />
+          </div>
+        ) : (
+          <>
+            {showLeftPill && (
+              <div className="flex items-center gap-2 rounded-full bg-white/80 backdrop-blur-xl border border-zinc-200/60 shadow-sm px-3 h-11 pointer-events-auto">
+                <span ref={setLeadingHost} className="contents" />
+                <h1
+                  ref={setTitleHost}
+                  className="font-outfit font-bold text-base text-zinc-900 truncate max-w-[180px]"
+                />
+              </div>
+            )}
+            <div
+              ref={setTrailingHost}
+              className="ml-auto flex items-center gap-1 rounded-full bg-white/80 backdrop-blur-xl border border-zinc-200/60 shadow-sm px-2 h-11 pointer-events-auto"
+            />
+          </>
+        )}
       </header>
       {children}
     </AppHeaderContext.Provider>
@@ -73,7 +93,7 @@ export function AppHeaderProvider({ children }: ProviderProps) {
 }
 
 type AppHeaderContentProps = {
-  title: string
+  title?: string
   leading?: ReactNode
   trailing?: ReactNode
   variant?: AppHeaderVariant
@@ -99,9 +119,16 @@ export function AppHeaderContent({
     }
   }, [ctx, variant])
 
+  useEffect(() => {
+    ctx.setShowLeftPill(!!leading || !!title)
+    return () => {
+      ctx.setShowLeftPill(false)
+    }
+  }, [ctx, leading, title])
+
   return (
     <>
-      {ctx.titleHost && createPortal(title, ctx.titleHost)}
+      {title != null && ctx.titleHost && createPortal(title, ctx.titleHost)}
       {leading != null && ctx.leadingHost
         ? createPortal(leading, ctx.leadingHost)
         : null}

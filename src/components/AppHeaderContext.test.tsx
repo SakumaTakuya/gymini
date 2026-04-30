@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { AppHeaderProvider, AppHeaderContent } from './AppHeaderContext'
 
 describe('AppHeaderProvider + AppHeaderContent', () => {
-  it('provides an empty header until a child registers content', () => {
+  it('provides a banner with no heading when no child registers content', () => {
     render(
       <AppHeaderProvider>
         <div>body</div>
@@ -14,7 +14,7 @@ describe('AppHeaderProvider + AppHeaderContent', () => {
     const banner = screen.getByRole('banner')
     expect(banner).toBeInTheDocument()
     expect(banner.dataset.variant).toBe('default')
-    expect(screen.getByRole('heading', { level: 1 }).textContent).toBe('')
+    expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
   })
 
   it('renders title published by a child via portal', () => {

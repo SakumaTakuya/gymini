@@ -11,6 +11,7 @@ export type AppHeaderProps = {
   className?: string
 }
 
+// Kept for backward compatibility — no longer used internally
 // eslint-disable-next-line react-refresh/only-export-components
 export const APP_HEADER_VARIANT_HEIGHT: Record<AppHeaderVariant, string> = {
   default: 'h-14',
@@ -22,18 +23,12 @@ export function AppHeader({
   title,
   leading,
   trailing,
-  variant = 'default',
-  sticky = true,
   className = '',
 }: AppHeaderProps) {
-  const stickyClass = sticky ? 'sticky' : 'relative'
-  const heightClass = APP_HEADER_VARIANT_HEIGHT[variant]
-
   return (
     <header
       role="banner"
-      data-variant={variant}
-      className={`${stickyClass} top-0 z-30 px-4 ${heightClass} flex items-center justify-between bg-white/80 backdrop-blur-xl border-b border-zinc-200/60 ${className}`.trim()}
+      className={`fixed top-3 left-4 right-4 z-30 rounded-full flex items-center h-11 bg-white/80 backdrop-blur-xl border border-zinc-200/60 shadow-sm px-3 justify-between ${className}`.trim()}
     >
       <div className="flex items-center gap-2 min-w-0">
         {leading}
