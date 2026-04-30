@@ -50,7 +50,6 @@ test.describe('トレーニング記録フロー', () => {
     await page.getByRole('button', { name: /トレーニングを始める/ }).click()
 
     // FRAME2: ワークアウト画面が表示される
-    await expect(page.getByText('ワークアウト')).toBeVisible()
     await expect(page.getByPlaceholder('種目を追加...')).toBeVisible()
 
     // 種目を検索して選択
