@@ -5,6 +5,7 @@ import { ChatBubble } from '../components/chat/ChatBubble'
 import { ChatInput } from '../components/chat/ChatInput'
 import { ConfirmationBubble } from '../components/chat/ConfirmationBubble'
 import { GearIcon } from '../components/GearIcon'
+import { AppHeaderContent } from '../components/AppHeaderContext'
 import { useChatService } from '../hooks/useChatService'
 import { useSettingsStore } from '../stores/settingsStore'
 
@@ -30,13 +31,11 @@ export function AIChatPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-zinc-50">
-      <GearIcon className="absolute top-12 right-4 z-30" />
-      <header className="sticky top-0 z-20 bg-white/80 backdrop-blur border-b border-zinc-200/50 px-4 py-3">
-        <div className="flex items-center gap-2">
-          <Robot size={20} weight="bold" />
-          <h1 className="text-base font-bold">AIコーチ</h1>
-        </div>
-      </header>
+      <AppHeaderContent
+        title="AIコーチ"
+        leading={<Robot size={20} weight="bold" />}
+        trailing={<GearIcon />}
+      />
 
       <main className="flex-1 pb-40 pt-2">
         {messages.length === 0 && !error && (

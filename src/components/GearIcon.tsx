@@ -2,17 +2,28 @@ import { Link } from '@tanstack/react-router'
 import { Gear } from '@phosphor-icons/react'
 import { useSettingsStore } from '../stores/settingsStore'
 
+export type GearIconVariant = 'overlay' | 'inline'
+
 type Props = {
   className?: string
+  variant?: GearIconVariant
 }
 
-export function GearIcon({ className = '' }: Props) {
+const VARIANT_CLASS: Record<GearIconVariant, string> = {
+  overlay:
+    'bg-white/80 backdrop-blur-sm shadow-sm border border-zinc-100',
+  inline: 'hover:bg-zinc-100/60',
+}
+
+export function GearIcon({ className = '', variant = 'inline' }: Props) {
   const hasApiKey = useSettingsStore((s) => s.hasApiKey)
+  const variantClass = VARIANT_CLASS[variant]
 
   return (
     <Link
       to="/settings"
-      className={`relative w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full bg-white/80 backdrop-blur-sm shadow-sm border border-zinc-100 ${className}`.trim()}
+      aria-label="設定を開く"
+      className={`focus-ring relative w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full ${variantClass} ${className}`.trim()}
     >
       <Gear size={16} className="text-zinc-500" />
       {!hasApiKey && (

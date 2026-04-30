@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet } from '@tanstack/react-router'
 import { BottomNav } from '../components/BottomNav'
+import { AppHeaderProvider } from '../components/AppHeaderContext'
 import { useHydrated } from '../hooks/useHydrated'
 
 export const Route = createFileRoute('/_app')({
@@ -14,11 +15,11 @@ function AppLayout() {
   }
 
   return (
-    <>
+    <AppHeaderProvider>
       <main className="flex-1 pb-24">
         <Outlet />
       </main>
       <BottomNav />
-    </>
+    </AppHeaderProvider>
   )
 }

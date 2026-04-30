@@ -31,8 +31,17 @@ vi.mock('@tanstack/react-router', async () => {
 })
 
 import { AIChatPage } from './AIChatPage'
+import { AppHeaderProvider } from '../components/AppHeaderContext'
 import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
+
+function renderAIChatPage() {
+  return render(
+    <AppHeaderProvider>
+      <AIChatPage />
+    </AppHeaderProvider>,
+  )
+}
 
 describe('AIChatPage', () => {
   beforeEach(() => {
@@ -41,13 +50,13 @@ describe('AIChatPage', () => {
   })
 
   test('shows API key guidance when key is missing', () => {
-    render(<AIChatPage />)
+    renderAIChatPage()
     expect(screen.getByText('APIキーが必要です')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /設定画面へ/ })).toBeInTheDocument()
   })
 
   test('renders gear link to settings', () => {
-    render(<AIChatPage />)
+    renderAIChatPage()
     const settingsLink = screen
       .getAllByRole('link')
       .find((l) => l.getAttribute('href') === '/settings')
@@ -56,14 +65,14 @@ describe('AIChatPage', () => {
 
   test('enables input when key is set', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
-    render(<AIChatPage />)
+    renderAIChatPage()
     expect(screen.queryByText('APIキーが必要です')).not.toBeInTheDocument()
     expect(screen.getByPlaceholderText('メッセージを入力')).not.toBeDisabled()
   })
 
   test('shows empty state message when no messages', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
-    render(<AIChatPage />)
+    renderAIChatPage()
     expect(
       screen.getByText('AI コーチとチャットを始めましょう'),
     ).toBeInTheDocument()
@@ -89,7 +98,7 @@ describe('AIChatPage', () => {
       isLoading: false,
       error: null,
     })
-    render(<AIChatPage />)
+    renderAIChatPage()
     expect(screen.getByText('やあ')).toBeInTheDocument()
     expect(screen.getByText('こんにちは！')).toBeInTheDocument()
   })
@@ -115,7 +124,7 @@ describe('AIChatPage', () => {
       isLoading: false,
       error: null,
     })
-    render(<AIChatPage />)
+    renderAIChatPage()
     expect(screen.getByRole('button', { name: /追加する/ })).toBeInTheDocument()
     await userEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
     expect(useChatStore.getState().messages[0].pendingAction?.status).toBe(
@@ -130,7 +139,7 @@ describe('AIChatPage', () => {
       isLoading: false,
       error: 'エラーが発生しました',
     })
-    render(<AIChatPage />)
+    renderAIChatPage()
     expect(screen.getByText('エラーが発生しました')).toBeInTheDocument()
   })
 
@@ -141,7 +150,7 @@ describe('AIChatPage', () => {
       isLoading: true,
       error: null,
     })
-    render(<AIChatPage />)
+    renderAIChatPage()
     expect(screen.getByText('考え中…')).toBeInTheDocument()
   })
 })

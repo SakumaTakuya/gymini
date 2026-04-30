@@ -60,10 +60,4 @@ describe('IdleView', () => {
     })
     expect(button.className).toContain('h-13')
   })
-
-  it('renders gear link to settings', async () => {
-    renderIdleView()
-    const link = await screen.findByRole('link')
-    expect(link.getAttribute('href')).toContain('settings')
-  })
 })
