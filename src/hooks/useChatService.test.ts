@@ -1,6 +1,6 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { useChatService } from './useChatService'
+import { EMPTY_RESPONSE_FALLBACK, useChatService } from './useChatService'
 import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
@@ -72,6 +72,59 @@ describe('useChatService', () => {
     expect(msgs[0]).toMatchObject({ role: 'user', content: 'やあ' })
     expect(msgs[1]).toMatchObject({ role: 'assistant', content: 'こんにちは！' })
     expect(useChatStore.getState().isLoading).toBe(false)
+  })
+
+  test('substitutes fallback when model returns empty text and no tool calls', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    const client = mockClient([{ text: null, functionCalls: null }])
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => client }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('今日ベンチプレスしようと思う')
+    })
+    const msgs = useChatStore.getState().messages
+    expect(msgs).toHaveLength(2)
+    expect(msgs[1]).toMatchObject({
+      role: 'assistant',
+      content: EMPTY_RESPONSE_FALLBACK,
+    })
+  })
+
+  test('substitutes fallback when whitespace-only text is returned', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    const client = mockClient([{ text: '   \n  ', functionCalls: null }])
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => client }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('今日ベンチプレスしようと思う')
+    })
+    const msgs = useChatStore.getState().messages
+    expect(msgs[msgs.length - 1].content).toBe(EMPTY_RESPONSE_FALLBACK)
+  })
+
+  test('substitutes fallback when read-tool follow-up returns empty text', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    vi.mocked(WorkoutRepository.listByDateDesc).mockReturnValue([])
+    const client = mockClient([
+      {
+        text: null,
+        functionCalls: [{ name: 'getRecentWorkouts', args: { count: 3 } }],
+      },
+      { text: null, functionCalls: null },
+    ])
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => client }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('最近のトレーニング教えて')
+    })
+    const msgs = useChatStore.getState().messages
+    expect(msgs[msgs.length - 1]).toMatchObject({
+      role: 'assistant',
+      content: EMPTY_RESPONSE_FALLBACK,
+    })
   })
 
   test('executes read tool and sends follow-up request', async () => {

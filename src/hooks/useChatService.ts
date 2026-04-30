@@ -25,6 +25,9 @@ import type {
 
 type CreateClient = (apiKey: string) => GeminiClient
 
+export const EMPTY_RESPONSE_FALLBACK =
+  'うまく応答を生成できませんでした。もう少し詳しく教えていただけますか？（例: 「今日ベンチプレス60kg10回3セットやった」のように記録内容を含めて入力すると保存できます）'
+
 export type UseChatServiceOptions = {
   createClient?: CreateClient
 }
@@ -165,7 +168,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
             const assistantMessage: ChatMessage = {
               id: crypto.randomUUID(),
               role: 'assistant',
-              content: follow.text ?? '',
+              content: nonEmptyOrFallback(follow.text),
               timestamp: nowISODateTimeString(),
               toolCalls: readResults,
             }
@@ -179,7 +182,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         const assistantMessage: ChatMessage = {
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: firstResponse.text ?? '',
+          content: nonEmptyOrFallback(firstResponse.text),
           timestamp: nowISODateTimeString(),
         }
         pendingAssistantIdRef.current = assistantMessage.id
@@ -447,6 +450,11 @@ function toFunctionResponseObject(value: unknown): object {
     return value as object
   }
   return { value }
+}
+
+function nonEmptyOrFallback(text: string | null | undefined): string {
+  if (typeof text !== 'string') return EMPTY_RESPONSE_FALLBACK
+  return text.trim() === '' ? EMPTY_RESPONSE_FALLBACK : text
 }
 
 function isAbortError(err: unknown): boolean {
