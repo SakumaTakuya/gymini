@@ -1,5 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import { render, screen } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query'
 import {
   createRootRoute,
@@ -36,7 +37,13 @@ function renderWithRouter(searchParams: Record<string, string> = {}) {
     component: HistoryPage,
   })
 
-  const routeTree = rootRoute.addChildren([historyRoute])
+  const trainingRoute = createRoute({
+    getParentRoute: () => rootRoute,
+    path: '/training',
+    component: () => <div>トレーニング画面</div>,
+  })
+
+  const routeTree = rootRoute.addChildren([historyRoute, trainingRoute])
 
   const searchStr = new URLSearchParams(searchParams).toString()
   const memoryHistory = createMemoryHistory({
@@ -116,5 +123,14 @@ describe('HistoryPage integration', () => {
       .getAllByRole('link')
       .find((l) => l.getAttribute('href')?.includes('settings'))
     expect(settingsLink).toBeDefined()
+  })
+
+  it('starts session and navigates to training when "追加" is clicked', async () => {
+    const user = userEvent.setup()
+    const { router } = renderWithRouter()
+    await screen.findByTestId('empty-day-state')
+    await user.click(screen.getByRole('button', { name: '追加' }))
+    expect(useWorkoutSessionStore.getState().isActive).toBe(true)
+    expect(router.state.location.pathname).toBe('/training')
   })
 })
