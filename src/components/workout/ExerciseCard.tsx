@@ -38,7 +38,7 @@ export function ExerciseCard({
 
   return (
     <div
-      className={`relative mx-4 mb-3 bg-white rounded-[24px] p-5 shadow-sm border border-zinc-100 ${
+      className={`animate-appear relative mx-4 mb-3 bg-white rounded-[24px] p-5 shadow-sm border border-zinc-100 ${
         isCollapsed ? 'opacity-70' : ''
       } ${menuOpen ? 'z-10' : ''}`}
     >
