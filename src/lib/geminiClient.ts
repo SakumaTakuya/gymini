@@ -5,6 +5,7 @@ import {
 } from '@google/generative-ai'
 import { TOOL_DECLARATIONS } from './toolDefinitions'
 import type { TrainingGoal, UserProfile } from '../stores/userProfileStore'
+import { todayDateString } from '../schemas/date'
 
 export const GEMINI_MODEL = 'gemini-flash-latest'
 export const MAX_HISTORY_MESSAGES = 50
@@ -57,11 +58,13 @@ export type GeminiChatResponse = {
 }
 
 export function buildSystemInstruction(profile: UserProfile | null): string {
-  if (!profile) return SYSTEM_INSTRUCTION
+  const todaySection = `\n\n## 今日の日付\n今日の日付は ${todayDateString()} です。日付が明示されていない場合はこの日付を使用してください。`
+
+  if (!profile) return SYSTEM_INSTRUCTION + todaySection
 
   const { birthYear, weightKg, heightCm, trainingGoal } = profile
   if (birthYear === null && weightKg === null && heightCm === null && trainingGoal === null) {
-    return SYSTEM_INSTRUCTION
+    return SYSTEM_INSTRUCTION + todaySection
   }
 
   const lines: string[] = []
@@ -84,7 +87,7 @@ export function buildSystemInstruction(profile: UserProfile | null): string {
     lines.push(`- トレーニング目的: ${TRAINING_GOAL_LABELS[trainingGoal]}`)
   }
 
-  return `${SYSTEM_INSTRUCTION}\n\n## ユーザープロフィール\n${lines.join('\n')}\n\n上記の情報を踏まえてアドバイスやメニュー提案を個人化してください。`
+  return `${SYSTEM_INSTRUCTION}\n\n## ユーザープロフィール\n${lines.join('\n')}\n\n上記の情報を踏まえてアドバイスやメニュー提案を個人化してください。${todaySection}`
 }
 
 export type GeminiClientConfig = {
