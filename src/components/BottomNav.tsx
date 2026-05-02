@@ -23,7 +23,7 @@ export function BottomNav() {
         <Link
           key={tab.to}
           to={tab.to}
-          className="flex-1 flex items-center justify-center min-h-[44px]"
+          className="flex-1 flex items-center justify-center min-h-[44px] min-w-[44px]"
         >
           {({ isActive }) => (
             <span
