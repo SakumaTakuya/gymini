@@ -91,7 +91,7 @@ export function MonthCalendar({
   const today = todayDateString()
 
   return (
-    <Card className="mx-4 rounded-[32px] p-5 shadow-soft border border-gym-zinc-100 mb-8 ring-0">
+    <Card className="mx-4 rounded-[24px] p-5 shadow-soft border border-gym-zinc-100 mb-8 ring-0">
       {/* Month Header */}
       <div className="flex justify-between items-center mb-6 px-2">
         <button

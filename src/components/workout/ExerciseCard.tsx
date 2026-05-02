@@ -38,7 +38,7 @@ export function ExerciseCard({
 
   return (
     <div
-      className={`animate-appear relative mx-4 mb-3 bg-white rounded-[24px] p-5 shadow-sm border border-zinc-100 ${
+      className={`animate-appear relative mx-4 mb-3 bg-gym-white rounded-[24px] p-5 shadow-soft border border-gym-zinc-100 ${
         isCollapsed ? 'opacity-70' : ''
       } ${menuOpen ? 'z-10' : ''}`}
     >
@@ -52,18 +52,18 @@ export function ExerciseCard({
           <button
             type="button"
             aria-label="種目メニュー"
-            className="focus-ring w-8 h-8 bg-zinc-50 rounded-full flex items-center justify-center text-zinc-500 min-h-[44px] min-w-[44px]"
+            className="focus-ring w-8 h-8 bg-gym-zinc-50 rounded-full flex items-center justify-center text-gym-zinc-500 min-h-[44px] min-w-[44px]"
             onClick={() => setMenuOpen((v) => !v)}
             onBlur={() => { setTimeout(() => setMenuOpen(false), 150) }}
           >
             <DotsThree size={16} weight="bold" />
           </button>
           {menuOpen && (
-            <div className="absolute top-full left-0 mt-1 bg-white rounded-xl shadow-lg border border-zinc-200 z-50 py-1 min-w-[140px]">
+            <div className="absolute top-full left-0 mt-1 bg-gym-white rounded-xl shadow-float border border-gym-zinc-200 z-50 py-1 min-w-[140px]">
               {onMoveUp && (
                 <button
                   type="button"
-                  className="focus-ring flex items-center gap-2 w-full px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50"
+                  className="focus-ring flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gym-zinc-600 hover:bg-gym-zinc-50"
                   onClick={(e) => { e.stopPropagation(); onMoveUp(); setMenuOpen(false) }}
                 >
                   <ArrowUp size={14} weight="bold" />
@@ -73,14 +73,14 @@ export function ExerciseCard({
               {onMoveDown && (
                 <button
                   type="button"
-                  className="focus-ring flex items-center gap-2 w-full px-4 py-2.5 text-sm text-zinc-700 hover:bg-zinc-50"
+                  className="focus-ring flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gym-zinc-600 hover:bg-gym-zinc-50"
                   onClick={(e) => { e.stopPropagation(); onMoveDown(); setMenuOpen(false) }}
                 >
                   <ArrowDown size={14} weight="bold" />
                   下へ移動
                 </button>
               )}
-              {(onMoveUp || onMoveDown) && <div className="my-1 border-t border-zinc-100" />}
+              {(onMoveUp || onMoveDown) && <div className="my-1 border-t border-gym-zinc-100" />}
               <button
                 type="button"
                 className="focus-ring flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
@@ -102,7 +102,7 @@ export function ExerciseCard({
               {exerciseName}
             </h3>
             {isCollapsed && sets.length > 0 && (
-              <p className="text-[10px] text-zinc-400 font-medium uppercase mt-0.5">
+              <p className="text-[10px] text-gym-zinc-400 font-medium uppercase mt-0.5">
                 {sets.length} Sets &bull; Last: {sets[sets.length - 1].weight}kg x{' '}
                 {sets[sets.length - 1].reps}
               </p>
@@ -158,7 +158,7 @@ export function ExerciseCard({
                 type="button"
                 onClick={onActivate}
                 aria-label="追加"
-                className="focus-ring w-8 h-8 rounded-full bg-zinc-100 flex items-center justify-center text-zinc-500 min-h-[44px] min-w-[44px]"
+                className="focus-ring w-8 h-8 rounded-full bg-gym-zinc-100 flex items-center justify-center text-gym-zinc-500 min-h-[44px] min-w-[44px]"
               >
                 <Plus size={14} weight="bold" />
               </button>

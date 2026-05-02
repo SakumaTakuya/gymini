@@ -14,13 +14,15 @@
   --color-gym-zinc-400: #a1a1aa;
   --color-gym-zinc-500: #71717a;
   --color-gym-zinc-600: #52525b;
+  --color-gym-zinc-700: #3f3f46;
   --color-gym-zinc-800: #27272a;
   --color-gym-zinc-900: #18181b;
   --color-gym-accent: #DE3A2B;
   --font-outfit: "Outfit", sans-serif;
-  --font-inter: "Inter", sans-serif;
+  --font-sora: "Sora", sans-serif;
   --font-jp: "Noto Sans JP", sans-serif;
   --shadow-soft: 0 2px 8px rgba(0, 0, 0, 0.04);
+  --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.10);
 }
 
 @utility focus-ring {
@@ -97,7 +99,7 @@
 
 @theme inline {
   --font-heading: "Outfit", sans-serif;
-  --font-sans: "Inter", "Noto Sans JP", sans-serif;
+  --font-sans: "Sora", "Noto Sans JP", sans-serif;
   --color-ring: var(--ring);
   --color-input: var(--input);
   --color-border: var(--border);
