@@ -52,4 +52,71 @@ describe('PendingSetRow', () => {
     const bar = container.querySelector('.bg-black')
     expect(bar).toBeInTheDocument()
   })
+
+  describe('auto-focus behavior', () => {
+    it('focuses reps input when weight input loses focus', () => {
+      render(<PendingSetRow {...defaultProps} />)
+      const [weightInput, repsInput] = screen.getAllByRole('spinbutton')
+      fireEvent.blur(weightInput)
+      expect(document.activeElement).toBe(repsInput)
+    })
+
+    it('focuses reps input when Enter is pressed in weight input', () => {
+      render(<PendingSetRow {...defaultProps} />)
+      const [weightInput, repsInput] = screen.getAllByRole('spinbutton')
+      fireEvent.keyDown(weightInput, { key: 'Enter' })
+      expect(document.activeElement).toBe(repsInput)
+    })
+  })
+
+  describe('auto-complete behavior', () => {
+    it('calls onComplete when reps input loses focus and reps > 0', () => {
+      const onComplete = vi.fn()
+      render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
+      const repsInput = screen.getAllByRole('spinbutton')[1]
+      fireEvent.blur(repsInput)
+      expect(onComplete).toHaveBeenCalledOnce()
+    })
+
+    it('calls onComplete when Enter is pressed in reps input and reps > 0', () => {
+      const onComplete = vi.fn()
+      render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
+      const repsInput = screen.getAllByRole('spinbutton')[1]
+      fireEvent.keyDown(repsInput, { key: 'Enter' })
+      expect(onComplete).toHaveBeenCalledOnce()
+    })
+
+    it('does not call onComplete when reps input loses focus and reps is 0', () => {
+      const onComplete = vi.fn()
+      render(
+        <PendingSetRow
+          {...defaultProps}
+          pendingSet={{ weight: 60, reps: 0 }}
+          onComplete={onComplete}
+        />,
+      )
+      const repsInput = screen.getAllByRole('spinbutton')[1]
+      fireEvent.blur(repsInput)
+      expect(onComplete).not.toHaveBeenCalled()
+    })
+
+    it('does not call onComplete on reps blur when focus moves to complete button', () => {
+      const onComplete = vi.fn()
+      render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
+      const repsInput = screen.getAllByRole('spinbutton')[1]
+      const checkButton = screen.getByRole('button', { name: /完了/ })
+      fireEvent.blur(repsInput, { relatedTarget: checkButton })
+      expect(onComplete).not.toHaveBeenCalled()
+    })
+
+    it('calls onComplete only once when reps blur and button click fire together', () => {
+      const onComplete = vi.fn()
+      render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
+      const repsInput = screen.getAllByRole('spinbutton')[1]
+      const checkButton = screen.getByRole('button', { name: /完了/ })
+      fireEvent.blur(repsInput)
+      fireEvent.click(checkButton)
+      expect(onComplete).toHaveBeenCalledOnce()
+    })
+  })
 })
