@@ -83,6 +83,7 @@ describe('ActiveSessionView', () => {
       exerciseName: 'スクワット',
       sets: [],
       pendingSet: null,
+      pendingSetDirty: false,
       cardState: 'idle',
       editingSetIndex: null,
     }
