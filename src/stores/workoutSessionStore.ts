@@ -28,14 +28,19 @@ type WorkoutSessionState = {
 }
 
 // Restores a set being edited back into the sets array at its original index.
-// Returns the exercise unchanged if no edit is in progress.
+// If a new set was being entered (editingSetIndex === null) and the user modified
+// it (pendingSetDirty), auto-appends it so the data is not lost.
+// Returns the exercise with no pending state in all cases.
 function restoreEditingSet(e: DraftExercise): DraftExercise {
   if (e.editingSetIndex != null && e.pendingSet !== null) {
     const i = e.editingSetIndex
     const restored = [...e.sets.slice(0, i), e.pendingSet, ...e.sets.slice(i)]
-    return { ...e, sets: restored, pendingSet: null, editingSetIndex: null }
+    return { ...e, sets: restored, pendingSet: null, pendingSetDirty: false, editingSetIndex: null }
   }
-  return { ...e, pendingSet: null, editingSetIndex: null }
+  if (e.pendingSetDirty && e.pendingSet !== null) {
+    return { ...e, sets: [...e.sets, e.pendingSet], pendingSet: null, pendingSetDirty: false, editingSetIndex: null }
+  }
+  return { ...e, pendingSet: null, pendingSetDirty: false, editingSetIndex: null }
 }
 
 function deactivateRecording(exercises: DraftExercise[]): DraftExercise[] {
@@ -116,6 +121,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             exerciseName: exercise.exerciseName,
             sets: [],
             pendingSet: { weight: 0, reps: 0 },
+            pendingSetDirty: false,
             cardState: 'recording',
             editingSetIndex: null,
           }
@@ -152,6 +158,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             ...target,
             cardState: 'recording',
             pendingSet: { ...lastSet },
+            pendingSetDirty: false,
             editingSetIndex: null,
           }
           return { draftExercises: updated }
@@ -176,6 +183,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             ...target,
             sets: newSets,
             pendingSet: { ...completedSet },
+            pendingSetDirty: false,
             editingSetIndex: null,
           }
           return { draftExercises: exercises }
@@ -209,6 +217,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             ...target,
             sets: newSets,
             pendingSet: { ...setToEdit },
+            pendingSetDirty: false,
             cardState: 'recording',
             editingSetIndex: adjustedSetIndex,
           }
@@ -237,6 +246,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
           exercises[exerciseIndex] = {
             ...target,
             pendingSet: { ...target.pendingSet, ...pendingSet },
+            pendingSetDirty: true,
           }
           return { draftExercises: exercises }
         })
