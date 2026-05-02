@@ -18,14 +18,9 @@ export function PendingSetRow({
 }: PendingSetRowProps) {
   const repsRef = useRef<HTMLInputElement>(null)
   const completeButtonRef = useRef<HTMLButtonElement>(null)
-  const isCompletingRef = useRef(false)
-
-  const handleComplete = () => {
-    if (isCompletingRef.current) return
-    isCompletingRef.current = true
-    onComplete()
-    setTimeout(() => { isCompletingRef.current = false }, 200)
-  }
+  // Set to true on button pointerdown to suppress the reps blur auto-complete
+  // that would otherwise fire simultaneously with the button click.
+  const buttonPressedRef = useRef(false)
 
   const handleWeightBlur = () => {
     repsRef.current?.focus()
@@ -40,13 +35,17 @@ export function PendingSetRow({
 
   const handleRepsBlur = (e: FocusEvent<HTMLInputElement>) => {
     if (e.relatedTarget === completeButtonRef.current) return
-    if (pendingSet.reps > 0) handleComplete()
+    if (buttonPressedRef.current) {
+      buttonPressedRef.current = false
+      return
+    }
+    if (pendingSet.reps > 0) onComplete()
   }
 
   const handleRepsKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
-      if (pendingSet.reps > 0) handleComplete()
+      if (pendingSet.reps > 0) onComplete()
     }
   }
 
@@ -86,7 +85,8 @@ export function PendingSetRow({
       <button
         ref={completeButtonRef}
         type="button"
-        onClick={handleComplete}
+        onPointerDown={() => { buttonPressedRef.current = true }}
+        onClick={onComplete}
         aria-label="完了"
         className="focus-ring w-7 h-7 rounded bg-black text-white flex items-center justify-center shadow-md min-h-[44px] min-w-[44px]"
       >

@@ -109,11 +109,13 @@ describe('PendingSetRow', () => {
       expect(onComplete).not.toHaveBeenCalled()
     })
 
-    it('calls onComplete only once when reps blur and button click fire together', () => {
+    it('calls onComplete only once when button pointerdown and reps blur fire together', () => {
       const onComplete = vi.fn()
       render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
       const repsInput = screen.getAllByRole('spinbutton')[1]
       const checkButton = screen.getByRole('button', { name: /完了/ })
+      // pointerdown fires before blur when tapping the button; blur should be suppressed
+      fireEvent.pointerDown(checkButton)
       fireEvent.blur(repsInput)
       fireEvent.click(checkButton)
       expect(onComplete).toHaveBeenCalledOnce()
