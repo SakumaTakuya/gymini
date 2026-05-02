@@ -31,7 +31,7 @@ export function ExerciseCard({
   onWeightChange,
   onRepsChange,
 }: ExerciseCardProps) {
-  const { exerciseName, sets, pendingSet, cardState } = draftExercise
+  const { exerciseName, sets, pendingSet, cardState, editingSetIndex } = draftExercise
   const isCollapsed = cardState === 'collapsed'
   const isRecording = cardState === 'recording'
   const [menuOpen, setMenuOpen] = useState(false)
@@ -119,30 +119,35 @@ export function ExerciseCard({
       {/* Body */}
       {!isCollapsed && (
         <>
-          {/* Completed sets */}
-          {sets.length > 0 && (
-            <div className="space-y-1 mb-3">
-              {sets.map((set, i) => (
-                <CompletedSetRow
-                  key={i}
-                  set={set}
-                  onEdit={() => onEdit(i)}
-                  onDelete={() => onDelete(i)}
-                />
-              ))}
-            </div>
-          )}
-
-          {/* Pending set (recording) */}
-          {isRecording && pendingSet && (
-            <div className="space-y-1">
-              <PendingSetRow
-                setNumber={sets.length + 1}
-                pendingSet={pendingSet}
-                onComplete={() => onComplete(pendingSet)}
-                onWeightChange={onWeightChange}
-                onRepsChange={onRepsChange}
-              />
+          {/* Sets list */}
+          {(sets.length > 0 || isRecording) && (
+            <div className={`space-y-1 ${!isRecording ? 'mb-3' : ''}`}>
+              {isRecording && pendingSet ? (() => {
+                const insertAt = editingSetIndex ?? sets.length
+                return [
+                  ...sets.slice(0, insertAt).map((set, i) => (
+                    <CompletedSetRow key={i} set={set} onEdit={() => onEdit(i)} onDelete={() => onDelete(i)} />
+                  )),
+                  <PendingSetRow
+                    key="pending"
+                    setNumber={insertAt + 1}
+                    pendingSet={pendingSet}
+                    onComplete={() => onComplete(pendingSet)}
+                    onWeightChange={onWeightChange}
+                    onRepsChange={onRepsChange}
+                  />,
+                  ...sets.slice(insertAt).map((set, sliceI) => {
+                    const idx = insertAt + sliceI
+                    return (
+                      <CompletedSetRow key={idx + 1} set={set} onEdit={() => onEdit(idx)} onDelete={() => onDelete(idx)} />
+                    )
+                  }),
+                ]
+              })() : (
+                sets.map((set, i) => (
+                  <CompletedSetRow key={i} set={set} onEdit={() => onEdit(i)} onDelete={() => onDelete(i)} />
+                ))
+              )}
             </div>
           )}
 

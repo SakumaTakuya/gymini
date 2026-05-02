@@ -2,7 +2,7 @@
 id: "prd-workout"
 title: "ワークアウト記録管理"
 type: "prd"
-status: "draft"
+status: "approved"
 created: "2026-03-08"
 updated: "2026-04-06"
 depends-on: ["prd-gymini"]

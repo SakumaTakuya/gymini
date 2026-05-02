@@ -5,7 +5,7 @@ type: "spec"
 status: "approved"
 sdd-phase: "specify"
 created: "2026-03-08"
-updated: "2026-04-10"
+updated: "2026-05-02"
 depends-on: ["prd-workout"]
 tags: ["workout", "session", "phase-1"]
 category: "core"
@@ -59,6 +59,8 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 | ID | カテゴリ | 要件 | 目標値 |
 |----|--------|------|--------|
 | NFR-001 | データ整合性 | ワークアウトデータが損失・破損しないこと | セッション終了後、再起動しても全セット・種目が復元されること |
+| NFR-002 | テスト容易性 | ドメインロジック（WorkoutSession操作）のユニットテストカバレッジ ≥ 80% | D-001準拠 |
+| NFR-003 | エラー耐性 | localStorage読み書き・JSONパース失敗時にセッションデータが失われないこと | T-002準拠 |
 
 # 4. API
 
@@ -68,13 +70,13 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 
 他モジュール（履歴・AI等）からも参照される永続化インターフェース。
 
-| モジュール | インターフェース | メンバー | 概要 |
-|---------|--------------|--------|------|
-| workout | WorkoutRepository | save(data) | セッション終了時にワークアウトを保存する（FR-001, FR-031） |
-| workout | WorkoutRepository | remove(id) | ワークアウトを削除する（`delete` はJS予約語のため `remove` を使用） |
-| workout | WorkoutRepository | getById(id) | IDでワークアウトを取得する |
-| workout | WorkoutRepository | listByDateDesc() | 日付降順で全ワークアウトを取得する（履歴機能・AI用） |
-| workout | WorkoutRepository | listByDate(date: DateString) | 指定日のワークアウトを取得する（カレンダー・AI用） |
+| モジュール | インターフェース | メンバー | 戻り値 | 概要 |
+|---------|--------------|--------|--------|------|
+| workout | WorkoutRepository | save(data: Workout) | `Promise<void>` | セッション終了時にワークアウトを保存する（FR-001, FR-031） |
+| workout | WorkoutRepository | remove(id: string) | `Promise<void>` | ワークアウトを削除する（`delete` はJS予約語のため `remove` を使用） |
+| workout | WorkoutRepository | getById(id: string) | `Promise<Workout \| null>` | IDでワークアウトを取得する |
+| workout | WorkoutRepository | listByDateDesc() | `Promise<Workout[]>` | 日付降順で全ワークアウトを取得する（履歴機能・AI用） |
+| workout | WorkoutRepository | listByDate(date: DateString) | `Promise<Workout[]>` | 指定日のワークアウトを取得する（カレンダー・AI用） |
 
 ## 4.2. WorkoutSession（セッション管理）
 
@@ -82,14 +84,14 @@ gyminiのPhase 1中核機能。ユーザーが日々のトレーニング内容�
 
 | モジュール | インターフェース | メンバー | 概要 |
 |---------|--------------|--------|------|
-| workout | WorkoutSession | startSession(date?) | セッションを開始し、タイマーを開始する。`date`（DateString）を指定した場合はその日付でセッションを開始する。省略時は今日の日付を使用する（FR-001, FR-032） |
+| workout | WorkoutSession | startSession(date?: DateString) | セッションを開始し、タイマーを開始する。`date` を指定した場合はその日付でセッションを開始する。省略時は今日の日付を使用する（FR-001, FR-032） |
 | workout | WorkoutSession | endSession() | セッションを保存して終了し、アイドル状態に戻る（FR-001, FR-031） |
-| workout | WorkoutSession | addExercise(exercise) | セッションに種目を追加する。セット入力行を自動作成しフォーカス。現在recording中の他種目はidleに降格（FR-005, FR-028） |
-| workout | WorkoutSession | activateExercise(exerciseIndex) | idle種目の「+」ボタンで記録中に切替。現在recording中の他種目はidleに降格（FR-028, FR-030） |
-| workout | WorkoutSession | completeSet(exerciseIndex, set) | セットを完了し、次セット入力行を自動追加する（FR-028, FR-006） |
-| workout | WorkoutSession | editCompletedSet(exerciseIndex, setIndex) | 完了済みセットを入力行に戻して編集可能にする（FR-029） |
-| workout | WorkoutSession | deleteCompletedSet(exerciseIndex, setIndex) | 完了済みセットを削除する（FR-029） |
-| workout | WorkoutSession | toggleExerciseCard(exerciseIndex) | 種目カードの折りたたみ/展開を切り替える（FR-030） |
+| workout | WorkoutSession | addExercise(exercise: { exerciseId: string; exerciseName: string }) | セッションに種目を追加する。セット入力行を自動作成しフォーカス。現在recording中の他種目はidleに降格（FR-005, FR-028） |
+| workout | WorkoutSession | activateExercise(exerciseIndex: number) | idle種目の「+」ボタンで記録中に切替。現在recording中の他種目はidleに降格（FR-028, FR-030） |
+| workout | WorkoutSession | completeSet(exerciseIndex: number, set: WorkoutSet) | セットを完了し、次セット入力行を自動追加する（FR-028, FR-006） |
+| workout | WorkoutSession | editCompletedSet(exerciseIndex: number, setIndex: number) | 完了済みセットを入力行に戻して編集可能にする（FR-029） |
+| workout | WorkoutSession | deleteCompletedSet(exerciseIndex: number, setIndex: number) | 完了済みセットを削除する（FR-029） |
+| workout | WorkoutSession | toggleExerciseCard(exerciseIndex: number) | 種目カードの折りたたみ/展開を切り替える（FR-030） |
 | workout | WorkoutSession | getElapsedTime(): number | セッション経過秒数を取得する。表示フォーマット（HH:MM:SS）は呼び出し側の責務（FR-032） |
 
 ## 4.3. 型定義
@@ -309,6 +311,7 @@ sequenceDiagram
 - ワークアウトデータはブラウザにローカル永続化される（技術選択の詳細は [index_design.md](index_design.md) を参照）
 - 同一日付に複数のワークアウトを登録可能
 - メモ機能（ワークアウト全体・セット単位）はスコープ外（PRDセクション5）
+- セッション内に種目・セットが1件も記録されていない状態で `endSession()` を呼び出した場合の振る舞い（保存するか・no-opにするか）は設計書（[index_design.md](index_design.md)）で定義する
 
 ---
 
