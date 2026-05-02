@@ -27,6 +27,21 @@
   @apply focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-gym-black focus-visible:ring-offset-2 focus-visible:ring-offset-white;
 }
 
+@keyframes slide-up-fade {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@utility animate-appear {
+  animation: slide-up-fade 220ms ease-out both;
+}
+
 @utility chat-markdown {
   & p {
     @apply my-1 leading-relaxed;

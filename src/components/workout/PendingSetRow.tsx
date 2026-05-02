@@ -50,7 +50,7 @@ export function PendingSetRow({
   }
 
   return (
-    <div className="flex items-center gap-3 py-2 px-2 rounded-xl border border-zinc-200 bg-white shadow-sm relative overflow-hidden">
+    <div className="animate-appear flex items-center gap-3 py-2 px-2 rounded-xl border border-zinc-200 bg-white shadow-sm relative overflow-hidden">
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-black" />
       <div className="w-6 h-6 rounded bg-zinc-100 flex items-center justify-center text-black ml-1">
         <span className="font-outfit font-bold text-xs">{setNumber}</span>

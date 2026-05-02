@@ -316,6 +316,41 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].sets[0]).toEqual({ weight: 60, reps: 10 }) // A restored
       expect(draftExercises[0].sets[1]).toEqual({ weight: 65, reps: 8 })  // B
     })
+
+    it('auto-saves non-empty pending set when pen is clicked on a completed set', () => {
+      const { startSession, addExercise, completeSet, updatePendingSet } =
+        useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      completeSet(0, { weight: 60, reps: 10 })
+      // Enter data for a new set but don't complete it
+      updatePendingSet(0, { weight: 80, reps: 8 })
+
+      // Click pen on the first completed set
+      useWorkoutSessionStore.getState().editCompletedSet(0, 0)
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      // The new set (80kg×8) should be auto-saved; {60,10} moved to pendingSet for editing
+      expect(draftExercises[0].sets).toHaveLength(1)
+      expect(draftExercises[0].sets[0]).toEqual({ weight: 80, reps: 8 })
+      expect(draftExercises[0].pendingSet).toEqual({ weight: 60, reps: 10 })
+    })
+
+    it('does not append an empty pending set when pen is clicked on a completed set', () => {
+      const { startSession, addExercise, completeSet } =
+        useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      completeSet(0, { weight: 60, reps: 10 })
+      // pendingSet is still the default {weight: 0, reps: 0}
+
+      useWorkoutSessionStore.getState().editCompletedSet(0, 0)
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      // No spurious empty set should be added
+      expect(draftExercises[0].sets).toHaveLength(0)
+      expect(draftExercises[0].pendingSet).toEqual({ weight: 60, reps: 10 })
+    })
   })
 
   describe('deleteCompletedSet', () => {
