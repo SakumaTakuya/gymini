@@ -77,7 +77,7 @@ test.describe('トレーニング記録フロー', () => {
     await page.getByRole('button', { name: '完了' }).click()
 
     // 2セット完了
-    const completedRows = page.locator('.bg-zinc-50.rounded-xl')
+    const completedRows = page.locator('[data-testid="completed-set-row"]')
     await expect(completedRows).toHaveCount(2)
 
     // 終了ボタンを押してFRAME1に戻る
@@ -158,13 +158,13 @@ test.describe('トレーニング記録フロー', () => {
     await page.getByRole('button', { name: '完了' }).click()
 
     // 2つの完了済みセット
-    let completedRows = page.locator('.bg-zinc-50.rounded-xl')
+    let completedRows = page.locator('[data-testid="completed-set-row"]')
     await expect(completedRows).toHaveCount(2)
 
     // ゴミ箱ボタンで1つ削除
     await page.getByRole('button', { name: '削除' }).first().click()
 
-    completedRows = page.locator('.bg-zinc-50.rounded-xl')
+    completedRows = page.locator('[data-testid="completed-set-row"]')
     await expect(completedRows).toHaveCount(1)
   })
 
@@ -217,7 +217,7 @@ test.describe('トレーニング記録フロー', () => {
 })
 
 test.describe('セット編集バグ修正', () => {
-  const completedRows = (page: Page) => page.locator('.bg-zinc-50.rounded-xl')
+  const completedRows = (page: Page) => page.locator('[data-testid="completed-set-row"]')
 
   test('編集完了後にセットが元の位置に戻る（末尾追加されない）', async ({ page }) => {
     await startSession(page)
