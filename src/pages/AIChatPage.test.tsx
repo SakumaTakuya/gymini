@@ -153,4 +153,30 @@ describe('AIChatPage', () => {
     renderAIChatPage()
     expect(screen.getByText('考え中…')).toBeInTheDocument()
   })
+
+  test('calls approve when approve button clicked in confirmation bubble', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    useChatStore.setState({
+      messages: [
+        {
+          id: 'm1',
+          role: 'assistant',
+          content: '追加しますか？',
+          timestamp: '2026-04-18T12:00:00+09:00' as never,
+          pendingAction: {
+            id: 'pa',
+            type: 'addExercise',
+            description: '追加しますか？',
+            data: { actionType: 'addExercise', name: 'ベンチプレス' },
+            status: 'pending',
+          },
+        },
+      ],
+      isLoading: false,
+      error: null,
+    })
+    renderAIChatPage()
+    await userEvent.click(screen.getByRole('button', { name: /追加する/ }))
+    expect(useChatStore.getState().messages[0].pendingAction?.status).toBe('approved')
+  })
 })

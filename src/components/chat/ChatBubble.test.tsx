@@ -31,4 +31,9 @@ describe('ChatBubble', () => {
     expect(screen.getByText('種目')).toBeInTheDocument()
     expect(screen.getByText('ベンチ')).toBeInTheDocument()
   })
+
+  test('renders "..." when assistant content is empty', () => {
+    render(<ChatBubble role="assistant" content="" />)
+    expect(screen.getByText('...')).toBeInTheDocument()
+  })
 })

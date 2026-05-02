@@ -94,4 +94,22 @@ describe('ConfirmationBubble', () => {
     )
     expect(screen.getByRole('button', { name: /記録する/ })).toBeInTheDocument()
   })
+
+  test('uses 追加する label for addExerciseToSession', () => {
+    render(
+      <ConfirmationBubble
+        content="種目を追加しますか？"
+        pendingAction={{
+          id: 'pa',
+          type: 'addExerciseToSession',
+          description: '種目を追加しますか？',
+          data: { actionType: 'addExerciseToSession', exerciseId: 'e1', exerciseName: 'スクワット' },
+          status: 'pending',
+        }}
+        onApprove={vi.fn()}
+        onReject={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /追加する/ })).toBeInTheDocument()
+  })
 })
