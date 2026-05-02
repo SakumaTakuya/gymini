@@ -8,6 +8,7 @@ const baseDraft: DraftExercise = {
   exerciseName: 'ベンチプレス',
   sets: [],
   pendingSet: null,
+  pendingSetDirty: false,
   cardState: 'idle',
   editingSetIndex: null,
 }

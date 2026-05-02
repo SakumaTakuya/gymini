@@ -151,8 +151,8 @@ export function ExerciseCard({
             </div>
           )}
 
-          {/* Add button (idle state) */}
-          {!isRecording && (
+          {/* Add button (idle state or editing a previous set) */}
+          {(!isRecording || editingSetIndex !== null) && (
             <div className="flex justify-center py-1">
               <button
                 type="button"
