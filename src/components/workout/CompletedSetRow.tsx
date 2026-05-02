@@ -9,7 +9,7 @@ type CompletedSetRowProps = {
 
 export function CompletedSetRow({ set, onEdit, onDelete }: CompletedSetRowProps) {
   return (
-    <div className="flex items-center gap-3 py-2 px-2 bg-zinc-50 rounded-xl">
+    <div className="animate-appear flex items-center gap-3 py-2 px-2 bg-zinc-50 rounded-xl">
       <button
         type="button"
         onClick={onDelete}
