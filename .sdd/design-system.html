@@ -13,7 +13,7 @@
     <script src="https://unpkg.com/@phosphor-icons/web"></script>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Sora:wght@400;500;600&family=Noto+Sans+JP:wght@400;500;700&family=Outfit:wght@400;600;800&display=swap" rel="stylesheet">
     
     <script>
         tailwind.config = {
@@ -31,6 +31,7 @@
                                 400: '#a1a1aa',
                                 500: '#71717a',
                                 600: '#52525b',
+                                700: '#3f3f46',
                                 800: '#27272a',
                                 900: '#18181b',
                             },
@@ -39,7 +40,7 @@
                     },
                     fontFamily: {
                         outfit: ['Outfit', 'sans-serif'],
-                        inter: ['Inter', 'Noto Sans JP', 'sans-serif'],
+                        sora: ['Sora', 'Noto Sans JP', 'sans-serif'],
                         jp: ['Noto Sans JP', 'sans-serif'],
                     },
                     spacing: {
@@ -52,8 +53,8 @@
                         'frame': '2.5rem',
                     },
                     boxShadow: {
-                        'soft': '0 4px 24px -6px rgba(0, 0, 0, 0.05)',
-                        'float': '0 20px 40px -12px rgba(0, 0, 0, 0.15)',
+                        'soft': '0 2px 8px rgba(0, 0, 0, 0.04)',
+                        'float': '0 8px 24px rgba(0, 0, 0, 0.10)',
                     }
                 }
             }
@@ -63,7 +64,7 @@
         body {
             background-color: #f4f4f5;
             color: #18181b;
-            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+            font-family: 'Sora', 'Noto Sans JP', sans-serif;
             -webkit-font-smoothing: antialiased;
         }
 
@@ -158,7 +159,7 @@
         <div class="hidden lg:flex gap-4">
             <div class="text-right">
                 <p class="text-xs text-gym-zinc-400 font-medium uppercase tracking-wider mb-1">Version</p>
-                <p class="font-outfit font-semibold text-gym-black">2.1.0-rc</p>
+                <p class="font-outfit font-semibold text-gym-black">3.1.0</p>
             </div>
             <div class="text-right pl-6 border-l border-gym-zinc-200">
                 <p class="text-xs text-gym-zinc-400 font-medium uppercase tracking-wider mb-1">Grid System</p>
@@ -197,6 +198,10 @@
                         <p class="text-[11px] font-medium text-gym-black">Text Muted</p>
                     </div>
                     <div class="space-y-2">
+                        <div class="h-16 w-full rounded-2xl bg-gym-zinc-700"></div>
+                        <p class="text-[11px] font-medium text-gym-black">Text Dark</p>
+                    </div>
+                    <div class="space-y-2">
                         <div class="h-16 w-full rounded-2xl bg-gym-accent shadow-[0_4px_12px_rgba(222,58,43,0.3)]"></div>
                         <p class="text-[11px] font-medium text-gym-accent">Accent</p>
                     </div>
@@ -223,14 +228,14 @@
                     </div>
                     <div class="flex justify-between items-end border-b border-gym-zinc-100 pb-4">
                         <div>
-                            <p class="text-[10px] text-gym-zinc-400 uppercase tracking-widest mb-1">Inputs & Data / Inter Medium 16px</p>
-                            <p class="font-inter font-medium text-base text-gym-black">8 reps @ 100 kg</p>
+                            <p class="text-[10px] text-gym-zinc-400 uppercase tracking-widest mb-1">Inputs & Data / Sora Medium 16px</p>
+                            <p class="font-sora font-medium text-base text-gym-black">8 reps @ 100 kg</p>
                             <p class="font-jp font-medium text-sm text-gym-black mt-1">前回: 10月24日</p>
                         </div>
                     </div>
                     <div>
-                        <p class="text-[10px] text-gym-zinc-400 uppercase tracking-widest mb-1">Labels / Inter 12px</p>
-                        <p class="font-inter text-xs text-gym-zinc-500">kg / 回 / VOLUME</p>
+                        <p class="text-[10px] text-gym-zinc-400 uppercase tracking-widest mb-1">Labels / Sora 12px</p>
+                        <p class="font-sora text-xs text-gym-zinc-500">kg / 回 / VOLUME</p>
                     </div>
                 </div>
             </section>
