@@ -1,4 +1,5 @@
 import { Plus } from '@phosphor-icons/react'
+import { useRef } from 'react'
 
 type PendingSetRowProps = {
   setNumber: number
@@ -15,6 +16,40 @@ export function PendingSetRow({
   onWeightChange,
   onRepsChange,
 }: PendingSetRowProps) {
+  const repsRef = useRef<HTMLInputElement>(null)
+  const completeButtonRef = useRef<HTMLButtonElement>(null)
+  const isCompletingRef = useRef(false)
+
+  const handleComplete = () => {
+    if (isCompletingRef.current) return
+    isCompletingRef.current = true
+    onComplete()
+    setTimeout(() => { isCompletingRef.current = false }, 200)
+  }
+
+  const handleWeightBlur = () => {
+    repsRef.current?.focus()
+  }
+
+  const handleWeightKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      repsRef.current?.focus()
+    }
+  }
+
+  const handleRepsBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+    if (e.relatedTarget === completeButtonRef.current) return
+    if (pendingSet.reps > 0) handleComplete()
+  }
+
+  const handleRepsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === 'Enter') {
+      e.preventDefault()
+      if (pendingSet.reps > 0) handleComplete()
+    }
+  }
+
   return (
     <div className="flex items-center gap-3 py-2 px-2 rounded-xl border border-zinc-200 bg-white shadow-sm relative overflow-hidden">
       <div className="absolute left-0 top-0 bottom-0 w-1 bg-black" />
@@ -27,6 +62,8 @@ export function PendingSetRow({
             type="number"
             value={pendingSet.weight}
             onChange={(e) => onWeightChange(Number(e.target.value))}
+            onBlur={handleWeightBlur}
+            onKeyDown={handleWeightKeyDown}
             className="w-10 text-xl font-outfit font-bold bg-transparent outline-none text-black"
             inputMode="decimal"
           />
@@ -34,9 +71,12 @@ export function PendingSetRow({
         </div>
         <div className="flex items-baseline gap-1 border-b border-zinc-300 pb-0.5">
           <input
+            ref={repsRef}
             type="number"
             value={pendingSet.reps}
             onChange={(e) => onRepsChange(Number(e.target.value))}
+            onBlur={handleRepsBlur}
+            onKeyDown={handleRepsKeyDown}
             className="w-8 text-xl font-outfit font-bold bg-transparent outline-none text-black"
             inputMode="numeric"
           />
@@ -44,8 +84,9 @@ export function PendingSetRow({
         </div>
       </div>
       <button
+        ref={completeButtonRef}
         type="button"
-        onClick={onComplete}
+        onClick={handleComplete}
         aria-label="完了"
         className="focus-ring w-7 h-7 rounded bg-black text-white flex items-center justify-center shadow-md min-h-[44px] min-w-[44px]"
       >
