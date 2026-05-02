@@ -137,6 +137,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             exerciseName: exercise.exerciseName,
             sets: exercise.sets,
             pendingSet: null,
+            pendingSetDirty: false,
             cardState: 'idle',
             editingSetIndex: null,
           }
