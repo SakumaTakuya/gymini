@@ -1,4 +1,4 @@
-import { Check } from '@phosphor-icons/react'
+import { Plus } from '@phosphor-icons/react'
 
 type PendingSetRowProps = {
   setNumber: number
@@ -49,7 +49,7 @@ export function PendingSetRow({
         aria-label="完了"
         className="focus-ring w-7 h-7 rounded bg-black text-white flex items-center justify-center shadow-md min-h-[44px] min-w-[44px]"
       >
-        <Check size={12} weight="bold" />
+        <Plus size={12} weight="bold" />
       </button>
     </div>
   )
