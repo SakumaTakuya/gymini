@@ -400,6 +400,71 @@ src/
 
 ---
 
+### T-004: Design Token Consistency
+
+**原則**: UIコンポーネントでは `src/index.css` に定義されたカスタムトークン（`gym-*`）を使用し、Tailwind 組み込みの汎用クラスを直接使用しない。トークンの追加・変更は `src/index.css` の `@theme` ブロックを唯一の変更箇所とする。
+
+**適用範囲**: すべての UI コンポーネント（`.tsx` ファイル）
+
+**デザイントークン一覧**（`src/index.css` の `@theme` ブロックが正）:
+
+| カテゴリ | 使用するクラス | 禁止クラス（Tailwind組み込み） |
+|:---------|:--------------|:-------------------------------|
+| **カラー / 黒** | `text-gym-black`, `bg-gym-black` | `text-black`, `bg-black` |
+| **カラー / 白** | `text-gym-white`, `bg-gym-white` | `text-white`, `bg-white` |
+| **カラー / グレースケール** | `bg-gym-zinc-{50\|100\|200\|300\|400\|500\|600\|700\|800\|900}` 等 | `bg-zinc-*`, `text-zinc-*`, `border-zinc-*` |
+| **カラー / アクセント** | `text-gym-accent`, `bg-gym-accent` | `text-red-*`, `bg-red-*` |
+| **シャドウ / カード** | `shadow-soft` | `shadow-sm`, `shadow-md` （カード用途で） |
+| **シャドウ / フロート** | `shadow-float` | インラインシャドウ（`shadow-[...]`）（フロート用途で） |
+
+**ボーダーラジウス スケール**（用途別に固定）:
+
+| 用途 | クラス | 対象コンポーネント例 |
+|:-----|:-------|:--------------------|
+| 行アイテム（密なレイアウト） | `rounded-xl` (12px) | CompletedSetRow, PendingSetRow |
+| カード・モーダル | `rounded-[24px]` | ExerciseCard, WorkoutSummary, MonthCalendar, SectionCard |
+| ピル・ヘッダー | `rounded-full` | AppHeader, BottomNav AIボタン |
+| アイコンコンテナ | `rounded-[28px]` | IdleView アイコン背景 |
+
+**フォントトークン**:
+
+| 用途 | クラス | 適用例 |
+|:-----|:-------|:-------|
+| 見出し・数値 | `font-outfit` | 種目名、セット数値、ページタイトル |
+| 本文・UI | （デフォルト: Sora） | 説明文、ラベル |
+| 日本語専用 | `font-jp` | `年`, `月`, `kg`, `回` 等の単位ラベル |
+
+**検証方法**:
+
+- [ ] `grep -r 'className=.*\b\(bg\|text\|border\)-zinc-' src/` の出力が空であること
+- [ ] カード系コンポーネントが `rounded-[24px]` + `shadow-soft` を使用していること
+- [ ] フローティングUI（AppHeader 等）が `shadow-float` を使用していること
+- [ ] `font-inter` / `font-sans` の直接指定がないこと
+
+**違反例**:
+
+```tsx
+// NG: Tailwind 組み込みトークンの直接使用
+<div className="bg-zinc-50 text-zinc-500 border-zinc-200 shadow-sm rounded-3xl">
+
+// NG: インラインシャドウ（shadow-float を使うべき箇所）
+<button className="shadow-[0_8px_30px_-6px_rgba(0,0,0,0.3)]">
+```
+
+**準拠例**:
+
+```tsx
+// OK: gym-* カスタムトークンを使用
+<div className="bg-gym-zinc-50 text-gym-zinc-500 border-gym-zinc-200 shadow-soft rounded-[24px]">
+
+// OK: shadow-float トークンを使用
+<button className="shadow-float">
+```
+
+**例外**: `opacity` 修飾子との組み合わせ（例: `border-gym-zinc-200/50`）は許容。shadcn/ui 内部コンポーネント（`src/components/ui/`）は vendor コードのため適用対象外。
+
+---
+
 ## コンプライアンス
 
 ### 適用メカニズム
@@ -435,6 +500,17 @@ src/
 ---
 
 ## 変更履歴
+
+### v3.1.0 (2026-05-02)
+
+**T-004: Design Token Consistency の追加**
+
+- `gym-*` カスタムトークン強制：Tailwind 組み込み `zinc-*` の直接使用を禁止
+- ボーダーラジウス スケールの明文化（行アイテム/カード/ピルの3段階）
+- シャドウスケールの明文化（`shadow-soft` / `shadow-float`）
+- フォントトークン使用ルールの明文化（`font-outfit` / default Sora / `font-jp`）
+- 本文フォントを Inter から Sora に変更（`src/index.css` 反映済み）
+- `Noto Sans JP` の未ロードバグを修正（`index.html` に追加）
 
 ### v3.0.0 (2026-04-08)
 

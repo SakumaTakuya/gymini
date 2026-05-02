@@ -31,10 +31,10 @@ describe('CompletedSetRow', () => {
     expect(onEdit).toHaveBeenCalledOnce()
   })
 
-  it('has bg-zinc-50 rounded-xl styling', () => {
+  it('has bg-gym-zinc-50 rounded-xl styling', () => {
     const { container } = render(<CompletedSetRow {...defaultProps} />)
     const row = container.firstChild as HTMLElement
-    expect(row.className).toContain('bg-zinc-50')
+    expect(row.className).toContain('bg-gym-zinc-50')
     expect(row.className).toContain('rounded-xl')
   })
 })

@@ -13,31 +13,34 @@ export function IdleView({ onStartTraining }: IdleViewProps) {
   })
 
   return (
-    <div className="flex-1 bg-zinc-50 px-6 pt-6 relative flex flex-col">
-      <div className="flex items-center mb-12 gap-3">
-        <div>
-          <p className="text-xs text-zinc-500 font-medium">{dateStr}</p>
-          <p className="font-outfit font-bold mt-0.5 text-black tracking-tight">
-            さあ、始めよう
+    <div className="flex-1 bg-gym-zinc-50 px-6 pt-6 relative flex flex-col">
+      <div className="mb-10">
+        <p className="text-xs text-gym-zinc-400 font-medium">{dateStr}</p>
+        <p className="font-outfit font-bold mt-0.5 text-gym-black tracking-tight">
+          さあ、始めよう
+        </p>
+      </div>
+      <div className="flex-1 flex flex-col items-center justify-center pb-20 gap-8">
+        <div className="relative">
+          <div className="w-28 h-28 bg-gym-black rounded-[28px] flex items-center justify-center shadow-float">
+            <Barbell size={52} weight="bold" className="text-gym-white" />
+          </div>
+          <span className="absolute -top-1.5 -right-1.5 w-4 h-4 bg-gym-accent rounded-full" />
+        </div>
+        <div className="text-center">
+          <h2 className="text-2xl font-bold font-outfit text-gym-black mb-2 tracking-tight">
+            準備はいいですか？
+          </h2>
+          <p className="text-gym-zinc-500 text-sm text-center w-4/5 mx-auto leading-relaxed">
+            フリーでトレーニングの記録を開始します。
           </p>
         </div>
-      </div>
-      <div className="flex-1 flex flex-col items-center justify-center relative z-10 pb-20">
-        <div className="w-48 h-48 rounded-full bg-zinc-200/50 flex items-center justify-center mb-8 relative">
-          <div className="w-32 h-32 rounded-full bg-white shadow-sm flex items-center justify-center">
-            <Barbell size={48} weight="duotone" className="text-zinc-400" />
-          </div>
-        </div>
-        <h2 className="text-2xl font-bold font-outfit mb-2">準備はいいですか？</h2>
-        <p className="text-zinc-500 text-sm text-center mb-10 w-4/5 leading-relaxed">
-          フリーでトレーニングの記録を開始します。
-        </p>
         <button
           type="button"
           onClick={onStartTraining}
-          className="focus-ring w-[85%] h-13 bg-black text-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-[0_8px_30px_-6px_rgba(0,0,0,0.3)] active:scale-95 transition-transform"
+          className="focus-ring w-[85%] h-13 bg-gym-black text-gym-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-float active:scale-95 transition-transform"
         >
-          <Lightning size={20} weight="bold" className="text-accent" />
+          <Lightning size={20} weight="bold" className="text-gym-accent" />
           トレーニングを始める
         </button>
       </div>
