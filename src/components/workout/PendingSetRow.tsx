@@ -1,5 +1,5 @@
 import { Plus } from '@phosphor-icons/react'
-import { useRef } from 'react'
+import { type FocusEvent, type KeyboardEvent, useRef } from 'react'
 
 type PendingSetRowProps = {
   setNumber: number
@@ -31,19 +31,19 @@ export function PendingSetRow({
     repsRef.current?.focus()
   }
 
-  const handleWeightKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleWeightKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
       repsRef.current?.focus()
     }
   }
 
-  const handleRepsBlur = (e: React.FocusEvent<HTMLInputElement>) => {
+  const handleRepsBlur = (e: FocusEvent<HTMLInputElement>) => {
     if (e.relatedTarget === completeButtonRef.current) return
     if (pendingSet.reps > 0) handleComplete()
   }
 
-  const handleRepsKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+  const handleRepsKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
       if (pendingSet.reps > 0) handleComplete()
