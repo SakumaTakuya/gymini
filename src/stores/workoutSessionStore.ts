@@ -16,6 +16,7 @@ type WorkoutSessionState = {
   startSession: (date?: DateString) => void
   endSession: () => void
   addExercise: (exercise: { exerciseId: string; exerciseName: string }) => void
+  addExerciseWithSets: (exercise: { exerciseId: string; exerciseName: string; sets: WorkoutSet[] }) => void
   activateExercise: (exerciseIndex: number) => void
   deleteExercise: (exerciseIndex: number) => void
   reorderExercise: (exerciseIndex: number, direction: 'up' | 'down') => void
@@ -116,6 +117,21 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             sets: [],
             pendingSet: { weight: 0, reps: 0 },
             cardState: 'recording',
+            editingSetIndex: null,
+          }
+          return { draftExercises: [...deactivated, newExercise] }
+        })
+      },
+
+      addExerciseWithSets: (exercise) => {
+        set((state) => {
+          const deactivated = deactivateRecording(state.draftExercises)
+          const newExercise: DraftExercise = {
+            exerciseId: exercise.exerciseId,
+            exerciseName: exercise.exerciseName,
+            sets: exercise.sets,
+            pendingSet: null,
+            cardState: 'idle',
             editingSetIndex: null,
           }
           return { draftExercises: [...deactivated, newExercise] }

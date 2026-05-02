@@ -167,12 +167,10 @@ describe('executeWriteTool', () => {
   })
 
   describe('saveWorkout', () => {
-    test('saves when all exercises resolve by exact name', () => {
+    test('セッションなし: startSession を呼んで draftExercises にセット済み種目を追加する', () => {
       vi.mocked(ExerciseRepository.getAll).mockReturnValue([
         makeExercise('ベンチプレス', 'ex-1'),
       ])
-      const saved = makeWorkout({ id: 'saved' })
-      vi.mocked(WorkoutRepository.save).mockReturnValue(saved)
       const result = executeWriteTool('saveWorkout', {
         date: '2026-04-18',
         exercises: [
@@ -183,8 +181,38 @@ describe('executeWriteTool', () => {
         ],
       })
       expect(result.success).toBe(true)
-      expect(result.data).toBe(saved)
-      expect(WorkoutRepository.save).toHaveBeenCalledOnce()
+      expect(result.data).toEqual({ addedToSession: true })
+      expect(WorkoutRepository.save).not.toHaveBeenCalled()
+      const state = useWorkoutSessionStore.getState()
+      expect(state.isActive).toBe(true)
+      expect(state.date).toBe('2026-04-18')
+      expect(state.draftExercises).toHaveLength(1)
+      expect(state.draftExercises[0].exerciseId).toBe('ex-1')
+      expect(state.draftExercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
+      expect(state.draftExercises[0].cardState).toBe('idle')
+    })
+
+    test('セッションあり: startSession を呼ばずに既存セッションに種目を追加する', () => {
+      useWorkoutSessionStore.getState().startSession('2026-04-18' as DateString)
+      vi.mocked(ExerciseRepository.getAll).mockReturnValue([
+        makeExercise('スクワット', 'ex-2'),
+      ])
+      const result = executeWriteTool('saveWorkout', {
+        date: '2026-04-18',
+        exercises: [
+          {
+            exerciseName: 'スクワット',
+            sets: [{ weight: 100, reps: 5 }],
+          },
+        ],
+      })
+      expect(result.success).toBe(true)
+      expect(result.data).toEqual({ addedToSession: true })
+      expect(WorkoutRepository.save).not.toHaveBeenCalled()
+      const state = useWorkoutSessionStore.getState()
+      expect(state.draftExercises).toHaveLength(1)
+      expect(state.draftExercises[0].exerciseId).toBe('ex-2')
+      expect(state.draftExercises[0].sets).toEqual([{ weight: 100, reps: 5 }])
     })
 
     test('returns EXERCISE_NOT_FOUND when a name is missing', () => {

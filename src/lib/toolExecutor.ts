@@ -1,5 +1,4 @@
-import type { DateString, ISODateTimeString } from '../schemas/date'
-import { nowISODateTimeString } from '../schemas/date'
+import type { DateString } from '../schemas/date'
 import type {
   ExerciseBreakdown,
   SummaryPeriod,
@@ -147,14 +146,17 @@ function executeSaveWorkout(
     }
   }
 
-  const now: ISODateTimeString = nowISODateTimeString()
-  const workout = WorkoutRepository.save({
-    date: date as DateString,
-    exercises: resolved,
-    startedAt: now,
-    endedAt: now,
-  })
-  return { success: true, data: workout }
+  const session = useWorkoutSessionStore.getState()
+
+  if (!session.isActive) {
+    session.startSession(date as DateString)
+  }
+
+  for (const ex of resolved) {
+    useWorkoutSessionStore.getState().addExerciseWithSets(ex)
+  }
+
+  return { success: true, data: { addedToSession: true } }
 }
 
 function executeAddExercise(
