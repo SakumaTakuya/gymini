@@ -93,8 +93,8 @@ function createTestRouter(initialPath = '/training') {
   return router
 }
 
-describe('Navigation Integration', () => {
-  it('navigates from training to history via BottomNav', async () => {
+describe('ナビゲーション統合テスト', () => {
+  it('BottomNav でトレーニングから履歴へ遷移する', async () => {
     const user = userEvent.setup()
     const router = createTestRouter('/training')
     render(<RouterProvider router={router} />)
@@ -105,7 +105,7 @@ describe('Navigation Integration', () => {
     expect(await screen.findByTestId('history-page')).toBeInTheDocument()
   })
 
-  it('navigates from training to AI via BottomNav', async () => {
+  it('BottomNav でトレーニングから AI へ遷移する', async () => {
     const user = userEvent.setup()
     const router = createTestRouter('/training')
     render(<RouterProvider router={router} />)
@@ -116,7 +116,7 @@ describe('Navigation Integration', () => {
     expect(await screen.findByTestId('ai-page')).toBeInTheDocument()
   })
 
-  it('shows BottomNav on FRAME1-4 pages', async () => {
+  it('FRAME1-4 のページで BottomNav を表示する', async () => {
     const router = createTestRouter('/training')
     render(<RouterProvider router={router} />)
 
@@ -126,7 +126,7 @@ describe('Navigation Integration', () => {
     expect(screen.getByText('AI')).toBeInTheDocument()
   })
 
-  it('hides BottomNav on settings page', async () => {
+  it('設定ページでは BottomNav を非表示にする', async () => {
     const router = createTestRouter('/settings')
     render(<RouterProvider router={router} />)
 
@@ -134,7 +134,7 @@ describe('Navigation Integration', () => {
     expect(screen.queryByText('トレ')).not.toBeInTheDocument()
   })
 
-  it('navigates to settings via GearIcon', async () => {
+  it('GearIcon で設定ページへ遷移する', async () => {
     const user = userEvent.setup()
     const router = createTestRouter('/training')
     render(<RouterProvider router={router} />)
@@ -154,7 +154,7 @@ describe('Navigation Integration', () => {
     }
   })
 
-  it('navigates between tabs maintaining layout', async () => {
+  it('タブ間を遷移しながらレイアウトを維持する', async () => {
     const user = userEvent.setup()
     const router = createTestRouter('/training')
     render(<RouterProvider router={router} />)

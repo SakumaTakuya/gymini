@@ -83,7 +83,7 @@ describe('workoutSessionStore', () => {
       expect(workouts[0].exercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
     })
 
-    it('restores set being edited when ending session without pressing 完了', () => {
+    it('完了を押さずにセッションを終了したとき編集中のセットを復元する', () => {
       const { startSession, addExercise, completeSet, editCompletedSet, endSession } =
         useWorkoutSessionStore.getState()
 
