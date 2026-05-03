@@ -34,7 +34,7 @@ export function AIChatPage() {
     <div className="flex flex-col min-h-screen bg-gym-zinc-50">
       <AppHeaderContent trailing={<GearIcon />} />
 
-      <main className="flex-1 pb-40 pt-2">
+      <main className="flex-1 pb-content-bottom-chat">
         {messages.length === 0 && !error && (
           <div className="px-6 py-12 text-center text-sm text-gym-zinc-500">
             <p className="mb-2 font-semibold text-gym-black">

@@ -4,7 +4,7 @@ import { ExerciseMasterSection } from './ExerciseMasterSection'
 
 export function SettingsContent() {
   return (
-    <div className="pt-16 pb-12 px-4 space-y-6">
+    <div className="pb-12 px-4 space-y-6">
       <UserProfileSection />
       <APIKeySection />
       <ExerciseMasterSection />

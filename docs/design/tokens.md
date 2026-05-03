@@ -58,6 +58,23 @@ Opacity 修飾子は許容: `bg-gym-white/80`、`border-gym-zinc-200/60` など�
 | （デフォルト）| Sora | 本文・UI テキスト |
 | `font-jp` | Noto Sans JP | 日本語単位ラベル（`kg`, `回` 等）|
 
+## スペーシングトークン
+
+固定ヘッダー・BottomNav の高さから導かれる意味的スペーシング。直接 `pt-16`/`pb-24` 等を書かない。
+
+| クラス | 値 | 用途 |
+|:---|:---|:---|
+| `pt-content-top` | `64px` | 固定ヘッダーのクリアランス（`_app.tsx` と `SettingsPage` が使用）|
+| `pb-content-bottom` | `96px` | BottomNav クリアランス（`_app.tsx` が使用、非スクロールページ向け）|
+| `pb-content-bottom-scroll` | `128px` | スクロールコンテナの下余白（`HistoryPage`・`ActiveSessionView` 等）|
+| `pb-content-bottom-chat` | `160px` | チャット入力 + BottomNav クリアランス（`AIChatPage` が使用）|
+
+**ルール**:
+- `_app.tsx` の `<main>` が `pt-content-top pb-content-bottom` を持ち、配下ページは `pt-`/`pb-` を書かない
+- `overflow-y-auto` スクロールコンテナは `pb-content-bottom-scroll` を使って自身の下余白を管理する
+- `SettingsPage`（`_app` 外）は `pt-content-top` を自身で持つ
+- `AIChatPage` は固定 ChatInput をクリアするため `pb-content-bottom-chat` を使う
+
 ## ユーティリティ
 
 | クラス | 用途 |

@@ -17,7 +17,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-gym-zinc-50 pt-16">
+    <div className="min-h-screen bg-gym-zinc-50 pt-content-top">
       <AppHeader
         title="設定"
         variant="modal"
