@@ -4,8 +4,8 @@ title: "設定画面"
 type: "prd"
 status: "draft"
 created: "2026-04-06"
-updated: "2026-04-06"
-depends-on: ["prd-gymini", "prd-api-key", "prd-exercise-master"]
+updated: "2026-05-03"
+depends-on: ["prd-gymini", "prd-api-key", "prd-exercise-master", "prd-user-profile"]
 tags: ["settings", "phase-2"]
 category: "view"
 priority: "medium"
@@ -16,7 +16,7 @@ risk: "low"
 
 **親要求:** [index.md](../index.md)
 
-**デザインリファレンス:** `.sdd/design-system.html` FRAME5
+**デザインリファレンス:** [design-system.html](../../design-system.html) FRAME5
 
 > **統合画面:** APIキー管理（[api-key](../api-key/index.md)）と種目マスター管理（[exercise-master](../exercise-master/index.md)）のUIを単一の設定画面に統合する。各ドメインロジックの詳細は個別PRDを参照。
 
@@ -33,12 +33,14 @@ graph TB
     subgraph "設定画面"
         User((ユーザー))
         OpenSettings[設定画面を開く]
+        ManageProfile[プロフィールを設定]
         ManageAPIKey[APIキーを管理]
         ManageExercise[種目マスターを管理]
         CloseSettings[設定画面を閉じる]
     end
 
     User --- OpenSettings
+    User --- ManageProfile
     User --- ManageAPIKey
     User --- ManageExercise
     User --- CloseSettings
@@ -92,9 +94,17 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement UserProfileSection {
+        id: FR_026
+        text: "ユーザープロフィール設定セクション表示"
+        risk: low
+        verifymethod: test
+    }
+
     SettingsScreen - contains -> GearAccess
     SettingsScreen - contains -> GearBadge
     SettingsScreen - contains -> CloseReturn
+    SettingsScreen - contains -> UserProfileSection
     SettingsScreen - contains -> APIKeySection
     SettingsScreen - contains -> ExerciseMasterSection
     APIKeySection - derives -> GearBadge
@@ -106,12 +116,9 @@ requirementDiagram
 
 ### FR_021: 歯車アイコンから設定画面へ遷移
 
-全画面（FRAME1〜FRAME4）の右上に歯車アイコンボタンを固定表示する。`absolute top-12 right-4` でスクロールしても常にアクセス可能。タップすると設定画面（FRAME5）へ遷移する。
+全画面（FRAME1〜FRAME4）の右上に歯車アイコンボタンを固定表示する。スクロールしても常にアクセス可能。タップすると設定画面（FRAME5）へ遷移する。
 
-**UIスペック:**
-- サイズ: `w-9 h-9` 丸ボタン
-- スタイル: `bg-white/80 backdrop-blur-sm` + `shadow-sm border border-zinc-100`
-- アイコン: Phosphor Icons `ph-gear`
+**外観:** 丸型ボタン、半透明フロストガラス背景、歯車アイコン（Phosphor Icons `ph-gear`）
 
 **検証方法:** テストによる検証
 
@@ -119,10 +126,7 @@ requirementDiagram
 
 Gemini APIキーが未設定の場合、歯車アイコンの右上に赤いバッジ（ドット）を表示する。
 
-**UIスペック:**
-- サイズ: `w-3 h-3`
-- 位置: `absolute top-[-2px] right-[-2px]`
-- 色: `bg-accent`（#DE3A2B）+ `border-2 border-zinc-50`
+**外観:** アクセント色（gym-accent）の小ドット、歯車アイコン右上に重ねて配置
 
 **検証方法:** テストによる検証
 
@@ -130,10 +134,18 @@ Gemini APIキーが未設定の場合、歯車アイコンの右上に赤いバ�
 
 設定画面の右上に閉じる（X）ボタンを固定表示する。タップすると設定画面を閉じて遷移元の画面に戻る。
 
-**UIスペック:**
-- 歯車アイコンと同じスタイルの丸ボタン
-- アイコン: Phosphor Icons `ph-x`
-- 位置: `absolute top-12 right-4`
+**外観:** 歯車アイコンと同じスタイルの丸型ボタン、Phosphor Icons `ph-x`
+
+**検証方法:** テストによる検証
+
+### FR_026: ユーザープロフィール設定セクション
+
+設定画面の最上部にプロフィール設定セクションを表示する。詳細な入力フィールド・AI 連携については [user-profile.md](user-profile.md) を参照。FR_026 は REQ_010（FR_031〜FR_034）を統合表示する。
+
+**セクション構成:**
+1. セクションラベル「プロフィール」
+2. 生まれ年・体重・身長の数値入力フィールド
+3. トレーニング目的の選択肢（5択）
 
 **検証方法:** テストによる検証
 
@@ -171,6 +183,14 @@ APIキーセクションの下に種目マスター管理セクションを表�
 │                          [  X ] │  ← 固定: 閉じるボタン
 │                                 │
 │  設定                           │  ← スクロールコンテンツ
+│                                 │
+│  ┌─ プロフィール ──────────────┐ │  ← FR_026（最上部）
+│  │ 生まれ年       [1990    ]  │ │
+│  │ 体重           [  70 ] kg  │ │
+│  │ 身長           [ 175 ] cm  │ │
+│  │ トレーニング目的            │ │
+│  │ [筋肥大（サイズアップ）  ▼] │ │
+│  └────────────────────────────┘ │
 │                                 │
 │  ┌─ Gemini API ───────────────┐ │
 │  │ APIキー                     │ │
