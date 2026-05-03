@@ -1,15 +1,5 @@
 {
   "enabledPlugins": {
-    "sdd-workflow-ja@ai-sdd-workflow": true,
     "playwright@claude-plugins-official": true
-  },
-  "extraKnownMarketplaces": {
-    "ai-sdd-workflow": {
-      "source": {
-        "source": "github",
-        "repo": "ToshikiImagawa/ai-sdd-workflow"
-      },
-      "autoUpdate": true
-    }
   }
 }
