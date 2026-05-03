@@ -18,7 +18,7 @@ risk: "low"
 
 **関連要求:** [navigation.md](navigation.md) - IR_001（BottomNav）、IR_002（GearIcon）
 
-**デザインリファレンス:** `.sdd/design-system.html` 全FRAME共通
+**デザインリファレンス:** [design-system.html](../design-system.html) 全FRAME共通
 
 ## 概要
 

@@ -4,7 +4,7 @@ title: "ページナビゲーション"
 type: "prd"
 status: "draft"
 created: "2026-03-28"
-updated: "2026-04-11"
+updated: "2026-05-03"
 depends-on: ["prd-gymini", "prd-workout", "prd-history", "prd-ai-chat", "prd-settings"]
 tags: ["navigation", "routing", "bottom-nav"]
 category: "ui"
@@ -18,7 +18,7 @@ risk: "medium"
 
 **関連要求:** [app-header.md](app-header.md) - 全画面共通の上部 chrome（タイトル・leading/trailing slot）
 
-**デザインリファレンス:** `.sdd/design-system.html` 全FRAME共通
+**デザインリファレンス:** [design-system.html](../design-system.html) 全FRAME共通
 
 ## 概要
 
@@ -177,27 +177,27 @@ BottomNavのAIボタンから常時アクセス可能。APIキー未設定時も
   2タブ（均等 flex-1）   AI 専用ボタン（pill型）
 ```
 
-**UIスペック:**
-- 高さ: `h-24`（セーフエリア含む）
-- 背景: `bg-white/80 backdrop-blur-xl`
-- ボーダー: `border-t border-zinc-200/50`
+**外観:**
+- 高さ: セーフエリア込みで十分なタップ領域（T-003 準拠）
+- 背景: 半透明フロストガラス（デザイントークン参照）
+- 上部: 薄いセパレーター
 
 **タブ状態:**
 
 | 要素 | ラベル | アイコン | アクティブ | 非アクティブ |
 |:-----|:-------|:---------|:-----------|:-------------|
-| タブ1 | トレ | `ph-barbell` | `ph-fill text-black font-bold` | `text-zinc-400 font-medium` |
-| タブ2 | 履歴 | `ph-clock-counter-clockwise` | `ph-fill text-black font-bold` | `text-zinc-400 font-medium` |
+| タブ1 | トレ | `ph-barbell` | 塗りつぶし・強調色・太字 | ミュートカラー |
+| タブ2 | 履歴 | `ph-clock-counter-clockwise` | 塗りつぶし・強調色・太字 | ミュートカラー |
 
 **AIボタン:**
 
 | 状態 | 背景 | テキスト |
 |:-----|:-----|:---------|
-| 通常 | `bg-black border-zinc-800` | `text-white` |
-| アクティブ（FRAME4表示中） | `bg-accent shadow-red-200` | `text-white` |
+| 通常 | 黒背景 | 白テキスト |
+| アクティブ（FRAME4表示中） | アクセント色（gym-accent）背景 | 白テキスト |
 
-- サイズ: `px-4 h-11 rounded-2xl`
-- アイコン: `ph-robot text-xl` + 「AI」ラベル `text-xs font-bold`
+- 形状: pill 型（`rounded-full`、tokens.md ボーダーラジウス規定「ピル・ヘッダー」準拠）
+- アイコン: ロボットアイコン + 「AI」ラベル
 
 **遷移先:**
 
@@ -213,19 +213,17 @@ BottomNavのAIボタンから常時アクセス可能。APIキー未設定時も
 
 全画面（FRAME1〜4）の右上に固定表示される歯車アイコン。タップでFRAME5（設定）へ遷移する。
 
-**UIスペック:**
-- 位置: `absolute top-12 right-4 z-30`
-- サイズ: `w-9 h-9`
-- スタイル: `bg-white/80 backdrop-blur-sm rounded-full shadow-sm border-zinc-100`
-- アイコン: `ph-gear text-base text-zinc-500`
+**外観:**
+- 画面右上に固定配置、スクロールしても常に表示
+- 丸型ボタン、半透明フロストガラス背景
+- アイコン: 歯車（Phosphor Icons `ph-gear`）
 
 **APIキー未設定時のバッジ:**
-- 赤ドット: `w-3 h-3 bg-accent rounded-full`
-- 位置: `absolute top-[-2px] right-[-2px]`
+- 歯車アイコン右上に赤ドットを表示（gym-accent 色）
 
-**FRAME2での追加要素:**
+**FRAME2 での追加要素:**
 - 歯車の右隣に「終了」ボタン
-- ボタン群の下にタイマーpill
+- ボタン群の下にタイマー pill
 
 **検証方法:** インスペクションによる検証
 

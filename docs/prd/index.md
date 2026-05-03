@@ -35,7 +35,7 @@ gyminiは、筋トレ記録とAIコーチングを組み合わせたWebアプリ
 | FRAME4 | 💬 AI Chat | AIチャット・Function Calling | 3 | [ai-chat](ai-chat/index.md) |
 | FRAME5 | ⚙️ Settings | APIキー・種目マスター管理 | 2 | [settings](settings/index.md), [api-key](api-key/index.md), [exercise-master](exercise-master/index.md) |
 
-**デザインリファレンス:** `.sdd/design-system.html`
+**デザインリファレンス:** [design-system.html](../design-system.html)
 
 ---
 

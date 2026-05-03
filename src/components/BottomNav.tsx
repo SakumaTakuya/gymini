@@ -48,9 +48,9 @@ export function BottomNav() {
       >
         {({ isActive }) => (
           <span
-            className={`flex items-center gap-1.5 px-4 h-11 rounded-2xl transition-colors ${
+            className={`flex items-center gap-1.5 px-4 h-11 rounded-full transition-colors ${
               isActive
-                ? 'bg-gym-accent text-gym-white shadow-lg shadow-red-200'
+                ? 'bg-gym-accent text-gym-white shadow-float'
                 : 'bg-gym-black text-gym-white border border-gym-zinc-800'
             }`}
           >

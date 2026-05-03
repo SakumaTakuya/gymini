@@ -16,7 +16,7 @@ risk: "high"
 
 **親要求:** [index.md](../index.md) - REQ_002
 
-**デザインリファレンス:** `.sdd/design-system.html` FRAME1（Idle）、FRAME2（Active Workout）
+**デザインリファレンス:** [design-system.html](../../design-system.html) FRAME1（Idle）、FRAME2（Active Workout）
 
 ## 概要
 
