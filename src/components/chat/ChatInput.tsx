@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { PaperPlaneRight, Stop } from '@phosphor-icons/react'
 import { cn } from '../../lib/utils'
+import { IconButton } from '../ui/icon-button'
 
 export type ChatInputProps = {
   isLoading: boolean
@@ -55,27 +56,26 @@ export function ChatInput({
           )}
         />
         {isLoading ? (
-          <button
-            type="button"
+          <IconButton
             onClick={onStop}
             aria-label="応答を停止"
-            className="focus-ring flex items-center justify-center size-10 rounded-full bg-gym-zinc-200 text-gym-black"
+            className="size-10 rounded-full bg-gym-zinc-200 text-gym-black"
           >
             <Stop size={18} weight="fill" />
-          </button>
+          </IconButton>
         ) : (
-          <button
+          <IconButton
             type="submit"
             aria-label="送信"
             disabled={disabled || text.trim() === ''}
             className={cn(
-              'focus-ring flex items-center justify-center size-10 rounded-full',
-              'bg-gym-black text-gym-white',
-              'disabled:opacity-40 disabled:cursor-not-allowed',
+              'size-10 rounded-full',
+              'bg-gym-black text-gym-white hover:bg-gym-black/90',
+              'disabled:opacity-40',
             )}
           >
             <PaperPlaneRight size={18} weight="bold" />
-          </button>
+          </IconButton>
         )}
       </div>
     </form>
