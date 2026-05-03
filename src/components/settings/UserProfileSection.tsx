@@ -1,5 +1,6 @@
 import { useRef, useState, useEffect, type ChangeEvent } from 'react'
 import { useUserProfileStore, TRAINING_GOALS, type TrainingGoal, type UserProfile } from '@/stores/userProfileStore'
+import { Input } from '@/components/ui/input'
 import { SectionCard } from './SectionCard'
 
 const DEBOUNCE_MS = 300
@@ -114,19 +115,16 @@ export function UserProfileSection() {
           >
             生まれ年
           </label>
-          <div className="flex items-center gap-2 bg-gym-zinc-100 rounded-xl px-4 h-11 border border-gym-zinc-200">
-            <input
-              id="profile-birth-year"
-              type="number"
-              min={1900}
-              max={2025}
-              value={localBirthYear}
-              onChange={handleBirthYearChange}
-              placeholder="1990"
-              className="flex-1 bg-transparent text-base font-medium outline-none text-gym-black"
-            />
-            <span className="text-xs text-gym-zinc-400">年</span>
-          </div>
+          <Input
+            id="profile-birth-year"
+            type="number"
+            min={1900}
+            max={2025}
+            value={localBirthYear}
+            onChange={handleBirthYearChange}
+            placeholder="1990"
+            suffix={<span className="text-xs text-gym-zinc-400">年</span>}
+          />
         </div>
 
         {/* 体重 */}
@@ -137,19 +135,16 @@ export function UserProfileSection() {
           >
             体重
           </label>
-          <div className="flex items-center gap-2 bg-gym-zinc-100 rounded-xl px-4 h-11 border border-gym-zinc-200">
-            <input
-              id="profile-weight"
-              type="number"
-              min={1}
-              max={300}
-              value={localWeightKg}
-              onChange={handleWeightChange}
-              placeholder="70"
-              className="flex-1 bg-transparent text-base font-medium outline-none text-gym-black"
-            />
-            <span className="text-xs text-gym-zinc-400">kg</span>
-          </div>
+          <Input
+            id="profile-weight"
+            type="number"
+            min={1}
+            max={300}
+            value={localWeightKg}
+            onChange={handleWeightChange}
+            placeholder="70"
+            suffix={<span className="text-xs text-gym-zinc-400">kg</span>}
+          />
         </div>
 
         {/* 身長 */}
@@ -160,19 +155,16 @@ export function UserProfileSection() {
           >
             身長
           </label>
-          <div className="flex items-center gap-2 bg-gym-zinc-100 rounded-xl px-4 h-11 border border-gym-zinc-200">
-            <input
-              id="profile-height"
-              type="number"
-              min={50}
-              max={250}
-              value={localHeightCm}
-              onChange={handleHeightChange}
-              placeholder="175"
-              className="flex-1 bg-transparent text-base font-medium outline-none text-gym-black"
-            />
-            <span className="text-xs text-gym-zinc-400">cm</span>
-          </div>
+          <Input
+            id="profile-height"
+            type="number"
+            min={50}
+            max={250}
+            value={localHeightCm}
+            onChange={handleHeightChange}
+            placeholder="175"
+            suffix={<span className="text-xs text-gym-zinc-400">cm</span>}
+          />
         </div>
 
         {/* トレーニング目的 */}
@@ -183,12 +175,12 @@ export function UserProfileSection() {
           >
             トレーニング目的
           </label>
-          <div className="bg-gym-zinc-100 rounded-xl px-4 h-11 border border-gym-zinc-200 flex items-center">
+          <div className="flex items-center border-b border-gym-zinc-300 h-11 focus-within:border-gym-black">
             <select
               id="profile-training-goal"
               value={localTrainingGoal}
               onChange={handleGoalChange}
-              className="w-full bg-transparent text-base font-medium outline-none text-gym-black appearance-none cursor-pointer focus-ring rounded-lg"
+              className="w-full bg-transparent text-base font-medium outline-none text-gym-black appearance-none cursor-pointer"
             >
               <option value="">選択してください</option>
               {TRAINING_GOALS.map((goal) => (

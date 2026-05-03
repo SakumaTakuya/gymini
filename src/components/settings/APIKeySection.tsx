@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState, type ChangeEvent } from 'react'
 import { Eye, EyeSlash } from '@phosphor-icons/react'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { Input } from '@/components/ui/input'
 import { SectionCard } from './SectionCard'
 
 const DEBOUNCE_MS = 300
@@ -87,25 +88,25 @@ export function APIKeySection() {
             {saveStatus === 'saved' && '保存済み'}
           </span>
         </div>
-        <div className="flex items-center gap-2 bg-gym-zinc-100 rounded-xl px-4 h-11 border border-gym-zinc-200">
-          <input
-            id="api-key-input"
-            aria-label="Gemini APIキー"
-            type={visible ? 'text' : 'password'}
-            value={localValue}
-            onChange={handleChange}
-            className="flex-1 bg-transparent text-base font-medium outline-none text-gym-black font-mono tracking-wider"
-            placeholder="APIキーを入力"
-          />
-          <button
-            type="button"
-            onClick={() => setVisible((v) => !v)}
-            aria-label={visible ? 'APIキーを非表示' : 'APIキーを表示'}
-            className="focus-ring relative flex items-center justify-center text-gym-zinc-400 rounded-md before:absolute before:inset-[-10px] before:content-['']"
-          >
-            {visible ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
-          </button>
-        </div>
+        <Input
+          id="api-key-input"
+          aria-label="Gemini APIキー"
+          type={visible ? 'text' : 'password'}
+          value={localValue}
+          onChange={handleChange}
+          placeholder="APIキーを入力"
+          className="font-mono tracking-wider"
+          suffix={
+            <button
+              type="button"
+              onClick={() => setVisible((v) => !v)}
+              aria-label={visible ? 'APIキーを非表示' : 'APIキーを表示'}
+              className="focus-ring relative flex items-center justify-center text-gym-zinc-400 rounded-md before:absolute before:inset-[-10px] before:content-['']"
+            >
+              {visible ? <EyeSlash size={16} weight="bold" /> : <Eye size={16} weight="bold" />}
+            </button>
+          }
+        />
       </div>
 
       {/* 下段: ステータス + 削除（border-t で区切り） */}
