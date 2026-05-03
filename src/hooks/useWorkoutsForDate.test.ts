@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach, afterEach } from 'vitest'
 import * as WorkoutRepository from '../lib/workoutRepository'
 import type { DateString } from '../schemas/date'
 
-describe('useWorkoutsForDate logic', () => {
+describe('useWorkoutsForDate ロジック', () => {
   beforeEach(() => {
     localStorage.clear()
   })
@@ -11,13 +11,13 @@ describe('useWorkoutsForDate logic', () => {
     localStorage.clear()
   })
 
-  it('returns empty array for date with no workouts', () => {
+  it('ワークアウトのない日付では空配列を返す', () => {
     const date = '2026-04-12' as DateString
     const workouts = WorkoutRepository.listByDate(date)
     expect(workouts).toEqual([])
   })
 
-  it('returns workouts for date with records', () => {
+  it('記録のある日付のワークアウトを返す', () => {
     const date = '2026-04-12' as DateString
     WorkoutRepository.save({
       date,
@@ -36,7 +36,7 @@ describe('useWorkoutsForDate logic', () => {
     expect(workouts[0].exercises[0].exerciseName).toBe('Bench Press')
   })
 
-  it('does not return workouts from other dates', () => {
+  it('他の日付のワークアウトは返さない', () => {
     WorkoutRepository.save({
       date: '2026-04-11' as DateString,
       exercises: [

@@ -8,22 +8,22 @@ import {
 } from './toolDefinitions'
 
 describe('toolDefinitions', () => {
-  test('defines exactly 8 tools', () => {
+  test('正確に 8 つのツールを定義する', () => {
     expect(TOOL_DECLARATIONS).toHaveLength(8)
   })
 
-  test('all tool names are unique', () => {
+  test('全ツール名が一意である', () => {
     const names = TOOL_DECLARATIONS.map((d) => d.name)
     expect(new Set(names).size).toBe(names.length)
   })
 
-  test('covers all expected tool names', () => {
+  test('期待するすべてのツール名を網羅する', () => {
     const names = TOOL_DECLARATIONS.map((d) => d.name).sort()
     const expected = [...READ_TOOL_NAMES, ...WRITE_TOOL_NAMES].sort()
     expect(names).toEqual(expected)
   })
 
-  test('each tool has name, description, and parameters', () => {
+  test('各ツールが name・description・parameters を持つ', () => {
     for (const decl of TOOL_DECLARATIONS) {
       expect(decl.name).toBeTruthy()
       expect(decl.description).toBeTruthy()
@@ -31,7 +31,7 @@ describe('toolDefinitions', () => {
     }
   })
 
-  test('isWriteTool identifies write tools', () => {
+  test('isWriteTool が write ツールを識別する', () => {
     expect(isWriteTool('saveWorkout')).toBe(true)
     expect(isWriteTool('addExercise')).toBe(true)
     expect(isWriteTool('addExerciseToSession')).toBe(true)
@@ -39,7 +39,7 @@ describe('toolDefinitions', () => {
     expect(isWriteTool('unknown')).toBe(false)
   })
 
-  test('isReadTool identifies read tools', () => {
+  test('isReadTool が read ツールを識別する', () => {
     expect(isReadTool('getRecentWorkouts')).toBe(true)
     expect(isReadTool('getWorkoutsByExercise')).toBe(true)
     expect(isReadTool('getWorkoutsByDate')).toBe(true)
@@ -49,24 +49,24 @@ describe('toolDefinitions', () => {
     expect(isReadTool('unknown')).toBe(false)
   })
 
-  test('saveWorkout requires date and exercises', () => {
+  test('saveWorkout が date と exercises を必須とする', () => {
     const decl = TOOL_DECLARATIONS.find((d) => d.name === 'saveWorkout')
     expect(decl?.parameters?.required).toEqual(['date', 'exercises'])
   })
 
-  test('addExercise requires name', () => {
+  test('addExercise が name を必須とする', () => {
     const decl = TOOL_DECLARATIONS.find((d) => d.name === 'addExercise')
     expect(decl?.parameters?.required).toEqual(['name'])
   })
 
-  test('addExerciseToSession requires exerciseId and exerciseName', () => {
+  test('addExerciseToSession が exerciseId と exerciseName を必須とする', () => {
     const decl = TOOL_DECLARATIONS.find(
       (d) => d.name === 'addExerciseToSession',
     )
     expect(decl?.parameters?.required).toEqual(['exerciseId', 'exerciseName'])
   })
 
-  test('getWorkoutSummary requires periodType, startDate, endDate', () => {
+  test('getWorkoutSummary が periodType・startDate・endDate を必須とする', () => {
     const decl = TOOL_DECLARATIONS.find((d) => d.name === 'getWorkoutSummary')
     expect(decl?.parameters?.required).toEqual([
       'periodType',

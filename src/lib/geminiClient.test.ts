@@ -47,14 +47,14 @@ describe('createGeminiClient', () => {
     vi.clearAllMocks()
   })
 
-  test('uses gemini-flash-latest model', () => {
+  test('gemini-flash-latest モデルを使用する', () => {
     createGeminiClient({ apiKey: 'key' })
     expect(getGenerativeModelMock).toHaveBeenCalledWith(
       expect.objectContaining({ model: GEMINI_MODEL }),
     )
   })
 
-  test('generate returns text response', async () => {
+  test('generate がテキストレスポンスを返す', async () => {
     generateContentMock.mockResolvedValueOnce(makeResponse('hello'))
     const client = createGeminiClient({ apiKey: 'key' })
     const result = await client.generate([
@@ -68,7 +68,7 @@ describe('createGeminiClient', () => {
     })
   })
 
-  test('generate exposes raw model content with thought signatures preserved', async () => {
+  test('generate が thought signature を保持した生のモデルコンテンツを公開する', async () => {
     generateContentMock.mockResolvedValueOnce(
       makeResponse(null, [{ name: 'getRecentWorkouts', args: { count: 3 } }]),
     )
@@ -83,7 +83,7 @@ describe('createGeminiClient', () => {
     expect(fcPart?.functionCall.thoughtSignature).toBe('sig-stub')
   })
 
-  test('generate returns functionCalls', async () => {
+  test('generate が functionCalls を返す', async () => {
     generateContentMock.mockResolvedValueOnce(
       makeResponse('', [{ name: 'getRecentWorkouts', args: { count: 3 } }]),
     )
@@ -96,7 +96,7 @@ describe('createGeminiClient', () => {
     ])
   })
 
-  test('generate truncates contents to last 50', async () => {
+  test('generate がコンテンツを最新 50 件に切り詰める', async () => {
     generateContentMock.mockResolvedValueOnce(makeResponse('ok'))
     const client = createGeminiClient({ apiKey: 'key' })
     const longHistory = Array.from({ length: 80 }, (_, i) => ({
@@ -112,7 +112,7 @@ describe('createGeminiClient', () => {
     expect(call.contents[call.contents.length - 1].parts[0].text).toBe('msg-79')
   })
 
-  test('generate passes abort signal', async () => {
+  test('generate が abort シグナルを渡す', async () => {
     generateContentMock.mockResolvedValueOnce(makeResponse('ok'))
     const client = createGeminiClient({ apiKey: 'key' })
     const ctrl = new AbortController()
@@ -124,7 +124,7 @@ describe('createGeminiClient', () => {
     expect(opts).toEqual({ signal: ctrl.signal })
   })
 
-  test('generate returns null text when response throws', async () => {
+  test('レスポンスがスローしたとき generate が null テキストを返す', async () => {
     generateContentMock.mockResolvedValueOnce({
       response: {
         text: () => {
@@ -144,45 +144,45 @@ describe('createGeminiClient', () => {
 })
 
 describe('getErrorMessage', () => {
-  test('maps API_KEY_INVALID to key error', () => {
+  test('API_KEY_INVALID をキーエラーにマップする', () => {
     const msg = getErrorMessage(new Error('API_KEY_INVALID: key rejected'))
     expect(msg).toMatch(/APIキー/)
   })
 
-  test('maps standalone 401 to key error', () => {
+  test('単独の 401 をキーエラーにマップする', () => {
     const msg = getErrorMessage(new Error('HTTP 401 unauthorized'))
     expect(msg).toMatch(/APIキー/)
   })
 
-  test('does not misclassify 4011 as 401', () => {
+  test('4011 を 401 として誤分類しない', () => {
     const msg = getErrorMessage(new Error('error code 4011 something'))
     expect(msg).not.toMatch(/APIキー/)
   })
 
-  test('maps UNAUTHENTICATED to key error', () => {
+  test('UNAUTHENTICATED をキーエラーにマップする', () => {
     const msg = getErrorMessage(new Error('UNAUTHENTICATED'))
     expect(msg).toMatch(/APIキー/)
   })
 
-  test('maps 429 to rate limit', () => {
+  test('429 をレート制限にマップする', () => {
     const msg = getErrorMessage(new Error('HTTP 429 too many requests'))
     expect(msg).toMatch(/リクエスト制限/)
   })
 
-  test('maps RATE_LIMIT / RESOURCE_EXHAUSTED to rate limit', () => {
+  test('RATE_LIMIT / RESOURCE_EXHAUSTED をレート制限にマップする', () => {
     expect(getErrorMessage(new Error('RATE_LIMIT_EXCEEDED'))).toMatch(/リクエスト制限/)
     expect(getErrorMessage(new Error('RESOURCE_EXHAUSTED quota hit'))).toMatch(
       /リクエスト制限/,
     )
   })
 
-  test('maps SAFETY filter blocks', () => {
+  test('SAFETY フィルターのブロックをマップする', () => {
     expect(getErrorMessage(new Error('Response was blocked: SAFETY'))).toMatch(
       /安全フィルター/,
     )
   })
 
-  test('maps 400 / INVALID_ARGUMENT to bad request guidance', () => {
+  test('400 / INVALID_ARGUMENT を不正リクエストのガイダンスにマップする', () => {
     expect(getErrorMessage(new Error('HTTP 400 INVALID_ARGUMENT'))).toMatch(
       /会話をクリア/,
     )
@@ -191,12 +191,12 @@ describe('getErrorMessage', () => {
     ).toMatch(/会話をクリア/)
   })
 
-  test('maps fetch/network to network error', () => {
+  test('fetch/ネットワークをネットワークエラーにマップする', () => {
     expect(getErrorMessage(new Error('fetch failed'))).toMatch(/ネットワーク/)
     expect(getErrorMessage(new Error('Network request failed'))).toMatch(/ネットワーク/)
   })
 
-  test('defaults to generic error', () => {
+  test('汎用エラーにデフォルトする', () => {
     expect(getErrorMessage(new Error('something went wrong'))).toMatch(/予期しない/)
     expect(getErrorMessage('string')).toMatch(/予期しない/)
     expect(getErrorMessage(null)).toMatch(/予期しない/)
