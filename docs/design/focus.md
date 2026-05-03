@@ -4,7 +4,7 @@
 
 T-003（Mobile-First UI）に準拠しつつ、キーボード操作を行うユーザー向けにフォーカスリングを必須とします。
 
-**適用対象**: `<button>`, `<a>`, `Link`, shadcn `<Button>` を除く全てのインタラクティブな要素。
+**適用対象**: shadcn `<Button>` / `<IconButton>` 以外の全インタラクティブ要素（生の `<button>`, `<a>`, `<input>`, `role="button"` div 等）。
 
 **ルール**:
 
@@ -17,21 +17,31 @@ T-003（Mobile-First UI）に準拠しつつ、キーボード操作を行うユ
     focus-visible:ring-offset-2
     focus-visible:ring-offset-white
 
-- shadcn `<Button>`（`src/components/ui/button.tsx`）は既にフォーカススタイルを内包しているため、追加指定は不要
+- shadcn `<Button>` / `<IconButton>`（`src/components/ui/`）は既にフォーカススタイルを内包しているため、追加指定は不要
+- `<Input>` は `focus-ring`（単体）または `focus-within:ring-*`（prefix/suffix あり）を内包済みのため追加不要
 - 非インタラクティブ要素（`<div onClick>` 等）は原則避ける。やむを得ず使う場合は `role="button"` と `tabIndex={0}` 付与のうえ `focus-ring` を適用する
 
 **適用例**:
 
 ```tsx
-<button
-  type="button"
-  onClick={onClick}
-  aria-label="追加"
-  className="focus-ring w-10 h-10 rounded-full bg-gym-black text-gym-white"
+// <a> タグ（TanStack <Link> 以外でアンカーを書く場合）
+<a href="..." className="focus-ring rounded-md text-gym-black underline">
+  利用規約
+</a>
+
+// div を操作可能要素として使う場合（原則非推奨。やむを得ない場合のみ）
+<div
+  role="button"
+  tabIndex={0}
+  onClick={handleClick}
+  onKeyDown={(e) => e.key === 'Enter' && handleClick()}
+  className="focus-ring rounded-xl px-4 py-3 ..."
 >
-  <Plus size={16} weight="bold" />
-</button>
+  ...
+</div>
 ```
+
+生の `<button>` や `<Input>` suffix 内ボタンの例は [button.md](button.md) / [input.md](input.md) を参照。
 
 **理由**:
 
