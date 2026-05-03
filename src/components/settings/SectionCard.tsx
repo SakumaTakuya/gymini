@@ -20,7 +20,7 @@ export function SectionCard({
   const card = (
     <Card
       className={cn(
-        'bg-white rounded-[20px] shadow-soft border border-gym-zinc-100 ring-0 overflow-hidden gap-0 p-0',
+        'bg-gym-white rounded-[20px] shadow-soft border border-gym-zinc-100 ring-0 overflow-hidden gap-0 p-0',
         className,
       )}
       {...props}

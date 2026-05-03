@@ -16,7 +16,7 @@ export function ChatBubble({ role, content }: ChatBubbleProps) {
         <div
           className={cn(
             'max-w-[75%] rounded-[18px] rounded-br-[4px]',
-            'bg-black text-white px-4 py-2.5 text-sm whitespace-pre-wrap break-words',
+            'bg-gym-black text-gym-white px-4 py-2.5 text-sm whitespace-pre-wrap break-words',
           )}
         >
           {content}
@@ -30,8 +30,8 @@ export function ChatBubble({ role, content }: ChatBubbleProps) {
       <div
         className={cn(
           'max-w-[88%] rounded-[18px] rounded-bl-[4px]',
-          'bg-white border border-zinc-100 shadow-soft',
-          'px-4 py-2.5 text-sm text-black',
+          'bg-gym-white border border-gym-zinc-100 shadow-soft',
+          'px-4 py-2.5 text-sm text-gym-black',
         )}
       >
         <div className="chat-markdown">

@@ -245,7 +245,7 @@ export function ExerciseMasterSection() {
               aria-hidden
               className="w-8 h-8 rounded-full bg-gym-black flex items-center justify-center flex-shrink-0"
             >
-              <Plus size={16} weight="bold" className="text-white" />
+              <Plus size={16} weight="bold" className="text-gym-white" />
             </span>
             <span className="font-outfit font-semibold text-sm">種目を追加</span>
           </button>

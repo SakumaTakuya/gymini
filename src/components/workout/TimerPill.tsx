@@ -7,9 +7,9 @@ type Props = {
 
 export function TimerPill({ elapsedSeconds }: Props) {
   return (
-    <div className="flex items-center gap-1 bg-white/80 backdrop-blur-sm shadow-sm border border-zinc-100 px-2 py-1 rounded-lg">
-      <Clock weight="fill" size={12} className="text-accent animate-pulse" />
-      <span className="font-outfit font-bold text-xs text-zinc-900">
+    <div className="flex items-center gap-1 bg-gym-white/80 backdrop-blur-sm shadow-float border border-gym-zinc-100 px-2 py-1 rounded-lg">
+      <Clock weight="fill" size={12} className="text-gym-accent animate-pulse" />
+      <span className="font-outfit font-bold text-xs text-gym-zinc-900">
         {formatElapsedTime(elapsedSeconds)}
       </span>
     </div>

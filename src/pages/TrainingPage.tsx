@@ -21,7 +21,7 @@ export function TrainingPage() {
               <button
                 type="button"
                 onClick={endSession}
-                className="focus-ring min-h-[44px] min-w-[44px] flex items-center justify-center text-accent text-sm font-bold bg-red-50/90 px-3 py-1.5 rounded-lg"
+                className="focus-ring min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-accent text-sm font-bold bg-red-50/90 px-3 py-1.5 rounded-lg"
               >
                 終了
               </button>

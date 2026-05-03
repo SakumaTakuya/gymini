@@ -31,7 +31,7 @@ export function ConfirmationBubble({
 
   return (
     <div className="flex justify-start px-4 py-1">
-      <div className="max-w-[88%] rounded-[18px] rounded-bl-[4px] bg-white border border-zinc-200 shadow-soft px-4 py-3 text-sm text-black whitespace-pre-wrap break-words">
+      <div className="max-w-[88%] rounded-[18px] rounded-bl-[4px] bg-gym-white border border-gym-zinc-200 shadow-soft px-4 py-3 text-sm text-gym-black whitespace-pre-wrap break-words">
         <div className="mb-3">
           {content || pendingAction.description}
         </div>
@@ -42,7 +42,7 @@ export function ConfirmationBubble({
             onClick={onReject}
             className={cn(
               'focus-ring flex-1 h-11 rounded-xl font-semibold',
-              'bg-zinc-100 text-black',
+              'bg-gym-zinc-100 text-gym-black',
               'disabled:opacity-40 disabled:cursor-not-allowed',
             )}
           >
@@ -54,7 +54,7 @@ export function ConfirmationBubble({
             onClick={onApprove}
             className={cn(
               'focus-ring flex-1 h-11 rounded-xl font-bold',
-              'bg-black text-white inline-flex items-center justify-center gap-1.5',
+              'bg-gym-black text-gym-white inline-flex items-center justify-center gap-1.5',
               'disabled:opacity-40 disabled:cursor-not-allowed',
             )}
           >
@@ -63,10 +63,10 @@ export function ConfirmationBubble({
           </button>
         </div>
         {pendingAction.status === 'approved' && (
-          <p className="mt-2 text-xs text-zinc-500">実行済み</p>
+          <p className="mt-2 text-xs text-gym-zinc-500">実行済み</p>
         )}
         {pendingAction.status === 'rejected' && (
-          <p className="mt-2 text-xs text-zinc-500">キャンセル済み</p>
+          <p className="mt-2 text-xs text-gym-zinc-500">キャンセル済み</p>
         )}
       </div>
     </div>

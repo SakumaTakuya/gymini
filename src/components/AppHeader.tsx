@@ -28,11 +28,11 @@ export function AppHeader({
   return (
     <header
       role="banner"
-      className={`fixed top-3 left-4 right-4 z-30 rounded-full flex items-center h-11 bg-white/80 backdrop-blur-xl border border-gym-zinc-200/60 shadow-float px-3 justify-between ${className}`.trim()}
+      className={`fixed top-3 left-4 right-4 z-30 rounded-full flex items-center h-11 bg-gym-white/80 backdrop-blur-xl border border-gym-zinc-200/60 shadow-float px-3 justify-between ${className}`.trim()}
     >
       <div className="flex items-center gap-2 min-w-0">
         {leading}
-        <h1 className="font-outfit font-bold text-base text-zinc-900 truncate">
+        <h1 className="font-outfit font-bold text-base text-gym-zinc-900 truncate">
           {title}
         </h1>
       </div>

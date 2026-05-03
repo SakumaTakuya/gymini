@@ -88,7 +88,7 @@ export function PendingSetRow({
         onPointerDown={() => { buttonPressedRef.current = true }}
         onClick={onComplete}
         aria-label="完了"
-        className="focus-ring w-7 h-7 rounded bg-black text-white flex items-center justify-center shadow-md min-h-[44px] min-w-[44px]"
+        className="focus-ring w-7 h-7 rounded bg-gym-black text-gym-white flex items-center justify-center shadow-soft min-h-[44px] min-w-[44px]"
       >
         <Plus size={12} weight="bold" />
       </button>

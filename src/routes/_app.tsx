@@ -11,7 +11,7 @@ function AppLayout() {
   const hydrated = useHydrated()
 
   if (!hydrated) {
-    return <div className="min-h-screen bg-zinc-50" />
+    return <div className="min-h-screen bg-gym-zinc-50" />
   }
 
   return (

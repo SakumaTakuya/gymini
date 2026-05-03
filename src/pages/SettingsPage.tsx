@@ -16,7 +16,7 @@ export function SettingsPage() {
   }
 
   return (
-    <div className="min-h-screen bg-zinc-50 pt-16">
+    <div className="min-h-screen bg-gym-zinc-50 pt-16">
       <AppHeader
         title="設定"
         variant="modal"
@@ -25,9 +25,9 @@ export function SettingsPage() {
             type="button"
             onClick={handleClose}
             aria-label="閉じる"
-            className="focus-ring w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-zinc-100/60"
+            className="focus-ring w-9 h-9 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-full hover:bg-gym-zinc-100/60"
           >
-            <X size={16} weight="bold" className="text-zinc-500" />
+            <X size={16} weight="bold" className="text-gym-zinc-500" />
           </button>
         }
       />

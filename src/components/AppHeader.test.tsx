@@ -33,7 +33,7 @@ describe('AppHeader', () => {
   it('フロスト背景を適用する', () => {
     render(<AppHeader title="設定" />)
     const banner = screen.getByRole('banner')
-    expect(banner.className).toContain('bg-white/80')
+    expect(banner.className).toContain('bg-gym-white/80')
     expect(banner.className).toContain('backdrop-blur-xl')
   })
 })

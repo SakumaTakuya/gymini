@@ -56,7 +56,7 @@ describe('GearIcon', () => {
     useSettingsStore.setState({ apiKey: '', hasApiKey: false })
     renderGearIcon()
     await screen.findByRole('link')
-    const badge = document.querySelector('.bg-accent')
+    const badge = document.querySelector('.bg-gym-accent')
     expect(badge).toBeInTheDocument()
   })
 
@@ -64,7 +64,7 @@ describe('GearIcon', () => {
     useSettingsStore.setState({ apiKey: 'test-key', hasApiKey: true })
     renderGearIcon()
     await screen.findByRole('link')
-    const badge = document.querySelector('.bg-accent')
+    const badge = document.querySelector('.bg-gym-accent')
     expect(badge).not.toBeInTheDocument()
   })
 

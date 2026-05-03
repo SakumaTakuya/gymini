@@ -18,7 +18,7 @@ const NAV_TABS = [
 
 export function BottomNav() {
   return (
-    <nav className="fixed bottom-0 left-0 w-full h-24 bg-white/80 backdrop-blur-xl border-t border-gym-zinc-200/50 flex items-start pt-3 px-4 z-40">
+    <nav className="fixed bottom-0 left-0 w-full h-24 bg-gym-white/80 backdrop-blur-xl border-t border-gym-zinc-200/50 flex items-start pt-3 px-4 z-40">
       {NAV_TABS.map((tab) => (
         <Link
           key={tab.to}
@@ -50,8 +50,8 @@ export function BottomNav() {
           <span
             className={`flex items-center gap-1.5 px-4 h-11 rounded-2xl transition-colors ${
               isActive
-                ? 'bg-gym-accent text-white shadow-lg shadow-red-200'
-                : 'bg-gym-black text-white border border-gym-zinc-800'
+                ? 'bg-gym-accent text-gym-white shadow-lg shadow-red-200'
+                : 'bg-gym-black text-gym-white border border-gym-zinc-800'
             }`}
           >
             <Robot size={20} weight="bold" />

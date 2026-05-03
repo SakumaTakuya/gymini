@@ -49,7 +49,7 @@ describe('PendingSetRow', () => {
 
   it('左側に黒いバーインジケーターを持つ', () => {
     const { container } = render(<PendingSetRow {...defaultProps} />)
-    const bar = container.querySelector('.bg-black')
+    const bar = container.querySelector('.bg-gym-black')
     expect(bar).toBeInTheDocument()
   })
 

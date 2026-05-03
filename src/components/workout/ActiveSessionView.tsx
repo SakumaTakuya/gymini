@@ -19,7 +19,7 @@ export function ActiveSessionView() {
   } = useWorkoutSession()
 
   return (
-    <div className="flex-1 bg-zinc-50 pt-16 pb-32 overflow-y-auto">
+    <div className="flex-1 bg-gym-zinc-50 pt-16 pb-32 overflow-y-auto">
       {draftExercises.map((draft, i) => (
         <ExerciseCard
           key={`${draft.exerciseId}-${i}`}

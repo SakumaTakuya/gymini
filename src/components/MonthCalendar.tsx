@@ -55,7 +55,7 @@ function GymDayButton({
       {...props}
       className={cn(
         'focus-ring relative w-9 h-9 mx-auto flex items-center justify-center rounded-full cursor-pointer',
-        isToday && 'bg-gym-black text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)]',
+        isToday && 'bg-gym-black text-gym-white shadow-[0_4px_12px_rgba(0,0,0,0.2)]',
         !isToday && isSelected && 'ring-2 ring-gym-black ring-offset-2 ring-offset-white text-gym-black font-bold',
         !isToday && !isSelected && hasWorkout && 'text-gym-black hover:bg-gym-zinc-50',
         !isToday && !isSelected && !hasWorkout && 'text-gym-zinc-400 hover:bg-gym-zinc-50',

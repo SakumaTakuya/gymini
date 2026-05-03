@@ -45,7 +45,7 @@ export function ExerciseCard({
       {/* Header */}
       <div
         className={`flex items-center gap-3 ${
-          !isCollapsed ? 'mb-4 border-b border-zinc-50 pb-3' : ''
+          !isCollapsed ? 'mb-4 border-b border-gym-zinc-50 pb-3' : ''
         }`}
       >
         <div className="relative flex-shrink-0">
@@ -98,7 +98,7 @@ export function ExerciseCard({
           onClick={onToggle}
         >
           <div className="flex-1">
-            <h3 className="font-outfit font-bold text-lg text-black">
+            <h3 className="font-outfit font-bold text-lg text-gym-black">
               {exerciseName}
             </h3>
             {isCollapsed && sets.length > 0 && (
@@ -109,9 +109,9 @@ export function ExerciseCard({
             )}
           </div>
           {isCollapsed ? (
-            <CaretDown size={16} weight="bold" className="text-zinc-400 flex-shrink-0" />
+            <CaretDown size={16} weight="bold" className="text-gym-zinc-400 flex-shrink-0" />
           ) : (
-            <CaretUp size={16} weight="bold" className="text-zinc-400 flex-shrink-0" />
+            <CaretUp size={16} weight="bold" className="text-gym-zinc-400 flex-shrink-0" />
           )}
         </button>
       </div>
