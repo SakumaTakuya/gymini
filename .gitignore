@@ -145,3 +145,6 @@ playwright-report/
 
 # Claude Code agent worktrees (local-only)
 .claude/worktrees/
+
+# AI-SDD plugin (not in use)
+.sdd/
