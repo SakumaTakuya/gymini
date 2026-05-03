@@ -161,7 +161,7 @@ BottomNav がタブ選択状態を視覚的に示すため、トップレベル�
 | variant | 高さ | 用途 |
 |:--------|:-----|:-----|
 | default | h-14（56px） | 通常の画面（FRAME1, 3, 4） |
-| session-active | min-h-14 + py-2 | アクティブセッション（FRAME2）。trailing が複数行になる場合に対応 |
+| session-active | h-11（44px） | アクティブセッション（FRAME2） |
 | modal | h-14 | 設定画面（FRAME5）。`role="banner"` + `data-variant="modal"` でセマンティクスを明示 |
 
 **検証方法:** インスペクションによる検証
@@ -179,7 +179,7 @@ FRAME5（`/settings`）は `_app` レイアウト外に配置されているた�
 ### DC_006: 視覚スペック
 
 - 形状: `rounded-full`（ピル）、`fixed` ポジショニング。全幅バー（`sticky h-14`）は廃止
-- 高さ: `h-11`（44px）。session-active のみ `min-h-[44px] py-1.5` で可変
+- 高さ: `h-11`（44px）。全バリアント共通
 - 位置: デフォルト variant は `top-3`（`pt-3`）、左右は `px-4` マージン
 - 背景: `bg-white/80 backdrop-blur-xl`（frosted）
 - 境界: `border border-zinc-200/60`（`border-b` ではなく全周）
