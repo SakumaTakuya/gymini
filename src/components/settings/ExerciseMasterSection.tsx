@@ -2,6 +2,7 @@ import { useState, type ChangeEvent } from 'react'
 import { MagnifyingGlass, Plus, Check, X, Trash } from '@phosphor-icons/react'
 import { useExercises } from '@/hooks/useExercises'
 import type { Exercise } from '@/types'
+import { IconButton } from '@/components/ui/icon-button'
 import { ExerciseRow } from './ExerciseRow'
 import { SectionCard } from './SectionCard'
 
@@ -144,30 +145,27 @@ export function ExerciseMasterSection() {
                   className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-base font-inter text-gym-black"
                   autoFocus
                 />
-                <button
-                  type="button"
+                <IconButton
                   onClick={() => handleDelete(ex)}
                   aria-label={`${ex.name}を削除`}
-                  className="focus-ring rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-accent"
+                  className="rounded text-gym-accent"
                 >
                   <Trash size={18} weight="bold" />
-                </button>
-                <button
-                  type="button"
+                </IconButton>
+                <IconButton
                   onClick={confirmEdit}
                   aria-label="編集を確定"
-                  className="focus-ring rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center text-green-600"
+                  className="rounded text-green-600"
                 >
                   <Check size={18} weight="bold" />
-                </button>
-                <button
-                  type="button"
+                </IconButton>
+                <IconButton
                   onClick={cancelEdit}
                   aria-label="編集をキャンセル"
-                  className="focus-ring rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-zinc-500"
+                  className="rounded text-gym-zinc-500"
                 >
                   <X size={18} weight="bold" />
-                </button>
+                </IconButton>
               </div>
               {editError !== null && (
                 <p
@@ -206,22 +204,20 @@ export function ExerciseMasterSection() {
                 className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-base font-inter text-gym-black"
                 autoFocus
               />
-              <button
-                type="button"
+              <IconButton
                 onClick={confirmAdd}
                 aria-label="追加を確定"
-                className="focus-ring rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center text-green-600"
+                className="rounded text-green-600"
               >
                 <Check size={18} weight="bold" />
-              </button>
-              <button
-                type="button"
+              </IconButton>
+              <IconButton
                 onClick={cancelAdd}
                 aria-label="追加をキャンセル"
-                className="focus-ring rounded-md min-h-[44px] min-w-[44px] flex items-center justify-center text-gym-zinc-500"
+                className="rounded text-gym-zinc-500"
               >
                 <X size={18} weight="bold" />
-              </button>
+              </IconButton>
             </div>
             {addError !== null && (
               <p
@@ -245,7 +241,7 @@ export function ExerciseMasterSection() {
               aria-hidden
               className="w-8 h-8 rounded-full bg-gym-black flex items-center justify-center flex-shrink-0"
             >
-              <Plus size={16} weight="bold" className="text-white" />
+              <Plus size={16} weight="bold" className="text-gym-white" />
             </span>
             <span className="font-outfit font-semibold text-sm">種目を追加</span>
           </button>

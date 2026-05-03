@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, CaretDown, CaretUp, DotsThree, Plus, Trash } from '@phosphor-icons/react'
 import { useState } from 'react'
 import type { DraftExercise, WorkoutSet } from '../../schemas/workout'
+import { IconButton } from '../ui/icon-button'
 import { CompletedSetRow } from './CompletedSetRow'
 import { PendingSetRow } from './PendingSetRow'
 
@@ -45,19 +46,18 @@ export function ExerciseCard({
       {/* Header */}
       <div
         className={`flex items-center gap-3 ${
-          !isCollapsed ? 'mb-4 border-b border-zinc-50 pb-3' : ''
+          !isCollapsed ? 'mb-4 border-b border-gym-zinc-50 pb-3' : ''
         }`}
       >
         <div className="relative flex-shrink-0">
-          <button
-            type="button"
+          <IconButton
             aria-label="種目メニュー"
-            className="focus-ring w-8 h-8 bg-gym-zinc-50 rounded-full flex items-center justify-center text-gym-zinc-500 min-h-[44px] min-w-[44px]"
+            className="rounded-full bg-gym-zinc-50 text-gym-zinc-500"
             onClick={() => setMenuOpen((v) => !v)}
             onBlur={() => { setTimeout(() => setMenuOpen(false), 150) }}
           >
             <DotsThree size={16} weight="bold" />
-          </button>
+          </IconButton>
           {menuOpen && (
             <div className="absolute top-full left-0 mt-1 bg-gym-white rounded-xl shadow-float border border-gym-zinc-200 z-50 py-1 min-w-[140px]">
               {onMoveUp && (
@@ -98,7 +98,7 @@ export function ExerciseCard({
           onClick={onToggle}
         >
           <div className="flex-1">
-            <h3 className="font-outfit font-bold text-lg text-black">
+            <h3 className="font-outfit font-bold text-lg text-gym-black">
               {exerciseName}
             </h3>
             {isCollapsed && sets.length > 0 && (
@@ -109,9 +109,9 @@ export function ExerciseCard({
             )}
           </div>
           {isCollapsed ? (
-            <CaretDown size={16} weight="bold" className="text-zinc-400 flex-shrink-0" />
+            <CaretDown size={16} weight="bold" className="text-gym-zinc-400 flex-shrink-0" />
           ) : (
-            <CaretUp size={16} weight="bold" className="text-zinc-400 flex-shrink-0" />
+            <CaretUp size={16} weight="bold" className="text-gym-zinc-400 flex-shrink-0" />
           )}
         </button>
       </div>
@@ -154,14 +154,13 @@ export function ExerciseCard({
           {/* Add button (idle state or editing a previous set) */}
           {(!isRecording || editingSetIndex !== null) && (
             <div className="flex justify-center py-1">
-              <button
-                type="button"
+              <IconButton
                 onClick={onActivate}
                 aria-label="追加"
-                className="focus-ring w-8 h-8 rounded-full bg-gym-zinc-100 flex items-center justify-center text-gym-zinc-500 min-h-[44px] min-w-[44px]"
+                className="rounded-full bg-gym-zinc-100 text-gym-zinc-500"
               >
                 <Plus size={14} weight="bold" />
-              </button>
+              </IconButton>
             </div>
           )}
         </>

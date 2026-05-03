@@ -16,7 +16,7 @@ import { GearIcon } from '../components/GearIcon'
 function createTestRouter(initialPath = '/training') {
   const rootRoute = createRootRoute({
     component: () => (
-      <div className="min-h-screen bg-zinc-50">
+      <div className="min-h-screen bg-gym-zinc-50">
         <Outlet />
       </div>
     ),
@@ -28,7 +28,7 @@ function createTestRouter(initialPath = '/training') {
     id: '_app',
     component: () => (
       <>
-        <main className="flex-1 pb-24">
+        <main className="flex-1 pt-content-top pb-content-bottom">
           <Outlet />
         </main>
         <BottomNav />

@@ -104,7 +104,7 @@ describe('MonthCalendar', () => {
     const today = getDayElement(15)
     expect(today).toBeDefined()
     expect(today!.className).toContain('bg-gym-black')
-    expect(today!.className).toContain('text-white')
+    expect(today!.className).toContain('text-gym-white')
 
     vi.useRealTimers()
   })

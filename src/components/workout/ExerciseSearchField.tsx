@@ -65,8 +65,8 @@ export function ExerciseSearchField({
 
   return (
     <div className="mx-4 relative">
-      <div className="w-full h-[52px] bg-zinc-100 rounded-2xl px-4 flex items-center gap-3 border border-transparent">
-        <Plus size={18} weight="bold" className="text-zinc-500 flex-shrink-0" />
+      <div className="w-full h-[52px] bg-gym-zinc-100 rounded-2xl px-4 flex items-center gap-3 border border-transparent">
+        <Plus size={18} weight="bold" className="text-gym-zinc-500 flex-shrink-0" />
         <input
           type="text"
           value={query}
@@ -79,18 +79,18 @@ export function ExerciseSearchField({
             setTimeout(() => setShowDropdown(false), 200)
           }}
           placeholder="種目を追加..."
-          className="flex-1 bg-transparent outline-none text-base font-medium text-black placeholder:text-zinc-500"
+          className="flex-1 bg-transparent outline-none text-base font-medium text-gym-black placeholder:text-gym-zinc-500"
         />
       </div>
 
       {showDropdown && (query.trim() !== '') && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-white rounded-xl shadow-lg border border-zinc-200 z-50 max-h-48 overflow-y-auto">
+        <div className="absolute top-full left-0 right-0 mt-1 bg-gym-white rounded-xl shadow-float border border-gym-zinc-200 z-50 max-h-48 overflow-y-auto">
           {candidates.map((exercise) => (
             <button
               key={exercise.id}
               type="button"
               onClick={() => handleSelect(exercise)}
-              className="focus-ring w-full text-left px-4 py-3 text-sm font-medium text-black hover:bg-zinc-50 first:rounded-t-xl last:rounded-b-xl"
+              className="focus-ring w-full text-left px-4 py-3 text-sm font-medium text-gym-black hover:bg-gym-zinc-50 first:rounded-t-xl last:rounded-b-xl"
             >
               {exercise.name}
             </button>
@@ -99,7 +99,7 @@ export function ExerciseSearchField({
             <button
               type="button"
               onClick={handleCreateNew}
-              className="focus-ring w-full text-left px-4 py-3 text-sm font-medium text-zinc-500 hover:bg-zinc-50 border-t border-zinc-100 last:rounded-b-xl"
+              className="focus-ring w-full text-left px-4 py-3 text-sm font-medium text-gym-zinc-500 hover:bg-gym-zinc-50 border-t border-gym-zinc-100 last:rounded-b-xl"
             >
               「{query.trim()}」を新規追加
             </button>

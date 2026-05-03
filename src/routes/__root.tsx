@@ -13,7 +13,7 @@ function RootLayout() {
   }, [loadApiKey, loadProfile])
 
   return (
-    <div className="min-h-screen bg-zinc-50">
+    <div className="min-h-screen bg-gym-zinc-50">
       <Outlet />
     </div>
   )

@@ -1,5 +1,6 @@
 import { Plus } from '@phosphor-icons/react'
 import { type FocusEvent, type KeyboardEvent, useRef } from 'react'
+import { IconButton } from '../ui/icon-button'
 
 type PendingSetRowProps = {
   setNumber: number
@@ -82,16 +83,15 @@ export function PendingSetRow({
           <span className="text-xs font-medium text-gym-zinc-400">回</span>
         </div>
       </div>
-      <button
+      <IconButton
         ref={completeButtonRef}
-        type="button"
         onPointerDown={() => { buttonPressedRef.current = true }}
         onClick={onComplete}
         aria-label="完了"
-        className="focus-ring w-7 h-7 rounded bg-black text-white flex items-center justify-center shadow-md min-h-[44px] min-w-[44px]"
+        className="rounded bg-gym-black text-gym-white shadow-soft hover:bg-gym-black/90"
       >
         <Plus size={12} weight="bold" />
-      </button>
+      </IconButton>
     </div>
   )
 }

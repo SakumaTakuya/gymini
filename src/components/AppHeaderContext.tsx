@@ -59,12 +59,12 @@ export function AppHeaderProvider({ children }: ProviderProps) {
         className="fixed top-0 left-0 right-0 z-30 pointer-events-none px-4 pt-3 flex items-start justify-between"
       >
         {variant === 'session-active' ? (
-          <div className="w-full flex items-center justify-between rounded-full bg-white/80 backdrop-blur-xl border border-zinc-200/60 shadow-sm px-4 min-h-[44px] py-1.5 pointer-events-auto">
+          <div className="w-full flex items-center justify-between rounded-full bg-gym-white/80 backdrop-blur-xl border border-gym-zinc-200/60 shadow-float px-4 min-h-[44px] py-1.5 pointer-events-auto">
             <div className="flex items-center gap-2 min-w-0">
               <span ref={setLeadingHost} className="contents" />
               <h1
                 ref={setTitleHost}
-                className="font-outfit font-bold text-base text-zinc-900 truncate"
+                className="font-outfit font-bold text-base text-gym-zinc-900 truncate"
               />
             </div>
             <div ref={setTrailingHost} className="flex items-center gap-2 shrink-0" />
@@ -72,17 +72,17 @@ export function AppHeaderProvider({ children }: ProviderProps) {
         ) : (
           <>
             {showLeftPill && (
-              <div className="flex items-center gap-2 rounded-full bg-white/80 backdrop-blur-xl border border-zinc-200/60 shadow-sm px-3 h-11 pointer-events-auto">
+              <div className="flex items-center gap-2 rounded-full bg-gym-white/80 backdrop-blur-xl border border-gym-zinc-200/60 shadow-float px-3 h-11 pointer-events-auto">
                 <span ref={setLeadingHost} className="contents" />
                 <h1
                   ref={setTitleHost}
-                  className="font-outfit font-bold text-base text-zinc-900 truncate max-w-[180px]"
+                  className="font-outfit font-bold text-base text-gym-zinc-900 truncate max-w-[180px]"
                 />
               </div>
             )}
             <div
               ref={setTrailingHost}
-              className="ml-auto flex items-center gap-1 rounded-full bg-white/80 backdrop-blur-xl border border-zinc-200/60 shadow-sm px-2 h-11 pointer-events-auto"
+              className="ml-auto flex items-center gap-1 rounded-full bg-gym-white/80 backdrop-blur-xl border border-gym-zinc-200/60 shadow-float px-2 h-11 pointer-events-auto"
             />
           </>
         )}

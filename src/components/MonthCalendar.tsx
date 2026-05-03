@@ -2,6 +2,7 @@ import { useMemo } from 'react'
 import { DayPicker, type DayButtonProps } from 'react-day-picker'
 import { CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { Card } from '@/components/ui/card'
+import { IconButton } from '@/components/ui/icon-button'
 import { cn } from '@/lib/utils'
 import type { DateString } from '../schemas/date'
 import { toDateString, todayDateString } from '../schemas/date'
@@ -55,7 +56,7 @@ function GymDayButton({
       {...props}
       className={cn(
         'focus-ring relative w-9 h-9 mx-auto flex items-center justify-center rounded-full cursor-pointer',
-        isToday && 'bg-gym-black text-white shadow-[0_4px_12px_rgba(0,0,0,0.2)]',
+        isToday && 'bg-gym-black text-gym-white shadow-[0_4px_12px_rgba(0,0,0,0.2)]',
         !isToday && isSelected && 'ring-2 ring-gym-black ring-offset-2 ring-offset-white text-gym-black font-bold',
         !isToday && !isSelected && hasWorkout && 'text-gym-black hover:bg-gym-zinc-50',
         !isToday && !isSelected && !hasWorkout && 'text-gym-zinc-400 hover:bg-gym-zinc-50',
@@ -94,28 +95,26 @@ export function MonthCalendar({
     <Card className="mx-4 rounded-[24px] p-5 shadow-soft border border-gym-zinc-100 mb-8 ring-0">
       {/* Month Header */}
       <div className="flex justify-between items-center mb-6 px-2">
-        <button
-          type="button"
+        <IconButton
           onClick={onPrevMonth}
-          className="focus-ring w-8 h-8 rounded-full flex items-center justify-center text-gym-zinc-400 hover:bg-gym-zinc-50 transition-colors"
+          className="rounded-full text-gym-zinc-400 hover:bg-gym-zinc-50 transition-colors"
           aria-label="前月"
         >
           <CaretLeft weight="bold" />
-        </button>
+        </IconButton>
         <h2 className="font-outfit font-bold tracking-tight text-gym-black text-lg flex gap-1 items-center">
           {displayMonth.year}
           <span className="font-jp text-sm font-bold text-gym-zinc-400">年</span>
           {displayMonth.month}
           <span className="font-jp text-sm font-bold text-gym-zinc-400">月</span>
         </h2>
-        <button
-          type="button"
+        <IconButton
           onClick={onNextMonth}
-          className="focus-ring w-8 h-8 rounded-full flex items-center justify-center text-gym-zinc-400 hover:bg-gym-zinc-50 transition-colors"
+          className="rounded-full text-gym-zinc-400 hover:bg-gym-zinc-50 transition-colors"
           aria-label="次月"
         >
           <CaretRight weight="bold" />
-        </button>
+        </IconButton>
       </div>
 
       {/* Calendar Grid via react-day-picker */}

@@ -1,6 +1,7 @@
 import { useState, type FormEvent, type KeyboardEvent } from 'react'
 import { PaperPlaneRight, Stop } from '@phosphor-icons/react'
 import { cn } from '../../lib/utils'
+import { IconButton } from '../ui/icon-button'
 
 export type ChatInputProps = {
   isLoading: boolean
@@ -40,7 +41,7 @@ export function ChatInput({
       className="fixed left-0 right-0 z-30 px-3 pb-3"
       style={{ bottom: 96 }}
     >
-      <div className="mx-auto max-w-xl flex items-end gap-2 rounded-3xl bg-white border border-zinc-200 shadow-soft px-3 py-2">
+      <div className="mx-auto max-w-xl flex items-end gap-2 rounded-3xl bg-gym-white border border-gym-zinc-200 shadow-soft px-3 py-2">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -50,32 +51,31 @@ export function ChatInput({
           rows={1}
           className={cn(
             'focus-ring flex-1 resize-none bg-transparent outline-none',
-            'text-base text-black placeholder:text-zinc-400',
+            'text-base text-gym-black placeholder:text-gym-zinc-400',
             'min-h-[36px] max-h-32 py-1.5 px-1',
           )}
         />
         {isLoading ? (
-          <button
-            type="button"
+          <IconButton
             onClick={onStop}
             aria-label="応答を停止"
-            className="focus-ring flex items-center justify-center size-10 rounded-full bg-zinc-200 text-black"
+            className="size-10 rounded-full bg-gym-zinc-200 text-gym-black"
           >
             <Stop size={18} weight="fill" />
-          </button>
+          </IconButton>
         ) : (
-          <button
+          <IconButton
             type="submit"
             aria-label="送信"
             disabled={disabled || text.trim() === ''}
             className={cn(
-              'focus-ring flex items-center justify-center size-10 rounded-full',
-              'bg-black text-white',
-              'disabled:opacity-40 disabled:cursor-not-allowed',
+              'size-10 rounded-full',
+              'bg-gym-black text-gym-white hover:bg-gym-black/90',
+              'disabled:opacity-40',
             )}
           >
             <PaperPlaneRight size={18} weight="bold" />
-          </button>
+          </IconButton>
         )}
       </div>
     </form>
