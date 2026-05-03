@@ -3,14 +3,14 @@ import { render, screen } from '@testing-library/react'
 import { AppHeader } from './AppHeader'
 
 describe('AppHeader', () => {
-  it('renders the title in an h1 banner', () => {
+  it('h1バナーにタイトルを描画する', () => {
     render(<AppHeader title="設定" />)
     const banner = screen.getByRole('banner')
     expect(banner).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 1, name: '設定' })).toBeInTheDocument()
   })
 
-  it('renders leading and trailing slots', () => {
+  it('leadingスロットとtrailingスロットを描画する', () => {
     render(
       <AppHeader
         title="設定"
@@ -22,7 +22,7 @@ describe('AppHeader', () => {
     expect(screen.getByRole('button', { name: 'action' })).toBeInTheDocument()
   })
 
-  it('applies pill shape with h-11 and rounded-full', () => {
+  it('h-11とrounded-fullでピル形状を適用する', () => {
     render(<AppHeader title="設定" />)
     const banner = screen.getByRole('banner')
     expect(banner.className).toContain('h-11')
@@ -30,7 +30,7 @@ describe('AppHeader', () => {
     expect(banner.className).toContain('fixed')
   })
 
-  it('applies frosted background', () => {
+  it('フロスト背景を適用する', () => {
     render(<AppHeader title="設定" />)
     const banner = screen.getByRole('banner')
     expect(banner.className).toContain('bg-white/80')

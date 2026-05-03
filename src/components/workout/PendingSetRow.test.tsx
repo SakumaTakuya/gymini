@@ -11,19 +11,19 @@ describe('PendingSetRow', () => {
     onRepsChange: vi.fn(),
   }
 
-  it('renders set number', () => {
+  it('セット番号を描画する', () => {
     render(<PendingSetRow {...defaultProps} />)
     expect(screen.getByText('2')).toBeInTheDocument()
   })
 
-  it('renders weight and reps inputs with initial values', () => {
+  it('初期値を持つ重量・レップ数のinputを描画する', () => {
     render(<PendingSetRow {...defaultProps} />)
     const inputs = screen.getAllByRole('spinbutton')
     expect(inputs[0]).toHaveValue(60)
     expect(inputs[1]).toHaveValue(10)
   })
 
-  it('calls onComplete when check button is clicked', () => {
+  it('チェックボタンクリック時にonCompleteを呼び出す', () => {
     const onComplete = vi.fn()
     render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
     const checkButton = screen.getByRole('button', { name: /完了/ })
@@ -31,7 +31,7 @@ describe('PendingSetRow', () => {
     expect(onComplete).toHaveBeenCalledOnce()
   })
 
-  it('calls onWeightChange when weight input changes', () => {
+  it('重量input変更時にonWeightChangeを呼び出す', () => {
     const onWeightChange = vi.fn()
     render(<PendingSetRow {...defaultProps} onWeightChange={onWeightChange} />)
     const inputs = screen.getAllByRole('spinbutton')
@@ -39,7 +39,7 @@ describe('PendingSetRow', () => {
     expect(onWeightChange).toHaveBeenCalledWith(65)
   })
 
-  it('calls onRepsChange when reps input changes', () => {
+  it('レップ数input変更時にonRepsChangeを呼び出す', () => {
     const onRepsChange = vi.fn()
     render(<PendingSetRow {...defaultProps} onRepsChange={onRepsChange} />)
     const inputs = screen.getAllByRole('spinbutton')
@@ -47,21 +47,21 @@ describe('PendingSetRow', () => {
     expect(onRepsChange).toHaveBeenCalledWith(8)
   })
 
-  it('has left black bar indicator', () => {
+  it('左側に黒いバーインジケーターを持つ', () => {
     const { container } = render(<PendingSetRow {...defaultProps} />)
     const bar = container.querySelector('.bg-black')
     expect(bar).toBeInTheDocument()
   })
 
-  describe('auto-focus behavior', () => {
-    it('focuses reps input when weight input loses focus', () => {
+  describe('オートフォーカス動作', () => {
+    it('重量inputがフォーカスを失うとレップ数inputにフォーカスする', () => {
       render(<PendingSetRow {...defaultProps} />)
       const [weightInput, repsInput] = screen.getAllByRole('spinbutton')
       fireEvent.blur(weightInput)
       expect(document.activeElement).toBe(repsInput)
     })
 
-    it('focuses reps input when Enter is pressed in weight input', () => {
+    it('重量inputでEnterを押すとレップ数inputにフォーカスする', () => {
       render(<PendingSetRow {...defaultProps} />)
       const [weightInput, repsInput] = screen.getAllByRole('spinbutton')
       fireEvent.keyDown(weightInput, { key: 'Enter' })
@@ -69,8 +69,8 @@ describe('PendingSetRow', () => {
     })
   })
 
-  describe('auto-complete behavior', () => {
-    it('calls onComplete when reps input loses focus and reps > 0', () => {
+  describe('オートコンプリート動作', () => {
+    it('レップ数inputがフォーカスを失いreps > 0のときonCompleteを呼び出す', () => {
       const onComplete = vi.fn()
       render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
       const repsInput = screen.getAllByRole('spinbutton')[1]
@@ -78,7 +78,7 @@ describe('PendingSetRow', () => {
       expect(onComplete).toHaveBeenCalledOnce()
     })
 
-    it('calls onComplete when Enter is pressed in reps input and reps > 0', () => {
+    it('レップ数inputでEnterを押しreps > 0のときonCompleteを呼び出す', () => {
       const onComplete = vi.fn()
       render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
       const repsInput = screen.getAllByRole('spinbutton')[1]
@@ -86,7 +86,7 @@ describe('PendingSetRow', () => {
       expect(onComplete).toHaveBeenCalledOnce()
     })
 
-    it('does not call onComplete when reps input loses focus and reps is 0', () => {
+    it('レップ数inputがフォーカスを失いrepsが0のときonCompleteを呼ばない', () => {
       const onComplete = vi.fn()
       render(
         <PendingSetRow
@@ -100,7 +100,7 @@ describe('PendingSetRow', () => {
       expect(onComplete).not.toHaveBeenCalled()
     })
 
-    it('does not call onComplete on reps blur when focus moves to complete button', () => {
+    it('フォーカスが完了ボタンに移動する場合はレップ数blurでonCompleteを呼ばない', () => {
       const onComplete = vi.fn()
       render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
       const repsInput = screen.getAllByRole('spinbutton')[1]
@@ -109,7 +109,7 @@ describe('PendingSetRow', () => {
       expect(onComplete).not.toHaveBeenCalled()
     })
 
-    it('calls onComplete only once when button pointerdown and reps blur fire together', () => {
+    it('ボタンのpointerdownとレップ数blurが同時に発火してもonCompleteを1回だけ呼ぶ', () => {
       const onComplete = vi.fn()
       render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
       const repsInput = screen.getAllByRole('spinbutton')[1]

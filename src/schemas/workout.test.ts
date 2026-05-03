@@ -2,33 +2,33 @@ import { describe, it, expect } from 'vitest'
 import { workoutSetSchema, workoutExerciseSchema, workoutSchema } from './workout'
 
 describe('workoutSetSchema', () => {
-  it('accepts valid set data', () => {
+  it('有効なセットデータを受け付ける', () => {
     expect(workoutSetSchema.parse({ weight: 60, reps: 10 })).toEqual({
       weight: 60,
       reps: 10,
     })
   })
 
-  it('accepts zero weight (bodyweight)', () => {
+  it('ゼロ重量（自重）を受け付ける', () => {
     expect(workoutSetSchema.parse({ weight: 0, reps: 10 })).toEqual({
       weight: 0,
       reps: 10,
     })
   })
 
-  it('rejects negative weight', () => {
+  it('負の重量を拒否する', () => {
     expect(() => workoutSetSchema.parse({ weight: -1, reps: 10 })).toThrow()
   })
 
-  it('rejects negative reps', () => {
+  it('負のレップ数を拒否する', () => {
     expect(() => workoutSetSchema.parse({ weight: 60, reps: -1 })).toThrow()
   })
 
-  it('rejects decimal reps', () => {
+  it('小数のレップ数を拒否する', () => {
     expect(() => workoutSetSchema.parse({ weight: 60, reps: 10.5 })).toThrow()
   })
 
-  it('accepts decimal weight', () => {
+  it('小数の重量を受け付ける', () => {
     expect(workoutSetSchema.parse({ weight: 2.5, reps: 10 })).toEqual({
       weight: 2.5,
       reps: 10,
@@ -37,7 +37,7 @@ describe('workoutSetSchema', () => {
 })
 
 describe('workoutExerciseSchema', () => {
-  it('accepts valid exercise data', () => {
+  it('有効な種目データを受け付ける', () => {
     const data = {
       exerciseId: 'bench-press',
       exerciseName: 'ベンチプレス',
@@ -46,7 +46,7 @@ describe('workoutExerciseSchema', () => {
     expect(workoutExerciseSchema.parse(data)).toEqual(data)
   })
 
-  it('accepts empty sets array', () => {
+  it('空のセット配列を受け付ける', () => {
     const data = {
       exerciseId: 'bench-press',
       exerciseName: 'ベンチプレス',
@@ -76,23 +76,23 @@ describe('workoutSchema', () => {
     updatedAt: '2026-03-08T10:45:00.000Z',
   }
 
-  it('accepts valid workout data', () => {
+  it('有効なワークアウトデータを受け付ける', () => {
     expect(workoutSchema.parse(validWorkout)).toEqual(validWorkout)
   })
 
-  it('rejects invalid date format', () => {
+  it('不正な日付形式を拒否する', () => {
     expect(() =>
       workoutSchema.parse({ ...validWorkout, date: '03-08-2026' }),
     ).toThrow()
   })
 
-  it('rejects invalid datetime format for startedAt', () => {
+  it('startedAt の不正な日時形式を拒否する', () => {
     expect(() =>
       workoutSchema.parse({ ...validWorkout, startedAt: '2026-03-08' }),
     ).toThrow()
   })
 
-  it('rejects workout with invalid set data', () => {
+  it('不正なセットデータを持つワークアウトを拒否する', () => {
     const invalid = {
       ...validWorkout,
       exercises: [
@@ -106,7 +106,7 @@ describe('workoutSchema', () => {
     expect(() => workoutSchema.parse(invalid)).toThrow()
   })
 
-  it('rejects missing required fields', () => {
+  it('必須フィールドの欠如を拒否する', () => {
     const { id: _, ...noId } = validWorkout
     expect(() => workoutSchema.parse(noId)).toThrow()
   })

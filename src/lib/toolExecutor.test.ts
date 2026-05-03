@@ -35,7 +35,7 @@ describe('executeReadTool', () => {
   })
 
   describe('getRecentWorkouts', () => {
-    test('returns latest n workouts with default count', () => {
+    test('デフォルトの件数で最新 n 件のワークアウトを返す', () => {
       const workouts = [makeWorkout({ id: 'w-1' }), makeWorkout({ id: 'w-2' })]
       vi.mocked(WorkoutRepository.listByDateDesc).mockReturnValue(workouts)
       const result = executeReadTool('getRecentWorkouts', {})
@@ -43,7 +43,7 @@ describe('executeReadTool', () => {
       expect(result.data).toEqual(workouts)
     })
 
-    test('applies custom count', () => {
+    test('カスタム件数を適用する', () => {
       const workouts = Array.from({ length: 10 }, (_, i) =>
         makeWorkout({ id: `w-${i}` }),
       )
@@ -54,7 +54,7 @@ describe('executeReadTool', () => {
   })
 
   describe('getWorkoutsByExercise', () => {
-    test('filters by exercise name (case-insensitive partial match)', () => {
+    test('種目名で（大文字小文字を区別しない部分一致で）フィルタリングする', () => {
       const wa = makeWorkout({
         id: 'wa',
         exercises: [
@@ -75,14 +75,14 @@ describe('executeReadTool', () => {
       expect((result.data as Workout[]).map((w) => w.id)).toEqual(['wa'])
     })
 
-    test('returns INVALID_ARGS when exerciseName is empty', () => {
+    test('exerciseName が空のとき INVALID_ARGS を返す', () => {
       const result = executeReadTool('getWorkoutsByExercise', { exerciseName: '' })
       expect(result).toEqual({ success: false, error: 'INVALID_ARGS' })
     })
   })
 
   describe('getWorkoutsByDate', () => {
-    test('returns workouts on given date', () => {
+    test('指定した日付のワークアウトを返す', () => {
       const w = makeWorkout({ date: '2026-04-18' as DateString })
       vi.mocked(WorkoutRepository.listByDate).mockReturnValue([w])
       const result = executeReadTool('getWorkoutsByDate', { date: '2026-04-18' })
@@ -90,14 +90,14 @@ describe('executeReadTool', () => {
       expect(result.data).toEqual([w])
     })
 
-    test('returns INVALID_ARGS when date missing', () => {
+    test('date がない場合 INVALID_ARGS を返す', () => {
       const result = executeReadTool('getWorkoutsByDate', {})
       expect(result.success).toBe(false)
     })
   })
 
   describe('getWorkoutSummary', () => {
-    test('aggregates workouts in date range', () => {
+    test('日付範囲内のワークアウトを集計する', () => {
       const w = makeWorkout({
         date: '2026-04-18' as DateString,
         exercises: [
@@ -129,7 +129,7 @@ describe('executeReadTool', () => {
       expect(summary.exerciseBreakdown[0].totalReps).toBe(18)
     })
 
-    test('rejects invalid periodType', () => {
+    test('不正な periodType を拒否する', () => {
       const result = executeReadTool('getWorkoutSummary', {
         periodType: 'year',
         startDate: '2026-01-01',
@@ -140,7 +140,7 @@ describe('executeReadTool', () => {
   })
 
   describe('getExercises', () => {
-    test('returns all exercises', () => {
+    test('全種目を返す', () => {
       const list = [makeExercise('ベンチプレス'), makeExercise('スクワット')]
       vi.mocked(ExerciseRepository.getAll).mockReturnValue(list)
       const result = executeReadTool('getExercises', {})
@@ -148,7 +148,7 @@ describe('executeReadTool', () => {
     })
   })
 
-  test('unknown tool returns error', () => {
+  test('不明なツールはエラーを返す', () => {
     const result = executeReadTool('unknownTool', {})
     expect(result.success).toBe(false)
     expect(result.error).toContain('UNKNOWN_READ_TOOL')
@@ -215,7 +215,7 @@ describe('executeWriteTool', () => {
       expect(state.draftExercises[0].sets).toEqual([{ weight: 100, reps: 5 }])
     })
 
-    test('returns EXERCISE_NOT_FOUND when a name is missing', () => {
+    test('種目名が見つからない場合 EXERCISE_NOT_FOUND を返す', () => {
       vi.mocked(ExerciseRepository.getAll).mockReturnValue([])
       const result = executeWriteTool('saveWorkout', {
         date: '2026-04-18',
@@ -231,7 +231,7 @@ describe('executeWriteTool', () => {
       expect(WorkoutRepository.save).not.toHaveBeenCalled()
     })
 
-    test('returns INVALID_ARGS for malformed input', () => {
+    test('不正な入力に対して INVALID_ARGS を返す', () => {
       const result = executeWriteTool('saveWorkout', { date: null })
       expect(result.success).toBe(false)
       expect(result.error).toBe('INVALID_ARGS')
@@ -239,7 +239,7 @@ describe('executeWriteTool', () => {
   })
 
   describe('addExercise', () => {
-    test('creates new exercise', () => {
+    test('新しい種目を作成する', () => {
       const created = makeExercise('新しい種目', 'ex-new')
       vi.mocked(ExerciseRepository.create).mockReturnValue(created)
       const result = executeWriteTool('addExercise', { name: '新しい種目' })
@@ -247,7 +247,7 @@ describe('executeWriteTool', () => {
       expect(result.data).toBe(created)
     })
 
-    test('returns DUPLICATE_EXERCISE when repository throws duplicate', () => {
+    test('リポジトリが重複エラーをスローしたとき DUPLICATE_EXERCISE を返す', () => {
       vi.mocked(ExerciseRepository.create).mockImplementation(() => {
         throw new Error('Duplicate name: ベンチプレス')
       })
@@ -256,7 +256,7 @@ describe('executeWriteTool', () => {
       expect(result.error).toBe('DUPLICATE_EXERCISE')
     })
 
-    test('rejects empty name', () => {
+    test('空の name を拒否する', () => {
       const result = executeWriteTool('addExercise', { name: '' })
       expect(result.success).toBe(false)
       expect(result.error).toBe('INVALID_ARGS')
@@ -264,7 +264,7 @@ describe('executeWriteTool', () => {
   })
 
   describe('addExerciseToSession', () => {
-    test('returns SESSION_NOT_ACTIVE when no active session', () => {
+    test('アクティブなセッションがない場合 SESSION_NOT_ACTIVE を返す', () => {
       useWorkoutSessionStore.setState({
         isActive: false,
         startedAt: null,
@@ -279,7 +279,7 @@ describe('executeWriteTool', () => {
       expect(result.error).toBe('SESSION_NOT_ACTIVE')
     })
 
-    test('adds exercise when session is active', () => {
+    test('セッションがアクティブのとき種目を追加する', () => {
       useWorkoutSessionStore.getState().startSession()
       const addSpy = vi.spyOn(useWorkoutSessionStore.getState(), 'addExercise')
       const result = executeWriteTool('addExerciseToSession', {
@@ -294,7 +294,7 @@ describe('executeWriteTool', () => {
     })
   })
 
-  test('unknown write tool returns error', () => {
+  test('不明な write ツールはエラーを返す', () => {
     const result = executeWriteTool('unknownWrite', {})
     expect(result.success).toBe(false)
     expect(result.error).toContain('UNKNOWN_WRITE_TOOL')

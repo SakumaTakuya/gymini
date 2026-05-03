@@ -54,7 +54,7 @@ describe('TrainingPage', () => {
     resetStore()
   })
 
-  it('shows IdleView with gear when session is not active', async () => {
+  it('セッション未開始のときギア付きのIdleViewを表示する', async () => {
     renderTrainingPage()
     expect(
       await screen.findByRole('button', { name: /トレーニングを始める/ }),
@@ -63,7 +63,7 @@ describe('TrainingPage', () => {
     expect(link.getAttribute('href')).toContain('settings')
   })
 
-  it('shows ActiveSessionView with SessionHeader chrome when session is active', async () => {
+  it('セッション中はSessionHeaderのUIとともにActiveSessionViewを表示する', async () => {
     useWorkoutSessionStore.getState().startSession()
     renderTrainingPage()
     expect(await screen.findByPlaceholderText('種目を追加...')).toBeInTheDocument()
@@ -71,7 +71,7 @@ describe('TrainingPage', () => {
     expect(screen.getByText('00:00:00')).toBeInTheDocument()
   })
 
-  it('transitions from IdleView to ActiveSessionView on button click', async () => {
+  it('ボタンクリックでIdleViewからActiveSessionViewに遷移する', async () => {
     renderTrainingPage()
     fireEvent.click(
       await screen.findByRole('button', { name: /トレーニングを始める/ }),
@@ -79,7 +79,7 @@ describe('TrainingPage', () => {
     expect(await screen.findByRole('button', { name: '終了' })).toBeInTheDocument()
   })
 
-  it('clicking 終了 ends the session and returns to IdleView', async () => {
+  it('終了クリックでセッションを終了してIdleViewに戻る', async () => {
     useWorkoutSessionStore.getState().startSession()
     renderTrainingPage()
     fireEvent.click(await screen.findByRole('button', { name: '終了' }))
@@ -89,7 +89,7 @@ describe('TrainingPage', () => {
     ).toBeInTheDocument()
   })
 
-  it('shows elapsed time when session has been running', async () => {
+  it('セッション実行中は経過時間を表示する', async () => {
     const startedAt = new Date(Date.now() - (14 * 60 + 32) * 1000).toISOString()
     useWorkoutSessionStore.setState({
       isActive: true,

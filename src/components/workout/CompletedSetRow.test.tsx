@@ -9,13 +9,13 @@ describe('CompletedSetRow', () => {
     onDelete: vi.fn(),
   }
 
-  it('renders weight and reps', () => {
+  it('重量とレップ数を描画する', () => {
     render(<CompletedSetRow {...defaultProps} />)
     expect(screen.getByText('60')).toBeInTheDocument()
     expect(screen.getByText('10')).toBeInTheDocument()
   })
 
-  it('calls onDelete when trash button is clicked', () => {
+  it('ゴミ箱ボタンクリック時にonDeleteを呼び出す', () => {
     const onDelete = vi.fn()
     render(<CompletedSetRow {...defaultProps} onDelete={onDelete} />)
     const deleteButton = screen.getByRole('button', { name: /削除/ })
@@ -23,7 +23,7 @@ describe('CompletedSetRow', () => {
     expect(onDelete).toHaveBeenCalledOnce()
   })
 
-  it('calls onEdit when pencil button is clicked', () => {
+  it('鉛筆ボタンクリック時にonEditを呼び出す', () => {
     const onEdit = vi.fn()
     render(<CompletedSetRow {...defaultProps} onEdit={onEdit} />)
     const editButton = screen.getByRole('button', { name: /編集/ })
@@ -31,7 +31,7 @@ describe('CompletedSetRow', () => {
     expect(onEdit).toHaveBeenCalledOnce()
   })
 
-  it('has bg-gym-zinc-50 rounded-xl styling', () => {
+  it('bg-gym-zinc-50とrounded-xlのスタイルを持つ', () => {
     const { container } = render(<CompletedSetRow {...defaultProps} />)
     const row = container.firstChild as HTMLElement
     expect(row.className).toContain('bg-gym-zinc-50')

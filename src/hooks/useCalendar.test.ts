@@ -9,16 +9,16 @@ import { queryKeys } from '../lib/queryKeys'
 // We test the core logic here and integration in the route-level test.
 
 describe('useCalendar logic', () => {
-  it('queryKeys.workoutDates generates correct key', () => {
+  it('queryKeys.workoutDates が正しいキーを生成する', () => {
     expect(queryKeys.workoutDates(2026, 4)).toEqual(['workoutDates', 2026, 4])
   })
 
-  it('queryKeys.workoutsForDate generates correct key', () => {
+  it('queryKeys.workoutsForDate が正しいキーを生成する', () => {
     const date = '2026-04-12' as DateString
     expect(queryKeys.workoutsForDate(date)).toEqual(['workoutsForDate', '2026-04-12'])
   })
 
-  it('todayDateString returns today in local timezone', () => {
+  it('todayDateString がローカルタイムゾーンで今日の日付を返す', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 3, 12, 10, 0, 0)) // April 12
     expect(todayDateString()).toBe('2026-04-12')
@@ -26,7 +26,7 @@ describe('useCalendar logic', () => {
   })
 })
 
-describe('workoutRepository integration for calendar', () => {
+describe('カレンダー向け workoutRepository 統合テスト', () => {
   beforeEach(() => {
     localStorage.clear()
   })
@@ -35,18 +35,18 @@ describe('workoutRepository integration for calendar', () => {
     localStorage.clear()
   })
 
-  it('listByDateDesc returns workouts sorted by date descending', () => {
+  it('listByDateDesc がワークアウトを日付降順で返す', () => {
     const workouts = WorkoutRepository.listByDateDesc()
     expect(workouts).toEqual([])
   })
 
-  it('listByDate filters by specific date', () => {
+  it('listByDate が指定日でフィルタリングする', () => {
     const date = '2026-04-12' as DateString
     const workouts = WorkoutRepository.listByDate(date)
     expect(workouts).toEqual([])
   })
 
-  it('listByDate returns matching workouts after save', () => {
+  it('listByDate が保存後に一致するワークアウトを返す', () => {
     const date = '2026-04-12' as DateString
     WorkoutRepository.save({
       date,
@@ -61,7 +61,7 @@ describe('workoutRepository integration for calendar', () => {
     expect(workouts[0].date).toBe('2026-04-12')
   })
 
-  it('daysWithWorkouts can be computed from listByDateDesc', () => {
+  it('listByDateDesc から daysWithWorkouts を計算できる', () => {
     const date1 = '2026-04-10' as DateString
     const date2 = '2026-04-12' as DateString
     WorkoutRepository.save({

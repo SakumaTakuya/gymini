@@ -14,18 +14,18 @@ describe('APIKeySection', () => {
     vi.useRealTimers()
   })
 
-  it('displays Gemini API section label', () => {
+  it('Gemini APIセクションラベルを表示する', () => {
     render(<APIKeySection />)
     expect(screen.getByText('Gemini API')).toBeInTheDocument()
   })
 
-  it('renders input field masked by default', () => {
+  it('デフォルトでマスクされた入力フィールドを描画する', () => {
     render(<APIKeySection />)
     const input = screen.getByLabelText('Gemini APIキー')
     expect(input).toHaveAttribute('type', 'password')
   })
 
-  it('toggles visibility when eye button is clicked', async () => {
+  it('目アイコンボタンクリックで表示・非表示を切り替える', async () => {
     const user = userEvent.setup()
     render(<APIKeySection />)
     const input = screen.getByLabelText('Gemini APIキー')
@@ -39,7 +39,7 @@ describe('APIKeySection', () => {
     expect(input).toHaveAttribute('type', 'password')
   })
 
-  it('saves key to store after 300ms debounce', async () => {
+  it('300msのデバウンス後にキーをストアへ保存する', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     render(<APIKeySection />)
@@ -61,7 +61,7 @@ describe('APIKeySection', () => {
     expect(localStorage.getItem('gymini:api-key')).toBe('AIzaSy-new-key')
   })
 
-  it('debounces consecutive input so only the last value is persisted', async () => {
+  it('連続入力をデバウンスして最後の値のみを保存する', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
@@ -84,7 +84,7 @@ describe('APIKeySection', () => {
     expect(useSettingsStore.getState().apiKey).toBe('abcdef')
   })
 
-  it('displays "保存中…" while debounce is pending', async () => {
+  it('デバウンス保留中は"保存中…"を表示する', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     render(<APIKeySection />)
@@ -95,7 +95,7 @@ describe('APIKeySection', () => {
     expect(screen.getByText('保存中…')).toBeInTheDocument()
   })
 
-  it('displays "保存済み" after debounce fires', async () => {
+  it('デバウンス発火後は"保存済み"を表示する', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     render(<APIKeySection />)
@@ -109,7 +109,7 @@ describe('APIKeySection', () => {
     expect(screen.getByText('保存済み')).toBeInTheDocument()
   })
 
-  it('does not write to localStorage when unmounted before debounce fires', async () => {
+  it('デバウンス発火前にアンマウントされた場合はlocalStorageに書き込まない', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     const setItemSpy = vi.spyOn(Storage.prototype, 'setItem')
@@ -128,29 +128,29 @@ describe('APIKeySection', () => {
     expect(useSettingsStore.getState().apiKey).toBe('')
   })
 
-  it('shows connected status when key is set', () => {
+  it('キーが設定済みの場合に接続済みステータスを表示する', () => {
     useSettingsStore.setState({ apiKey: 'AIzaSy-test', hasApiKey: true })
     render(<APIKeySection />)
     expect(screen.getByText('接続済み')).toBeInTheDocument()
   })
 
-  it('shows not-set status when key is empty', () => {
+  it('キーが空の場合に未設定ステータスを表示する', () => {
     render(<APIKeySection />)
     expect(screen.getByText('未設定')).toBeInTheDocument()
   })
 
-  it('hides delete button when key is not set', () => {
+  it('キーが未設定の場合に削除ボタンを非表示にする', () => {
     render(<APIKeySection />)
     expect(screen.queryByRole('button', { name: 'APIキーを削除' })).not.toBeInTheDocument()
   })
 
-  it('shows delete button when key is set', () => {
+  it('キーが設定済みの場合に削除ボタンを表示する', () => {
     useSettingsStore.setState({ apiKey: 'AIzaSy-test', hasApiKey: true })
     render(<APIKeySection />)
     expect(screen.getByRole('button', { name: 'APIキーを削除' })).toBeInTheDocument()
   })
 
-  it('deletes key when delete button is clicked', async () => {
+  it('削除ボタンクリックでキーを削除する', async () => {
     const user = userEvent.setup()
     useSettingsStore.setState({ apiKey: 'AIzaSy-test', hasApiKey: true })
     localStorage.setItem('gymini:api-key', 'AIzaSy-test')
@@ -163,7 +163,7 @@ describe('APIKeySection', () => {
     expect(localStorage.getItem('gymini:api-key')).toBeNull()
   })
 
-  it('resets input to empty after key is deleted (controlled input)', async () => {
+  it('キー削除後にinputを空にリセットする（controlled input）', async () => {
     const user = userEvent.setup()
     useSettingsStore.setState({ apiKey: 'AIzaSy-test', hasApiKey: true })
     render(<APIKeySection />)
@@ -175,7 +175,7 @@ describe('APIKeySection', () => {
     expect(input.value).toBe('')
   })
 
-  it('ensures tap targets have min 44px', () => {
+  it('タップターゲットが最小44pxであることを確認する', () => {
     useSettingsStore.setState({ apiKey: 'AIzaSy-test', hasApiKey: true })
     render(<APIKeySection />)
 

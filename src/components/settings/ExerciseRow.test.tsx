@@ -6,12 +6,12 @@ import { ExerciseRow } from './ExerciseRow'
 const exercise = { id: 'ex-1', name: 'ベンチプレス' }
 
 describe('ExerciseRow', () => {
-  it('displays exercise name', () => {
+  it('種目名を表示する', () => {
     render(<ExerciseRow exercise={exercise} onEdit={vi.fn()} />)
     expect(screen.getByText('ベンチプレス')).toBeInTheDocument()
   })
 
-  it('calls onEdit with exercise when edit button is clicked', async () => {
+  it('編集ボタンクリック時にonEditを種目とともに呼び出す', async () => {
     const user = userEvent.setup()
     const onEdit = vi.fn()
     render(<ExerciseRow exercise={exercise} onEdit={onEdit} />)
@@ -20,14 +20,14 @@ describe('ExerciseRow', () => {
     expect(onEdit).toHaveBeenCalledWith(exercise)
   })
 
-  it('does not render a delete button in view mode (削除は編集モード内に移設)', () => {
+  it('表示モードでは削除ボタンを描画しない（削除は編集モード内に移設）', () => {
     render(<ExerciseRow exercise={exercise} onEdit={vi.fn()} />)
     expect(
       screen.queryByRole('button', { name: 'ベンチプレスを削除' }),
     ).not.toBeInTheDocument()
   })
 
-  it('ensures edit button tap target is expanded beyond the 32px visual size', () => {
+  it('編集ボタンのタップターゲットが32pxの表示サイズを超えて拡張されていることを確認する', () => {
     render(<ExerciseRow exercise={exercise} onEdit={vi.fn()} />)
     const editBtn = screen.getByRole('button', { name: 'ベンチプレスを編集' })
     // 表示は w-8 h-8 (32px) だが、before:inset-[-8px] で実タップ領域を 48px に拡張

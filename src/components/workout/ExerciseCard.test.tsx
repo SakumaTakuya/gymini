@@ -26,8 +26,8 @@ const defaultProps = {
 }
 
 describe('ExerciseCard', () => {
-  describe('collapsed state', () => {
-    it('shows only header with set count summary', () => {
+  describe('折りたたみ状態', () => {
+    it('セット数サマリー付きのヘッダーのみ表示する', () => {
       const draft: DraftExercise = {
         ...baseDraft,
         cardState: 'collapsed',
@@ -41,7 +41,7 @@ describe('ExerciseCard', () => {
       expect(screen.getByText(/2 Sets/)).toBeInTheDocument()
     })
 
-    it('calls onToggle when header is clicked', () => {
+    it('ヘッダークリック時にonToggleを呼び出す', () => {
       const onToggle = vi.fn()
       const draft: DraftExercise = { ...baseDraft, cardState: 'collapsed' }
       render(
@@ -52,8 +52,8 @@ describe('ExerciseCard', () => {
     })
   })
 
-  describe('idle state', () => {
-    it('shows completed sets and add button', () => {
+  describe('アイドル状態', () => {
+    it('完了済みセットと追加ボタンを表示する', () => {
       const draft: DraftExercise = {
         ...baseDraft,
         cardState: 'idle',
@@ -64,7 +64,7 @@ describe('ExerciseCard', () => {
       expect(screen.getByRole('button', { name: /追加/ })).toBeInTheDocument()
     })
 
-    it('calls onActivate when add button is clicked', () => {
+    it('追加ボタンクリック時にonActivateを呼び出す', () => {
       const onActivate = vi.fn()
       render(
         <ExerciseCard {...defaultProps} onActivate={onActivate} />,
@@ -139,8 +139,8 @@ describe('ExerciseCard', () => {
     })
   })
 
-  describe('recording state', () => {
-    it('shows completed sets and pending set row', () => {
+  describe('記録中状態', () => {
+    it('完了済みセットとpendingセット行を表示する', () => {
       const draft: DraftExercise = {
         ...baseDraft,
         cardState: 'recording',

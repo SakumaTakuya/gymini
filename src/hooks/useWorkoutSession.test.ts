@@ -25,14 +25,14 @@ describe('useWorkoutSession', () => {
     vi.useRealTimers()
   })
 
-  it('exposes store state', () => {
+  it('ストアの状態を公開する', () => {
     const { result } = renderHook(() => useWorkoutSession())
     expect(result.current.isActive).toBe(false)
     expect(result.current.startedAt).toBeNull()
     expect(result.current.draftExercises).toEqual([])
   })
 
-  it('exposes store actions', () => {
+  it('ストアのアクションを公開する', () => {
     const { result } = renderHook(() => useWorkoutSession())
     expect(typeof result.current.startSession).toBe('function')
     expect(typeof result.current.endSession).toBe('function')
@@ -44,18 +44,18 @@ describe('useWorkoutSession', () => {
     expect(typeof result.current.toggleExerciseCard).toBe('function')
   })
 
-  it('exposes searchExercises', () => {
+  it('searchExercises を公開する', () => {
     const { result } = renderHook(() => useWorkoutSession())
     expect(typeof result.current.searchExercises).toBe('function')
   })
 
   describe('elapsedSeconds', () => {
-    it('is 0 when session not active', () => {
+    it('セッションが非アクティブのとき 0 である', () => {
       const { result } = renderHook(() => useWorkoutSession())
       expect(result.current.elapsedSeconds).toBe(0)
     })
 
-    it('updates every second when session is active', () => {
+    it('セッションがアクティブのとき毎秒更新される', () => {
       vi.setSystemTime(new Date('2026-03-08T10:00:00.000Z'))
 
       const { result } = renderHook(() => useWorkoutSession())
@@ -72,7 +72,7 @@ describe('useWorkoutSession', () => {
       expect(result.current.elapsedSeconds).toBe(5)
     })
 
-    it('stops updating after session ends', () => {
+    it('セッション終了後に更新を停止する', () => {
       vi.setSystemTime(new Date('2026-03-08T10:00:00.000Z'))
 
       const { result } = renderHook(() => useWorkoutSession())
@@ -99,7 +99,7 @@ describe('useWorkoutSession', () => {
   })
 
   describe('searchExercises', () => {
-    it('delegates to useExercises().search', () => {
+    it('useExercises().search に委譲する', () => {
       // Add some exercises to localStorage
       localStorage.setItem(
         'gymini:exercises',
@@ -117,7 +117,7 @@ describe('useWorkoutSession', () => {
   })
 
   describe('createExercise', () => {
-    it('creates a new exercise via useExercises().create', () => {
+    it('useExercises().create を通じて新しい種目を作成する', () => {
       const { result } = renderHook(() => useWorkoutSession())
 
       let created: { id: string; name: string } | undefined

@@ -19,12 +19,12 @@ describe('useExercises', () => {
   })
 
   describe('exercises', () => {
-    it('returns empty array when no exercises stored', () => {
+    it('種目が保存されていない場合は空配列を返す', () => {
       const { result } = renderHook(() => useExercises())
       expect(result.current.exercises).toEqual([])
     })
 
-    it('loads exercises from repository on mount', () => {
+    it('マウント時にリポジトリから種目を読み込む', () => {
       ExerciseRepository.create('ベンチプレス')
       ExerciseRepository.create('スクワット')
 
@@ -39,7 +39,7 @@ describe('useExercises', () => {
   })
 
   describe('create', () => {
-    it('adds exercise and updates subscribers', () => {
+    it('種目を追加してサブスクライバーを更新する', () => {
       const { result } = renderHook(() => useExercises())
 
       act(() => {
@@ -51,7 +51,7 @@ describe('useExercises', () => {
       expect(ExerciseRepository.getAll().map((e) => e.name)).toContain('デッドリフト')
     })
 
-    it('propagates duplicate name errors from repository', () => {
+    it('リポジトリからの重複名エラーを伝播する', () => {
       ExerciseRepository.create('ベンチプレス')
       const { result } = renderHook(() => useExercises())
 
@@ -64,7 +64,7 @@ describe('useExercises', () => {
   })
 
   describe('update', () => {
-    it('renames exercise and updates subscribers', () => {
+    it('種目の名前を変更してサブスクライバーを更新する', () => {
       const ex = ExerciseRepository.create('ベンチプレス')
       const { result } = renderHook(() => useExercises())
 
@@ -78,7 +78,7 @@ describe('useExercises', () => {
   })
 
   describe('remove', () => {
-    it('deletes exercise and updates subscribers', () => {
+    it('種目を削除してサブスクライバーを更新する', () => {
       const ex = ExerciseRepository.create('ベンチプレス')
       ExerciseRepository.create('スクワット')
       const { result } = renderHook(() => useExercises())
@@ -92,7 +92,7 @@ describe('useExercises', () => {
   })
 
   describe('search', () => {
-    it('returns all exercises when query is empty', () => {
+    it('クエリが空のとき全種目を返す', () => {
       ExerciseRepository.create('ベンチプレス')
       ExerciseRepository.create('スクワット')
       const { result } = renderHook(() => useExercises())
@@ -100,7 +100,7 @@ describe('useExercises', () => {
       expect(result.current.search('')).toHaveLength(2)
     })
 
-    it('filters by partial match (case insensitive)', () => {
+    it('部分一致（大文字小文字を区別しない）でフィルタリングする', () => {
       ExerciseRepository.create('ベンチプレス')
       ExerciseRepository.create('インクラインベンチ')
       ExerciseRepository.create('スクワット')
@@ -114,8 +114,8 @@ describe('useExercises', () => {
     })
   })
 
-  describe('cross-subscriber synchronization', () => {
-    it('updates all subscribers when one calls create', () => {
+  describe('サブスクライバー間の同期', () => {
+    it('1つが create を呼んだとき全サブスクライバーを更新する', () => {
       const { result: a } = renderHook(() => useExercises())
       const { result: b } = renderHook(() => useExercises())
 
@@ -127,7 +127,7 @@ describe('useExercises', () => {
       expect(b.current.exercises.map((e) => e.name)).toContain('デッドリフト')
     })
 
-    it('updates all subscribers when one calls remove', () => {
+    it('1つが remove を呼んだとき全サブスクライバーを更新する', () => {
       const ex = ExerciseRepository.create('ベンチプレス')
       const { result: a } = renderHook(() => useExercises())
       const { result: b } = renderHook(() => useExercises())
@@ -141,8 +141,8 @@ describe('useExercises', () => {
     })
   })
 
-  describe('cross-tab synchronization', () => {
-    it('reloads from repository when storage event fires for exercises key', () => {
+  describe('タブ間の同期', () => {
+    it('exercises キーの storage イベントが発火したときリポジトリから再読込する', () => {
       const { result } = renderHook(() => useExercises())
       expect(result.current.exercises).toHaveLength(0)
 
@@ -157,7 +157,7 @@ describe('useExercises', () => {
       expect(result.current.exercises.map((e) => e.name)).toContain('デッドリフト')
     })
 
-    it('ignores storage events for other keys', () => {
+    it('他のキーの storage イベントは無視する', () => {
       const { result } = renderHook(() => useExercises())
 
       ExerciseRepository.create('デッドリフト')

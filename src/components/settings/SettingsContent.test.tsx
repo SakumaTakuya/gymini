@@ -9,12 +9,12 @@ describe('SettingsContent', () => {
     useSettingsStore.setState({ apiKey: '', hasApiKey: false })
   })
 
-  it('renders APIKeySection', () => {
+  it('APIKeySectionを描画する', () => {
     render(<SettingsContent />)
     expect(screen.getByText('Gemini API')).toBeInTheDocument()
   })
 
-  it('renders ExerciseMasterSection', () => {
+  it('ExerciseMasterSectionを描画する', () => {
     render(<SettingsContent />)
     expect(screen.getByText('種目マスター')).toBeInTheDocument()
   })

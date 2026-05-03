@@ -3,7 +3,7 @@ import { render, screen } from '@testing-library/react'
 import { SectionCard } from './SectionCard'
 
 describe('SectionCard', () => {
-  it('renders children', () => {
+  it('子要素を描画する', () => {
     render(
       <SectionCard>
         <span>inner</span>
@@ -12,7 +12,7 @@ describe('SectionCard', () => {
     expect(screen.getByText('inner')).toBeInTheDocument()
   })
 
-  it('applies FRAME5 visual spec classes on the card', () => {
+  it('カードにFRAME5ビジュアル仕様のクラスを適用する', () => {
     render(
       <SectionCard data-testid="card">
         <span />
@@ -26,7 +26,7 @@ describe('SectionCard', () => {
     expect(card.className).toContain('overflow-hidden')
   })
 
-  it('merges additional className', () => {
+  it('追加のclassNameをマージする', () => {
     render(
       <SectionCard data-testid="card" className="mt-6">
         <span />
@@ -35,7 +35,7 @@ describe('SectionCard', () => {
     expect(screen.getByTestId('card').className).toContain('mt-6')
   })
 
-  it('renders label outside the card with uppercase tracking-widest style', () => {
+  it('カード外にuppercase tracking-widestスタイルのラベルを描画する', () => {
     render(
       <SectionCard label="Gemini API" data-testid="card">
         <span>body</span>
@@ -49,7 +49,7 @@ describe('SectionCard', () => {
     expect(card.contains(label)).toBe(false)
   })
 
-  it('omits label wrapper when label is not provided', () => {
+  it('labelが指定されていない場合はラベルラッパーを省略する', () => {
     const { container } = render(
       <SectionCard data-testid="card">
         <span>body</span>

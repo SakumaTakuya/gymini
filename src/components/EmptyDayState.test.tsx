@@ -6,34 +6,34 @@ import type { DateString } from '../schemas/date'
 describe('EmptyDayState', () => {
   const date = '2026-04-12' as DateString
 
-  it('renders empty-day-state container (FR-007)', () => {
+  it('empty-day-stateコンテナを描画する', () => {
     render(<EmptyDayState date={date} onAddWorkout={vi.fn()} />)
     expect(screen.getByTestId('empty-day-state')).toBeInTheDocument()
   })
 
-  it('shows date header', () => {
+  it('日付ヘッダーを表示する', () => {
     render(<EmptyDayState date={date} onAddWorkout={vi.fn()} />)
     expect(screen.getByText('4月12日の記録')).toBeInTheDocument()
   })
 
-  it('shows "記録なし" text (FR-007)', () => {
+  it('"記録なし"テキストを表示する', () => {
     render(<EmptyDayState date={date} onAddWorkout={vi.fn()} />)
     expect(screen.getByText('記録なし')).toBeInTheDocument()
   })
 
-  it('shows add button (FR-007)', () => {
+  it('追加ボタンを表示する', () => {
     render(<EmptyDayState date={date} onAddWorkout={vi.fn()} />)
     expect(screen.getByText('追加')).toBeInTheDocument()
   })
 
-  it('calls onAddWorkout with date on button click (FR-008)', () => {
+  it('ボタンクリック時にonAddWorkoutを日付とともに呼び出す', () => {
     const onAddWorkout = vi.fn()
     render(<EmptyDayState date={date} onAddWorkout={onAddWorkout} />)
     fireEvent.click(screen.getByText('追加'))
     expect(onAddWorkout).toHaveBeenCalledWith('2026-04-12')
   })
 
-  it('has dashed border container', () => {
+  it('破線ボーダーのコンテナを持つ', () => {
     render(<EmptyDayState date={date} onAddWorkout={vi.fn()} />)
     const container = screen.getByTestId('empty-day-state')
     expect(container.className).toContain('border-dashed')

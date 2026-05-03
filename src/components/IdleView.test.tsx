@@ -37,14 +37,14 @@ function renderIdleView(onStartTraining: () => void = vi.fn()) {
 }
 
 describe('IdleView', () => {
-  it('renders start training button', async () => {
+  it('トレーニング開始ボタンを描画する', async () => {
     renderIdleView()
     expect(
       await screen.findByRole('button', { name: /トレーニングを始める/ }),
     ).toBeInTheDocument()
   })
 
-  it('calls onStartTraining when button is clicked', async () => {
+  it('ボタンクリック時にonStartTrainingを呼び出す', async () => {
     const onStartTraining = vi.fn()
     renderIdleView(onStartTraining)
     fireEvent.click(
@@ -53,7 +53,7 @@ describe('IdleView', () => {
     expect(onStartTraining).toHaveBeenCalledOnce()
   })
 
-  it('button has proper size for tap target', async () => {
+  it('ボタンがタップターゲットとして適切なサイズを持つ', async () => {
     renderIdleView()
     const button = await screen.findByRole('button', {
       name: /トレーニングを始める/,

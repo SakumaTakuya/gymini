@@ -63,7 +63,7 @@ function renderWithRouter(searchParams: Record<string, string> = {}) {
   return { queryClient, router }
 }
 
-describe('HistoryPage integration', () => {
+describe('HistoryPage インテグレーション', () => {
   beforeEach(() => {
     localStorage.clear()
     useWorkoutSessionStore.setState({
@@ -78,19 +78,19 @@ describe('HistoryPage integration', () => {
     localStorage.clear()
   })
 
-  it('shows calendar with navigation buttons', async () => {
+  it('ナビゲーションボタン付きのカレンダーを表示する', async () => {
     renderWithRouter()
     expect(await screen.findByLabelText('前月')).toBeInTheDocument()
     expect(screen.getByLabelText('次月')).toBeInTheDocument()
   })
 
-  it('shows empty state when no workouts exist', async () => {
+  it('ワークアウトが存在しない場合は空状態を表示する', async () => {
     renderWithRouter()
     expect(await screen.findByTestId('empty-day-state')).toBeInTheDocument()
     expect(screen.getByText('記録なし')).toBeInTheDocument()
   })
 
-  it('shows workout summary when workouts exist for selected date', async () => {
+  it('選択した日付のワークアウトが存在する場合はサマリーを表示する', async () => {
     WorkoutRepository.save({
       date: '2026-04-12' as DateString,
       exercises: [
@@ -109,14 +109,14 @@ describe('HistoryPage integration', () => {
     expect(screen.getByText('4月12日の記録')).toBeInTheDocument()
   })
 
-  it('respects month search param', async () => {
+  it('monthクエリパラメーターを反映する', async () => {
     renderWithRouter({ month: '2026-03' })
     const header = await screen.findByRole('heading', { level: 2 })
     expect(header.textContent).toContain('2026')
     expect(header.textContent).toContain('3')
   })
 
-  it('renders gear link to settings', async () => {
+  it('設定へのギアリンクを描画する', async () => {
     renderWithRouter()
     await screen.findByLabelText('前月')
     const settingsLink = screen
@@ -125,7 +125,7 @@ describe('HistoryPage integration', () => {
     expect(settingsLink).toBeDefined()
   })
 
-  it('starts session and navigates to training when "追加" is clicked', async () => {
+  it('"追加"クリック時にセッションを開始してトレーニング画面に遷移する', async () => {
     const user = userEvent.setup()
     const { router } = renderWithRouter()
     await screen.findByTestId('empty-day-state')

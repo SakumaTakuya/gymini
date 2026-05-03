@@ -9,11 +9,11 @@ describe('ExerciseRepository', () => {
   // --- load / save helpers (tested via getAll) ---
 
   describe('getAll', () => {
-    it('returns empty array when localStorage is empty', () => {
+    it('localStorage が空のとき空配列を返す', () => {
       expect(repo.getAll()).toEqual([])
     })
 
-    it('returns all exercises when data exists', () => {
+    it('データが存在するとき全種目を返す', () => {
       localStorage.setItem(
         'gymini:exercises',
         JSON.stringify([
@@ -27,7 +27,7 @@ describe('ExerciseRepository', () => {
       expect(result[1].name).toBe('スクワット')
     })
 
-    it('returns empty array when localStorage has invalid JSON', () => {
+    it('localStorage に不正な JSON がある場合は空配列を返す', () => {
       localStorage.setItem('gymini:exercises', 'invalid json')
       expect(repo.getAll()).toEqual([])
     })
@@ -47,14 +47,14 @@ describe('ExerciseRepository', () => {
       )
     })
 
-    it('returns matching exercises by partial match', () => {
+    it('部分一致で一致する種目を返す', () => {
       const result = repo.search('ベンチ')
       expect(result).toHaveLength(2)
       expect(result[0].name).toBe('ベンチプレス')
       expect(result[1].name).toBe('インクラインベンチプレス')
     })
 
-    it('is case-insensitive', () => {
+    it('大文字小文字を区別しない', () => {
       localStorage.setItem(
         'gymini:exercises',
         JSON.stringify([
@@ -66,15 +66,15 @@ describe('ExerciseRepository', () => {
       expect(result).toHaveLength(2)
     })
 
-    it('returns all exercises when query is empty string', () => {
+    it('クエリが空文字のとき全種目を返す', () => {
       expect(repo.search('')).toHaveLength(3)
     })
 
-    it('returns all exercises when query is whitespace only', () => {
+    it('クエリが空白のみのとき全種目を返す', () => {
       expect(repo.search('   ')).toHaveLength(3)
     })
 
-    it('returns empty array when no match found', () => {
+    it('一致する結果がない場合は空配列を返す', () => {
       expect(repo.search('デッドリフト')).toEqual([])
     })
   })
@@ -82,38 +82,38 @@ describe('ExerciseRepository', () => {
   // --- create ---
 
   describe('create', () => {
-    it('creates a new exercise with generated id', () => {
+    it('生成した id で新しい種目を作成する', () => {
       const exercise = repo.create('ベンチプレス')
       expect(exercise.name).toBe('ベンチプレス')
       expect(exercise.id).toBeTruthy()
     })
 
-    it('persists the exercise to localStorage', () => {
+    it('種目を localStorage に永続化する', () => {
       repo.create('ベンチプレス')
       const all = repo.getAll()
       expect(all).toHaveLength(1)
       expect(all[0].name).toBe('ベンチプレス')
     })
 
-    it('trims whitespace from name', () => {
+    it('名前の前後の空白を除去する', () => {
       const exercise = repo.create('  ベンチプレス  ')
       expect(exercise.name).toBe('ベンチプレス')
     })
 
-    it('throws when name is empty', () => {
+    it('名前が空のとき例外を投げる', () => {
       expect(() => repo.create('')).toThrow('Exercise name is empty')
     })
 
-    it('throws when name is whitespace only', () => {
+    it('名前が空白のみのとき例外を投げる', () => {
       expect(() => repo.create('   ')).toThrow('Exercise name is empty')
     })
 
-    it('throws when name is duplicate (case-sensitive)', () => {
+    it('名前が重複しているとき例外を投げる（大文字小文字を区別）', () => {
       repo.create('ベンチプレス')
       expect(() => repo.create('ベンチプレス')).toThrow('Duplicate name: ベンチプレス')
     })
 
-    it('allows different case as separate exercise', () => {
+    it('大文字小文字が異なる場合は別の種目として登録できる', () => {
       repo.create('Bench Press')
       expect(() => repo.create('bench press')).not.toThrow()
       expect(repo.getAll()).toHaveLength(2)
@@ -123,43 +123,43 @@ describe('ExerciseRepository', () => {
   // --- update ---
 
   describe('update', () => {
-    it('updates the exercise name', () => {
+    it('種目名を更新する', () => {
       const exercise = repo.create('ベンチプレス')
       const updated = repo.update(exercise.id, 'インクラインベンチプレス')
       expect(updated.id).toBe(exercise.id)
       expect(updated.name).toBe('インクラインベンチプレス')
     })
 
-    it('persists the update to localStorage', () => {
+    it('更新を localStorage に永続化する', () => {
       const exercise = repo.create('ベンチプレス')
       repo.update(exercise.id, 'インクラインベンチプレス')
       const all = repo.getAll()
       expect(all[0].name).toBe('インクラインベンチプレス')
     })
 
-    it('trims whitespace from name', () => {
+    it('名前の前後の空白を除去する', () => {
       const exercise = repo.create('ベンチプレス')
       const updated = repo.update(exercise.id, '  スクワット  ')
       expect(updated.name).toBe('スクワット')
     })
 
-    it('throws when name is empty', () => {
+    it('名前が空のとき例外を投げる', () => {
       const exercise = repo.create('ベンチプレス')
       expect(() => repo.update(exercise.id, '')).toThrow('Exercise name is empty')
     })
 
-    it('throws when name is whitespace only', () => {
+    it('名前が空白のみのとき例外を投げる', () => {
       const exercise = repo.create('ベンチプレス')
       expect(() => repo.update(exercise.id, '   ')).toThrow('Exercise name is empty')
     })
 
-    it('throws when id does not exist', () => {
+    it('id が存在しないとき例外を投げる', () => {
       expect(() => repo.update('nonexistent', 'スクワット')).toThrow(
         'Exercise not found: nonexistent',
       )
     })
 
-    it('throws when name duplicates another exercise', () => {
+    it('名前が別の種目と重複するとき例外を投げる', () => {
       const exercise = repo.create('ベンチプレス')
       repo.create('スクワット')
       expect(() => repo.update(exercise.id, 'スクワット')).toThrow(
@@ -167,7 +167,7 @@ describe('ExerciseRepository', () => {
       )
     })
 
-    it('allows updating to the same name (no self-conflict)', () => {
+    it('同じ名前への更新を許可する（自己衝突なし）', () => {
       const exercise = repo.create('ベンチプレス')
       expect(() => repo.update(exercise.id, 'ベンチプレス')).not.toThrow()
     })
@@ -176,17 +176,17 @@ describe('ExerciseRepository', () => {
   // --- remove ---
 
   describe('remove', () => {
-    it('removes the exercise by id', () => {
+    it('id で種目を削除する', () => {
       const exercise = repo.create('ベンチプレス')
       repo.remove(exercise.id)
       expect(repo.getAll()).toEqual([])
     })
 
-    it('does not throw when id does not exist (idempotent)', () => {
+    it('id が存在しなくても例外を投げない（冪等）', () => {
       expect(() => repo.remove('nonexistent')).not.toThrow()
     })
 
-    it('only removes the target exercise', () => {
+    it('対象の種目のみ削除する', () => {
       repo.create('ベンチプレス')
       const squat = repo.create('スクワット')
       repo.remove(squat.id)
@@ -196,10 +196,8 @@ describe('ExerciseRepository', () => {
     })
   })
 
-  // --- localStorage error handling (T-002) ---
-
-  describe('localStorage error handling', () => {
-    it('returns empty array when localStorage.getItem throws', () => {
+  describe('localStorage エラーハンドリング', () => {
+    it('localStorage.getItem がスローしたとき空配列を返す', () => {
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
         throw new Error('QuotaExceeded')
       })
@@ -207,7 +205,7 @@ describe('ExerciseRepository', () => {
       vi.restoreAllMocks()
     })
 
-    it('does not throw when localStorage.setItem fails on create', () => {
+    it('create 時に localStorage.setItem が失敗しても例外を投げない', () => {
       vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
         throw new Error('QuotaExceeded')
       })

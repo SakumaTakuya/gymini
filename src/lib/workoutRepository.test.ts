@@ -26,7 +26,7 @@ describe('WorkoutRepository', () => {
   })
 
   describe('save', () => {
-    it('saves a workout and returns it with id/createdAt/updatedAt', () => {
+    it('ワークアウトを保存して id/createdAt/updatedAt 付きで返す', () => {
       const input = makeInput()
       const result = repo.save(input)
       expect(result.id).toBeTruthy()
@@ -36,7 +36,7 @@ describe('WorkoutRepository', () => {
       expect(result.updatedAt).toBeTruthy()
     })
 
-    it('persists to localStorage', () => {
+    it('localStorage に永続化する', () => {
       repo.save(makeInput())
       const raw = localStorage.getItem('gymini:workouts')
       expect(raw).toBeTruthy()
@@ -44,7 +44,7 @@ describe('WorkoutRepository', () => {
       expect(data).toHaveLength(1)
     })
 
-    it('appends to existing workouts', () => {
+    it('既存のワークアウトに追記する', () => {
       repo.save(makeInput())
       repo.save(makeInput({ date: '2026-03-09' as DateString }))
       const all = repo.listByDateDesc()
@@ -53,29 +53,29 @@ describe('WorkoutRepository', () => {
   })
 
   describe('getById', () => {
-    it('returns the workout by id', () => {
+    it('id でワークアウトを返す', () => {
       const saved = repo.save(makeInput())
       const found = repo.getById(saved.id)
       expect(found).toEqual(saved)
     })
 
-    it('returns undefined for non-existent id', () => {
+    it('存在しない id では undefined を返す', () => {
       expect(repo.getById('nonexistent')).toBeUndefined()
     })
   })
 
   describe('remove', () => {
-    it('removes the workout by id', () => {
+    it('id でワークアウトを削除する', () => {
       const saved = repo.save(makeInput())
       repo.remove(saved.id)
       expect(repo.getById(saved.id)).toBeUndefined()
     })
 
-    it('does not throw for non-existent id (idempotent)', () => {
+    it('存在しない id で例外を投げない（冪等）', () => {
       expect(() => repo.remove('nonexistent')).not.toThrow()
     })
 
-    it('only removes the target workout', () => {
+    it('対象のワークアウトのみ削除する', () => {
       const w1 = repo.save(makeInput())
       const w2 = repo.save(makeInput({ date: '2026-03-09' as DateString }))
       repo.remove(w1.id)
@@ -85,11 +85,11 @@ describe('WorkoutRepository', () => {
   })
 
   describe('listByDateDesc', () => {
-    it('returns empty array when no workouts', () => {
+    it('ワークアウトがない場合は空配列を返す', () => {
       expect(repo.listByDateDesc()).toEqual([])
     })
 
-    it('returns workouts sorted by date descending', () => {
+    it('ワークアウトを日付降順で返す', () => {
       repo.save(makeInput({ date: '2026-03-07' as DateString }))
       repo.save(makeInput({ date: '2026-03-09' as DateString }))
       repo.save(makeInput({ date: '2026-03-08' as DateString }))
@@ -101,7 +101,7 @@ describe('WorkoutRepository', () => {
   })
 
   describe('listByDate', () => {
-    it('returns workouts for the specified date', () => {
+    it('指定した日付のワークアウトを返す', () => {
       repo.save(makeInput({ date: '2026-03-08' as DateString }))
       repo.save(makeInput({ date: '2026-03-09' as DateString }))
       repo.save(makeInput({ date: '2026-03-08' as DateString }))
@@ -110,19 +110,19 @@ describe('WorkoutRepository', () => {
       expect(result.every((w) => w.date === '2026-03-08')).toBe(true)
     })
 
-    it('returns empty array when no workouts for the date', () => {
+    it('その日付のワークアウトがない場合は空配列を返す', () => {
       repo.save(makeInput({ date: '2026-03-08' as DateString }))
       expect(repo.listByDate(toDateString('2026-03-09'))).toEqual([])
     })
   })
 
-  describe('localStorage error handling (T-002)', () => {
-    it('returns empty array when localStorage has invalid JSON', () => {
+  describe('localStorage エラーハンドリング', () => {
+    it('localStorage に不正な JSON がある場合は空配列を返す', () => {
       localStorage.setItem('gymini:workouts', 'invalid json')
       expect(repo.listByDateDesc()).toEqual([])
     })
 
-    it('returns empty array when localStorage has invalid data structure', () => {
+    it('localStorage に不正なデータ構造がある場合は空配列を返す', () => {
       localStorage.setItem(
         'gymini:workouts',
         JSON.stringify([{ invalid: true }]),
@@ -130,7 +130,7 @@ describe('WorkoutRepository', () => {
       expect(repo.listByDateDesc()).toEqual([])
     })
 
-    it('returns empty array when localStorage.getItem throws', () => {
+    it('localStorage.getItem がスローしたとき空配列を返す', () => {
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
         throw new Error('QuotaExceeded')
       })
