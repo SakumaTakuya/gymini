@@ -49,7 +49,10 @@ docs/
 ├── design-system.html    # UIデザイン参照（ビジュアル）
 ├── design/               # デザインシステム（機械可読）
 │   ├── tokens.md         # カラー・シャドウ・フォント・ボーダーラジウス
-│   └── components.md     # フォーカス規約・Buttonコンポーネント選定基準
+│   ├── components.md     # コンポーネント規約の索引
+│   ├── focus.md          # フォーカスリング規約（focus-ring ユーティリティ）
+│   ├── button.md         # Button / IconButton / 生の button 使い分け
+│   └── input.md          # Input（prefix/suffix）/ select wrapper
 ├── prd/                  # PRD（プロダクト要求仕様書）
 │   ├── index.md          # プロダクト全体の PRD
 │   ├── {feature}/index.md
@@ -95,6 +98,9 @@ UIコンポーネントは `docs/design/` のルールに従って実装する�
 | リファレンス | 内容 |
 |:---|:---|
 | [tokens.md](docs/design/tokens.md) | カラー・シャドウ・ボーダーラジウス・フォントトークン、禁止クラス一覧 |
-| [components.md](docs/design/components.md) | フォーカスリング規約、shadcn Button 採用方針 |
+| [components.md](docs/design/components.md) | 索引（focus / button / input へのリンク）|
+| [focus.md](docs/design/focus.md) | フォーカスリング規約（focus-ring ユーティリティ）|
+| [button.md](docs/design/button.md) | Button / IconButton / 生の button 使い分け |
+| [input.md](docs/design/input.md) | Input（prefix/suffix）/ select wrapper |
 
 **トリガー条件**: UIコンポーネント（`.tsx`）の新規作成・修正時は必ず `tokens.md` を参照し、`gym-*` トークンを使用する。`src/components/ui/` (shadcn) は対象外。
