@@ -5,7 +5,7 @@ import { useState } from 'react'
 import { AppHeaderProvider, AppHeaderContent } from './AppHeaderContext'
 
 describe('AppHeaderProvider + AppHeaderContent', () => {
-  it('provides a banner with no heading when no child registers content', () => {
+  it('子コンポーネントがコンテンツを登録しない場合、見出しなしのバナーを提供する', () => {
     render(
       <AppHeaderProvider>
         <div>body</div>
@@ -17,7 +17,7 @@ describe('AppHeaderProvider + AppHeaderContent', () => {
     expect(screen.queryByRole('heading', { level: 1 })).not.toBeInTheDocument()
   })
 
-  it('renders title published by a child via portal', () => {
+  it('子コンポーネントがポータル経由で公開したタイトルを描画する', () => {
     render(
       <AppHeaderProvider>
         <AppHeaderContent title="履歴" />
@@ -26,7 +26,7 @@ describe('AppHeaderProvider + AppHeaderContent', () => {
     expect(screen.getByRole('heading', { level: 1, name: '履歴' })).toBeInTheDocument()
   })
 
-  it('renders leading and trailing slots via portal', () => {
+  it('ポータル経由でleadingスロットとtrailingスロットを描画する', () => {
     render(
       <AppHeaderProvider>
         <AppHeaderContent
@@ -40,7 +40,7 @@ describe('AppHeaderProvider + AppHeaderContent', () => {
     expect(screen.getByRole('button', { name: 'act' })).toBeInTheDocument()
   })
 
-  it('switches variant when a child requests session-active', () => {
+  it('子コンポーネントがsession-activeを要求するとvariantを切り替える', () => {
     render(
       <AppHeaderProvider>
         <AppHeaderContent title="セッション中" variant="session-active" />
@@ -49,7 +49,7 @@ describe('AppHeaderProvider + AppHeaderContent', () => {
     expect(screen.getByRole('banner').dataset.variant).toBe('session-active')
   })
 
-  it('updates trailing reactively when child re-renders', async () => {
+  it('子コンポーネントが再描画されるとtrailingをリアクティブに更新する', async () => {
     function Counter() {
       const [n, setN] = useState(0)
       return (
@@ -72,7 +72,7 @@ describe('AppHeaderProvider + AppHeaderContent', () => {
     expect(screen.getByTestId('count').textContent).toBe('1')
   })
 
-  it('throws when AppHeaderContent is used without provider', () => {
+  it('providerなしでAppHeaderContentを使用するとエラーをスローする', () => {
     const spy = vi.spyOn(console, 'error').mockImplementation(() => {})
     expect(() => render(<AppHeaderContent title="x" />)).toThrow(
       /AppHeaderProvider/,

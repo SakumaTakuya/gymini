@@ -27,7 +27,7 @@ function getDayElement(dayNum: number) {
 }
 
 describe('MonthCalendar', () => {
-  it('renders 7-column grid with weekday headers', () => {
+  it('曜日ヘッダーを持つ7列グリッドを描画する', () => {
     setup()
     const weekdays = ['日', '月', '火', '水', '木', '金', '土']
     weekdays.forEach((day) => {
@@ -36,26 +36,26 @@ describe('MonthCalendar', () => {
     })
   })
 
-  it('renders month header with year and month', () => {
+  it('年と月を含む月ヘッダーを描画する', () => {
     setup({ displayMonth: { year: 2026, month: 10 } })
     const header = screen.getByRole('heading', { level: 2 })
     expect(header.textContent).toContain('2026')
     expect(header.textContent).toContain('10')
   })
 
-  it('calls onPrevMonth when left chevron clicked', () => {
+  it('左矢印クリック時にonPrevMonthを呼び出す', () => {
     const props = setup()
     fireEvent.click(screen.getByLabelText('前月'))
     expect(props.onPrevMonth).toHaveBeenCalledOnce()
   })
 
-  it('calls onNextMonth when right chevron clicked', () => {
+  it('右矢印クリック時にonNextMonthを呼び出す', () => {
     const props = setup()
     fireEvent.click(screen.getByLabelText('次月'))
     expect(props.onNextMonth).toHaveBeenCalledOnce()
   })
 
-  it('shows workout marker on days with workouts', () => {
+  it('ワークアウトのある日にマーカーを表示する', () => {
     setup({
       daysWithWorkouts: new Set([
         '2026-04-05' as DateString,
@@ -66,7 +66,7 @@ describe('MonthCalendar', () => {
     expect(markers.length).toBe(2)
   })
 
-  it('workout days have bold text, non-workout days are muted', () => {
+  it('ワークアウトのある日は太字、ない日はミュート色で表示する', () => {
     setup({
       daysWithWorkouts: new Set(['2026-04-05' as DateString]),
     })
@@ -79,7 +79,7 @@ describe('MonthCalendar', () => {
     expect(day6!.className).toContain('text-gym-zinc-400')
   })
 
-  it('calls onSelectDate when a day is clicked', () => {
+  it('日付クリック時にonSelectDateを呼び出す', () => {
     const props = setup()
     const day15 = getDayElement(15)
     expect(day15).toBeDefined()
@@ -87,7 +87,7 @@ describe('MonthCalendar', () => {
     expect(props.onSelectDate).toHaveBeenCalledWith('2026-04-15')
   })
 
-  it('selected date has ring style', () => {
+  it('選択中の日付にリングスタイルを適用する', () => {
     setup({ selectedDate: '2026-04-20' as DateString })
     const day20 = getDayElement(20)
     expect(day20).toBeDefined()
@@ -95,7 +95,7 @@ describe('MonthCalendar', () => {
     expect(day20!.className).toContain('ring-gym-black')
   })
 
-  it('today has black background with white text', () => {
+  it('今日の日付は黒背景・白文字で表示する', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 3, 15))
 
@@ -109,7 +109,7 @@ describe('MonthCalendar', () => {
     vi.useRealTimers()
   })
 
-  it('today with workout shows both styles', () => {
+  it('今日かつワークアウトのある日は両方のスタイルを表示する', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 3, 15))
 
@@ -127,7 +127,7 @@ describe('MonthCalendar', () => {
     vi.useRealTimers()
   })
 
-  it('future date is clickable', () => {
+  it('未来の日付はクリックできる', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 3, 10))
 
@@ -140,7 +140,7 @@ describe('MonthCalendar', () => {
     vi.useRealTimers()
   })
 
-  it('outside month days are not clickable', () => {
+  it('月外の日付はクリックできない', () => {
     setup({ displayMonth: { year: 2026, month: 4 } })
     // Outside days are rendered as <span>, not <button>
     const spans = document.querySelectorAll('span')

@@ -4,7 +4,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { ChatInput } from './ChatInput'
 
 describe('ChatInput', () => {
-  test('submits on send button click and clears input', async () => {
+  test('送信ボタンクリックで送信しinputをクリアする', async () => {
     const onSend = vi.fn()
     render(
       <ChatInput isLoading={false} onSend={onSend} onStop={vi.fn()} />,
@@ -16,7 +16,7 @@ describe('ChatInput', () => {
     expect(input).toHaveValue('')
   })
 
-  test('submits on Enter (no shift)', async () => {
+  test('Enterキー（Shiftなし）で送信する', async () => {
     const onSend = vi.fn()
     render(
       <ChatInput isLoading={false} onSend={onSend} onStop={vi.fn()} />,
@@ -26,7 +26,7 @@ describe('ChatInput', () => {
     expect(onSend).toHaveBeenCalledWith('hello')
   })
 
-  test('Shift+Enter inserts newline instead of submitting', async () => {
+  test('Shift+Enterは送信せず改行を挿入する', async () => {
     const onSend = vi.fn()
     render(
       <ChatInput isLoading={false} onSend={onSend} onStop={vi.fn()} />,
@@ -37,7 +37,7 @@ describe('ChatInput', () => {
     expect(input).toHaveValue('a\nb')
   })
 
-  test('shows stop button when loading', async () => {
+  test('ローディング中は停止ボタンを表示する', async () => {
     const onStop = vi.fn()
     render(
       <ChatInput isLoading={true} onSend={vi.fn()} onStop={onStop} />,
@@ -49,7 +49,7 @@ describe('ChatInput', () => {
     expect(onStop).toHaveBeenCalled()
   })
 
-  test('disables submit when disabled or empty', () => {
+  test('disabledまたは空のとき送信ボタンを無効化する', () => {
     render(
       <ChatInput
         isLoading={false}
@@ -61,7 +61,7 @@ describe('ChatInput', () => {
     expect(screen.getByRole('button', { name: '送信' })).toBeDisabled()
   })
 
-  test('ignores whitespace-only message', async () => {
+  test('空白のみのメッセージは送信しない', async () => {
     const onSend = vi.fn()
     render(
       <ChatInput isLoading={false} onSend={onSend} onStop={vi.fn()} />,

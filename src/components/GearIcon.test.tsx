@@ -46,13 +46,13 @@ describe('GearIcon', () => {
     useSettingsStore.setState({ apiKey: '', hasApiKey: false })
   })
 
-  it('renders a link to settings', async () => {
+  it('設定へのリンクを描画する', async () => {
     renderGearIcon()
     const link = await screen.findByRole('link')
     expect(link).toBeInTheDocument()
   })
 
-  it('shows red badge when API key is not set', async () => {
+  it('APIキーが未設定の場合に赤いバッジを表示する', async () => {
     useSettingsStore.setState({ apiKey: '', hasApiKey: false })
     renderGearIcon()
     await screen.findByRole('link')
@@ -60,7 +60,7 @@ describe('GearIcon', () => {
     expect(badge).toBeInTheDocument()
   })
 
-  it('hides red badge when API key is set', async () => {
+  it('APIキーが設定済みの場合に赤いバッジを非表示にする', async () => {
     useSettingsStore.setState({ apiKey: 'test-key', hasApiKey: true })
     renderGearIcon()
     await screen.findByRole('link')
@@ -68,14 +68,14 @@ describe('GearIcon', () => {
     expect(badge).not.toBeInTheDocument()
   })
 
-  it('has accessible tap target (min 44px)', async () => {
+  it('アクセシブルなタップターゲット（最小44px）を持つ', async () => {
     renderGearIcon()
     const link = await screen.findByRole('link')
     expect(link.className).toContain('min-h-[44px]')
     expect(link.className).toContain('min-w-[44px]')
   })
 
-  it('forwards className prop to the link element', async () => {
+  it('classNameプロパティをリンク要素に転送する', async () => {
     function renderWithClassName() {
       const rootRoute = createRootRoute({
         component: () => (

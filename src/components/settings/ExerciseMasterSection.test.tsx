@@ -12,19 +12,19 @@ describe('ExerciseMasterSection', () => {
     exerciseRepository.create('デッドリフト')
   })
 
-  it('displays 種目マスター section label', () => {
+  it('種目マスターセクションラベルを表示する', () => {
     render(<ExerciseMasterSection />)
     expect(screen.getByText('種目マスター')).toBeInTheDocument()
   })
 
-  it('lists all exercises initially', () => {
+  it('初期表示で全種目を一覧表示する', () => {
     render(<ExerciseMasterSection />)
     expect(screen.getByText('ベンチプレス')).toBeInTheDocument()
     expect(screen.getByText('スクワット')).toBeInTheDocument()
     expect(screen.getByText('デッドリフト')).toBeInTheDocument()
   })
 
-  it('filters exercises in real-time as user types', async () => {
+  it('入力に応じてリアルタイムで種目を絞り込む', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
     const search = screen.getByPlaceholderText('種目を検索...')
@@ -36,7 +36,7 @@ describe('ExerciseMasterSection', () => {
     expect(screen.queryByText('デッドリフト')).not.toBeInTheDocument()
   })
 
-  it('adds new exercise via add button', async () => {
+  it('追加ボタンで新しい種目を追加する', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
 
@@ -49,7 +49,7 @@ describe('ExerciseMasterSection', () => {
     expect(exerciseRepository.getAll().some((e) => e.name === 'チンニング')).toBe(true)
   })
 
-  it('does not add empty exercise name', async () => {
+  it('種目名が空の場合は追加しない', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
 
@@ -60,7 +60,7 @@ describe('ExerciseMasterSection', () => {
     expect(count).toBe(3)
   })
 
-  it('edits an exercise via edit button', async () => {
+  it('編集ボタンで種目を編集する', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
 
@@ -74,7 +74,7 @@ describe('ExerciseMasterSection', () => {
     expect(screen.queryByText('ベンチプレス')).not.toBeInTheDocument()
   })
 
-  it('deletes an exercise via delete button inside edit mode', async () => {
+  it('編集モード内の削除ボタンで種目を削除する', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
 
@@ -86,7 +86,7 @@ describe('ExerciseMasterSection', () => {
     expect(exerciseRepository.getAll().some((e) => e.name === 'デッドリフト')).toBe(false)
   })
 
-  it('shows inline error when adding duplicate exercise name', async () => {
+  it('重複する種目名を追加しようとするとインラインエラーを表示する', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
 
@@ -104,7 +104,7 @@ describe('ExerciseMasterSection', () => {
     expect(exerciseRepository.getAll().filter((e) => e.name === 'ベンチプレス')).toHaveLength(1)
   })
 
-  it('clears duplicate error when user edits the input', async () => {
+  it('入力を変更すると重複エラーをクリアする', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
 
@@ -119,7 +119,7 @@ describe('ExerciseMasterSection', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('clears duplicate error when add is cancelled', async () => {
+  it('追加をキャンセルすると重複エラーをクリアする', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
 
@@ -132,7 +132,7 @@ describe('ExerciseMasterSection', () => {
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
 
-  it('shows inline error when renaming exercise to existing name', async () => {
+  it('既存の名前に変更しようとするとインラインエラーを表示する', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
 
@@ -149,7 +149,7 @@ describe('ExerciseMasterSection', () => {
     expect(screen.getByLabelText('種目名を編集')).toBeInTheDocument()
   })
 
-  it('clears edit-mode duplicate error when edit is cancelled', async () => {
+  it('編集をキャンセルすると編集モードの重複エラーをクリアする', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
 

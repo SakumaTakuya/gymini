@@ -45,7 +45,7 @@ describe('useChatService', () => {
     vi.resetAllMocks()
   })
 
-  test('rejects sendMessage when API key is missing', async () => {
+  test('API キーがない場合 sendMessage を拒否する', async () => {
     const client = mockClient([])
     const { result } = renderHook(() =>
       useChatService({ createClient: () => client }),
@@ -58,7 +58,7 @@ describe('useChatService', () => {
     expect(client.generate).not.toHaveBeenCalled()
   })
 
-  test('adds user + assistant text message on simple response', async () => {
+  test('シンプルなレスポンス時にユーザーとアシスタントのテキストメッセージを追加する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     const client = mockClient([{ text: 'こんにちは！', functionCalls: null }])
     const { result } = renderHook(() =>
@@ -74,7 +74,7 @@ describe('useChatService', () => {
     expect(useChatStore.getState().isLoading).toBe(false)
   })
 
-  test('substitutes fallback when model returns empty text and no tool calls', async () => {
+  test('モデルが空テキストかつツール呼び出しなしで返したときフォールバックを代入する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     const client = mockClient([{ text: null, functionCalls: null }])
     const { result } = renderHook(() =>
@@ -91,7 +91,7 @@ describe('useChatService', () => {
     })
   })
 
-  test('substitutes fallback when whitespace-only text is returned', async () => {
+  test('空白のみのテキストが返されたときフォールバックを代入する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     const client = mockClient([{ text: '   \n  ', functionCalls: null }])
     const { result } = renderHook(() =>
@@ -104,7 +104,7 @@ describe('useChatService', () => {
     expect(msgs[msgs.length - 1].content).toBe(EMPTY_RESPONSE_FALLBACK)
   })
 
-  test('substitutes fallback when read-tool follow-up returns empty text', async () => {
+  test('read ツールのフォローアップが空テキストを返したときフォールバックを代入する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     vi.mocked(WorkoutRepository.listByDateDesc).mockReturnValue([])
     const client = mockClient([
@@ -127,7 +127,7 @@ describe('useChatService', () => {
     })
   })
 
-  test('read-tool follow-up returns write call: creates pending action', async () => {
+  test('read ツールのフォローアップが write 呼び出しを返す場合: pending action を作成する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     vi.mocked(ExerciseRepository.getAll).mockReturnValue([
       { id: 'ex-1', name: 'ベンチプレス' },
@@ -171,7 +171,7 @@ describe('useChatService', () => {
     expect(client.generate).toHaveBeenCalledTimes(2)
   })
 
-  test('read-tool follow-up returns write call with text: uses text as content', async () => {
+  test('read ツールのフォローアップがテキスト付き write 呼び出しを返す場合: テキストをコンテンツとして使用する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     vi.mocked(ExerciseRepository.getAll).mockReturnValue([
       { id: 'ex-1', name: 'ベンチプレス' },
@@ -214,7 +214,7 @@ describe('useChatService', () => {
     })
   })
 
-  test('executes read tool and sends follow-up request', async () => {
+  test('read ツールを実行してフォローアップリクエストを送信する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     vi.mocked(WorkoutRepository.listByDateDesc).mockReturnValue([])
     const client = mockClient([
@@ -241,7 +241,7 @@ describe('useChatService', () => {
     expect(client.generate).toHaveBeenCalledTimes(2)
   })
 
-  test('creates pending action for write tool without executing', async () => {
+  test('write ツールに対して実行せず pending action を作成する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     vi.mocked(ExerciseRepository.create).mockImplementation(() => {
       throw new Error('should not be called')
@@ -268,7 +268,7 @@ describe('useChatService', () => {
     expect(ExerciseRepository.create).not.toHaveBeenCalled()
   })
 
-  test('approve executes write tool and adds result message', async () => {
+  test('approve が write ツールを実行して結果メッセージを追加する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     vi.mocked(ExerciseRepository.create).mockReturnValue({
       id: 'ex-new',
@@ -300,7 +300,7 @@ describe('useChatService', () => {
     expect(ExerciseRepository.create).toHaveBeenCalledWith('スクワット')
   })
 
-  test('reject marks status and adds cancel message', async () => {
+  test('reject がステータスをマークしてキャンセルメッセージを追加する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     const client = mockClient([
       {
@@ -327,7 +327,7 @@ describe('useChatService', () => {
     expect(msgs[msgs.length - 1].content).toBe('キャンセルしました。')
   })
 
-  test('auto-cancels prior pending when new write tool arrives', async () => {
+  test('新しい write ツールが来たとき前の pending を自動キャンセルする', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     const client = mockClient([
       {
@@ -355,7 +355,7 @@ describe('useChatService', () => {
     expect(pendingMsgs[1].pendingAction?.status).toBe('pending')
   })
 
-  test('stopResponse aborts current request and clears loading', async () => {
+  test('stopResponse が現在のリクエストを中断してローディングをクリアする', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     let resolve: ((r: GeminiChatResponse) => void) | null = null
     const generateMock = vi.fn(
@@ -389,7 +389,7 @@ describe('useChatService', () => {
     void resolve
   })
 
-  test('sets error message when API call throws non-abort error', async () => {
+  test('API 呼び出しが非中断エラーをスローしたときエラーメッセージを設定する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     const client = mockClient([new Error('HTTP 401 unauthorized')])
     const { result } = renderHook(() =>
@@ -402,7 +402,7 @@ describe('useChatService', () => {
     expect(useChatStore.getState().isLoading).toBe(false)
   })
 
-  test('clearMessages resets chat store', async () => {
+  test('clearMessages がチャットストアをリセットする', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     const client = mockClient([{ text: 'hi', functionCalls: null }])
     const { result } = renderHook(() =>
@@ -415,7 +415,7 @@ describe('useChatService', () => {
     expect(useChatStore.getState().messages).toEqual([])
   })
 
-  test('ignores empty input', async () => {
+  test('空の入力を無視する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     const client = mockClient([])
     const { result } = renderHook(() =>
@@ -428,7 +428,7 @@ describe('useChatService', () => {
     expect(client.generate).not.toHaveBeenCalled()
   })
 
-  test('merges consecutive assistant messages and drops leading model when sending history', async () => {
+  test('連続するアシスタントメッセージをマージし履歴送信時に先頭の model ターンを除外する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useChatStore.setState({
       messages: [
@@ -465,7 +465,7 @@ describe('useChatService', () => {
     ])
   })
 
-  test('merges assistant messages between user turns into a single model turn', async () => {
+  test('ユーザーターン間のアシスタントメッセージを単一の model ターンにマージする', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useChatStore.setState({
       messages: [

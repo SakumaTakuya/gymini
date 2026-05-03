@@ -52,21 +52,21 @@ function renderBottomNav(initialPath = '/training') {
 }
 
 describe('BottomNav', () => {
-  it('renders 3 navigation items (2 tabs + AI button)', async () => {
+  it('3つのナビゲーション項目（タブ2つ＋AIボタン）を描画する', async () => {
     renderBottomNav()
     expect(await screen.findByText('トレ')).toBeInTheDocument()
     expect(screen.getByText('履歴')).toBeInTheDocument()
     expect(screen.getByText('AI')).toBeInTheDocument()
   })
 
-  it('has navigation links', async () => {
+  it('ナビゲーションリンクを持つ', async () => {
     renderBottomNav()
     await screen.findByText('トレ')
     const links = screen.getAllByRole('link')
     expect(links.length).toBe(3)
   })
 
-  it('has accessible tap targets (min 44px)', async () => {
+  it('アクセシブルなタップターゲット（最小44px）を持つ', async () => {
     renderBottomNav()
     await screen.findByText('トレ')
     const links = screen.getAllByRole('link')

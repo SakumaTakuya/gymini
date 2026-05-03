@@ -20,34 +20,34 @@ describe('chatStore', () => {
     useChatStore.setState({ messages: [], isLoading: false, error: null })
   })
 
-  test('initial state is empty', () => {
+  test('初期状態が空である', () => {
     const state = useChatStore.getState()
     expect(state.messages).toEqual([])
     expect(state.isLoading).toBe(false)
     expect(state.error).toBeNull()
   })
 
-  test('addMessage appends to messages', () => {
+  test('addMessage でメッセージが追加される', () => {
     const msg = makeMessage()
     useChatStore.getState().addMessage(msg)
     expect(useChatStore.getState().messages).toEqual([msg])
   })
 
-  test('setLoading toggles isLoading', () => {
+  test('setLoading で isLoading が切り替わる', () => {
     useChatStore.getState().setLoading(true)
     expect(useChatStore.getState().isLoading).toBe(true)
     useChatStore.getState().setLoading(false)
     expect(useChatStore.getState().isLoading).toBe(false)
   })
 
-  test('setError sets error', () => {
+  test('setError でエラーが設定される', () => {
     useChatStore.getState().setError('boom')
     expect(useChatStore.getState().error).toBe('boom')
     useChatStore.getState().setError(null)
     expect(useChatStore.getState().error).toBeNull()
   })
 
-  test('updatePendingAction updates status when message has pendingAction', () => {
+  test('updatePendingAction でメッセージに pendingAction がある場合にステータスが更新される', () => {
     const pendingAction: PendingAction = {
       id: 'pa-1',
       type: 'addExercise',
@@ -66,14 +66,14 @@ describe('chatStore', () => {
     expect(updated.pendingAction?.status).toBe('approved')
   })
 
-  test('updatePendingAction is no-op for messages without pendingAction', () => {
+  test('updatePendingAction は pendingAction のないメッセージでは何もしない', () => {
     const msg = makeMessage({ id: 'm-1' })
     useChatStore.getState().addMessage(msg)
     useChatStore.getState().updatePendingAction('m-1', 'approved')
     expect(useChatStore.getState().messages[0]).toEqual(msg)
   })
 
-  test('removeMessage filters out matching id', () => {
+  test('removeMessage で一致する id のメッセージが除外される', () => {
     useChatStore.getState().addMessage(makeMessage({ id: 'a' }))
     useChatStore.getState().addMessage(makeMessage({ id: 'b' }))
     useChatStore.getState().removeMessage('a')
@@ -81,7 +81,7 @@ describe('chatStore', () => {
     expect(ids).toEqual(['b'])
   })
 
-  test('clearMessages resets state', () => {
+  test('clearMessages で状態がリセットされる', () => {
     useChatStore.getState().addMessage(makeMessage())
     useChatStore.getState().setLoading(true)
     useChatStore.getState().setError('err')
@@ -92,7 +92,7 @@ describe('chatStore', () => {
     expect(state.error).toBeNull()
   })
 
-  test('does not use persist (no localStorage key)', () => {
+  test('persist を使用しない（localStorage キーが存在しない）', () => {
     useChatStore.getState().addMessage(makeMessage())
     // chatStore は persist を使わないため、内部的な localStorage キーは存在しない
     const keys = Object.keys(localStorage).filter((k) => k.includes('chat'))

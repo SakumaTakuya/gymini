@@ -18,8 +18,8 @@ describe('workoutSessionStore', () => {
     resetStore()
   })
 
-  describe('initial state', () => {
-    it('has correct initial values', () => {
+  describe('初期状態', () => {
+    it('正しい初期値を持つ', () => {
       const state = useWorkoutSessionStore.getState()
       expect(state.isActive).toBe(false)
       expect(state.startedAt).toBeNull()
@@ -28,7 +28,7 @@ describe('workoutSessionStore', () => {
   })
 
   describe('startSession', () => {
-    it('sets isActive to true and records startedAt', () => {
+    it('isActive を true にして startedAt を記録する', () => {
       useWorkoutSessionStore.getState().startSession()
       const state = useWorkoutSessionStore.getState()
       expect(state.isActive).toBe(true)
@@ -36,13 +36,13 @@ describe('workoutSessionStore', () => {
       expect(state.draftExercises).toEqual([])
     })
 
-    it('uses provided date when specified', () => {
+    it('指定した日付を使用する', () => {
       useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
       const state = useWorkoutSessionStore.getState()
       expect(state.date).toBe('2026-03-08')
     })
 
-    it('uses today when date is not specified', () => {
+    it('日付が指定されない場合は今日を使用する', () => {
       useWorkoutSessionStore.getState().startSession()
       const state = useWorkoutSessionStore.getState()
       expect(state.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
@@ -50,7 +50,7 @@ describe('workoutSessionStore', () => {
   })
 
   describe('endSession', () => {
-    it('saves workout and resets state', () => {
+    it('ワークアウトを保存して状態をリセットする', () => {
       const { startSession, addExercise, completeSet, endSession } =
         useWorkoutSessionStore.getState()
 
@@ -65,7 +65,7 @@ describe('workoutSessionStore', () => {
       expect(state.draftExercises).toEqual([])
     })
 
-    it('saves to WorkoutRepository', () => {
+    it('WorkoutRepository に保存する', () => {
       const { startSession, addExercise, completeSet, endSession } =
         useWorkoutSessionStore.getState()
 
@@ -107,7 +107,7 @@ describe('workoutSessionStore', () => {
   })
 
   describe('addExercise', () => {
-    it('adds exercise in recording state with pendingSet', () => {
+    it('recording 状態で pendingSet を持つ種目を追加する', () => {
       useWorkoutSessionStore.getState().startSession()
       useWorkoutSessionStore
         .getState()
@@ -121,7 +121,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].editingSetIndex).toBeNull()
     })
 
-    it('deactivates current recording exercise when adding new one', () => {
+    it('新しい種目を追加するとき現在 recording の種目を非アクティブにする', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
       startSession()
       addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -135,7 +135,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[1].cardState).toBe('recording')
     })
 
-    it('restores set being edited when new exercise is added', () => {
+    it('新しい種目が追加されたとき編集中のセットを復元する', () => {
       const { startSession, addExercise, completeSet } =
         useWorkoutSessionStore.getState()
       startSession()
@@ -159,7 +159,7 @@ describe('workoutSessionStore', () => {
   })
 
   describe('activateExercise', () => {
-    it('activates idle exercise to recording', () => {
+    it('idle の種目を recording にアクティブ化する', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
       startSession()
       addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -179,7 +179,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[1].pendingSet).toBeNull()
     })
 
-    it('initializes pendingSet with last completed set values', () => {
+    it('pendingSet を最後に完了したセットの値で初期化する', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
       startSession()
       addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -199,7 +199,7 @@ describe('workoutSessionStore', () => {
   })
 
   describe('completeSet', () => {
-    it('moves pendingSet to sets and creates next pendingSet with same values', () => {
+    it('pendingSet を sets に移して同じ値で次の pendingSet を作成する', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
       startSession()
       addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -213,7 +213,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].pendingSet).toEqual({ weight: 60, reps: 10 })
     })
 
-    it('appends multiple sets', () => {
+    it('複数のセットを追加する', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
       startSession()
       addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -229,7 +229,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].pendingSet).toEqual({ weight: 65, reps: 8 })
     })
 
-    it('reinserts edited set at original position instead of appending', () => {
+    it('編集したセットを末尾に追加せず元の位置に再挿入する', () => {
       const { startSession, addExercise, completeSet } =
         useWorkoutSessionStore.getState()
       startSession()
@@ -254,7 +254,7 @@ describe('workoutSessionStore', () => {
   })
 
   describe('editCompletedSet', () => {
-    it('moves completed set back to pendingSet for editing', () => {
+    it('完了したセットを編集のため pendingSet に戻す', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
       startSession()
       addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -274,7 +274,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].editingSetIndex).toBe(0)
     })
 
-    it('deactivates other recording exercises', () => {
+    it('他の recording 中の種目を非アクティブにする', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
       startSession()
       addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -293,7 +293,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[1].cardState).toBe('idle')
     })
 
-    it('restores first set and correctly edits second when pen clicked twice', () => {
+    it('ペンを2回クリックしたとき最初のセットを復元して2番目を正しく編集する', () => {
       const { startSession, addExercise, completeSet } =
         useWorkoutSessionStore.getState()
       startSession()
@@ -317,7 +317,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].sets[1]).toEqual({ weight: 65, reps: 8 })  // B
     })
 
-    it('auto-saves non-empty pending set when pen is clicked on a completed set', () => {
+    it('完了セットのペンをクリックしたとき空でない pendingSet を自動保存する', () => {
       const { startSession, addExercise, completeSet, updatePendingSet } =
         useWorkoutSessionStore.getState()
       startSession()
@@ -336,7 +336,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].pendingSet).toEqual({ weight: 60, reps: 10 })
     })
 
-    it('does not append an empty pending set when pen is clicked on a completed set', () => {
+    it('完了セットのペンをクリックしても空の pendingSet を追加しない', () => {
       const { startSession, addExercise, completeSet } =
         useWorkoutSessionStore.getState()
       startSession()
@@ -354,7 +354,7 @@ describe('workoutSessionStore', () => {
   })
 
   describe('deleteCompletedSet', () => {
-    it('removes the specified set', () => {
+    it('指定したセットを削除する', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
       startSession()
       addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -468,7 +468,7 @@ describe('workoutSessionStore', () => {
   })
 
   describe('toggleExerciseCard', () => {
-    it('collapses idle card', () => {
+    it('idle カードを折りたたむ', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
       startSession()
       addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -483,7 +483,7 @@ describe('workoutSessionStore', () => {
       ).toBe('collapsed')
     })
 
-    it('collapses recording card', () => {
+    it('recording カードを折りたたむ', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
       startSession()
       addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -495,7 +495,7 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].pendingSet).toBeNull()
     })
 
-    it('expands collapsed card to idle', () => {
+    it('折りたたまれたカードを idle に展開する', () => {
       const { startSession, addExercise } = useWorkoutSessionStore.getState()
       startSession()
       addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -512,7 +512,7 @@ describe('workoutSessionStore', () => {
       ).toBe('idle')
     })
 
-    it('restores set being edited when card is collapsed', () => {
+    it('カードを折りたたんだとき編集中のセットを復元する', () => {
       const { startSession, addExercise, completeSet } =
         useWorkoutSessionStore.getState()
       startSession()

@@ -19,7 +19,7 @@ describe('userProfileStore', () => {
   // --- setProfile ---
 
   describe('setProfile', () => {
-    it('saves profile to localStorage and updates store state', () => {
+    it('プロフィールを localStorage に保存してストア状態を更新する', () => {
       useUserProfileStore.getState().setProfile({ birthYear: 1990, weightKg: 70 })
 
       const stored = JSON.parse(localStorage.getItem(STORAGE_KEY)!)
@@ -29,7 +29,7 @@ describe('userProfileStore', () => {
       expect(useUserProfileStore.getState().profile.weightKg).toBe(70)
     })
 
-    it('merges patch into existing profile', () => {
+    it('パッチを既存のプロフィールにマージする', () => {
       useUserProfileStore.getState().setProfile({ birthYear: 1990 })
       useUserProfileStore.getState().setProfile({ weightKg: 70 })
 
@@ -38,7 +38,7 @@ describe('userProfileStore', () => {
       expect(profile.weightKg).toBe(70)
     })
 
-    it('updates state even when localStorage write fails', () => {
+    it('localStorage への書き込みが失敗しても状態を更新する', () => {
       vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
         throw new Error('QuotaExceeded')
       })
@@ -48,14 +48,14 @@ describe('userProfileStore', () => {
       expect(useUserProfileStore.getState().profile.heightCm).toBe(175)
     })
 
-    it('accepts null to clear a field', () => {
+    it('null を受け付けてフィールドをクリアする', () => {
       useUserProfileStore.getState().setProfile({ birthYear: 1990 })
       useUserProfileStore.getState().setProfile({ birthYear: null })
 
       expect(useUserProfileStore.getState().profile.birthYear).toBeNull()
     })
 
-    it('accepts all training goal values', () => {
+    it('すべてのトレーニング目標値を受け付ける', () => {
       const goals = ['muscle_gain', 'strength', 'fat_loss', 'maintenance', 'performance'] as const
       for (const goal of goals) {
         useUserProfileStore.getState().setProfile({ trainingGoal: goal })
@@ -67,7 +67,7 @@ describe('userProfileStore', () => {
   // --- clearProfile ---
 
   describe('clearProfile', () => {
-    it('resets all fields to null and removes from localStorage', () => {
+    it('すべてのフィールドを null にリセットして localStorage から削除する', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ birthYear: 1990, weightKg: 70, heightCm: 175, trainingGoal: 'muscle_gain' }))
       useUserProfileStore.setState({ profile: { birthYear: 1990, weightKg: 70, heightCm: 175, trainingGoal: 'muscle_gain' } })
 
@@ -81,7 +81,7 @@ describe('userProfileStore', () => {
       expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
     })
 
-    it('resets state even when localStorage removal fails', () => {
+    it('localStorage の削除が失敗しても状態をリセットする', () => {
       vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
@@ -96,7 +96,7 @@ describe('userProfileStore', () => {
   // --- loadProfile ---
 
   describe('loadProfile', () => {
-    it('loads profile from localStorage', () => {
+    it('localStorage からプロフィールを読み込む', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         birthYear: 1985, weightKg: 65, heightCm: 170, trainingGoal: 'fat_loss',
       }))
@@ -110,7 +110,7 @@ describe('userProfileStore', () => {
       expect(profile.trainingGoal).toBe('fat_loss')
     })
 
-    it('sets default profile when localStorage is empty', () => {
+    it('localStorage が空の場合はデフォルトプロフィールを設定する', () => {
       useUserProfileStore.getState().loadProfile()
 
       const { profile } = useUserProfileStore.getState()
@@ -120,7 +120,7 @@ describe('userProfileStore', () => {
       expect(profile.trainingGoal).toBeNull()
     })
 
-    it('falls back to defaults when localStorage read fails', () => {
+    it('localStorage の読み込みが失敗したときデフォルト値にフォールバックする', () => {
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
@@ -130,7 +130,7 @@ describe('userProfileStore', () => {
       expect(useUserProfileStore.getState().profile.birthYear).toBeNull()
     })
 
-    it('falls back invalid field to null via Zod catch', () => {
+    it('不正なフィールドは Zod catch によって null にフォールバックする', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         birthYear: 'not-a-number',
         weightKg: -999,
@@ -147,7 +147,7 @@ describe('userProfileStore', () => {
       expect(profile.trainingGoal).toBeNull()
     })
 
-    it('is idempotent when called multiple times', () => {
+    it('複数回呼ばれても冪等である', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({ birthYear: 1990, weightKg: null, heightCm: null, trainingGoal: null }))
 
       useUserProfileStore.getState().loadProfile()

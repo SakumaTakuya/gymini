@@ -9,7 +9,7 @@ describe('settingsStore', () => {
   })
 
   describe('setApiKey', () => {
-    it('saves API key to localStorage and updates store state', () => {
+    it('API キーを localStorage に保存してストア状態を更新する', () => {
       useSettingsStore.getState().setApiKey('AIzaSy-test-key')
 
       expect(useSettingsStore.getState().apiKey).toBe('AIzaSy-test-key')
@@ -17,7 +17,7 @@ describe('settingsStore', () => {
       expect(localStorage.getItem('gymini:api-key')).toBe('AIzaSy-test-key')
     })
 
-    it('resets store and localStorage when called with empty string', () => {
+    it('空文字で呼ばれたときストアと localStorage をリセットする', () => {
       localStorage.setItem('gymini:api-key', 'pre-existing')
       useSettingsStore.setState({ apiKey: 'pre-existing', hasApiKey: true })
 
@@ -28,7 +28,7 @@ describe('settingsStore', () => {
       expect(localStorage.getItem('gymini:api-key')).toBeNull()
     })
 
-    it('updates store state even when localStorage write fails', () => {
+    it('localStorage への書き込みが失敗してもストア状態を更新する', () => {
       vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
         throw new Error('QuotaExceeded')
       })
@@ -41,7 +41,7 @@ describe('settingsStore', () => {
   })
 
   describe('deleteApiKey', () => {
-    it('removes API key from localStorage and resets store state', () => {
+    it('API キーを localStorage から削除してストア状態をリセットする', () => {
       localStorage.setItem('gymini:api-key', 'some-key')
       useSettingsStore.setState({ apiKey: 'some-key', hasApiKey: true })
 
@@ -52,7 +52,7 @@ describe('settingsStore', () => {
       expect(localStorage.getItem('gymini:api-key')).toBeNull()
     })
 
-    it('resets store state even when localStorage removal fails', () => {
+    it('localStorage の削除が失敗してもストア状態をリセットする', () => {
       vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
@@ -66,7 +66,7 @@ describe('settingsStore', () => {
   })
 
   describe('loadApiKey', () => {
-    it('loads existing API key from localStorage', () => {
+    it('localStorage から既存の API キーを読み込む', () => {
       localStorage.setItem('gymini:api-key', 'AIzaSy-stored-key')
 
       useSettingsStore.getState().loadApiKey()
@@ -75,14 +75,14 @@ describe('settingsStore', () => {
       expect(useSettingsStore.getState().hasApiKey).toBe(true)
     })
 
-    it('sets empty defaults when no key exists in localStorage', () => {
+    it('localStorage にキーが存在しない場合は空のデフォルト値を設定する', () => {
       useSettingsStore.getState().loadApiKey()
 
       expect(useSettingsStore.getState().apiKey).toBe('')
       expect(useSettingsStore.getState().hasApiKey).toBe(false)
     })
 
-    it('falls back to defaults when localStorage read fails', () => {
+    it('localStorage の読み込みが失敗したときデフォルト値にフォールバックする', () => {
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
@@ -94,8 +94,8 @@ describe('settingsStore', () => {
     })
   })
 
-  describe('edge cases', () => {
-    it('overwrites existing key with setApiKey', () => {
+  describe('エッジケース', () => {
+    it('setApiKey で既存のキーを上書きする', () => {
       useSettingsStore.getState().setApiKey('first-key')
       useSettingsStore.getState().setApiKey('second-key')
 
@@ -103,7 +103,7 @@ describe('settingsStore', () => {
       expect(localStorage.getItem('gymini:api-key')).toBe('second-key')
     })
 
-    it('loadApiKey is idempotent when called multiple times', () => {
+    it('loadApiKey は複数回呼ばれても冪等である', () => {
       localStorage.setItem('gymini:api-key', 'stable-key')
 
       useSettingsStore.getState().loadApiKey()
@@ -115,18 +115,18 @@ describe('settingsStore', () => {
   })
 
   describe('hasApiKey', () => {
-    it('is true after setApiKey', () => {
+    it('setApiKey の後は true になる', () => {
       useSettingsStore.getState().setApiKey('key')
       expect(useSettingsStore.getState().hasApiKey).toBe(true)
     })
 
-    it('is false after deleteApiKey', () => {
+    it('deleteApiKey の後は false になる', () => {
       useSettingsStore.getState().setApiKey('key')
       useSettingsStore.getState().deleteApiKey()
       expect(useSettingsStore.getState().hasApiKey).toBe(false)
     })
 
-    it('is false when loadApiKey finds no key', () => {
+    it('loadApiKey がキーを見つけられない場合は false になる', () => {
       useSettingsStore.getState().loadApiKey()
       expect(useSettingsStore.getState().hasApiKey).toBe(false)
     })
