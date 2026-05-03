@@ -1,3 +1,44 @@
+## コマンド
+
+| コマンド | 用途 |
+|---|---|
+| `npm run dev` | 開発サーバー起動（Vite, http://localhost:5173/gymini/）|
+| `npm run build` | 本番ビルド |
+| `npm run test` | Vitest 単体テスト（1回実行）|
+| `npm run test:watch` | Vitest ウォッチモード |
+| `npm run test:coverage` | カバレッジ計測（閾値 90%）|
+| `npm run typecheck` | 型チェックのみ（ビルドなし）|
+| `npm run lint` | ESLint |
+| `npx playwright test` | E2E テスト（dev サーバーは自動起動）|
+
+## アーキテクチャ概要
+
+**テックスタック**: React 19 / TanStack Router (file-based) / Zustand / Vitest+jsdom / Playwright / Tailwind v4 / Google Gemini Flash
+
+```
+src/
+├── routes/          # TanStack Router ファイルルーティング（__root, _app/*）
+├── pages/           # ルートに対応するページコンポーネント
+├── components/      # 共通 UI（chat/, settings/, workout/, ui/ = shadcn）
+├── stores/          # Zustand ストア + localStorage 永続化
+├── hooks/           # カスタムフック（useHydrated, useWorkoutSession など）
+├── lib/             # ユーティリティ・リポジトリ・Gemini クライアント
+├── schemas/         # Zod スキーマ（workout, date）
+├── types/           # 共通型定義
+└── test/            # Vitest グローバルセットアップ + integration テスト
+```
+
+**ルーティング構造**: `/__root → /_app → /training | /ai | /history`, `/settings` は `/_app` 外
+
+## Gotchas
+
+- **ベースパス**: Vite/Playwright ともに `/gymini/` がベース。ナビゲーションに `/gymini/` を直書きしない（TanStack Router が解決する）
+- **localStorage ハイドレーション**: `useHydrated()` が `false` の間は `AppLayout` がブランク表示。ストアデータを参照するコンポーネントは必ずこのフックを通す
+- **localStorage キー**: `gymini:workouts` / `gymini:exercises` / `gymini:settings` / `gymini:user-profile`
+- **Playwright**: `playwright.config.ts` が `npm run dev` を自動起動。dev サーバー起動中に実行すると二重起動になるため注意
+- **Vitest カバレッジ閾値**: lines/branches/functions/statements すべて 90%。`src/routeTree.gen.ts`（自動生成）はカバレッジ対象外
+- **Gemini モデル**: `gemini-flash-latest`（`src/lib/geminiClient.ts`）。API キーは localStorage に保存し、環境変数は使わない
+
 ## ドキュメント構造
 
 このプロジェクトのドキュメントは `docs/` 配下に置きます。
@@ -112,23 +153,7 @@ T-003（Mobile-First UI）に準拠しつつ、キーボード操作を行うユ
 | `lg` | ヒーロー CTA（IdleView「トレーニングを始める」等）|
 | `icon` / `icon-sm` / `icon-lg` | アイコンのみ — ただし raw `<button>` で独自スタイル必要な場合はそちらを採用可 |
 
-#### 段階的移行計画
-
-現状の raw `<button>` 箇所のうち移行コストと視覚影響を考慮し、以下の順に置き換えを検討する。**一度に全移行する PR は禁止**（diff 肥大化回避）:
-
-| フェーズ | 対象 | 理由 |
-|:---|:---|:---|
-| Phase A（近日中）| `IdleView` 「トレーニングを始める」| size=`lg` + variant=`default` にマップしやすい。既存の独自影・angularity は `className` で保持可 |
-| Phase B（機能実装時に随伴）| 設定画面の「APIキーを削除」| variant=`destructive` への置換候補。ただし FRAME5 の独自色仕様との整合確認が必要 |
-| Phase C（要合意）| ワークアウト系（`CompletedSetRow`, `PendingSetRow`, `ExerciseCard`, `ExerciseSearchField`）| アイコン主体＋密なレイアウトで `size="icon-sm"` 系でも窮屈になりがち。視覚デグレ回避のため現状維持を推奨。RFC で正式決定 |
-| Phase D（当面据え置き）| `BottomNav`（TanStack `<Link>` のため対象外）、`SettingsPage` の close X、`MonthCalendar` 日付ボタン — 元々 `<Link>` もしくは DayPicker 由来で独自要件が強い |
-
-**合意プロセス**:
-
-- Phase A は本 PR 以降の小さな follow-up PR で実施可
-- Phase B / C は実施前に本セクションを「現状 → 変更内容 → before/after スクショ」で更新する PR を先行して出し、レビュー合意を得る
-
-**現状の合意事項**（2026-04-13）:
+**合意事項**（2026-04-13）:
 
 - 新規追加の**ラベル付きボタン**は `<Button>` を第一選択
 - 既存の raw `<button>` は `focus-ring` を付与して a11y を整えた上で据え置き
