@@ -34,3 +34,8 @@
 
 - **決定**: onClick ハンドラでは store action をアロー関数でラップする（直接渡さない）
 - **理由**: Zustand の `persist` ミドルウェアと React の SyntheticEvent のシリアライズバグを回避するためのワークアラウンド。
+
+## PendingSet の weight/reps を `number` 型にする
+
+- **決定**: `PendingSet` の `weight` と `reps` フィールドの型は `string` ではなく `number`
+- **理由**: `SetRowInput` が `Number()` 変換を適用してからストアに渡している。ストアの型はフォーム入力値ではなく実際の状態を反映すべき。
