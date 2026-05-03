@@ -84,7 +84,7 @@ describe('APIKeySection', () => {
     expect(useSettingsStore.getState().apiKey).toBe('abcdef')
   })
 
-  it('displays "保存中…" while debounce is pending', async () => {
+  it('デバウンス保留中は"保存中…"を表示する', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     render(<APIKeySection />)
@@ -95,7 +95,7 @@ describe('APIKeySection', () => {
     expect(screen.getByText('保存中…')).toBeInTheDocument()
   })
 
-  it('displays "保存済み" after debounce fires', async () => {
+  it('デバウンス発火後は"保存済み"を表示する', async () => {
     vi.useFakeTimers({ shouldAdvanceTime: true })
     const user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime })
     render(<APIKeySection />)

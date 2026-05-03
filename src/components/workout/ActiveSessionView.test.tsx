@@ -21,13 +21,13 @@ describe('ActiveSessionView', () => {
     resetStore()
   })
 
-  it('renders exercise search field', () => {
+  it('種目検索フィールドを描画する', () => {
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
     render(<ActiveSessionView />)
     expect(screen.getByPlaceholderText('種目を追加...')).toBeInTheDocument()
   })
 
-  it('adds exercise and shows ExerciseCard', () => {
+  it('種目を追加するとExerciseCardを表示する', () => {
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
     // Seed exercise data
     localStorage.setItem(
@@ -46,14 +46,14 @@ describe('ActiveSessionView', () => {
     expect(screen.getByText('ベンチプレス')).toBeInTheDocument()
   })
 
-  it('does not render session chrome (delegated to TrainingPage/SessionHeader)', () => {
+  it('セッションのUI要素を描画しない（TrainingPage/SessionHeaderに委譲）', () => {
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
     render(<ActiveSessionView />)
     expect(screen.queryByRole('button', { name: '終了' })).not.toBeInTheDocument()
     expect(screen.queryByText(/^\d\d:\d\d:\d\d$/)).not.toBeInTheDocument()
   })
 
-  it('covers weight/reps update and completeSet via PendingSetRow interactions', async () => {
+  it('PendingSetRow操作で重量・レップ数の更新とcompleteSetを実行できる', async () => {
     const user = userEvent.setup()
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
     useWorkoutSessionStore.getState().addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
@@ -76,7 +76,7 @@ describe('ActiveSessionView', () => {
     expect(useWorkoutSessionStore.getState().draftExercises[0].sets).toHaveLength(1)
   })
 
-  it('covers toggleExerciseCard and activateExercise', async () => {
+  it('toggleExerciseCardとactivateExerciseを実行できる', async () => {
     const user = userEvent.setup()
     const idleExercise: DraftExercise = {
       exerciseId: 'squat',
@@ -108,7 +108,7 @@ describe('ActiveSessionView', () => {
     expect(useWorkoutSessionStore.getState().draftExercises[0].cardState).toBe('recording')
   })
 
-  it('covers deleteExercise via menu', async () => {
+  it('メニューからdeleteExerciseを実行できる', async () => {
     const user = userEvent.setup()
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
     useWorkoutSessionStore.getState().addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })

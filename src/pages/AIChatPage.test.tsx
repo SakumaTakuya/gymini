@@ -49,13 +49,13 @@ describe('AIChatPage', () => {
     useSettingsStore.setState({ apiKey: '', hasApiKey: false })
   })
 
-  test('shows API key guidance when key is missing', () => {
+  test('APIキーが未設定のときガイダンスを表示する', () => {
     renderAIChatPage()
     expect(screen.getByText('APIキーが必要です')).toBeInTheDocument()
     expect(screen.getByRole('link', { name: /設定画面へ/ })).toBeInTheDocument()
   })
 
-  test('renders gear link to settings', () => {
+  test('設定へのギアリンクを描画する', () => {
     renderAIChatPage()
     const settingsLink = screen
       .getAllByRole('link')
@@ -63,14 +63,14 @@ describe('AIChatPage', () => {
     expect(settingsLink).toBeDefined()
   })
 
-  test('enables input when key is set', () => {
+  test('APIキーが設定済みのときinputを有効にする', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     renderAIChatPage()
     expect(screen.queryByText('APIキーが必要です')).not.toBeInTheDocument()
     expect(screen.getByPlaceholderText('メッセージを入力')).not.toBeDisabled()
   })
 
-  test('shows empty state message when no messages', () => {
+  test('メッセージがない場合は空状態メッセージを表示する', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     renderAIChatPage()
     expect(
@@ -78,7 +78,7 @@ describe('AIChatPage', () => {
     ).toBeInTheDocument()
   })
 
-  test('renders user and assistant messages', () => {
+  test('ユーザーとアシスタントのメッセージを描画する', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useChatStore.setState({
       messages: [
@@ -103,7 +103,7 @@ describe('AIChatPage', () => {
     expect(screen.getByText('こんにちは！')).toBeInTheDocument()
   })
 
-  test('renders confirmation bubble for pending action', async () => {
+  test('pendingアクションの確認バブルを描画する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useChatStore.setState({
       messages: [
@@ -132,7 +132,7 @@ describe('AIChatPage', () => {
     )
   })
 
-  test('shows error banner when chatStore has error', () => {
+  test('chatStoreにエラーがある場合はエラーバナーを表示する', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useChatStore.setState({
       messages: [],
@@ -143,7 +143,7 @@ describe('AIChatPage', () => {
     expect(screen.getByText('エラーが発生しました')).toBeInTheDocument()
   })
 
-  test('shows loading indicator during isLoading', () => {
+  test('isLoading中はローディングインジケーターを表示する', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useChatStore.setState({
       messages: [],
@@ -154,7 +154,7 @@ describe('AIChatPage', () => {
     expect(screen.getByText('考え中…')).toBeInTheDocument()
   })
 
-  test('calls approve when approve button clicked in confirmation bubble', async () => {
+  test('確認バブルの承認ボタンクリック時にapproveを呼び出す', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useChatStore.setState({
       messages: [

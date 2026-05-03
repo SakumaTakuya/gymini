@@ -12,12 +12,12 @@ describe('ExerciseSearchField', () => {
     })),
   }
 
-  it('renders search input placeholder', () => {
+  it('検索inputのplaceholderを描画する', () => {
     render(<ExerciseSearchField {...defaultProps} />)
     expect(screen.getByPlaceholderText('種目を追加...')).toBeInTheDocument()
   })
 
-  it('shows candidates on input', () => {
+  it('入力時に候補を表示する', () => {
     const searchExercises = vi.fn().mockReturnValue([
       { id: '1', name: 'ベンチプレス' },
       { id: '2', name: 'インクラインベンチプレス' },
@@ -38,7 +38,7 @@ describe('ExerciseSearchField', () => {
     expect(screen.getByText('インクラインベンチプレス')).toBeInTheDocument()
   })
 
-  it('calls onSelectExercise when candidate is clicked', () => {
+  it('候補クリック時にonSelectExerciseを呼び出す', () => {
     const onSelectExercise = vi.fn()
     const searchExercises = vi.fn().mockReturnValue([
       { id: '1', name: 'ベンチプレス' },
@@ -62,7 +62,7 @@ describe('ExerciseSearchField', () => {
     })
   })
 
-  it('shows create option when no exact match', () => {
+  it('完全一致がない場合に新規作成オプションを表示する', () => {
     const searchExercises = vi.fn().mockReturnValue([])
     render(
       <ExerciseSearchField
@@ -78,7 +78,7 @@ describe('ExerciseSearchField', () => {
     expect(screen.getByText(/「デッドリフト」を新規追加/)).toBeInTheDocument()
   })
 
-  it('invokes createExercise and onSelectExercise when create option is clicked', () => {
+  it('新規作成オプションクリック時にcreateExerciseとonSelectExerciseを呼び出す', () => {
     const onSelectExercise = vi.fn()
     const createExercise = vi.fn().mockReturnValue({
       id: 'new-1',
@@ -106,7 +106,7 @@ describe('ExerciseSearchField', () => {
     })
   })
 
-  it('clears input after selection', () => {
+  it('選択後にinputをクリアする', () => {
     const searchExercises = vi.fn().mockReturnValue([
       { id: '1', name: 'ベンチプレス' },
     ])
