@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { Plus } from '@phosphor-icons/react'
 import type { Exercise } from '@/types'
+import { Input } from '@/components/ui/input'
 
 type ExerciseSearchFieldProps = {
   onSelectExercise: (exercise: {
@@ -65,23 +66,20 @@ export function ExerciseSearchField({
 
   return (
     <div className="mx-4 relative">
-      <div className="w-full h-[52px] bg-gym-zinc-100 rounded-2xl px-4 flex items-center gap-3 border border-transparent">
-        <Plus size={18} weight="bold" className="text-gym-zinc-500 flex-shrink-0" />
-        <input
-          type="text"
-          value={query}
-          onChange={(e) => handleChange(e.target.value)}
-          onFocus={() => {
-            if (query.trim()) setShowDropdown(true)
-          }}
-          onBlur={() => {
-            // Delay to allow click on dropdown items
-            setTimeout(() => setShowDropdown(false), 200)
-          }}
-          placeholder="種目を追加..."
-          className="flex-1 bg-transparent outline-none text-base font-medium text-gym-black placeholder:text-gym-zinc-500"
-        />
-      </div>
+      <Input
+        type="text"
+        value={query}
+        onChange={(e) => handleChange(e.target.value)}
+        onFocus={() => {
+          if (query.trim()) setShowDropdown(true)
+        }}
+        onBlur={() => {
+          setTimeout(() => setShowDropdown(false), 200)
+        }}
+        placeholder="種目を追加..."
+        prefix={<Plus size={18} weight="bold" className="text-gym-zinc-500 flex-shrink-0" />}
+        containerClassName="w-full h-[52px] rounded-2xl border-transparent gap-3"
+      />
 
       {showDropdown && (query.trim() !== '') && (
         <div className="absolute top-full left-0 right-0 mt-1 bg-gym-white rounded-xl shadow-float border border-gym-zinc-200 z-50 max-h-48 overflow-y-auto">

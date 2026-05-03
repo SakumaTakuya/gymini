@@ -3,6 +3,7 @@ import { MagnifyingGlass, Plus, Check, X, Trash } from '@phosphor-icons/react'
 import { useExercises } from '@/hooks/useExercises'
 import type { Exercise } from '@/types'
 import { IconButton } from '@/components/ui/icon-button'
+import { Input } from '@/components/ui/input'
 import { ExerciseRow } from './ExerciseRow'
 import { SectionCard } from './SectionCard'
 
@@ -111,22 +112,14 @@ export function ExerciseMasterSection() {
     <SectionCard label="種目マスター">
       {/* 上段: 検索（border-b 区切り） */}
       <div className="px-4 pt-4 pb-3 border-b border-gym-zinc-100">
-        <div className="flex items-center gap-2 bg-gym-zinc-100 rounded-xl px-4 h-10">
-          <MagnifyingGlass
-            size={16}
-            weight="bold"
-            className="text-gym-zinc-400 flex-shrink-0"
-            aria-hidden
-          />
-          <input
-            type="text"
-            value={query}
-            onChange={handleQueryChange}
-            placeholder="種目を検索..."
-            aria-label="種目を検索"
-            className="flex-1 bg-transparent text-base outline-none text-gym-black placeholder-gym-zinc-400"
-          />
-        </div>
+        <Input
+          type="text"
+          value={query}
+          onChange={handleQueryChange}
+          placeholder="種目を検索..."
+          aria-label="種目を検索"
+          prefix={<MagnifyingGlass size={16} weight="bold" className="text-gym-zinc-400 flex-shrink-0" aria-hidden />}
+        />
       </div>
 
       {/* 中段: 種目一覧（divide-y で区切り） */}
@@ -135,14 +128,13 @@ export function ExerciseMasterSection() {
           editingId === ex.id ? (
             <div key={ex.id} className="px-3 py-2">
               <div className="flex items-center gap-1">
-                <input
+                <Input
                   type="text"
                   value={editName}
                   onChange={handleEditNameChange}
                   aria-label="種目名を編集"
                   aria-invalid={editError !== null || undefined}
                   aria-describedby={editError !== null ? 'edit-error' : undefined}
-                  className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-base font-inter text-gym-black"
                   autoFocus
                 />
                 <IconButton
@@ -193,7 +185,7 @@ export function ExerciseMasterSection() {
         {adding ? (
           <div className="px-5 py-2">
             <div className="flex items-center gap-2">
-              <input
+              <Input
                 type="text"
                 value={newName}
                 onChange={handleNewNameChange}
@@ -201,7 +193,6 @@ export function ExerciseMasterSection() {
                 aria-invalid={addError !== null || undefined}
                 aria-describedby={addError !== null ? 'add-error' : undefined}
                 placeholder="種目名"
-                className="flex-1 bg-gym-zinc-100 rounded-xl px-3 h-10 text-base font-inter text-gym-black"
                 autoFocus
               />
               <IconButton
