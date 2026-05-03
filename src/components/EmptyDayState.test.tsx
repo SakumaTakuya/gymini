@@ -6,7 +6,7 @@ import type { DateString } from '../schemas/date'
 describe('EmptyDayState', () => {
   const date = '2026-04-12' as DateString
 
-  it('renders empty-day-state container (FR-007)', () => {
+  it('renders empty-day-state container', () => {
     render(<EmptyDayState date={date} onAddWorkout={vi.fn()} />)
     expect(screen.getByTestId('empty-day-state')).toBeInTheDocument()
   })
@@ -16,17 +16,17 @@ describe('EmptyDayState', () => {
     expect(screen.getByText('4月12日の記録')).toBeInTheDocument()
   })
 
-  it('shows "記録なし" text (FR-007)', () => {
+  it('shows "記録なし" text', () => {
     render(<EmptyDayState date={date} onAddWorkout={vi.fn()} />)
     expect(screen.getByText('記録なし')).toBeInTheDocument()
   })
 
-  it('shows add button (FR-007)', () => {
+  it('shows add button', () => {
     render(<EmptyDayState date={date} onAddWorkout={vi.fn()} />)
     expect(screen.getByText('追加')).toBeInTheDocument()
   })
 
-  it('calls onAddWorkout with date on button click (FR-008)', () => {
+  it('calls onAddWorkout with date on button click', () => {
     const onAddWorkout = vi.fn()
     render(<EmptyDayState date={date} onAddWorkout={onAddWorkout} />)
     fireEvent.click(screen.getByText('追加'))

@@ -126,7 +126,7 @@ describe('Navigation Integration', () => {
     expect(screen.getByText('AI')).toBeInTheDocument()
   })
 
-  it('hides BottomNav on settings page (FR-008)', async () => {
+  it('hides BottomNav on settings page', async () => {
     const router = createTestRouter('/settings')
     render(<RouterProvider router={router} />)
 

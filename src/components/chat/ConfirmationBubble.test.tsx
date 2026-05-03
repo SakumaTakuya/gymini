@@ -15,7 +15,7 @@ function makePending(status: PendingAction['status'] = 'pending'): PendingAction
 }
 
 describe('ConfirmationBubble', () => {
-  it('承認前にユーザーが確認できるよう content を表示する（B-002）', () => {
+  it('承認前にユーザーが確認できるよう content を表示する', () => {
     render(
       <ConfirmationBubble
         content="ベンチプレス 3セット を記録しますか？"
@@ -27,7 +27,7 @@ describe('ConfirmationBubble', () => {
     expect(screen.getByText('ベンチプレス 3セット を記録しますか？')).toBeInTheDocument()
   })
 
-  it('pending 状態のとき承認・キャンセルボタンが操作できる（B-002）', () => {
+  it('pending 状態のとき承認・キャンセルボタンが操作できる', () => {
     render(
       <ConfirmationBubble
         content=""

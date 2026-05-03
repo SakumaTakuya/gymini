@@ -38,7 +38,7 @@ describe('userProfileStore', () => {
       expect(profile.weightKg).toBe(70)
     })
 
-    it('updates state even when localStorage write fails (T-002)', () => {
+    it('updates state even when localStorage write fails', () => {
       vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
         throw new Error('QuotaExceeded')
       })
@@ -81,7 +81,7 @@ describe('userProfileStore', () => {
       expect(localStorage.getItem(STORAGE_KEY)).toBeNull()
     })
 
-    it('resets state even when localStorage removal fails (T-002)', () => {
+    it('resets state even when localStorage removal fails', () => {
       vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
@@ -120,7 +120,7 @@ describe('userProfileStore', () => {
       expect(profile.trainingGoal).toBeNull()
     })
 
-    it('falls back to defaults when localStorage read fails (T-002)', () => {
+    it('falls back to defaults when localStorage read fails', () => {
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
@@ -130,7 +130,7 @@ describe('userProfileStore', () => {
       expect(useUserProfileStore.getState().profile.birthYear).toBeNull()
     })
 
-    it('falls back invalid field to null via Zod catch (T-002)', () => {
+    it('falls back invalid field to null via Zod catch', () => {
       localStorage.setItem(STORAGE_KEY, JSON.stringify({
         birthYear: 'not-a-number',
         weightKg: -999,

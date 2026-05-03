@@ -116,7 +116,7 @@ describe('WorkoutRepository', () => {
     })
   })
 
-  describe('localStorage error handling (T-002)', () => {
+  describe('localStorage error handling', () => {
     it('returns empty array when localStorage has invalid JSON', () => {
       localStorage.setItem('gymini:workouts', 'invalid json')
       expect(repo.listByDateDesc()).toEqual([])

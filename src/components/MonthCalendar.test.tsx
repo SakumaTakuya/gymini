@@ -27,7 +27,7 @@ function getDayElement(dayNum: number) {
 }
 
 describe('MonthCalendar', () => {
-  it('renders 7-column grid with weekday headers (FR-001)', () => {
+  it('renders 7-column grid with weekday headers', () => {
     setup()
     const weekdays = ['日', '月', '火', '水', '木', '金', '土']
     weekdays.forEach((day) => {
@@ -43,19 +43,19 @@ describe('MonthCalendar', () => {
     expect(header.textContent).toContain('10')
   })
 
-  it('calls onPrevMonth when left chevron clicked (FR-002)', () => {
+  it('calls onPrevMonth when left chevron clicked', () => {
     const props = setup()
     fireEvent.click(screen.getByLabelText('前月'))
     expect(props.onPrevMonth).toHaveBeenCalledOnce()
   })
 
-  it('calls onNextMonth when right chevron clicked (FR-002)', () => {
+  it('calls onNextMonth when right chevron clicked', () => {
     const props = setup()
     fireEvent.click(screen.getByLabelText('次月'))
     expect(props.onNextMonth).toHaveBeenCalledOnce()
   })
 
-  it('shows workout marker on days with workouts (FR-003)', () => {
+  it('shows workout marker on days with workouts', () => {
     setup({
       daysWithWorkouts: new Set([
         '2026-04-05' as DateString,
@@ -66,7 +66,7 @@ describe('MonthCalendar', () => {
     expect(markers.length).toBe(2)
   })
 
-  it('workout days have bold text, non-workout days are muted (FR-004)', () => {
+  it('workout days have bold text, non-workout days are muted', () => {
     setup({
       daysWithWorkouts: new Set(['2026-04-05' as DateString]),
     })
@@ -79,7 +79,7 @@ describe('MonthCalendar', () => {
     expect(day6!.className).toContain('text-gym-zinc-400')
   })
 
-  it('calls onSelectDate when a day is clicked (FR-005)', () => {
+  it('calls onSelectDate when a day is clicked', () => {
     const props = setup()
     const day15 = getDayElement(15)
     expect(day15).toBeDefined()
@@ -87,7 +87,7 @@ describe('MonthCalendar', () => {
     expect(props.onSelectDate).toHaveBeenCalledWith('2026-04-15')
   })
 
-  it('selected date has ring style (FR-005)', () => {
+  it('selected date has ring style', () => {
     setup({ selectedDate: '2026-04-20' as DateString })
     const day20 = getDayElement(20)
     expect(day20).toBeDefined()
@@ -95,7 +95,7 @@ describe('MonthCalendar', () => {
     expect(day20!.className).toContain('ring-gym-black')
   })
 
-  it('today has black background with white text (FR-009)', () => {
+  it('today has black background with white text', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 3, 15))
 
@@ -109,7 +109,7 @@ describe('MonthCalendar', () => {
     vi.useRealTimers()
   })
 
-  it('today with workout shows both styles (FR-010)', () => {
+  it('today with workout shows both styles', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 3, 15))
 
@@ -127,7 +127,7 @@ describe('MonthCalendar', () => {
     vi.useRealTimers()
   })
 
-  it('future date is clickable (FR-011)', () => {
+  it('future date is clickable', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date(2026, 3, 10))
 

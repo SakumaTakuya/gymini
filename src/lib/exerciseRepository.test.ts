@@ -196,8 +196,6 @@ describe('ExerciseRepository', () => {
     })
   })
 
-  // --- localStorage error handling (T-002) ---
-
   describe('localStorage error handling', () => {
     it('returns empty array when localStorage.getItem throws', () => {
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {

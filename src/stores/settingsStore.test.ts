@@ -8,8 +8,6 @@ describe('settingsStore', () => {
     vi.restoreAllMocks()
   })
 
-  // --- setApiKey (FR-001) ---
-
   describe('setApiKey', () => {
     it('saves API key to localStorage and updates store state', () => {
       useSettingsStore.getState().setApiKey('AIzaSy-test-key')
@@ -30,7 +28,7 @@ describe('settingsStore', () => {
       expect(localStorage.getItem('gymini:api-key')).toBeNull()
     })
 
-    it('updates store state even when localStorage write fails (NFR-002)', () => {
+    it('updates store state even when localStorage write fails', () => {
       vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
         throw new Error('QuotaExceeded')
       })
@@ -41,8 +39,6 @@ describe('settingsStore', () => {
       expect(useSettingsStore.getState().hasApiKey).toBe(true)
     })
   })
-
-  // --- deleteApiKey (FR-003) ---
 
   describe('deleteApiKey', () => {
     it('removes API key from localStorage and resets store state', () => {
@@ -56,7 +52,7 @@ describe('settingsStore', () => {
       expect(localStorage.getItem('gymini:api-key')).toBeNull()
     })
 
-    it('resets store state even when localStorage removal fails (NFR-002)', () => {
+    it('resets store state even when localStorage removal fails', () => {
       vi.spyOn(Storage.prototype, 'removeItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
@@ -68,8 +64,6 @@ describe('settingsStore', () => {
       expect(useSettingsStore.getState().hasApiKey).toBe(false)
     })
   })
-
-  // --- loadApiKey (FR-002, FR-006) ---
 
   describe('loadApiKey', () => {
     it('loads existing API key from localStorage', () => {
@@ -88,7 +82,7 @@ describe('settingsStore', () => {
       expect(useSettingsStore.getState().hasApiKey).toBe(false)
     })
 
-    it('falls back to defaults when localStorage read fails (NFR-002)', () => {
+    it('falls back to defaults when localStorage read fails', () => {
       vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
         throw new Error('SecurityError')
       })
@@ -99,8 +93,6 @@ describe('settingsStore', () => {
       expect(useSettingsStore.getState().hasApiKey).toBe(false)
     })
   })
-
-  // --- Edge Cases (CHK-503) ---
 
   describe('edge cases', () => {
     it('overwrites existing key with setApiKey', () => {
@@ -121,8 +113,6 @@ describe('settingsStore', () => {
       expect(useSettingsStore.getState().hasApiKey).toBe(true)
     })
   })
-
-  // --- hasApiKey (FR-004) ---
 
   describe('hasApiKey', () => {
     it('is true after setApiKey', () => {

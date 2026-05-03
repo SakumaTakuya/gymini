@@ -27,7 +27,7 @@ function makeWorkout(overrides: Partial<Workout> = {}): Workout {
 }
 
 describe('WorkoutSummary', () => {
-  it('shows date header (FR-005)', () => {
+  it('shows date header', () => {
     render(
       <WorkoutSummary
         date={'2026-04-12' as DateString}
@@ -37,7 +37,7 @@ describe('WorkoutSummary', () => {
     expect(screen.getByText('4月12日の記録')).toBeInTheDocument()
   })
 
-  it('displays exercise name (FR-006)', () => {
+  it('displays exercise name', () => {
     render(
       <WorkoutSummary
         date={'2026-04-12' as DateString}
@@ -47,7 +47,7 @@ describe('WorkoutSummary', () => {
     expect(screen.getByText('Bench Press')).toBeInTheDocument()
   })
 
-  it('displays sets with weight and reps (FR-006)', () => {
+  it('displays sets with weight and reps', () => {
     render(
       <WorkoutSummary
         date={'2026-04-12' as DateString}
@@ -62,7 +62,7 @@ describe('WorkoutSummary', () => {
     expect(screen.getByText('8')).toBeInTheDocument()
   })
 
-  it('separates multiple exercises within a workout (FR-006)', () => {
+  it('separates multiple exercises within a workout', () => {
     const workout = makeWorkout({
       exercises: [
         {
@@ -87,7 +87,7 @@ describe('WorkoutSummary', () => {
     expect(screen.getByText('Cable Flyes')).toBeInTheDocument()
   })
 
-  it('renders multiple workouts in separate sections (FR-006)', () => {
+  it('renders multiple workouts in separate sections', () => {
     const w1 = makeWorkout({ id: '1' })
     const w2 = makeWorkout({
       id: '2',
