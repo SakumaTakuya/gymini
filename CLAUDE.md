@@ -1,87 +1,45 @@
-## AI-SDD Instructions (v3.3.0)
+## ドキュメント構造
 
-<!-- sdd-workflow version: "3.3.0" -->
+このプロジェクトのドキュメントは `docs/` 配下に置きます。
 
-このプロジェクトは AI-SDD（AI駆動仕様駆動開発）ワークフローに従います。
-
-### ドキュメント操作
-
-`.sdd/` ディレクトリ配下のファイルを操作する際は、`.sdd/AI-SDD-PRINCIPLES.md` を参照し、AI-SDDワークフローに準拠してください。
+```
+docs/
+├── CONSTITUTION.md       # プロジェクト原則（最上位）
+├── design-system.html    # UIデザイン参照
+├── prd/                  # PRD（プロダクト要求仕様書）
+│   ├── index.md          # プロダクト全体の PRD
+│   ├── {feature}/index.md
+│   └── {feature}.md
+└── adr/                  # アーキテクチャ判断記録（ADR）
+    └── {feature}.md
+```
 
 **トリガー条件**:
 
-- `.sdd/` 配下のファイルの読み取りまたは変更
-- 新しい仕様書、設計書、要求仕様書の作成
-- `.sdd/` ドキュメントを参照する機能の実装
+- `docs/` 配下のファイルの読み取りまたは変更
+- 新しい PRD または ADR の作成
+- `docs/` ドキュメントを参照する機能の実装
 
-### ディレクトリ構造
+### PRD の役割
 
-フラット構造と階層構造の両方をサポートしています。
+`docs/prd/` は「プロダクトとして何を・なぜ作るか」の唯一の真実です。機能追加・変更時に更新必須。
 
-**フラット構造（小〜中規模プロジェクト向け）**:
+### ADR の役割
 
-    .sdd/
-    |- CONSTITUTION.md               # プロジェクト原則（最上位）
-    |- PRD_TEMPLATE.md               # PRDテンプレート
-    |- SPECIFICATION_TEMPLATE.md     # 抽象仕様書テンプレート
-    |- DESIGN_DOC_TEMPLATE.md        # 技術設計書テンプレート
-    |- requirement/                  # PRD（要求仕様書）
-    |   |- {feature-name}.md
-    |- specification/                # 仕様書・設計書
-    |   |- {feature-name}_spec.md    # 抽象仕様書
-    |   |- {feature-name}_design.md  # 技術設計書
-    |- task/                         # 一時タスクログ
-        |- {ticket-number}/
+`docs/adr/` は「なぜこの技術・パターンを選んだか」のアーキテクチャ判断記録です。コードから読み取れない判断・トレードオフのみ記録します。コンポーネント構造・実装詳細は書きません。新規機能でアーキテクチャ上の判断が生じた場合のみ作成（任意）。
 
-**階層構造（中〜大規模プロジェクト向け）**:
+### テストが仕様
 
-    .sdd/
-    |- CONSTITUTION.md               # プロジェクト原則（最上位）
-    |- PRD_TEMPLATE.md               # PRDテンプレート
-    |- SPECIFICATION_TEMPLATE.md     # 抽象仕様書テンプレート
-    |- DESIGN_DOC_TEMPLATE.md        # 技術設計書テンプレート
-    |- requirement/                  # PRD（要求仕様書）
-    |   |- {feature-name}.md         # トップレベル機能
-    |   |- {parent-feature}/         # 親機能ディレクトリ
-    |       |- index.md              # 親機能概要・要求一覧
-    |       |- {child-feature}.md    # 子機能要求仕様
-    |- specification/                # 仕様書・設計書
-    |   |- {feature-name}_spec.md    # トップレベル機能
-    |   |- {feature-name}_design.md
-    |   |- {parent-feature}/         # 親機能ディレクトリ
-    |       |- index_spec.md         # 親機能抽象仕様書
-    |       |- index_design.md       # 親機能技術設計書
-    |       |- {child-feature}_spec.md   # 子機能抽象仕様書
-    |       |- {child-feature}_design.md # 子機能技術設計書
-    |- task/                         # 一時タスクログ
-        |- {ticket-number}/
+テスト（Vitest/Playwright）が振る舞いの仕様です。テストが通れば仕様を満たしていると見なします。ドキュメントとコードが乖離した場合、テストを正として扱います（`CONSTITUTION.md` D-003 参照）。
 
-### ファイル命名規則（重要）
+### ドキュメントリンク規約
 
-**注意: requirement と specification でサフィックスの有無が異なります。混同しないでください。**
+ドキュメント内のマークダウンリンクは以下の形式に従ってください:
 
-| ディレクトリ            | ファイル種別 | 命名パターン                                 | 例                                         |
-|:------------------|:-------|:---------------------------------------|:------------------------------------------|
-| **requirement**   | 全ファイル  | `{name}.md`（サフィックスなし）                  | `user-login.md`, `index.md`               |
-| **specification** | 抽象仕様書  | `{name}_spec.md`（`_spec` サフィックス必須）     | `user-login_spec.md`, `index_spec.md`     |
-| **specification** | 技術設計書  | `{name}_design.md`（`_design` サフィックス必須） | `user-login_design.md`, `index_design.md` |
-
-#### 命名パターン早見表
-
-```
-# 正しい命名
-requirement/auth/index.md              # 親機能概要（サフィックスなし）
-requirement/auth/user-login.md         # 子機能要求仕様（サフィックスなし）
-specification/auth/index_spec.md       # 親機能抽象仕様書（_spec 必須）
-specification/auth/index_design.md     # 親機能技術設計書（_design 必須）
-specification/auth/user-login_spec.md  # 子機能抽象仕様書（_spec 必須）
-specification/auth/user-login_design.md # 子機能技術設計書（_design 必須）
-
-# 誤った命名（使用しないこと）
-requirement/auth/index_spec.md         # requirement に _spec は不要
-specification/auth/user-login.md       # specification には _spec/_design が必須
-specification/auth/index.md            # specification には _spec/_design が必須
-```
+| リンク先       | 形式                                    | リンクテキスト   | 例                                                    |
+|:-----------|:--------------------------------------|:----------|:-----------------------------------------------------|
+| **ファイル**   | `[filename.md](パスまたはURL)`             | ファイル名を含める | `[workout.md](../prd/workout/index.md)` |
+| **ディレクトリ** | `[directory-name](パスまたはURL/index.md)` | ディレクトリ名のみ | `[workout](../prd/workout/index.md)`               |
 
 ### キーボードフォーカス規約（focus-visible）
 
@@ -172,14 +130,3 @@ T-003（Mobile-First UI）に準拠しつつ、キーボード操作を行うユ
 - 新規追加の**ラベル付きボタン**は `<Button>` を第一選択
 - 既存の raw `<button>` は `focus-ring` を付与して a11y を整えた上で据え置き
 - アイコンのみ・密レイアウトは raw `<button>` も可（理由を PR 内で説明）
-
-### ドキュメントリンク規約
-
-ドキュメント内のマークダウンリンクは以下の形式に従ってください:
-
-| リンク先       | 形式                                    | リンクテキスト   | 例                                                    |
-|:-----------|:--------------------------------------|:----------|:-----------------------------------------------------|
-| **ファイル**   | `[filename.md](パスまたはURL)`             | ファイル名を含める | `[user-login.md](../requirement/auth/user-login.md)` |
-| **ディレクトリ** | `[directory-name](パスまたはURL/index.md)` | ディレクトリ名のみ | `[auth](../requirement/auth/index.md)`               |
-
-この規約により、リンク先がファイルかディレクトリかが視覚的に明確になります。
