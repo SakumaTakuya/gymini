@@ -19,7 +19,7 @@ describe('SectionCard', () => {
       </SectionCard>,
     )
     const card = screen.getByTestId('card')
-    expect(card.className).toContain('bg-white')
+    expect(card.className).toContain('bg-gym-white')
     expect(card.className).toContain('rounded-[20px]')
     expect(card.className).toContain('shadow-soft')
     expect(card.className).toContain('border-gym-zinc-100')

@@ -16,7 +16,7 @@ import { GearIcon } from '../components/GearIcon'
 function createTestRouter(initialPath = '/training') {
   const rootRoute = createRootRoute({
     component: () => (
-      <div className="min-h-screen bg-zinc-50">
+      <div className="min-h-screen bg-gym-zinc-50">
         <Outlet />
       </div>
     ),
