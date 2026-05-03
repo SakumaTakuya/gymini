@@ -1,6 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, test, vi } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { ConfirmationBubble } from './ConfirmationBubble'
 import type { PendingAction } from '../../types/chat'
 
@@ -15,7 +15,32 @@ function makePending(status: PendingAction['status'] = 'pending'): PendingAction
 }
 
 describe('ConfirmationBubble', () => {
-  test('calls onApprove when approve button clicked', async () => {
+  it('承認前にユーザーが確認できるよう content を表示する（B-002）', () => {
+    render(
+      <ConfirmationBubble
+        content="ベンチプレス 3セット を記録しますか？"
+        pendingAction={makePending()}
+        onApprove={vi.fn()}
+        onReject={vi.fn()}
+      />,
+    )
+    expect(screen.getByText('ベンチプレス 3セット を記録しますか？')).toBeInTheDocument()
+  })
+
+  it('pending 状態のとき承認・キャンセルボタンが操作できる（B-002）', () => {
+    render(
+      <ConfirmationBubble
+        content=""
+        pendingAction={makePending('pending')}
+        onApprove={vi.fn()}
+        onReject={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /追加する/ })).not.toBeDisabled()
+    expect(screen.getByRole('button', { name: 'キャンセル' })).not.toBeDisabled()
+  })
+
+  it('承認ボタンをタップすると onApprove が呼ばれる', async () => {
     const onApprove = vi.fn()
     const onReject = vi.fn()
     render(
@@ -31,14 +56,13 @@ describe('ConfirmationBubble', () => {
     expect(onReject).not.toHaveBeenCalled()
   })
 
-  test('calls onReject when cancel button clicked', async () => {
-    const onApprove = vi.fn()
+  it('キャンセルボタンをタップすると onReject が呼ばれる', async () => {
     const onReject = vi.fn()
     render(
       <ConfirmationBubble
         content=""
         pendingAction={makePending()}
-        onApprove={onApprove}
+        onApprove={vi.fn()}
         onReject={onReject}
       />,
     )
@@ -46,7 +70,7 @@ describe('ConfirmationBubble', () => {
     expect(onReject).toHaveBeenCalled()
   })
 
-  test('disables buttons after approved', () => {
+  it('承認済みのとき両ボタンが disabled になり「実行済み」を表示する（二重実行防止）', () => {
     render(
       <ConfirmationBubble
         content=""
@@ -60,7 +84,7 @@ describe('ConfirmationBubble', () => {
     expect(screen.getByText('実行済み')).toBeInTheDocument()
   })
 
-  test('disables buttons after rejected', () => {
+  it('キャンセル済みのとき両ボタンが disabled になり「キャンセル済み」を表示する（二重実行防止）', () => {
     render(
       <ConfirmationBubble
         content=""
@@ -70,10 +94,11 @@ describe('ConfirmationBubble', () => {
       />,
     )
     expect(screen.getByRole('button', { name: /追加する/ })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'キャンセル' })).toBeDisabled()
     expect(screen.getByText('キャンセル済み')).toBeInTheDocument()
   })
 
-  test('uses 記録する label for saveWorkout', () => {
+  it('saveWorkout アクションの承認ラベルは「記録する」', () => {
     render(
       <ConfirmationBubble
         content="記録しますか？"
@@ -95,7 +120,19 @@ describe('ConfirmationBubble', () => {
     expect(screen.getByRole('button', { name: /記録する/ })).toBeInTheDocument()
   })
 
-  test('uses 追加する label for addExerciseToSession', () => {
+  it('addExercise アクションの承認ラベルは「追加する」', () => {
+    render(
+      <ConfirmationBubble
+        content=""
+        pendingAction={makePending()}
+        onApprove={vi.fn()}
+        onReject={vi.fn()}
+      />,
+    )
+    expect(screen.getByRole('button', { name: /追加する/ })).toBeInTheDocument()
+  })
+
+  it('addExerciseToSession アクションの承認ラベルは「追加する」', () => {
     render(
       <ConfirmationBubble
         content="種目を追加しますか？"
