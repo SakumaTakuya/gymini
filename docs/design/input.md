@@ -4,29 +4,46 @@
 
 ## `<Input>`（`src/components/ui/input.tsx`）
 
-テキスト入力（`<input>`）は原則 `<Input>` を使用する。手書きの `<input className="bg-gym-zinc-100 ...">` や `<div>` でラップするコンポジット構造を消費コード側に書かない。
+テキスト入力（`<input>`）は原則 `<Input>` を使用する。手書きの `<input className="...">` や `<div>` でラップするコンポジット構造を消費コード側に書かない。
+
+### variant
+
+| variant | 外観 | 用途 |
+|:---|:---|:---|
+| `"inline"`（**デフォルト**）| border-b のみ、背景透明 | フォーム入力・インライン編集 |
+| `"filled"` | `bg-gym-zinc-100` ボックス | 検索フィールド（目立たせたい場合）|
+
+### props
 
 | props | 用途 |
 |:---|:---|
+| `variant` | `"inline"` \| `"filled"`（省略時 `"inline"`）|
 | `prefix` | input 左側の要素（アイコン等）|
 | `suffix` | input 右側の要素（単位ラベル・アクションボタン等）|
-| `containerClassName` | prefix/suffix がある場合の外側コンテナのクラス上書き（高さ・角丸・border 等）|
-| `className` | 内部 `<input>` のクラス上書き（フォント等）|
+| `containerClassName` | prefix/suffix がある場合の外側コンテナのクラス上書き|
+| `className` | 内部 `<input>` のクラス上書き（フォント・幅等）|
 
-**2 つの描画モード**:
+### 描画モード
 
-- **prefix/suffix なし** → `<input>` 単体を描画。`focus-ring` でフォーカスリングを表示
-- **prefix or suffix あり** → スタイル済み `<div>` コンテナの中に透明な `<input>` を描画。`focus-within:ring-*` でフォーカスリングを表示
+- **prefix/suffix なし** → `<input>` 要素を直接描画
+- **prefix or suffix あり** → スタイル済み `<div>` コンテナの中に透明な `<input>` を描画
 
-**標準スペック**:
+### フォーカス表示
 
-- 高さ: `h-11`、角丸: `rounded-xl`、背景: `bg-gym-zinc-100`、ボーダー: `border-gym-zinc-200`（コンテナのみ）
+- `variant="inline"` 単体: `focus-visible:border-gym-black`（border-b が黒に変化）
+- `variant="inline"` + prefix/suffix: `focus-within:border-gym-black`
+- `variant="filled"` 単体: `focus-ring`（リング表示）
+- `variant="filled"` + prefix/suffix: `focus-within:ring-2 focus-within:ring-gym-black`
+
+### 標準スペック（inline）
+
+- 高さ: `h-11`、border-b: `border-gym-zinc-300`、背景: 透明
 - フォント: `text-base font-medium`、文字色: `text-gym-black`、プレースホルダー: `placeholder:text-gym-zinc-400`
 
-**使用例**:
+### 使用例
 
 ```tsx
-// 単体（ラベル付きフォーム入力）
+// フォーム入力（inline デフォルト）
 <Input
   type="text"
   value={editName}
@@ -35,7 +52,7 @@
   autoFocus
 />
 
-// 単位ラベル付き
+// 単位ラベル付き（inline デフォルト）
 <Input
   type="number"
   value={localWeightKg}
@@ -44,7 +61,7 @@
   suffix={<span className="text-xs text-gym-zinc-400">kg</span>}
 />
 
-// アイコン + アクションボタン
+// パスワード + 表示切替ボタン（inline デフォルト）
 <Input
   type={visible ? 'text' : 'password'}
   value={localValue}
@@ -58,13 +75,24 @@
   }
 />
 
-// 大型サーチフィールド（containerClassName で寸法を上書き）
+// インライン編集（containerClassName で高さ・揃えを上書き）
+<Input
+  type="number"
+  value={pendingSet.weight}
+  inputMode="decimal"
+  suffix={<span className="text-xs font-medium text-gym-zinc-400">kg</span>}
+  containerClassName="items-baseline gap-1 h-auto pb-0.5"
+  className="w-10 text-xl font-outfit font-bold"
+/>
+
+// 検索フィールド（filled + containerClassName で寸法を上書き）
 <Input
   type="text"
   value={query}
   onChange={...}
   placeholder="種目を追加..."
   prefix={<Plus size={18} weight="bold" className="text-gym-zinc-500 flex-shrink-0" />}
+  variant="filled"
   containerClassName="w-full h-[52px] rounded-2xl border-transparent gap-3"
 />
 ```
@@ -74,17 +102,17 @@
 | 要素 | 理由 |
 |:---|:---|
 | `ChatInput.tsx`（textarea）| `<textarea>` であり、チャットバブル内の特殊レイアウト。`focus-ring` 済み |
-| `PendingSetRow.tsx`（インライン数値）| `text-xl font-outfit font-bold` + `border-b` の意図的なインライン編集デザイン |
-| `<select>` 全般 | `<Input>` は `<input>` 専用。select は wrapper div に `focus-within:ring-*` を適用 |
 
-## select wrapper のフォーカスリング
+## select wrapper
+
+`<Input>` は `<input>` 専用。select は `<Input>` の inline コンテナと同じスタイルを手動で適用する。
 
 ```tsx
-<div className="flex items-center bg-gym-zinc-100 rounded-xl px-4 h-11 border border-gym-zinc-200 focus-within:outline-none focus-within:ring-2 focus-within:ring-gym-black focus-within:ring-offset-2 focus-within:ring-offset-white">
-  <select className="w-full bg-transparent text-base font-medium outline-none appearance-none cursor-pointer">
+<div className="flex items-center border-b border-gym-zinc-300 h-11 focus-within:border-gym-black">
+  <select className="w-full bg-transparent text-base font-medium outline-none appearance-none cursor-pointer text-gym-black">
     ...
   </select>
 </div>
 ```
 
-select 自身に `focus-ring` を付けると wrapper の `focus-within:ring` と二重表示になるため、片方のみ適用する。
+select 自身に `focus-ring` を付けると二重表示になるため、wrapper の `focus-within:border-gym-black` のみ適用する。

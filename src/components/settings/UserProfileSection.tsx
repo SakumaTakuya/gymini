@@ -175,7 +175,7 @@ export function UserProfileSection() {
           >
             トレーニング目的
           </label>
-          <div className="flex items-center bg-gym-zinc-100 rounded-xl px-4 h-11 border border-gym-zinc-200 focus-within:outline-none focus-within:ring-2 focus-within:ring-gym-black focus-within:ring-offset-2 focus-within:ring-offset-white">
+          <div className="flex items-center border-b border-gym-zinc-300 h-11 focus-within:border-gym-black">
             <select
               id="profile-training-goal"
               value={localTrainingGoal}

@@ -78,6 +78,7 @@ export function ExerciseSearchField({
         }}
         placeholder="種目を追加..."
         prefix={<Plus size={18} weight="bold" className="text-gym-zinc-500 flex-shrink-0" />}
+        variant="filled"
         containerClassName="w-full h-[52px] rounded-2xl border-transparent gap-3"
       />
 

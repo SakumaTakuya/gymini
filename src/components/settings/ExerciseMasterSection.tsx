@@ -119,6 +119,7 @@ export function ExerciseMasterSection() {
           placeholder="種目を検索..."
           aria-label="種目を検索"
           prefix={<MagnifyingGlass size={16} weight="bold" className="text-gym-zinc-400 flex-shrink-0" aria-hidden />}
+          variant="filled"
         />
       </div>
 

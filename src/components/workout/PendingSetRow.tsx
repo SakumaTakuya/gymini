@@ -1,6 +1,7 @@
 import { Plus } from '@phosphor-icons/react'
 import { type FocusEvent, type KeyboardEvent, useRef } from 'react'
 import { IconButton } from '../ui/icon-button'
+import { Input } from '../ui/input'
 
 type PendingSetRowProps = {
   setNumber: number
@@ -57,31 +58,29 @@ export function PendingSetRow({
         <span className="font-outfit font-bold text-xs">{setNumber}</span>
       </div>
       <div className="flex-1 flex gap-6">
-        <div className="flex items-baseline gap-1 border-b border-gym-zinc-300 pb-0.5">
-          <input
-            type="number"
-            value={pendingSet.weight}
-            onChange={(e) => onWeightChange(Number(e.target.value))}
-            onBlur={handleWeightBlur}
-            onKeyDown={handleWeightKeyDown}
-            className="w-10 text-xl font-outfit font-bold bg-transparent outline-none text-gym-black"
-            inputMode="decimal"
-          />
-          <span className="text-xs font-medium text-gym-zinc-400">kg</span>
-        </div>
-        <div className="flex items-baseline gap-1 border-b border-gym-zinc-300 pb-0.5">
-          <input
-            ref={repsRef}
-            type="number"
-            value={pendingSet.reps}
-            onChange={(e) => onRepsChange(Number(e.target.value))}
-            onBlur={handleRepsBlur}
-            onKeyDown={handleRepsKeyDown}
-            className="w-8 text-xl font-outfit font-bold bg-transparent outline-none text-gym-black"
-            inputMode="numeric"
-          />
-          <span className="text-xs font-medium text-gym-zinc-400">回</span>
-        </div>
+        <Input
+          type="number"
+          value={pendingSet.weight}
+          onChange={(e) => onWeightChange(Number(e.target.value))}
+          onBlur={handleWeightBlur}
+          onKeyDown={handleWeightKeyDown}
+          inputMode="decimal"
+          suffix={<span className="text-xs font-medium text-gym-zinc-400">kg</span>}
+          containerClassName="items-baseline gap-1 h-auto pb-0.5"
+          className="w-10 text-xl font-outfit font-bold"
+        />
+        <Input
+          ref={repsRef}
+          type="number"
+          value={pendingSet.reps}
+          onChange={(e) => onRepsChange(Number(e.target.value))}
+          onBlur={handleRepsBlur}
+          onKeyDown={handleRepsKeyDown}
+          inputMode="numeric"
+          suffix={<span className="text-xs font-medium text-gym-zinc-400">回</span>}
+          containerClassName="items-baseline gap-1 h-auto pb-0.5"
+          className="w-8 text-xl font-outfit font-bold"
+        />
       </div>
       <IconButton
         ref={completeButtonRef}
