@@ -250,6 +250,26 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].sets[1]).toEqual({ weight: 65, reps: 8 })
       expect(draftExercises[0].sets[2]).toEqual({ weight: 70, reps: 6 })
       expect(draftExercises[0].editingSetIndex).toBeNull()
+      // Editing completion must return to idle — no next recording row auto-added
+      expect(draftExercises[0].cardState).toBe('idle')
+    })
+
+    it('編集完了後は idle に戻り次のセット入力行を自動追加しない', () => {
+      const { startSession, addExercise, completeSet } =
+        useWorkoutSessionStore.getState()
+      startSession()
+      addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      completeSet(0, { weight: 60, reps: 10 })
+
+      useWorkoutSessionStore.getState().editCompletedSet(0, 0)
+      useWorkoutSessionStore.getState().completeSet(0, { weight: 62, reps: 10 })
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].cardState).toBe('idle')
+      expect(draftExercises[0].editingSetIndex).toBeNull()
+      // Sets count must remain 1 — no extra set appended
+      expect(draftExercises[0].sets).toHaveLength(1)
+      expect(draftExercises[0].sets[0]).toEqual({ weight: 62, reps: 10 })
     })
   })
 

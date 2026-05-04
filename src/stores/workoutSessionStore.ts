@@ -172,20 +172,22 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
           const target = exercises[exerciseIndex]
           if (!target) return state
           // If editing an existing set, reinsert at original position; otherwise append.
-          const newSets =
-            target.editingSetIndex != null
-              ? [
-                  ...target.sets.slice(0, target.editingSetIndex),
-                  completedSet,
-                  ...target.sets.slice(target.editingSetIndex),
-                ]
-              : [...target.sets, completedSet]
+          const isEditMode = target.editingSetIndex != null
+          const newSets = isEditMode
+            ? [
+                ...target.sets.slice(0, target.editingSetIndex!),
+                completedSet,
+                ...target.sets.slice(target.editingSetIndex!),
+              ]
+            : [...target.sets, completedSet]
           exercises[exerciseIndex] = {
             ...target,
             sets: newSets,
             pendingSet: { ...completedSet },
             pendingSetDirty: false,
             editingSetIndex: null,
+            // Editing an existing set returns to idle; new set stays recording for next entry.
+            ...(isEditMode ? { cardState: 'idle' } : {}),
           }
           return { draftExercises: exercises }
         })
