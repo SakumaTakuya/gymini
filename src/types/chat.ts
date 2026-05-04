@@ -20,6 +20,7 @@ export type AddExerciseToSessionData = {
   actionType: 'addExerciseToSession'
   exerciseId: string
   exerciseName: string
+  sets?: Array<{ weight: number; reps: number }>
 }
 
 export type PendingActionData =

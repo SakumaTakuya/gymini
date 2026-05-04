@@ -34,7 +34,7 @@ const SYSTEM_INSTRUCTION = `あなたは筋トレをサポートする日本語�
 **書き込み操作（UIでユーザー確認が必須）:**
 - saveWorkout: ワークアウト記録の保存
 - addExercise: 種目マスターに新規追加
-- addExerciseToSession: アクティブなセッションに種目を追加
+- addExerciseToSession: アクティブなセッションに種目を追加（任意でセット群つき）
 
 ## 応答ガイドライン
 
@@ -44,7 +44,13 @@ const SYSTEM_INSTRUCTION = `あなたは筋トレをサポートする日本語�
 - ツールの結果を踏まえて、自然な日本語で応答してください
 - 読み取りツールの結果はマークダウン（リスト・テーブル）で見やすく整形してください
 - ユーザーのモチベーションを尊重し、短く励ましやアドバイスを添えてください
-- 不明な種目名が出たときは、登録済みの種目を getExercises で確認してから saveWorkout を呼び出すこと`
+- 不明な種目名が出たときは、登録済みの種目を getExercises で確認してから saveWorkout を呼び出すこと
+
+## セット情報の扱い
+
+- ユーザーが具体的な重量・回数を伝えたら、その値をそのまま提案として返してください。確認 UI 上でユーザーが値を編集できます
+- セッションがアクティブな場合は \`saveWorkout\` ではなく \`addExerciseToSession\`（sets 付き）を優先してください。saveWorkout は履歴的な記録、addExerciseToSession は進行中セッションに対する操作です
+- 進行中セッションの情報が提供されているときは、それを踏まえて「前セットからの増減提案」を 1 行添えてください（例: 「前セットと同じ 60kg でいきましょう」「軽くしたいなら 55kg もアリです」）`
 
 export type FunctionCallRequest = {
   name: string
@@ -57,16 +63,26 @@ export type GeminiChatResponse = {
   modelContent: Content | null
 }
 
-export function buildSystemInstruction(profile: UserProfile | null): string {
+export function buildSystemInstruction(
+  profile: UserProfile | null,
+  sessionContext?: string | null,
+): string {
   const todaySection = `\n\n## 今日の日付\n今日の日付は ${todayDateString()} です。日付が明示されていない場合はこの日付を使用してください。`
+  const sessionSection =
+    sessionContext && sessionContext.trim() !== ''
+      ? `\n\n## 進行中のセッション\n${sessionContext}\n\n上記のセッション状況を踏まえて、次セットの重量・回数のアドバイスや、進捗に応じた助言をしてください。`
+      : ''
 
-  if (!profile) return SYSTEM_INSTRUCTION + todaySection
+  const profileEmpty =
+    !profile ||
+    (profile.birthYear === null &&
+      profile.weightKg === null &&
+      profile.heightCm === null &&
+      profile.trainingGoal === null)
+
+  if (profileEmpty) return SYSTEM_INSTRUCTION + sessionSection + todaySection
 
   const { birthYear, weightKg, heightCm, trainingGoal } = profile
-  if (birthYear === null && weightKg === null && heightCm === null && trainingGoal === null) {
-    return SYSTEM_INSTRUCTION + todaySection
-  }
-
   const lines: string[] = []
   if (birthYear !== null) {
     const age = new Date().getFullYear() - birthYear
@@ -87,7 +103,7 @@ export function buildSystemInstruction(profile: UserProfile | null): string {
     lines.push(`- トレーニング目的: ${TRAINING_GOAL_LABELS[trainingGoal]}`)
   }
 
-  return `${SYSTEM_INSTRUCTION}\n\n## ユーザープロフィール\n${lines.join('\n')}\n\n上記の情報を踏まえてアドバイスやメニュー提案を個人化してください。${todaySection}`
+  return `${SYSTEM_INSTRUCTION}\n\n## ユーザープロフィール\n${lines.join('\n')}\n\n上記の情報を踏まえてアドバイスやメニュー提案を個人化してください。${sessionSection}${todaySection}`
 }
 
 export type GeminiClientConfig = {

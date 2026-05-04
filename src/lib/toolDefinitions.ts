@@ -171,7 +171,7 @@ const addExerciseDeclaration: FunctionDeclaration = {
 const addExerciseToSessionDeclaration: FunctionDeclaration = {
   name: 'addExerciseToSession',
   description:
-    'アクティブなワークアウトセッションに種目を追加する。ユーザー確認が必要',
+    'アクティブなワークアウトセッションに種目を追加する。任意で sets を指定すると、その重量・回数のセット群を含めて追加できる。ユーザー確認が必要（sets 付きは編集可能フォームを表示）',
   parameters: {
     type: SchemaType.OBJECT,
     properties: {
@@ -182,6 +182,25 @@ const addExerciseToSessionDeclaration: FunctionDeclaration = {
       exerciseName: {
         type: SchemaType.STRING,
         description: '種目名',
+      },
+      sets: {
+        type: SchemaType.ARRAY,
+        description:
+          'セットの配列（任意）。指定するとアクティブセッションに重量・回数つきで追加され、ユーザーは確認画面で値を編集できる',
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            weight: {
+              type: SchemaType.NUMBER,
+              description: '重量 (kg)',
+            },
+            reps: {
+              type: SchemaType.NUMBER,
+              description: '回数',
+            },
+          },
+          required: ['weight', 'reps'],
+        },
       },
     },
     required: ['exerciseId', 'exerciseName'],

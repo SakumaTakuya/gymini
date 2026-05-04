@@ -149,4 +149,246 @@ describe('ConfirmationBubble', () => {
     )
     expect(screen.getByRole('button', { name: /追加する/ })).toBeInTheDocument()
   })
+
+  describe('saveWorkout の編集可能フォーム (FR_013)', () => {
+    function makeSaveWorkoutPending(): PendingAction {
+      return {
+        id: 'pa-sw',
+        type: 'saveWorkout',
+        description: '記録しますか？',
+        data: {
+          actionType: 'saveWorkout',
+          date: '2026-05-04' as never,
+          exercises: [
+            {
+              exerciseName: 'ベンチプレス',
+              sets: [
+                { weight: 60, reps: 10 },
+                { weight: 60, reps: 10 },
+              ],
+            },
+          ],
+        },
+        status: 'pending',
+      }
+    }
+
+    it('AI 提案値を初期値とする重量・回数 input を描画する', () => {
+      render(
+        <ConfirmationBubble
+          content="記録しますか？"
+          pendingAction={makeSaveWorkoutPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      // 2 セット × 2 入力 = 4 input
+      expect(inputs).toHaveLength(4)
+      expect(inputs[0]).toHaveValue(60)
+      expect(inputs[1]).toHaveValue(10)
+    })
+
+    it('種目名は表示するが編集 UI を出さない（read-only）', () => {
+      render(
+        <ConfirmationBubble
+          content="記録しますか？"
+          pendingAction={makeSaveWorkoutPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      expect(screen.getByText('ベンチプレス')).toBeInTheDocument()
+      // 種目名は textbox/input ではなく表示テキスト
+      expect(screen.queryByDisplayValue('ベンチプレス')).not.toBeInTheDocument()
+    })
+
+    it('重量を編集して「記録する」をクリックすると、編集後の値で onApprove が呼ばれる', async () => {
+      const onApprove = vi.fn()
+      render(
+        <ConfirmationBubble
+          content="記録しますか？"
+          pendingAction={makeSaveWorkoutPending()}
+          onApprove={onApprove}
+          onReject={vi.fn()}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      // 1 セット目の重量を 60 → 65 に変更
+      await userEvent.clear(inputs[0])
+      await userEvent.type(inputs[0], '65')
+      await userEvent.click(screen.getByRole('button', { name: /記録する/ }))
+
+      expect(onApprove).toHaveBeenCalledTimes(1)
+      const editedData = onApprove.mock.calls[0][0]
+      expect(editedData).toMatchObject({
+        actionType: 'saveWorkout',
+        date: '2026-05-04',
+        exercises: [
+          {
+            exerciseName: 'ベンチプレス',
+            sets: [
+              { weight: 65, reps: 10 },
+              { weight: 60, reps: 10 },
+            ],
+          },
+        ],
+      })
+    })
+
+    it('「セットを追加」ボタンで set 行が増える', async () => {
+      render(
+        <ConfirmationBubble
+          content="記録しますか？"
+          pendingAction={makeSaveWorkoutPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      expect(screen.getAllByRole('spinbutton')).toHaveLength(4)
+      await userEvent.click(screen.getByRole('button', { name: /セットを追加/ }))
+      expect(screen.getAllByRole('spinbutton')).toHaveLength(6)
+    })
+
+    it('セット削除ボタンで set 行が減る', async () => {
+      render(
+        <ConfirmationBubble
+          content="記録しますか？"
+          pendingAction={makeSaveWorkoutPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      expect(screen.getAllByRole('spinbutton')).toHaveLength(4)
+      // セット削除ボタンは 2 つあるはず
+      const removeButtons = screen.getAllByRole('button', { name: /セットを削除/ })
+      expect(removeButtons.length).toBeGreaterThanOrEqual(1)
+      await userEvent.click(removeButtons[0])
+      expect(screen.getAllByRole('spinbutton')).toHaveLength(2)
+    })
+
+    it('セット 0 の状態では「記録する」ボタンが disabled', async () => {
+      render(
+        <ConfirmationBubble
+          content="記録しますか？"
+          pendingAction={{
+            id: 'pa-sw-empty',
+            type: 'saveWorkout',
+            description: '記録しますか？',
+            data: {
+              actionType: 'saveWorkout',
+              date: '2026-05-04' as never,
+              exercises: [{ exerciseName: 'ベンチプレス', sets: [] }],
+            },
+            status: 'pending',
+          }}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      expect(screen.getByRole('button', { name: /記録する/ })).toBeDisabled()
+    })
+  })
+
+  describe('addExerciseToSession の編集可能フォーム (sets 付き)', () => {
+    function makeAddWithSetsPending(): PendingAction {
+      return {
+        id: 'pa-ats',
+        type: 'addExerciseToSession',
+        description: 'ベンチプレスを追加しますか？',
+        data: {
+          actionType: 'addExerciseToSession',
+          exerciseId: 'ex-1',
+          exerciseName: 'ベンチプレス',
+          sets: [
+            { weight: 60, reps: 10 },
+            { weight: 60, reps: 10 },
+            { weight: 60, reps: 10 },
+          ],
+        },
+        status: 'pending',
+      }
+    }
+
+    it('sets が指定されている場合、編集可能な数値 input を描画する', () => {
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makeAddWithSetsPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      expect(inputs).toHaveLength(6)
+    })
+
+    it('sets が指定されていない場合は input を描画しない（従来通りボタンのみ）', () => {
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={{
+            id: 'pa-ats-no-sets',
+            type: 'addExerciseToSession',
+            description: 'スクワットを追加しますか？',
+            data: {
+              actionType: 'addExerciseToSession',
+              exerciseId: 'ex-2',
+              exerciseName: 'スクワット',
+            },
+            status: 'pending',
+          }}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      expect(screen.queryByRole('spinbutton')).not.toBeInTheDocument()
+    })
+
+    it('編集後 onApprove に編集済みの sets 付きデータが渡る', async () => {
+      const onApprove = vi.fn()
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makeAddWithSetsPending()}
+          onApprove={onApprove}
+          onReject={vi.fn()}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      await userEvent.clear(inputs[0])
+      await userEvent.type(inputs[0], '65')
+      await userEvent.click(screen.getByRole('button', { name: /追加する/ }))
+
+      expect(onApprove).toHaveBeenCalledTimes(1)
+      const editedData = onApprove.mock.calls[0][0]
+      expect(editedData).toMatchObject({
+        actionType: 'addExerciseToSession',
+        exerciseId: 'ex-1',
+        exerciseName: 'ベンチプレス',
+        sets: [
+          { weight: 65, reps: 10 },
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+        ],
+      })
+    })
+  })
+
+  describe('編集不要なアクション', () => {
+    it('addExercise アクションでは onApprove に編集データを渡さない（undefined）', async () => {
+      const onApprove = vi.fn()
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makePending()}
+          onApprove={onApprove}
+          onReject={vi.fn()}
+        />,
+      )
+      await userEvent.click(screen.getByRole('button', { name: /追加する/ }))
+      expect(onApprove).toHaveBeenCalledTimes(1)
+      expect(onApprove.mock.calls[0][0]).toBeUndefined()
+    })
+  })
 })

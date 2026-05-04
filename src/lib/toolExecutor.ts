@@ -186,11 +186,35 @@ function executeAddExerciseToSession(
   if (typeof exerciseId !== 'string' || typeof exerciseName !== 'string') {
     return { success: false, error: 'INVALID_ARGS' }
   }
+  const rawSets = args.sets
+  let parsedSets: Array<{ weight: number; reps: number }> | null = null
+  if (rawSets !== undefined) {
+    if (!Array.isArray(rawSets)) {
+      return { success: false, error: 'INVALID_ARGS' }
+    }
+    const out: Array<{ weight: number; reps: number }> = []
+    for (const s of rawSets) {
+      if (
+        typeof s !== 'object' ||
+        s === null ||
+        typeof (s as { weight?: unknown }).weight !== 'number' ||
+        typeof (s as { reps?: unknown }).reps !== 'number'
+      ) {
+        return { success: false, error: 'INVALID_ARGS' }
+      }
+      out.push(s as { weight: number; reps: number })
+    }
+    parsedSets = out
+  }
   const session = useWorkoutSessionStore.getState()
   if (!session.isActive) {
     return { success: false, error: 'SESSION_NOT_ACTIVE' }
   }
-  session.addExercise({ exerciseId, exerciseName })
+  if (parsedSets && parsedSets.length > 0) {
+    session.addExerciseWithSets({ exerciseId, exerciseName, sets: parsedSets })
+  } else {
+    session.addExercise({ exerciseId, exerciseName })
+  }
   return { success: true, data: { exerciseId, exerciseName } }
 }
 

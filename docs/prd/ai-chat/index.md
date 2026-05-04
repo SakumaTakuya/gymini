@@ -131,21 +131,37 @@ requirementDiagram
 
     functionalRequirement ToolAddExerciseToSession {
         id: FR_012_08
-        text: "アクティブセッションに種目を追加するツール（ユーザー確認必須・インラインUI）"
+        text: "アクティブセッションに種目（任意でセット群付き）を追加するツール（ユーザー確認必須・編集可能インラインフォーム）"
         risk: high
         verifymethod: test
     }
 
     requirement AIWriteConfirmation {
         id: REQ_008
-        text: "AIが書き込み操作を実行する前にチャットバブル内のインラインUIでユーザー確認を求める"
+        text: "AIが書き込み操作を実行する前にチャットバブル内のインラインUIでユーザー確認を求める。重量・回数を伴う提案は AI 提案値を初期値とする編集可能フォームを表示し、確定時はユーザー編集後の値で実行する"
         risk: high
+        verifymethod: test
+    }
+
+    functionalRequirement InlineSetEditing {
+        id: FR_013
+        text: "saveWorkout / addExerciseToSession(sets付き) の確認 UI は、各セットの重量・回数を編集可能な入力行（PendingSetRow を再利用）として描画する。ユーザーは値を変更し、行の追加・削除を行ってから記録できる。種目名・種目並び替え・種目追加削除はチャット側では編集不可"
+        risk: high
+        verifymethod: test
+    }
+
+    functionalRequirement ActiveSessionContextInjection {
+        id: FR_014
+        text: "ワークアウトセッションがアクティブな場合、AI のシステムインストラクションに進行中セッションの状態（開始時刻・各種目の最終セットおよび直近 3 セット・現在入力中の pendingSet）を注入する。トークン圧迫を避けるため要約形式とする"
+        risk: medium
         verifymethod: test
     }
 
     AIChatCoaching - contains -> ChatConversation
     AIChatCoaching - contains -> FunctionCalling
     AIChatCoaching - contains -> AIWriteConfirmation
+    AIChatCoaching - contains -> InlineSetEditing
+    AIChatCoaching - contains -> ActiveSessionContextInjection
     FunctionCalling - contains -> ToolGetRecentWorkouts
     FunctionCalling - contains -> ToolGetByExercise
     FunctionCalling - contains -> ToolGetByDate
@@ -191,10 +207,10 @@ AIが会話の文脈を解析し、必要に応じて以下のツールを自律
 | 種目別ワークアウト取得 | 種目名で部分一致絞り込み | 読み取り |
 | 日付別ワークアウト取得 | 日付指定で取得 | 読み取り |
 | ワークアウト集計 | 週・月単位の集計 | 読み取り |
-| ワークアウト保存 | 会話から記録を保存 | 書き込み（要確認） |
+| ワークアウト保存 | 会話から記録を保存 | 書き込み（要確認・編集フォーム） |
 | 種目一覧取得 | 登録済み種目一覧を取得 | 読み取り |
 | 種目追加 | 種目マスターに追加 | 書き込み（要確認） |
-| セッションへの種目追加 | アクティブセッションに種目を追加 | 書き込み（要確認） |
+| セッションへの種目追加 | アクティブセッションに種目（任意でセット群付き）を追加 | 書き込み（要確認・sets付きは編集フォーム） |
 
 **検証方法:** テストによる検証
 
@@ -205,19 +221,74 @@ AIが書き込み操作（ワークアウト保存・種目追加・セッショ
 **確認UIの表示形式:**
 
 - 確認UIはチャットのメッセージバブル内にインラインで表示する（別モーダルや別ダイアログは使用しない）
-- AI メッセージの直下に「実行する」「キャンセル」ボタンをバブル内に配置する
+- セット情報を含むアクション（`saveWorkout` / `addExerciseToSession`(sets付き)）は **編集可能フォーム** をバブル内に表示し、AI 提案値を初期値とする（FR_013 参照）
+- セット情報を伴わないアクション（`addExercise` / `addExerciseToSession`(sets無し)）は確認テキスト＋ボタンのみ
+- 確定時はユーザーが編集後の値で書き込みを実行する
 - ユーザーが確認後、AI は結果をチャット内で報告する
 
-**例（セッションへの種目追加）:**
+**例（セッションへの種目追加・sets無し）:**
 
 ```
 AI: 「スクワットを今日のセッションに追加しますか？」
     [追加する]  [キャンセル]   ← バブル内インラインボタン
 ```
 
+**例（セッションへの種目追加・sets付き）:**
+
+```
+AI: 「ベンチプレスを以下の内容でセッションに追加しますか？値は調整できます」
+    [1] 60 kg × 10 回  [−]
+    [2] 60 kg × 10 回  [−]
+    [3] 60 kg × 10 回  [−]
+        [+ セットを追加]
+    [キャンセル]  [記録する]
+```
+
 **インラインボタンUIスペック:**
 - キャンセル: `bg-zinc-100 text-black font-semibold rounded-xl h-11`
 - 実行（追加する等）: `bg-black text-white font-bold rounded-xl h-11` + アイコン
 - 2ボタンを `flex gap-2` で横並び、各 `flex-1`
+
+**検証方法:** テストによる検証
+
+### FR_013: 確認バブル内インライン編集フォーム
+
+セット情報を含む書き込みアクションの確認 UI は、訓練画面の `PendingSetRow` を再利用した編集可能フォームをバブル内に表示する。
+
+**仕様:**
+
+- 種目名は読み取り専用（チャット側で種目変更・追加・削除・並べ替えは行わない）
+- 各セット行で重量（kg）・回数（回）を数値入力可能。`PendingSetRow` のキー操作仕様（重量 → 回数の自動フォーカス、Enter で追加）を踏襲
+- セット末尾に「+ セットを追加」ボタン、各セット行に削除（−）ボタンを配置
+- 「記録する」確定時、AI 提案値ではなくユーザー編集後の `{date, exercises[].sets[]}` を `executeWriteTool` に渡す
+- セット数 0 の種目を含めて確定することはできない（最低 1 セット必要、UI で抑止）
+
+**スコープ外:** 種目の追加・削除・並べ替え・種目名変更はトレーニング画面（`/training`）に集約する。チャット側ではセットの値編集と +/− に限定する。
+
+**検証方法:** テストによる検証
+
+### FR_014: アクティブセッション文脈の AI 注入
+
+ワークアウトセッションがアクティブな場合、AI のシステムインストラクションに進行中セッションの要約を注入する。
+
+**注入内容:**
+
+- セッション開始時刻
+- 各 draft 種目について:
+  - 種目名
+  - 完了済みセット数
+  - **直近 3 セット** の `重量kg × 回数回` 列挙
+  - pendingSet が dirty な場合: 「現在 N セット目入力中: WkgxR回」
+
+**注入条件:**
+
+- `useWorkoutSessionStore.getState().isActive === true` のとき
+- 非アクティブの場合は注入しない（既存の SYSTEM_INSTRUCTION のまま）
+
+**AI への指示追加:**
+
+- セッションがアクティブな場合は `saveWorkout` ではなく `addExerciseToSession`(sets 付き) を優先する
+- ユーザーが具体的な重量・回数を伝えたらそのまま提案として返す（ユーザーが UI で編集できる）
+- 進行中セッション情報があるときは、それを踏まえて「前セットからの増減」を 1 行で提案する
 
 **検証方法:** テストによる検証

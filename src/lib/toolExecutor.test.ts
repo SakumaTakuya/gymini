@@ -292,6 +292,64 @@ describe('executeWriteTool', () => {
         exerciseName: 'ベンチプレス',
       })
     })
+
+    test('sets が指定されたとき addExerciseWithSets を呼んでセット込みで追加する', () => {
+      useWorkoutSessionStore.getState().startSession()
+      const addWithSetsSpy = vi.spyOn(
+        useWorkoutSessionStore.getState(),
+        'addExerciseWithSets',
+      )
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseId: 'ex-1',
+        exerciseName: 'ベンチプレス',
+        sets: [
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+        ],
+      })
+      expect(result.success).toBe(true)
+      expect(addWithSetsSpy).toHaveBeenCalledWith({
+        exerciseId: 'ex-1',
+        exerciseName: 'ベンチプレス',
+        sets: [
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+        ],
+      })
+      const state = useWorkoutSessionStore.getState()
+      expect(state.draftExercises).toHaveLength(1)
+      expect(state.draftExercises[0].sets).toHaveLength(3)
+    })
+
+    test('sets が空配列の場合は addExercise を呼ぶ（空 sets 付き種目は作らない）', () => {
+      useWorkoutSessionStore.getState().startSession()
+      const addSpy = vi.spyOn(useWorkoutSessionStore.getState(), 'addExercise')
+      const addWithSetsSpy = vi.spyOn(
+        useWorkoutSessionStore.getState(),
+        'addExerciseWithSets',
+      )
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseId: 'ex-1',
+        exerciseName: 'ベンチプレス',
+        sets: [],
+      })
+      expect(result.success).toBe(true)
+      expect(addSpy).toHaveBeenCalled()
+      expect(addWithSetsSpy).not.toHaveBeenCalled()
+    })
+
+    test('sets に不正な要素を含む場合 INVALID_ARGS', () => {
+      useWorkoutSessionStore.getState().startSession()
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseId: 'ex-1',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 'oops', reps: 10 }],
+      })
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('INVALID_ARGS')
+    })
   })
 
   test('不明な write ツールはエラーを返す', () => {
