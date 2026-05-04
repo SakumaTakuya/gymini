@@ -32,7 +32,7 @@ export function AIChatPage() {
 
   return (
     <div className="flex flex-col min-h-screen bg-gym-zinc-50">
-      <AppHeaderContent trailing={<GearIcon />} />
+      <AppHeaderContent trailing={<GearIcon variant="overlay" />} />
 
       <main className="flex-1 pb-content-bottom-chat">
         {messages.length === 0 && !error && (

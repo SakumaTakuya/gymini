@@ -30,7 +30,7 @@ export function HistoryPage() {
 
   return (
     <>
-      <AppHeaderContent trailing={<GearIcon />} />
+      <AppHeaderContent trailing={<GearIcon variant="overlay" />} />
       <div className="flex-1 bg-gym-zinc-50 pb-content-bottom-scroll overflow-y-auto">
         <MonthCalendar
           displayMonth={displayMonth}
