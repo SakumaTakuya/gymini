@@ -59,7 +59,7 @@ export function AppHeaderProvider({ children }: ProviderProps) {
         className="fixed top-0 left-0 right-0 z-30 pointer-events-none px-4 pt-3 flex items-start justify-between"
       >
         {variant === 'session-active' ? (
-          <div className="w-full flex items-center justify-between rounded-full bg-gym-white/80 backdrop-blur-xl border border-gym-zinc-200/60 shadow-float px-4 min-h-[44px] py-1.5 pointer-events-auto">
+          <div className="w-full flex items-center justify-between rounded-full bg-gym-white/80 backdrop-blur-xl border border-gym-zinc-200/60 shadow-float px-4 h-11 pointer-events-auto">
             <div className="flex items-center gap-2 min-w-0">
               <span ref={setLeadingHost} className="contents" />
               <h1
