@@ -151,4 +151,105 @@ describe('MonthCalendar', () => {
     )
     expect(outsideSpan).toBeDefined()
   })
+
+  describe('スワイプ月遷移', () => {
+    function getTrack() {
+      return document.querySelector(
+        '[data-testid="calendar-track"]',
+      ) as HTMLElement
+    }
+
+    function touchEvent(x: number, y: number) {
+      return {
+        touches: [{ clientX: x, clientY: y }],
+        changedTouches: [{ clientX: x, clientY: y }],
+      }
+    }
+
+    it('内側トラックが初期状態で translateX(-100%) に位置する', () => {
+      setup()
+      const track = getTrack()
+      expect(track).toBeTruthy()
+      expect(track.style.transform).toContain('translateX(calc(-100%')
+    })
+
+    it('touchmove 中にトラックの transform が指の動きを反映する', () => {
+      setup()
+      const track = getTrack()
+      const surface = track.parentElement!
+
+      fireEvent.touchStart(surface, touchEvent(200, 100))
+      fireEvent.touchMove(surface, touchEvent(150, 100))
+
+      expect(track.style.transform).toContain('-50px')
+    })
+
+    it('閾値超えの左スワイプで transitionend 後に onNextMonth が呼ばれる', () => {
+      const props = setup()
+      const track = getTrack()
+      const surface = track.parentElement!
+
+      fireEvent.touchStart(surface, touchEvent(250, 100))
+      fireEvent.touchMove(surface, touchEvent(100, 100))
+      fireEvent.touchEnd(surface, touchEvent(100, 100))
+
+      // スナップ中: 次月方向 -200%
+      expect(track.style.transform).toContain('translateX(-200%)')
+      expect(props.onNextMonth).not.toHaveBeenCalled()
+
+      // アニメ完了をシミュレート
+      fireEvent.transitionEnd(track, { propertyName: 'transform' })
+      expect(props.onNextMonth).toHaveBeenCalledOnce()
+      expect(props.onPrevMonth).not.toHaveBeenCalled()
+    })
+
+    it('閾値超えの右スワイプで transitionend 後に onPrevMonth が呼ばれる', () => {
+      const props = setup()
+      const track = getTrack()
+      const surface = track.parentElement!
+
+      fireEvent.touchStart(surface, touchEvent(50, 100))
+      fireEvent.touchMove(surface, touchEvent(200, 100))
+      fireEvent.touchEnd(surface, touchEvent(200, 100))
+
+      expect(track.style.transform).toContain('translateX(0%)')
+      expect(props.onPrevMonth).not.toHaveBeenCalled()
+
+      fireEvent.transitionEnd(track, { propertyName: 'transform' })
+      expect(props.onPrevMonth).toHaveBeenCalledOnce()
+      expect(props.onNextMonth).not.toHaveBeenCalled()
+    })
+
+    it('閾値未満のリリースで月遷移は起きずトラックが中央に戻る', () => {
+      const props = setup()
+      const track = getTrack()
+      const surface = track.parentElement!
+
+      fireEvent.touchStart(surface, touchEvent(100, 100))
+      fireEvent.touchMove(surface, touchEvent(110, 100))
+      fireEvent.touchEnd(surface, touchEvent(110, 100))
+
+      expect(track.style.transform).toContain('translateX(calc(-100%')
+      expect(track.style.transform).toContain('0px')
+      fireEvent.transitionEnd(track, { propertyName: 'transform' })
+      expect(props.onPrevMonth).not.toHaveBeenCalled()
+      expect(props.onNextMonth).not.toHaveBeenCalled()
+    })
+
+    it('縦移動が大きい場合は月遷移が発生しない', () => {
+      const props = setup()
+      const track = getTrack()
+      const surface = track.parentElement!
+
+      fireEvent.touchStart(surface, touchEvent(200, 100))
+      // まず縦に大きく動く → 縦スクロール扱いで以降破棄
+      fireEvent.touchMove(surface, touchEvent(200, 200))
+      fireEvent.touchMove(surface, touchEvent(50, 200))
+      fireEvent.touchEnd(surface, touchEvent(50, 200))
+
+      fireEvent.transitionEnd(track, { propertyName: 'transform' })
+      expect(props.onPrevMonth).not.toHaveBeenCalled()
+      expect(props.onNextMonth).not.toHaveBeenCalled()
+    })
+  })
 })
