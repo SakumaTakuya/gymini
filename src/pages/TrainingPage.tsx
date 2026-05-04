@@ -25,7 +25,7 @@ export function TrainingPage() {
               >
                 終了
               </button>
-              <GearIcon />
+              <GearIcon variant="overlay" />
             </>
           }
         />
@@ -36,7 +36,7 @@ export function TrainingPage() {
 
   return (
     <>
-      <AppHeaderContent trailing={<GearIcon />} />
+      <AppHeaderContent trailing={<GearIcon variant="overlay" />} />
       <IdleView onStartTraining={() => startSession()} />
     </>
   )
