@@ -41,7 +41,7 @@ export function ChatInput({
       className="fixed left-0 right-0 z-30 px-3 pb-3"
       style={{ bottom: 96 }}
     >
-      <div className="mx-auto max-w-xl flex items-end gap-2 rounded-3xl bg-gym-white border border-gym-zinc-200 shadow-soft px-3 py-2">
+      <div className="mx-auto max-w-xl flex items-end gap-2 rounded-3xl bg-gym-white border border-gym-zinc-200 shadow-soft px-3 py-2 focus-within:border-gym-black">
         <textarea
           value={text}
           onChange={(e) => setText(e.target.value)}
@@ -50,7 +50,7 @@ export function ChatInput({
           disabled={disabled}
           rows={1}
           className={cn(
-            'focus-ring flex-1 resize-none bg-transparent outline-none',
+            'flex-1 resize-none bg-transparent outline-none',
             'text-base text-gym-black placeholder:text-gym-zinc-400',
             'min-h-[36px] max-h-32 py-1.5 px-1',
           )}
