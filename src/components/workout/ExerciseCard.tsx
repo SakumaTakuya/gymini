@@ -132,6 +132,7 @@ export function ExerciseCard({
                     key="pending"
                     setNumber={insertAt + 1}
                     pendingSet={pendingSet}
+                    isEditing={editingSetIndex !== null}
                     onComplete={() => onComplete(pendingSet)}
                     onWeightChange={onWeightChange}
                     onRepsChange={onRepsChange}

@@ -1,4 +1,4 @@
-import { Plus } from '@phosphor-icons/react'
+import { Check, Plus } from '@phosphor-icons/react'
 import { type FocusEvent, type KeyboardEvent, useRef } from 'react'
 import { IconButton } from '../ui/icon-button'
 import { Input } from '../ui/input'
@@ -6,6 +6,7 @@ import { Input } from '../ui/input'
 type PendingSetRowProps = {
   setNumber: number
   pendingSet: { weight: number; reps: number }
+  isEditing?: boolean
   onComplete: () => void
   onWeightChange: (weight: number) => void
   onRepsChange: (reps: number) => void
@@ -14,6 +15,7 @@ type PendingSetRowProps = {
 export function PendingSetRow({
   setNumber,
   pendingSet,
+  isEditing = false,
   onComplete,
   onWeightChange,
   onRepsChange,
@@ -89,7 +91,7 @@ export function PendingSetRow({
         aria-label="完了"
         className="rounded bg-gym-black text-gym-white shadow-soft hover:bg-gym-black/90"
       >
-        <Plus size={12} weight="bold" />
+        {isEditing ? <Check size={12} weight="bold" /> : <Plus size={12} weight="bold" />}
       </IconButton>
     </div>
   )
