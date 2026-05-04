@@ -4,7 +4,7 @@ title: "履歴画面"
 type: "prd"
 status: "approved"
 created: "2026-04-06"
-updated: "2026-04-12"
+updated: "2026-05-04"
 depends-on: ["prd-gymini", "prd-workout"]
 tags: ["history", "calendar", "phase-1"]
 category: "view"
@@ -96,12 +96,21 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement SwipeNavigation {
+        id: FR_028
+        text: "カレンダー上の左右スワイプで前月・次月へ遷移（指追従＋スナップアニメーション）"
+        risk: low
+        verifymethod: test
+    }
+
     HistoryView - contains -> MonthlyCalendar
     HistoryView - contains -> TrainingMarker
     HistoryView - contains -> DateTapSummary
     HistoryView - contains -> EmptyState
     HistoryView - contains -> TodayHighlight
+    HistoryView - contains -> SwipeNavigation
     DateTapSummary - derives -> EmptyState
+    SwipeNavigation - derives -> MonthlyCalendar
 ```
 
 ---
@@ -165,6 +174,23 @@ requirementDiagram
 - トレーニング記録ありの場合は赤ドットも表示（`border border-black` 付き）
 
 **検証方法:** テストによる検証
+
+### FR_028: スワイプ月遷移
+
+カレンダー上で左右にスワイプ（横ドラッグ）すると前月・次月に遷移できる。
+
+**動作仕様:**
+- ドラッグ中はカレンダーが指に追従して水平方向に translate される
+- リリース時の水平移動量が閾値（既定 50px）を超えたら遷移を確定し、スライドアニメーション（既定 200ms）でスナップ
+- 閾値未満なら元の位置にスナップバック（遷移しない）
+- 縦方向の移動が水平を上回った場合は通常の縦スクロールを優先しスワイプ判定を破棄
+- 既存の `[<]`/`[>]` ボタンクリックでの月遷移は引き続き同じアニメーションで動作
+
+**遷移方向:**
+- 左方向スワイプ（指を左に動かす）→ 次月
+- 右方向スワイプ（指を右に動かす）→ 前月
+
+**検証方法:** テストによる検証（Vitest 単体 + 任意で Playwright E2E）
 
 ---
 
