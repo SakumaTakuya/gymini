@@ -69,7 +69,7 @@ export function AIChatPage() {
               key={m.id}
               content={m.content}
               pendingAction={m.pendingAction}
-              onApprove={() => approve(m.id)}
+              onApprove={(edited) => void approve(m.id, edited)}
               onReject={() => reject(m.id)}
             />
           ) : (

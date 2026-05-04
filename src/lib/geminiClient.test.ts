@@ -16,6 +16,7 @@ vi.mock('@google/generative-ai', async () => {
 })
 
 import {
+  buildSystemInstruction,
   createGeminiClient,
   getErrorMessage,
   GEMINI_MODEL,
@@ -140,6 +141,41 @@ describe('createGeminiClient', () => {
     ])
     expect(result.text).toBeNull()
     expect(result.modelContent).toBeNull()
+  })
+})
+
+describe('buildSystemInstruction', () => {
+  test('プロファイル null・セッション null のときベース指示と日付セクションを含む', () => {
+    const result = buildSystemInstruction(null, null)
+    expect(result).toContain('AIコーチ')
+    expect(result).toContain('今日の日付')
+    expect(result).not.toContain('進行中のセッション')
+  })
+
+  test('プロファイル無しでもセッション文脈が渡されたら注入する', () => {
+    const result = buildSystemInstruction(null, '進行中: ベンチプレス 60kg × 10回')
+    expect(result).toContain('進行中のセッション')
+    expect(result).toContain('ベンチプレス 60kg × 10回')
+  })
+
+  test('プロファイルとセッション両方注入する', () => {
+    const result = buildSystemInstruction(
+      {
+        birthYear: 1990,
+        weightKg: 70,
+        heightCm: 170,
+        trainingGoal: 'muscle_gain',
+      },
+      '進行中: スクワット 100kg × 5回',
+    )
+    expect(result).toContain('ユーザープロフィール')
+    expect(result).toContain('進行中のセッション')
+    expect(result).toContain('スクワット 100kg × 5回')
+  })
+
+  test('session が空文字列の場合は注入しない', () => {
+    const result = buildSystemInstruction(null, '')
+    expect(result).not.toContain('進行中のセッション')
   })
 })
 

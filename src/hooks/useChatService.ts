@@ -14,6 +14,7 @@ import {
   executeWriteTool,
   type ToolExecutionResult,
 } from '../lib/toolExecutor'
+import { buildActiveSessionContext } from '../lib/sessionContext'
 import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useUserProfileStore } from '../stores/userProfileStore'
@@ -97,7 +98,11 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       chat.setLoading(true)
 
       try {
-        const systemInstruction = buildSystemInstruction(profile)
+        const sessionContext = buildActiveSessionContext()
+        const systemInstruction = buildSystemInstruction(
+          profile,
+          sessionContext,
+        )
         const client = createClient(settings.apiKey, systemInstruction)
         const baseContents = messagesToContents(
           useChatStore.getState().messages,
@@ -240,32 +245,38 @@ export function useChatService(options: UseChatServiceOptions = {}) {
     [createClient],
   )
 
-  const approve = useCallback(async (messageId: string) => {
-    const message = useChatStore
-      .getState()
-      .messages.find((m) => m.id === messageId)
-    if (!message?.pendingAction) return
-    if (message.pendingAction.status !== 'pending') return
+  const approve = useCallback(
+    async (messageId: string, editedData?: PendingActionData) => {
+      const message = useChatStore
+        .getState()
+        .messages.find((m) => m.id === messageId)
+      if (!message?.pendingAction) return
+      if (message.pendingAction.status !== 'pending') return
 
-    const { toolName, args } = pendingActionToToolCall(message.pendingAction)
-    const result = executeWriteTool(toolName, args)
-    useChatStore.getState().updatePendingAction(messageId, 'approved')
+      const effectiveAction: PendingAction = editedData
+        ? { ...message.pendingAction, data: editedData }
+        : message.pendingAction
+      const { toolName, args } = pendingActionToToolCall(effectiveAction)
+      const result = executeWriteTool(toolName, args)
+      useChatStore.getState().updatePendingAction(messageId, 'approved')
 
-    const resultMessage = buildWriteResultMessage(message.pendingAction, result)
-    useChatStore.getState().addMessage({
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      content: resultMessage,
-      timestamp: nowISODateTimeString(),
-      toolCalls: [
-        {
-          toolName,
-          args,
-          result,
-        },
-      ],
-    })
-  }, [])
+      const resultMessage = buildWriteResultMessage(effectiveAction, result)
+      useChatStore.getState().addMessage({
+        id: crypto.randomUUID(),
+        role: 'assistant',
+        content: resultMessage,
+        timestamp: nowISODateTimeString(),
+        toolCalls: [
+          {
+            toolName,
+            args,
+            result,
+          },
+        ],
+      })
+    },
+    [],
+  )
 
   const reject = useCallback((messageId: string) => {
     const message = useChatStore
@@ -400,7 +411,29 @@ function toPendingActionData(
       const exerciseName = call.args.exerciseName
       if (typeof exerciseId !== 'string' || typeof exerciseName !== 'string')
         return null
-      return { actionType: 'addExerciseToSession', exerciseId, exerciseName }
+      const rawSets = call.args.sets
+      let sets: Array<{ weight: number; reps: number }> | undefined
+      if (Array.isArray(rawSets)) {
+        const out: Array<{ weight: number; reps: number }> = []
+        for (const s of rawSets) {
+          if (
+            typeof s !== 'object' ||
+            s === null ||
+            typeof (s as { weight?: unknown }).weight !== 'number' ||
+            typeof (s as { reps?: unknown }).reps !== 'number'
+          ) {
+            return null
+          }
+          out.push(s as { weight: number; reps: number })
+        }
+        sets = out
+      }
+      return {
+        actionType: 'addExerciseToSession',
+        exerciseId,
+        exerciseName,
+        ...(sets ? { sets } : {}),
+      }
     }
     default:
       return null
@@ -420,8 +453,15 @@ function describePendingAction(data: PendingActionData): string {
     }
     case 'addExercise':
       return `「${data.name}」を種目マスターに追加しますか？`
-    case 'addExerciseToSession':
+    case 'addExerciseToSession': {
+      if (data.sets && data.sets.length > 0) {
+        const setsText = data.sets
+          .map((s) => `${s.weight}kg × ${s.reps}回`)
+          .join('、')
+        return `「${data.exerciseName}」を現在のセッションに以下の内容で追加しますか？値は調整できます\n${setsText}`
+      }
       return `「${data.exerciseName}」を現在のセッションに追加しますか？`
+    }
   }
 }
 
@@ -446,6 +486,7 @@ function pendingActionToToolCall(action: PendingAction): {
         args: {
           exerciseId: action.data.exerciseId,
           exerciseName: action.data.exerciseName,
+          ...(action.data.sets ? { sets: action.data.sets } : {}),
         },
       }
   }
