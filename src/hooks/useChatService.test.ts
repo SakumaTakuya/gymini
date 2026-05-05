@@ -646,6 +646,99 @@ describe('useChatService', () => {
     ])
   })
 
+  describe('placeholder sets による proposal (FR_015)', () => {
+    test('addExerciseToSession に sets:[{0,0}] が来たとき pendingAction.data.sets が保持される', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      useWorkoutSessionStore.getState().startSession()
+      const client = mockClient([
+        {
+          text: 'ナイス💪 重量と回数を入力してください',
+          functionCalls: [
+            {
+              name: 'addExerciseToSession',
+              args: {
+                exerciseId: 'ex-dp',
+                exerciseName: 'ダンベルプレス',
+                sets: [{ weight: 0, reps: 0 }],
+              },
+            },
+          ],
+        },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('ダンベルプレスやる')
+      })
+      const msgs = useChatStore.getState().messages
+      const last = msgs[msgs.length - 1]
+      expect(last.pendingAction).toMatchObject({
+        type: 'addExerciseToSession',
+        status: 'pending',
+        data: {
+          actionType: 'addExerciseToSession',
+          exerciseId: 'ex-dp',
+          exerciseName: 'ダンベルプレス',
+          sets: [{ weight: 0, reps: 0 }],
+        },
+      })
+    })
+
+    test('saveWorkout に sets:[{0,0}] が来たとき pendingAction.data.exercises[].sets が保持される', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      const client = mockClient([
+        {
+          text: 'ナイス💪 重量と回数を入力してください',
+          functionCalls: [
+            {
+              name: 'saveWorkout',
+              args: {
+                date: '2026-05-05',
+                exercises: [
+                  {
+                    exerciseName: 'ダンベルプレス',
+                    sets: [{ weight: 0, reps: 0 }],
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('胸の日でダンベルプレスやる')
+      })
+      const msgs = useChatStore.getState().messages
+      const last = msgs[msgs.length - 1]
+      expect(last.pendingAction).toMatchObject({
+        type: 'saveWorkout',
+        status: 'pending',
+        data: {
+          actionType: 'saveWorkout',
+          date: '2026-05-05',
+          exercises: [
+            {
+              exerciseName: 'ダンベルプレス',
+              sets: [{ weight: 0, reps: 0 }],
+            },
+          ],
+        },
+      })
+    })
+  })
+
+  describe('EMPTY_RESPONSE_FALLBACK 文言（FR_015 補完）', () => {
+    test('エラー風表現を含まず、励まし＋入力例を含むコーチ風文言である', () => {
+      expect(EMPTY_RESPONSE_FALLBACK).not.toMatch(/うまく応答を生成できませんでした/)
+      expect(EMPTY_RESPONSE_FALLBACK).toMatch(/ナイス|💪|記録/)
+      expect(EMPTY_RESPONSE_FALLBACK).toMatch(/例/)
+    })
+  })
+
   test('ユーザーターン間のアシスタントメッセージを単一の model ターンにマージする', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useChatStore.setState({

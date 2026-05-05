@@ -29,7 +29,7 @@ import type {
 type CreateClient = (apiKey: string, systemInstruction?: string) => GeminiClient
 
 export const EMPTY_RESPONSE_FALLBACK =
-  'うまく応答を生成できませんでした。もう少し詳しく教えていただけますか？（例: 「今日ベンチプレス60kg10回3セットやった」のように記録内容を含めて入力すると保存できます）'
+  'ナイス！💪 種目名や重量・回数が決まったら教えてくれれば記録できますよ（例:「ダンベルプレスやる」「ベンチプレス60kg10回」）'
 
 export type UseChatServiceOptions = {
   createClient?: CreateClient

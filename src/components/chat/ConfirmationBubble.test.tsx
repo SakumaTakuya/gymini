@@ -391,4 +391,180 @@ describe('ConfirmationBubble', () => {
       expect(onApprove.mock.calls[0][0]).toBeUndefined()
     })
   })
+
+  describe('placeholder 提案 (FR_015) と 0/0 ガード', () => {
+    function makeAddWithPlaceholderPending(): PendingAction {
+      return {
+        id: 'pa-ats-ph',
+        type: 'addExerciseToSession',
+        description: 'ダンベルプレスを追加しますか？',
+        data: {
+          actionType: 'addExerciseToSession',
+          exerciseId: 'ex-dp',
+          exerciseName: 'ダンベルプレス',
+          sets: [{ weight: 0, reps: 0 }],
+        },
+        status: 'pending',
+      }
+    }
+
+    function makeSavePlaceholderPending(): PendingAction {
+      return {
+        id: 'pa-sw-ph',
+        type: 'saveWorkout',
+        description: '記録しますか？',
+        data: {
+          actionType: 'saveWorkout',
+          date: '2026-05-05' as never,
+          exercises: [
+            {
+              exerciseName: 'ダンベルプレス',
+              sets: [{ weight: 0, reps: 0 }],
+            },
+          ],
+        },
+        status: 'pending',
+      }
+    }
+
+    it('addExerciseToSession で sets が [{0,0}] のとき、フォームが表示され input は空表示', () => {
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makeAddWithPlaceholderPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      expect(inputs).toHaveLength(2)
+      // value=0 のとき空入力で表示される
+      expect(inputs[0]).toHaveValue(null)
+      expect(inputs[1]).toHaveValue(null)
+    })
+
+    it('addExerciseToSession で sets が [{0,0}] のとき、placeholder（kg/回）が出る', () => {
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makeAddWithPlaceholderPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      expect(inputs[0]).toHaveAttribute('placeholder', 'kg')
+      expect(inputs[1]).toHaveAttribute('placeholder', '回')
+    })
+
+    it('全セットが 0/0 のとき「記録する/追加する」は disabled かつヒント文言が出る', () => {
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makeAddWithPlaceholderPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      expect(screen.getByRole('button', { name: /追加する/ })).toBeDisabled()
+      expect(screen.getByText('重量と回数を入力してください')).toBeInTheDocument()
+    })
+
+    it('weight だけ入力 (reps=0) では disabled のまま', async () => {
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makeAddWithPlaceholderPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      await userEvent.type(inputs[0], '60')
+      expect(screen.getByRole('button', { name: /追加する/ })).toBeDisabled()
+    })
+
+    it('weight と reps を両方入力すると enabled になる', async () => {
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makeAddWithPlaceholderPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      await userEvent.type(inputs[0], '60')
+      await userEvent.type(inputs[1], '10')
+      expect(screen.getByRole('button', { name: /追加する/ })).not.toBeDisabled()
+      expect(
+        screen.queryByText('重量と回数を入力してください'),
+      ).not.toBeInTheDocument()
+    })
+
+    it('編集後の値で onApprove が呼ばれる（0/0 ではない）', async () => {
+      const onApprove = vi.fn()
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makeAddWithPlaceholderPending()}
+          onApprove={onApprove}
+          onReject={vi.fn()}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      await userEvent.type(inputs[0], '60')
+      await userEvent.type(inputs[1], '10')
+      await userEvent.click(screen.getByRole('button', { name: /追加する/ }))
+
+      expect(onApprove).toHaveBeenCalledTimes(1)
+      expect(onApprove.mock.calls[0][0]).toMatchObject({
+        actionType: 'addExerciseToSession',
+        exerciseId: 'ex-dp',
+        exerciseName: 'ダンベルプレス',
+        sets: [{ weight: 60, reps: 10 }],
+      })
+    })
+
+    it('saveWorkout でも sets が [{0,0}] のときは disabled + ヒント表示', () => {
+      render(
+        <ConfirmationBubble
+          content="記録しますか？"
+          pendingAction={makeSavePlaceholderPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      expect(screen.getByRole('button', { name: /記録する/ })).toBeDisabled()
+      expect(screen.getByText('重量と回数を入力してください')).toBeInTheDocument()
+    })
+
+    it('saveWorkout 編集後の値で onApprove が呼ばれる', async () => {
+      const onApprove = vi.fn()
+      render(
+        <ConfirmationBubble
+          content="記録しますか？"
+          pendingAction={makeSavePlaceholderPending()}
+          onApprove={onApprove}
+          onReject={vi.fn()}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      await userEvent.type(inputs[0], '20')
+      await userEvent.type(inputs[1], '12')
+      await userEvent.click(screen.getByRole('button', { name: /記録する/ }))
+
+      expect(onApprove).toHaveBeenCalledTimes(1)
+      expect(onApprove.mock.calls[0][0]).toMatchObject({
+        actionType: 'saveWorkout',
+        date: '2026-05-05',
+        exercises: [
+          {
+            exerciseName: 'ダンベルプレス',
+            sets: [{ weight: 20, reps: 12 }],
+          },
+        ],
+      })
+    })
+  })
 })
