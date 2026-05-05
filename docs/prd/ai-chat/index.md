@@ -138,14 +138,14 @@ requirementDiagram
 
     requirement AIWriteConfirmation {
         id: REQ_008
-        text: "AIが書き込み操作を実行する前にチャットバブル内のインラインUIでユーザー確認を求める。重量・回数を伴う提案は AI 提案値を初期値とする編集可能フォームを表示し、確定時はユーザー編集後の値で実行する"
+        text: "AIが書き込み操作を実行する前にチャットバブル内のインラインUIでユーザー確認を求める。重量・回数を伴う提案は AI 提案値（実値または空のプレースホルダ）を初期値とする編集可能フォームを表示し、確定時はユーザー編集後の値で実行する。全セットの重量・回数が確定値（>0）でない限り「記録する」は disabled となる"
         risk: high
         verifymethod: test
     }
 
     functionalRequirement InlineSetEditing {
         id: FR_013
-        text: "saveWorkout / addExerciseToSession(sets付き) の確認 UI は、各セットの重量・回数を編集可能な入力行（PendingSetRow を再利用）として描画する。ユーザーは値を変更し、行の追加・削除を行ってから記録できる。種目名・種目並び替え・種目追加削除はチャット側では編集不可"
+        text: "saveWorkout / addExerciseToSession(sets付き) の確認 UI は、各セットの重量・回数を編集可能な入力行（PendingSetRow を再利用）として描画する。ユーザーは値を変更し、行の追加・削除を行ってから記録できる。値が 0 のセットは空入力＋プレースホルダ（kg/回）で表示し、全セット weight>0 かつ reps>0 でない限り確定不可。種目名・種目並び替え・種目追加削除はチャット側では編集不可"
         risk: high
         verifymethod: test
     }
@@ -157,11 +157,19 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement ExerciseOnlyPlaceholderProposal {
+        id: FR_015
+        text: "ユーザーが具体値（kg/回数）を伴わずに種目名のみを言及した場合も、AI は placeholder sets [{weight:0, reps:0}] 付きで書き込みツールを呼び出し、編集可能フォームを提示する。セッションアクティブ時は addExerciseToSession、非アクティブ時は saveWorkout(date=今日) を使う"
+        risk: medium
+        verifymethod: test
+    }
+
     AIChatCoaching - contains -> ChatConversation
     AIChatCoaching - contains -> FunctionCalling
     AIChatCoaching - contains -> AIWriteConfirmation
     AIChatCoaching - contains -> InlineSetEditing
     AIChatCoaching - contains -> ActiveSessionContextInjection
+    AIChatCoaching - contains -> ExerciseOnlyPlaceholderProposal
     FunctionCalling - contains -> ToolGetRecentWorkouts
     FunctionCalling - contains -> ToolGetByExercise
     FunctionCalling - contains -> ToolGetByDate
@@ -221,9 +229,10 @@ AIが書き込み操作（ワークアウト保存・種目追加・セッショ
 **確認UIの表示形式:**
 
 - 確認UIはチャットのメッセージバブル内にインラインで表示する（別モーダルや別ダイアログは使用しない）
-- セット情報を含むアクション（`saveWorkout` / `addExerciseToSession`(sets付き)）は **編集可能フォーム** をバブル内に表示し、AI 提案値を初期値とする（FR_013 参照）
+- セット情報を含むアクション（`saveWorkout` / `addExerciseToSession`(sets付き)）は **編集可能フォーム** をバブル内に表示し、AI 提案値（実値または空のプレースホルダ）を初期値とする（FR_013 参照）
 - セット情報を伴わないアクション（`addExercise` / `addExerciseToSession`(sets無し)）は確認テキスト＋ボタンのみ
 - 確定時はユーザーが編集後の値で書き込みを実行する
+- 全セット weight>0 かつ reps>0 を満たさない限り「記録する」は disabled となり、不足セルがあるときはヒント文言「重量と回数を入力してください」を表示する
 - ユーザーが確認後、AI は結果をチャット内で報告する
 
 **例（セッションへの種目追加・sets無し）:**
@@ -244,6 +253,17 @@ AI: 「ベンチプレスを以下の内容でセッションに追加します�
     [キャンセル]  [記録する]
 ```
 
+**例（種目名のみ言及・placeholder 提案、FR_015）:**
+
+```
+ユーザー:「胸の日でダンベルプレスやる」
+AI: 「ナイス💪 ダンベルプレスですね。重量と回数を入力してください」
+    [1] _ kg × _ 回  [−]      ← 空入力プレースホルダ
+        [+ セットを追加]
+    [キャンセル]  [記録する] (disabled)   ← 値が 0 のため
+    重量と回数を入力してください    ← ヒント文言
+```
+
 **インラインボタンUIスペック:**
 - キャンセル: `bg-zinc-100 text-black font-semibold rounded-xl h-11`
 - 実行（追加する等）: `bg-black text-white font-bold rounded-xl h-11` + アイコン
@@ -259,9 +279,11 @@ AI: 「ベンチプレスを以下の内容でセッションに追加します�
 
 - 種目名は読み取り専用（チャット側で種目変更・追加・削除・並べ替えは行わない）
 - 各セット行で重量（kg）・回数（回）を数値入力可能。`PendingSetRow` のキー操作仕様（重量 → 回数の自動フォーカス、Enter で追加）を踏襲
+- 値が 0 のセット（AI が placeholder で提案した未確定セット）は **空入力 + プレースホルダ表示**（`kg` / `回`）で描画する。内部状態は 0 のまま保持し、ユーザーの入力値で上書きする
 - セット末尾に「+ セットを追加」ボタン、各セット行に削除（−）ボタンを配置
 - 「記録する」確定時、AI 提案値ではなくユーザー編集後の `{date, exercises[].sets[]}` を `executeWriteTool` に渡す
 - セット数 0 の種目を含めて確定することはできない（最低 1 セット必要、UI で抑止）
+- **全セットが weight>0 かつ reps>0 でない限り「記録する」は disabled** となり、不足セルがあるときはボタン下にヒント文言「重量と回数を入力してください」を表示する
 
 **スコープ外:** 種目の追加・削除・並べ替え・種目名変更はトレーニング画面（`/training`）に集約する。チャット側ではセットの値編集と +/− に限定する。
 
@@ -289,6 +311,32 @@ AI: 「ベンチプレスを以下の内容でセッションに追加します�
 
 - セッションがアクティブな場合は `saveWorkout` ではなく `addExerciseToSession`(sets 付き) を優先する
 - ユーザーが具体的な重量・回数を伝えたらそのまま提案として返す（ユーザーが UI で編集できる）
+- ユーザーが具体値を伴わずに種目名のみを述べた場合は FR_015 のフローを適用する
 - 進行中セッション情報があるときは、それを踏まえて「前セットからの増減」を 1 行で提案する
+
+**検証方法:** テストによる検証
+
+### FR_015: 種目名のみ入力時の placeholder 提案フロー
+
+ユーザーが具体値（kg/回数）を伴わずに種目名・運動意図を述べた場合（例:「胸の日でダンベルプレスやる」「ベンチプレス追加して」）、AI は **必ず** 書き込みツールを呼び出して編集可能フォームを提示する。テキストのみで聞き返してフォームを出さない振る舞いは禁止。
+
+**フロー:**
+
+1. **種目マスター確認**: 入力された種目名が登録済みかを判断する。不明な場合は `getExercises` で確認し、未登録なら `addExercise` で追加してから次へ進む
+2. **セッション分岐**:
+   - **アクティブ** → `addExerciseToSession({ exerciseId, exerciseName, sets: [{ weight: 0, reps: 0 }] })`
+   - **非アクティブ** → `saveWorkout({ date: 今日, exercises: [{ exerciseName, sets: [{ weight: 0, reps: 0 }] }] })`
+3. **テキスト応答**: ツール呼び出しと併せて短い励まし＋値入力の促し（例:「ナイス💪 重量と回数を入力してください」）を返す
+
+**ConfirmationBubble での挙動:**
+
+- `sets:[{0,0}]` の placeholder は空入力 + プレースホルダ表示（FR_013）
+- 「記録する」は disabled（FR_013 の確定条件を満たさない）
+- ユーザーが kg/回数を入力すると enabled になり、編集後の値で `executeWriteTool` が呼ばれる
+
+**禁止事項:**
+
+- 種目名が決まったのにテキストのみで応答すること（フォームが出ないと UX が壊れる）
+- placeholder の値を 0 以外（例: 50kg/10 等の架空値）で埋めること（事実誤認の元）
 
 **検証方法:** テストによる検証

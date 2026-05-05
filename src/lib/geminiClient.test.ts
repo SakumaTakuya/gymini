@@ -177,6 +177,33 @@ describe('buildSystemInstruction', () => {
     const result = buildSystemInstruction(null, '')
     expect(result).not.toContain('進行中のセッション')
   })
+
+  describe('種目名のみ入力時の placeholder 提案ルール (FR_015)', () => {
+    test('SYSTEM_INSTRUCTION に「種目名のみ」「placeholder」相当のルールが含まれる', () => {
+      const result = buildSystemInstruction(null, null)
+      // FR_015 の要点: 種目名のみのケースでも書き込みツールを呼び出し、placeholder sets で提案する
+      expect(result).toMatch(/種目名/)
+      expect(result).toMatch(/プレースホルダ|placeholder/)
+      // 0/0 の placeholder を使う指示が含まれる
+      expect(result).toMatch(/weight.*0|0.*reps|\{\s*weight\s*:\s*0/i)
+    })
+
+    test('SYSTEM_INSTRUCTION に「種目名のみ→ツール呼び出し」を明示するキーワードを含む', () => {
+      const result = buildSystemInstruction(null, null)
+      // セッション分岐の説明
+      expect(result).toMatch(/addExerciseToSession/)
+      expect(result).toMatch(/saveWorkout/)
+      // 「テキストのみで返すな」の禁止
+      expect(result).toMatch(/必ず|呼び出し|提案/)
+    })
+
+    test('未登録種目フローを addExerciseToSession にも適用する旨を含む', () => {
+      const result = buildSystemInstruction(null, null)
+      // getExercises → addExercise → 目的のツール の順序
+      expect(result).toMatch(/getExercises/)
+      expect(result).toMatch(/addExercise/)
+    })
+  })
 })
 
 describe('getErrorMessage', () => {

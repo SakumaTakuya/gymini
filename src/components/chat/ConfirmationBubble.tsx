@@ -82,7 +82,8 @@ function EditableSetRow({
       <div className="flex-1 flex gap-6">
         <Input
           type="number"
-          value={weight}
+          value={weight === 0 ? '' : weight}
+          placeholder="kg"
           onChange={(e) => onWeightChange(Number(e.target.value))}
           inputMode="decimal"
           disabled={isSettled}
@@ -92,7 +93,8 @@ function EditableSetRow({
         />
         <Input
           type="number"
-          value={reps}
+          value={reps === 0 ? '' : reps}
+          placeholder="回"
           onChange={(e) => onRepsChange(Number(e.target.value))}
           inputMode="numeric"
           disabled={isSettled}
@@ -165,7 +167,16 @@ export function ConfirmationBubble({
     : editableAddSession
       ? addSessionState.sets.length
       : 1
-  const canApprove = !isSettled && totalSets > 0
+  const allSetsFilled = editableSaveWorkout
+    ? saveState.exercises.every(
+        (ex) => ex.sets.length > 0 && ex.sets.every((s) => s.weight > 0 && s.reps > 0),
+      )
+    : editableAddSession
+      ? addSessionState.sets.every((s) => s.weight > 0 && s.reps > 0)
+      : true
+  const canApprove = !isSettled && totalSets > 0 && allSetsFilled
+  const showFillHint =
+    !isSettled && (editableSaveWorkout || editableAddSession) && totalSets > 0 && !allSetsFilled
 
   const handleApprove = () => {
     if (editableSaveWorkout) {
@@ -370,6 +381,11 @@ export function ConfirmationBubble({
             {label}
           </button>
         </div>
+        {showFillHint && (
+          <p className="mt-2 text-xs text-gym-zinc-500">
+            重量と回数を入力してください
+          </p>
+        )}
         {pendingAction.status === 'approved' && (
           <p className="mt-2 text-xs text-gym-zinc-500">実行済み</p>
         )}
