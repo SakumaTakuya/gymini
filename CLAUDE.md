@@ -15,6 +15,10 @@
 
 **テックスタック**: React 19 / TanStack Router (file-based) / Zustand / Vitest+jsdom / Playwright / Tailwind v4 / Google Gemini Flash
 
+**主要ライブラリ**: TanStack Query（サーバー状態）/ @base-ui/react（UI プリミティブ）/ shadcn（`src/components/ui/`）/ Phosphor Icons / react-day-picker / date-fns / Zod
+
+**パスエイリアス**: `@/*` → `src/*`（`vite.config.ts`）
+
 ```
 src/
 ├── routes/          # TanStack Router ファイルルーティング（__root, _app/*）
@@ -34,9 +38,8 @@ src/
 
 - **ベースパス**: Vite/Playwright ともに `/gymini/` がベース。ナビゲーションに `/gymini/` を直書きしない（TanStack Router が解決する）
 - **localStorage ハイドレーション**: `useHydrated()` が `false` の間は `AppLayout` がブランク表示。ストアデータを参照するコンポーネントは必ずこのフックを通す
-- **localStorage キー**: `gymini:workouts` / `gymini:exercises` / `gymini:settings` / `gymini:user-profile`
-- **Playwright**: `playwright.config.ts` が `npm run dev` を自動起動。dev サーバー起動中に実行すると二重起動になるため注意
-- **Vitest カバレッジ閾値**: lines/branches/functions/statements すべて 90%。`src/routeTree.gen.ts`（自動生成）はカバレッジ対象外
+- **Playwright**: `playwright.config.ts` が `npm run dev` を自動起動。dev サーバー起動中に実行すると二重起動になるため注意。主環境は `Mobile Chrome (Pixel 5)`（モバイルファースト）、副に `chromium` デスクトップ
+- **Vitest カバレッジ閾値**: lines/branches/functions/statements すべて 90%。除外対象は `vite.config.ts` の `coverage.exclude` を参照（`routeTree.gen.ts` / `main.tsx` / `routes/**` / `components/ui/**` / `types/**` / `useHydrated.ts` など）。テスト追加でカバレッジを上げようとする前に除外リストを確認する
 - **Gemini モデル**: `gemini-flash-latest`（`src/lib/geminiClient.ts`）。API キーは localStorage に保存し、環境変数は使わない
 
 ## ドキュメント構造
