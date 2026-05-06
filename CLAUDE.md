@@ -59,10 +59,3 @@ src/
 プランや作業順をファイル単位（"toolExecutor.ts を編集" → "useChatService.ts を編集" …）で組まない。フェーズ単位で組む。
 
 **自己チェック** — `src/` 配下の非テストファイルを `Edit`/`Write` する直前に、対応するテストが先に書かれているかを確認する。書かれていなければフェーズ 2 に戻る。型不足でテストが書けない場合は最小の型スタブのみ先に入れ、impl は green 化フェーズに残す。
-
-## 補助ルール
-
-ディレクトリスコープのルールは `.claude/rules/` 配下に分離している（パスマッチ時のみ自動ロード）。
-
-- [docs.md](.claude/rules/docs.md) — `docs/**/*.md` 編集時：ドキュメント構造、PRD/ADR の役割、リンク規約
-- [design-system.md](.claude/rules/design-system.md) — `src/**/*.tsx` 編集時：デザイントークン規約、`src/components/ui/` 例外
