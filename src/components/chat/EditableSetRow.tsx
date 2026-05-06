@@ -1,5 +1,6 @@
 import { Plus, X } from '@phosphor-icons/react'
 import { cn } from '../../lib/utils'
+import { IconButton } from '../ui/icon-button'
 import { Input } from '../ui/input'
 
 export type EditableSetRowProps = {
@@ -51,19 +52,14 @@ export function EditableSetRow({
           className="w-10 text-xl font-outfit font-bold"
         />
       </div>
-      <button
-        type="button"
+      <IconButton
         onClick={onRemove}
         disabled={isSettled}
         aria-label="セットを削除"
-        className={cn(
-          'focus-ring min-h-[44px] min-w-[44px] flex items-center justify-center',
-          'rounded text-gym-zinc-500 hover:text-gym-black',
-          'disabled:opacity-40 disabled:cursor-not-allowed',
-        )}
+        className="rounded text-gym-zinc-500 hover:text-gym-black"
       >
         <X size={14} weight="bold" />
-      </button>
+      </IconButton>
     </div>
   )
 }

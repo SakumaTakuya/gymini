@@ -1,5 +1,5 @@
 import { Check } from '@phosphor-icons/react'
-import { cn } from '../../lib/utils'
+import { Button } from '../ui/button'
 
 export type ConfirmationActionsProps = {
   label: string
@@ -21,31 +21,23 @@ export function ConfirmationActions({
   return (
     <>
       <div className="flex gap-2">
-        <button
-          type="button"
+        <Button
+          variant="secondary"
           disabled={isSettled}
           onClick={onReject}
-          className={cn(
-            'focus-ring flex-1 h-11 rounded-xl font-semibold',
-            'bg-gym-zinc-100 text-gym-black',
-            'disabled:opacity-40 disabled:cursor-not-allowed',
-          )}
+          className="flex-1 h-11 rounded-xl font-semibold bg-gym-zinc-100 text-gym-black"
         >
           キャンセル
-        </button>
-        <button
-          type="button"
+        </Button>
+        <Button
+          variant="default"
           disabled={!canApprove}
           onClick={onApprove}
-          className={cn(
-            'focus-ring flex-1 h-11 rounded-xl font-bold',
-            'bg-gym-black text-gym-white inline-flex items-center justify-center gap-1.5',
-            'disabled:opacity-40 disabled:cursor-not-allowed',
-          )}
+          className="flex-1 h-11 rounded-xl font-bold bg-gym-black text-gym-white"
         >
           <Check size={16} weight="bold" />
           {label}
-        </button>
+        </Button>
       </div>
       {showFillHint && (
         <p className="mt-2 text-xs text-gym-zinc-500">
