@@ -1,11 +1,11 @@
 import { useCallback, useRef } from 'react'
 import type { Content } from '@google/generative-ai'
 import {
-  EMPTY_RESPONSE_FALLBACK,
   isAbortError,
   messagesToContents,
-  nonEmptyOrFallback,
+  nonEmptyOr,
   toFunctionResponseObject,
+  EMPTY_RESPONSE_FALLBACK,
 } from '../lib/chat/conversation'
 import {
   buildPendingAction,
@@ -17,6 +17,7 @@ import {
   createGeminiClient,
   buildSystemInstruction,
   getErrorMessage,
+  type FunctionCallRequest,
   type GeminiClient,
 } from '../lib/geminiClient'
 import { executeReadTool, executeWriteTool } from '../lib/toolExecutor'
@@ -26,13 +27,10 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useUserProfileStore } from '../stores/userProfileStore'
 import { nowISODateTimeString } from '../schemas/date'
 import type {
-  ChatMessage,
   PendingAction,
   PendingActionData,
   ToolCallResult,
 } from '../types/chat'
-
-export { EMPTY_RESPONSE_FALLBACK }
 
 type CreateClient = (apiKey: string, systemInstruction?: string) => GeminiClient
 
@@ -46,7 +44,6 @@ export function useChatService(options: UseChatServiceOptions = {}) {
   const error = useChatStore((s) => s.error)
 
   const abortControllerRef = useRef<AbortController | null>(null)
-  const pendingAssistantIdRef = useRef<string | null>(null)
 
   const createClient = useCallback<CreateClient>(
     (apiKey, systemInstruction) =>
@@ -63,22 +60,8 @@ export function useChatService(options: UseChatServiceOptions = {}) {
   const stopResponse = useCallback(() => {
     abortControllerRef.current?.abort()
     abortControllerRef.current = null
-    const partialId = pendingAssistantIdRef.current
-    if (partialId) {
-      useChatStore.getState().removeMessage(partialId)
-      pendingAssistantIdRef.current = null
-    }
     useChatStore.getState().setLoading(false)
   }, [])
-
-  const addPendingAssistantMessage = useCallback(
-    (message: ChatMessage) => {
-      pendingAssistantIdRef.current = message.id
-      useChatStore.getState().addMessage(message)
-      pendingAssistantIdRef.current = null
-    },
-    [],
-  )
 
   const sendMessage = useCallback(
     async (text: string) => {
@@ -127,10 +110,10 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           !firstResponse.functionCalls ||
           firstResponse.functionCalls.length === 0
         ) {
-          addPendingAssistantMessage({
+          useChatStore.getState().addMessage({
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: nonEmptyOrFallback(firstResponse.text),
+            content: nonEmptyOr(firstResponse.text, EMPTY_RESPONSE_FALLBACK),
             timestamp: nowISODateTimeString(),
           })
           return
@@ -145,17 +128,30 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           result: executeReadTool(fc.name, fc.args),
         }))
 
-        if (writeCall) {
-          if (
-            !emitPendingAssistant({
-              writeCall,
-              text: firstResponse.text,
-              readResults,
-              addPendingAssistantMessage,
-            })
-          ) {
+        const emitPending = (
+          call: FunctionCallRequest,
+          assistantText: string | null | undefined,
+        ): void => {
+          cancelExistingPending()
+          const pendingAction = buildPendingAction(call)
+          if (!pendingAction) {
+            useChatStore
+              .getState()
+              .setError('書き込み操作の内容を解釈できませんでした。')
             return
           }
+          useChatStore.getState().addMessage({
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: nonEmptyOr(assistantText, pendingAction.description),
+            timestamp: nowISODateTimeString(),
+            toolCalls: readResults.length > 0 ? readResults : undefined,
+            pendingAction,
+          })
+        }
+
+        if (writeCall) {
+          emitPending(writeCall, firstResponse.text)
           return
         }
 
@@ -189,19 +185,14 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           ? partitionFunctionCalls(follow.functionCalls).writeCall
           : null
         if (followWriteCall) {
-          emitPendingAssistant({
-            writeCall: followWriteCall,
-            text: follow.text,
-            readResults,
-            addPendingAssistantMessage,
-          })
+          emitPending(followWriteCall, follow.text)
           return
         }
 
-        addPendingAssistantMessage({
+        useChatStore.getState().addMessage({
           id: crypto.randomUUID(),
           role: 'assistant',
-          content: nonEmptyOrFallback(follow.text),
+          content: nonEmptyOr(follow.text, EMPTY_RESPONSE_FALLBACK),
           timestamp: nowISODateTimeString(),
           toolCalls: readResults,
         })
@@ -216,7 +207,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         useChatStore.getState().setLoading(false)
       }
     },
-    [createClient, addPendingAssistantMessage],
+    [createClient],
   )
 
   const approve = useCallback(
@@ -280,31 +271,4 @@ function cancelExistingPending() {
       updatePendingAction(m.id, 'rejected')
     }
   }
-}
-
-function emitPendingAssistant(params: {
-  writeCall: Parameters<typeof buildPendingAction>[0]
-  text: string | null | undefined
-  readResults: ToolCallResult[]
-  addPendingAssistantMessage: (m: ChatMessage) => void
-}): boolean {
-  const { writeCall, text, readResults, addPendingAssistantMessage } = params
-  cancelExistingPending()
-  const pendingAction = buildPendingAction(writeCall)
-  if (!pendingAction) {
-    useChatStore
-      .getState()
-      .setError('書き込み操作の内容を解釈できませんでした。')
-    return false
-  }
-  addPendingAssistantMessage({
-    id: crypto.randomUUID(),
-    role: 'assistant',
-    content:
-      text && text.trim() !== '' ? text : pendingAction.description,
-    timestamp: nowISODateTimeString(),
-    toolCalls: readResults.length > 0 ? readResults : undefined,
-    pendingAction,
-  })
-  return true
 }

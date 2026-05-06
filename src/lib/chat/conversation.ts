@@ -31,9 +31,12 @@ export function messagesToContents(messages: ChatMessage[]): Content[] {
   return contents
 }
 
-export function nonEmptyOrFallback(text: string | null | undefined): string {
-  if (typeof text !== 'string') return EMPTY_RESPONSE_FALLBACK
-  return text.trim() === '' ? EMPTY_RESPONSE_FALLBACK : text
+export function nonEmptyOr(
+  text: string | null | undefined,
+  fallback: string,
+): string {
+  if (typeof text !== 'string') return fallback
+  return text.trim() === '' ? fallback : text
 }
 
 export function toFunctionResponseObject(value: unknown): object {
