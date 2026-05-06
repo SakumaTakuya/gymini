@@ -12,6 +12,7 @@ import { isWriteTool } from '../lib/toolDefinitions'
 import {
   executeReadTool,
   executeWriteTool,
+  parseSetsArg,
   type ToolExecutionResult,
 } from '../lib/toolExecutor'
 import { buildActiveSessionContext } from '../lib/sessionContext'
@@ -411,52 +412,24 @@ function toPendingActionData(
       const exerciseName = call.args.exerciseName
       if (typeof exerciseId !== 'string' || typeof exerciseName !== 'string')
         return null
-      const rawSets = call.args.sets
-      let sets: Array<{ weight: number; reps: number }> | undefined
-      if (Array.isArray(rawSets)) {
-        const out: Array<{ weight: number; reps: number }> = []
-        for (const s of rawSets) {
-          if (
-            typeof s !== 'object' ||
-            s === null ||
-            typeof (s as { weight?: unknown }).weight !== 'number' ||
-            typeof (s as { reps?: unknown }).reps !== 'number'
-          ) {
-            return null
-          }
-          out.push(s as { weight: number; reps: number })
-        }
-        sets = out
-      }
+      const parsed = parseSetsArg(call.args.sets)
+      if (!parsed.ok) return null
       return {
         actionType: 'addExerciseToSession',
         exerciseId,
         exerciseName,
-        ...(sets ? { sets } : {}),
+        ...(parsed.sets ? { sets: parsed.sets } : {}),
       }
     }
     case 'addExerciseAndLog': {
       const name = call.args.name
       if (typeof name !== 'string' || name.trim() === '') return null
-      const rawSets = call.args.sets
-      let sets: Array<{ weight: number; reps: number }> = [
-        { weight: 0, reps: 0 },
-      ]
-      if (Array.isArray(rawSets)) {
-        const out: Array<{ weight: number; reps: number }> = []
-        for (const s of rawSets) {
-          if (
-            typeof s !== 'object' ||
-            s === null ||
-            typeof (s as { weight?: unknown }).weight !== 'number' ||
-            typeof (s as { reps?: unknown }).reps !== 'number'
-          ) {
-            return null
-          }
-          out.push(s as { weight: number; reps: number })
-        }
-        if (out.length > 0) sets = out
-      }
+      const parsed = parseSetsArg(call.args.sets)
+      if (!parsed.ok) return null
+      const sets =
+        parsed.sets && parsed.sets.length > 0
+          ? parsed.sets
+          : [{ weight: 0, reps: 0 }]
       return { actionType: 'addExerciseAndLog', name, sets }
     }
     default:

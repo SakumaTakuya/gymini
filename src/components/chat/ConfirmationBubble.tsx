@@ -162,15 +162,7 @@ export function ConfirmationBubble({
   }, [editableSaveWorkout, pendingAction.data])
 
   const initialAddSessionState = useMemo<AddSessionFormState>(() => {
-    if (editableAddSession) {
-      return {
-        sets: pendingAction.data.sets.map((s) => ({
-          weight: s.weight,
-          reps: s.reps,
-        })),
-      }
-    }
-    if (editableAddAndLog) {
+    if (editableSingleExercise && 'sets' in pendingAction.data && pendingAction.data.sets) {
       return {
         sets: pendingAction.data.sets.map((s) => ({
           weight: s.weight,
@@ -179,7 +171,7 @@ export function ConfirmationBubble({
       }
     }
     return { sets: [] }
-  }, [editableAddSession, editableAddAndLog, pendingAction.data])
+  }, [editableSingleExercise, pendingAction.data])
 
   const [saveState, setSaveState] =
     useState<SaveWorkoutFormState>(initialSaveState)
@@ -215,15 +207,16 @@ export function ConfirmationBubble({
       })
       return
     }
+    const editedSets = addSessionState.sets.map((s) => ({
+      weight: s.weight,
+      reps: s.reps,
+    }))
     if (editableAddSession) {
       onApprove({
         actionType: 'addExerciseToSession',
         exerciseId: pendingAction.data.exerciseId,
         exerciseName: pendingAction.data.exerciseName,
-        sets: addSessionState.sets.map((s) => ({
-          weight: s.weight,
-          reps: s.reps,
-        })),
+        sets: editedSets,
       })
       return
     }
@@ -231,10 +224,7 @@ export function ConfirmationBubble({
       onApprove({
         actionType: 'addExerciseAndLog',
         name: pendingAction.data.name,
-        sets: addSessionState.sets.map((s) => ({
-          weight: s.weight,
-          reps: s.reps,
-        })),
+        sets: editedSets,
       })
       return
     }
