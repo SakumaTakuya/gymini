@@ -1,6 +1,7 @@
 import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
-import { EMPTY_RESPONSE_FALLBACK, useChatService } from './useChatService'
+import { useChatService } from './useChatService'
+import { EMPTY_RESPONSE_FALLBACK } from '../lib/chat/conversation'
 import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
