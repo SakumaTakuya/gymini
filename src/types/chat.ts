@@ -23,14 +23,25 @@ export type AddExerciseToSessionData = {
   sets?: Array<{ weight: number; reps: number }>
 }
 
+export type AddExerciseAndLogData = {
+  actionType: 'addExerciseAndLog'
+  name: string
+  sets: Array<{ weight: number; reps: number }>
+}
+
 export type PendingActionData =
   | SaveWorkoutData
   | AddExerciseData
   | AddExerciseToSessionData
+  | AddExerciseAndLogData
 
 export type PendingAction = {
   id: string
-  type: 'saveWorkout' | 'addExercise' | 'addExerciseToSession'
+  type:
+    | 'saveWorkout'
+    | 'addExercise'
+    | 'addExerciseToSession'
+    | 'addExerciseAndLog'
   description: string
   data: PendingActionData
   status: PendingActionStatus

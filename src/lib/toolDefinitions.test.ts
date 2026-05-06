@@ -8,8 +8,8 @@ import {
 } from './toolDefinitions'
 
 describe('toolDefinitions', () => {
-  test('正確に 8 つのツールを定義する', () => {
-    expect(TOOL_DECLARATIONS).toHaveLength(8)
+  test('正確に 9 つのツールを定義する', () => {
+    expect(TOOL_DECLARATIONS).toHaveLength(9)
   })
 
   test('全ツール名が一意である', () => {
@@ -35,6 +35,7 @@ describe('toolDefinitions', () => {
     expect(isWriteTool('saveWorkout')).toBe(true)
     expect(isWriteTool('addExercise')).toBe(true)
     expect(isWriteTool('addExerciseToSession')).toBe(true)
+    expect(isWriteTool('addExerciseAndLog')).toBe(true)
     expect(isWriteTool('getRecentWorkouts')).toBe(false)
     expect(isWriteTool('unknown')).toBe(false)
   })
@@ -64,6 +65,11 @@ describe('toolDefinitions', () => {
       (d) => d.name === 'addExerciseToSession',
     )
     expect(decl?.parameters?.required).toEqual(['exerciseId', 'exerciseName'])
+  })
+
+  test('addExerciseAndLog が name のみを必須とする（sets は任意）', () => {
+    const decl = TOOL_DECLARATIONS.find((d) => d.name === 'addExerciseAndLog')
+    expect(decl?.parameters?.required).toEqual(['name'])
   })
 
   test('getWorkoutSummary が periodType・startDate・endDate を必須とする', () => {

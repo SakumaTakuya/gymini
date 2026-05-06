@@ -1,4 +1,4 @@
-import type { DateString } from '../schemas/date'
+import { todayDateString, type DateString } from '../schemas/date'
 import type {
   ExerciseBreakdown,
   SummaryPeriod,
@@ -85,6 +85,8 @@ export function executeWriteTool(
       return executeAddExercise(args)
     case 'addExerciseToSession':
       return executeAddExerciseToSession(args)
+    case 'addExerciseAndLog':
+      return executeAddExerciseAndLog(args)
     default:
       return { success: false, error: `UNKNOWN_WRITE_TOOL:${name}` }
   }
@@ -216,6 +218,73 @@ function executeAddExerciseToSession(
     session.addExercise({ exerciseId, exerciseName })
   }
   return { success: true, data: { exerciseId, exerciseName } }
+}
+
+function parseSetsArg(
+  rawSets: unknown,
+): { ok: true; sets: Array<{ weight: number; reps: number }> | null } | { ok: false } {
+  if (rawSets === undefined) return { ok: true, sets: null }
+  if (!Array.isArray(rawSets)) return { ok: false }
+  const out: Array<{ weight: number; reps: number }> = []
+  for (const s of rawSets) {
+    if (
+      typeof s !== 'object' ||
+      s === null ||
+      typeof (s as { weight?: unknown }).weight !== 'number' ||
+      typeof (s as { reps?: unknown }).reps !== 'number'
+    ) {
+      return { ok: false }
+    }
+    out.push(s as { weight: number; reps: number })
+  }
+  return { ok: true, sets: out }
+}
+
+function executeAddExerciseAndLog(
+  args: Record<string, unknown>,
+): ToolExecutionResult {
+  const name = args.name
+  if (typeof name !== 'string' || name.trim() === '') {
+    return { success: false, error: 'INVALID_ARGS' }
+  }
+  const parsed = parseSetsArg(args.sets)
+  if (!parsed.ok) {
+    return { success: false, error: 'INVALID_ARGS' }
+  }
+  const sets =
+    parsed.sets && parsed.sets.length > 0
+      ? parsed.sets
+      : [{ weight: 0, reps: 0 }]
+
+  let exercise
+  try {
+    exercise = ExerciseRepository.create(name)
+  } catch (e) {
+    const message = e instanceof Error ? e.message : 'UNKNOWN_ERROR'
+    if (message.startsWith('Duplicate name')) {
+      return { success: false, error: 'DUPLICATE_EXERCISE' }
+    }
+    return { success: false, error: message }
+  }
+
+  const session = useWorkoutSessionStore.getState()
+  if (!session.isActive) {
+    session.startSession(todayDateString())
+  }
+  useWorkoutSessionStore.getState().addExerciseWithSets({
+    exerciseId: exercise.id,
+    exerciseName: exercise.name,
+    sets,
+  })
+
+  return {
+    success: true,
+    data: {
+      exerciseId: exercise.id,
+      exerciseName: exercise.name,
+      addedToSession: true,
+    },
+  }
 }
 
 function buildWorkoutSummary(
