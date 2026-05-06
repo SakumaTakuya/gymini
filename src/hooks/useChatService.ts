@@ -435,6 +435,30 @@ function toPendingActionData(
         ...(sets ? { sets } : {}),
       }
     }
+    case 'addExerciseAndLog': {
+      const name = call.args.name
+      if (typeof name !== 'string' || name.trim() === '') return null
+      const rawSets = call.args.sets
+      let sets: Array<{ weight: number; reps: number }> = [
+        { weight: 0, reps: 0 },
+      ]
+      if (Array.isArray(rawSets)) {
+        const out: Array<{ weight: number; reps: number }> = []
+        for (const s of rawSets) {
+          if (
+            typeof s !== 'object' ||
+            s === null ||
+            typeof (s as { weight?: unknown }).weight !== 'number' ||
+            typeof (s as { reps?: unknown }).reps !== 'number'
+          ) {
+            return null
+          }
+          out.push(s as { weight: number; reps: number })
+        }
+        if (out.length > 0) sets = out
+      }
+      return { actionType: 'addExerciseAndLog', name, sets }
+    }
     default:
       return null
   }
@@ -461,6 +485,12 @@ function describePendingAction(data: PendingActionData): string {
         return `「${data.exerciseName}」を現在のセッションに以下の内容で追加しますか？値は調整できます\n${setsText}`
       }
       return `「${data.exerciseName}」を現在のセッションに追加しますか？`
+    }
+    case 'addExerciseAndLog': {
+      const setsText = data.sets
+        .map((s) => `${s.weight}kg × ${s.reps}回`)
+        .join('、')
+      return `「${data.name}」を種目マスターに追加して、記録を始めますか？値は調整できます\n${setsText}`
     }
   }
 }
@@ -489,6 +519,14 @@ function pendingActionToToolCall(action: PendingAction): {
           ...(action.data.sets ? { sets: action.data.sets } : {}),
         },
       }
+    case 'addExerciseAndLog':
+      return {
+        toolName: 'addExerciseAndLog',
+        args: {
+          name: action.data.name,
+          sets: action.data.sets,
+        },
+      }
   }
 }
 
@@ -498,6 +536,9 @@ function buildWriteResultMessage(
 ): string {
   if (!result.success) {
     if (result.error === 'DUPLICATE_EXERCISE') {
+      if (action.data.actionType === 'addExerciseAndLog') {
+        return `「${action.data.name}」は既に種目マスターに登録されています。既存の種目で記録するなら「${action.data.name}やる」と教えてください。`
+      }
       return 'その種目は既に登録されています。'
     }
     if (result.error === 'SESSION_NOT_ACTIVE') {
@@ -519,6 +560,8 @@ function buildWriteResultMessage(
       return `「${action.data.name}」を種目マスターに追加しました。`
     case 'addExerciseToSession':
       return `「${action.data.exerciseName}」を現在のセッションに追加しました。`
+    case 'addExerciseAndLog':
+      return `「${action.data.name}」を種目に追加して記録を始めました！💪`
   }
 }
 

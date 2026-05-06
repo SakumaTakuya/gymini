@@ -375,6 +375,91 @@ describe('ConfirmationBubble', () => {
     })
   })
 
+  describe('addExerciseAndLog の編集可能フォーム', () => {
+    function makeAddAndLogPending(
+      sets: Array<{ weight: number; reps: number }> = [{ weight: 0, reps: 0 }],
+    ): PendingAction {
+      return {
+        id: 'pa-aal',
+        type: 'addExerciseAndLog',
+        description: '「ラットプルダウン」を種目マスターに追加して、記録を始めますか？',
+        data: {
+          actionType: 'addExerciseAndLog',
+          name: 'ラットプルダウン',
+          sets,
+        },
+        status: 'pending',
+      }
+    }
+
+    it('「追加して記録する」ラベルで承認ボタンを描画する', () => {
+      render(
+        <ConfirmationBubble
+          content="追加して記録しますか？"
+          pendingAction={makeAddAndLogPending()}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      expect(
+        screen.getByRole('button', { name: /追加して記録する/ }),
+      ).toBeInTheDocument()
+    })
+
+    it('種目名と編集可能な weight/reps input が出る', () => {
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makeAddAndLogPending([{ weight: 50, reps: 10 }])}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      expect(screen.getByText('ラットプルダウン')).toBeInTheDocument()
+      expect(screen.getAllByRole('spinbutton')).toHaveLength(2)
+    })
+
+    it('編集後 onApprove に編集済み sets 付きの addExerciseAndLog データが渡る', async () => {
+      const onApprove = vi.fn()
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makeAddAndLogPending([{ weight: 0, reps: 0 }])}
+          onApprove={onApprove}
+          onReject={vi.fn()}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      await userEvent.type(inputs[0], '50')
+      await userEvent.type(inputs[1], '10')
+      await userEvent.click(
+        screen.getByRole('button', { name: /追加して記録する/ }),
+      )
+
+      expect(onApprove).toHaveBeenCalledTimes(1)
+      expect(onApprove.mock.calls[0][0]).toEqual({
+        actionType: 'addExerciseAndLog',
+        name: 'ラットプルダウン',
+        sets: [{ weight: 50, reps: 10 }],
+      })
+    })
+
+    it('weight=0/reps=0 のままだと承認ボタンが disabled になる', () => {
+      render(
+        <ConfirmationBubble
+          content="追加しますか？"
+          pendingAction={makeAddAndLogPending([{ weight: 0, reps: 0 }])}
+          onApprove={vi.fn()}
+          onReject={vi.fn()}
+        />,
+      )
+      expect(
+        screen.getByRole('button', { name: /追加して記録する/ }),
+      ).toBeDisabled()
+      expect(screen.getByText('重量と回数を入力してください')).toBeInTheDocument()
+    })
+  })
+
   describe('編集不要なアクション', () => {
     it('addExercise アクションでは onApprove に編集データを渡さない（undefined）', async () => {
       const onApprove = vi.fn()

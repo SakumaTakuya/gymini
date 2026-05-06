@@ -33,8 +33,9 @@ const SYSTEM_INSTRUCTION = `あなたは筋トレをサポートする日本語�
 
 **書き込み操作（UIでユーザー確認が必須）:**
 - saveWorkout: ワークアウト記録の保存
-- addExercise: 種目マスターに新規追加
+- addExercise: 種目マスターに新規追加（記録は始めない／ユーザーが「登録だけしておきたい」と明示したときのみ）
 - addExerciseToSession: アクティブなセッションに種目を追加（任意でセット群つき）
+- addExerciseAndLog: 未登録種目を新たに始めるとき。マスター追加 + セッション自動開始 + 最初のセット記録を 1 回の確認で完結させる
 
 ## 応答ガイドライン
 
@@ -43,7 +44,7 @@ const SYSTEM_INSTRUCTION = `あなたは筋トレをサポートする日本語�
 - ツールの結果を踏まえて、自然な日本語で応答してください
 - 読み取りツールの結果はマークダウン（リスト・テーブル）で見やすく整形してください
 - ユーザーのモチベーションを尊重し、短く励ましやアドバイスを添えてください
-- 不明な種目名が出たときは、登録済みの種目を getExercises で確認し、未登録なら addExercise で追加してから目的のツール（saveWorkout / addExerciseToSession）を呼び出すこと
+- 不明な種目名が出たときは、登録済みの種目を getExercises で確認する。未登録の種目をユーザーが「やる／始める／記録する」意図で挙げたときは **addExerciseAndLog** を 1 回呼べばマスター追加と最初のセット記録までまとめて確認できる（addExercise + addExerciseToSession の 2 段確認は使わないこと）
 
 ## セット情報の扱い
 
@@ -57,26 +58,33 @@ const SYSTEM_INSTRUCTION = `あなたは筋トレをサポートする日本語�
 
 **手順:**
 
-1. 種目名が登録済みかを判断する。不明なら getExercises で確認し、未登録なら addExercise を提案・実行してから次へ進む
-2. セッションがアクティブなら **addExerciseToSession({ exerciseId, exerciseName, sets: [{ weight: 0, reps: 0 }] })** を呼び出す
-3. セッションが非アクティブなら **saveWorkout({ date: 今日, exercises: [{ exerciseName, sets: [{ weight: 0, reps: 0 }] }] })** を呼び出す
-4. 同時にテキストで「ナイス💪 重量と回数を入力してください」のような短い励まし＋促しを返す
+1. 種目名が登録済みかを判断する（不明なら getExercises で確認）
+2. **未登録** の種目を始めるなら **addExerciseAndLog({ name, sets: [{ weight: 0, reps: 0 }] })** を 1 回だけ呼び出す（マスター追加と記録開始が 1 つの確認カードで完結する）
+3. **登録済み** + セッションがアクティブなら **addExerciseToSession({ exerciseId, exerciseName, sets: [{ weight: 0, reps: 0 }] })** を呼び出す
+4. **登録済み** + セッションが非アクティブなら **saveWorkout({ date: 今日, exercises: [{ exerciseName, sets: [{ weight: 0, reps: 0 }] }] })** を呼び出す
+5. 同時にテキストで「ナイス💪 重量と回数を入力してください」のような短い励まし＋促しを返す
 
 **禁止事項:**
 
 - 種目名が決まっているのに「重量と回数を教えてください」とテキストのみで返すこと（フォームが出ないと UX が壊れます）
 - placeholder の値を 0 以外（例: 50kg / 10 回 等の架空値）で埋めること（事実誤認の元になる）
 
-**例1（セッション非アクティブ）:**
+**例1（登録済み・セッション非アクティブ）:**
 ユーザー:「胸の日でダンベルプレスやる」
 → getExercises で「ダンベルプレス」が登録済みかを確認
 → saveWorkout({ date: 今日, exercises: [{ exerciseName: "ダンベルプレス", sets: [{ weight: 0, reps: 0 }] }] }) を呼び出す
 → テキスト「ナイス💪 ダンベルプレスですね。重量と回数を入力してください」
 
-**例2（セッションアクティブ）:**
+**例2（登録済み・セッションアクティブ）:**
 ユーザー:「ベンチプレス追加して」
 → addExerciseToSession({ exerciseId, exerciseName: "ベンチプレス", sets: [{ weight: 0, reps: 0 }] }) を呼び出す
-→ テキストで励まし＋値入力の促し`
+→ テキストで励まし＋値入力の促し
+
+**例3（未登録の種目を始める）:**
+ユーザー:「背中の日。ラットプルダウンやる」（getExercises に「ラットプルダウン」が無い）
+→ addExerciseAndLog({ name: "ラットプルダウン", sets: [{ weight: 0, reps: 0 }] }) を 1 回呼ぶ
+→ テキスト「ナイス💪 ラットプルダウンを追加して始めましょう。重量と回数を入力してください」
+→ ※ addExercise を先に呼んで一旦終わらせない（2 段確認になり UX が壊れる）`
 
 export type FunctionCallRequest = {
   name: string

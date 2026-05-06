@@ -731,6 +731,156 @@ describe('useChatService', () => {
     })
   })
 
+  describe('addExerciseAndLog（新種目を即記録開始）', () => {
+    test('Gemini が addExerciseAndLog を呼ぶと pendingAction に sets 既定値が入る', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      const client = mockClient([
+        {
+          text: 'ナイス💪 重量と回数を入力してください',
+          functionCalls: [
+            {
+              name: 'addExerciseAndLog',
+              args: { name: 'ラットプルダウン' },
+            },
+          ],
+        },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('背中の日。ラットプルダウンやる')
+      })
+      const msgs = useChatStore.getState().messages
+      const last = msgs[msgs.length - 1]
+      expect(last.pendingAction).toMatchObject({
+        type: 'addExerciseAndLog',
+        status: 'pending',
+        data: {
+          actionType: 'addExerciseAndLog',
+          name: 'ラットプルダウン',
+          sets: [{ weight: 0, reps: 0 }],
+        },
+      })
+      expect(last.pendingAction?.description).toMatch(
+        /種目マスターに追加して、記録を始めますか？/,
+      )
+      expect(ExerciseRepository.create).not.toHaveBeenCalled()
+    })
+
+    test('approve(id, editedData) で編集された sets が executor に渡り、種目作成 + セッション開始まで一括で実行される', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      vi.mocked(ExerciseRepository.create).mockReturnValue({
+        id: 'ex-lat',
+        name: 'ラットプルダウン',
+      })
+      const client = mockClient([
+        {
+          text: 'ナイス💪',
+          functionCalls: [
+            {
+              name: 'addExerciseAndLog',
+              args: {
+                name: 'ラットプルダウン',
+                sets: [{ weight: 0, reps: 0 }],
+              },
+            },
+          ],
+        },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('ラットプルダウンやる')
+      })
+      const pendingMessageId = useChatStore
+        .getState()
+        .messages.find((m) => m.pendingAction?.type === 'addExerciseAndLog')!.id
+
+      await act(async () => {
+        await result.current.approve(pendingMessageId, {
+          actionType: 'addExerciseAndLog',
+          name: 'ラットプルダウン',
+          sets: [{ weight: 50, reps: 10 }],
+        })
+      })
+
+      expect(ExerciseRepository.create).toHaveBeenCalledTimes(1)
+      expect(ExerciseRepository.create).toHaveBeenCalledWith('ラットプルダウン')
+      const session = useWorkoutSessionStore.getState()
+      expect(session.isActive).toBe(true)
+      expect(session.draftExercises).toHaveLength(1)
+      expect(session.draftExercises[0].sets).toEqual([{ weight: 50, reps: 10 }])
+      const lastMsg = useChatStore.getState().messages.slice(-1)[0]
+      expect(lastMsg.content).toMatch(/記録を始めました/)
+    })
+
+    test('reject すると ExerciseRepository.create も呼ばれずセッションも変化しない', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      const client = mockClient([
+        {
+          text: '追加しますか？',
+          functionCalls: [
+            { name: 'addExerciseAndLog', args: { name: 'ラットプルダウン' } },
+          ],
+        },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('ラットプルダウンやる')
+      })
+      const pendingMessageId = useChatStore
+        .getState()
+        .messages.find((m) => m.pendingAction?.type === 'addExerciseAndLog')!.id
+
+      act(() => {
+        result.current.reject(pendingMessageId)
+      })
+
+      expect(ExerciseRepository.create).not.toHaveBeenCalled()
+      const session = useWorkoutSessionStore.getState()
+      expect(session.isActive).toBe(false)
+      expect(session.draftExercises).toHaveLength(0)
+    })
+
+    test('既に登録済みの場合 DUPLICATE_EXERCISE のヒント文言を返す', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      vi.mocked(ExerciseRepository.create).mockImplementation(() => {
+        throw new Error('Duplicate name: ベンチプレス')
+      })
+      const client = mockClient([
+        {
+          text: '追加しますか？',
+          functionCalls: [
+            { name: 'addExerciseAndLog', args: { name: 'ベンチプレス' } },
+          ],
+        },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('ベンチプレスやる')
+      })
+      const pendingMessageId = useChatStore
+        .getState()
+        .messages.find((m) => m.pendingAction?.type === 'addExerciseAndLog')!.id
+
+      await act(async () => {
+        await result.current.approve(pendingMessageId)
+      })
+
+      const lastMsg = useChatStore.getState().messages.slice(-1)[0]
+      expect(lastMsg.content).toMatch(/既に種目マスターに登録/)
+      expect(lastMsg.content).toMatch(/ベンチプレス/)
+      const session = useWorkoutSessionStore.getState()
+      expect(session.isActive).toBe(false)
+    })
+  })
+
   describe('EMPTY_RESPONSE_FALLBACK 文言（FR_015 補完）', () => {
     test('エラー風表現を含まず、励まし＋入力例を含むコーチ風文言である', () => {
       expect(EMPTY_RESPONSE_FALLBACK).not.toMatch(/うまく応答を生成できませんでした/)

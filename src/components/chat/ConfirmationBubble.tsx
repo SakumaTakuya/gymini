@@ -1,6 +1,7 @@
 import { Check, Plus, X } from '@phosphor-icons/react'
 import { useMemo, useState } from 'react'
 import type {
+  AddExerciseAndLogData,
   AddExerciseToSessionData,
   PendingAction,
   PendingActionData,
@@ -35,6 +36,8 @@ function getActionLabel(action: PendingAction): string {
       return '追加する'
     case 'addExerciseToSession':
       return '追加する'
+    case 'addExerciseAndLog':
+      return '追加して記録する'
   }
 }
 
@@ -54,6 +57,12 @@ function isAddSessionWithSets(action: PendingAction): action is PendingAction & 
     Array.isArray(action.data.sets) &&
     action.data.sets.length > 0
   )
+}
+
+function isAddAndLog(action: PendingAction): action is PendingAction & {
+  data: AddExerciseAndLogData
+} {
+  return action.data.actionType === 'addExerciseAndLog'
 }
 
 function EditableSetRow({
@@ -130,7 +139,15 @@ export function ConfirmationBubble({
   const label = getActionLabel(pendingAction)
   const editableSaveWorkout = isSaveWorkoutEditable(pendingAction)
   const editableAddSession = isAddSessionWithSets(pendingAction)
-  const isEditable = editableSaveWorkout || editableAddSession
+  const editableAddAndLog = isAddAndLog(pendingAction)
+  const editableSingleExercise = editableAddSession || editableAddAndLog
+  const isEditable = editableSaveWorkout || editableSingleExercise
+
+  const singleExerciseLabel = editableAddSession
+    ? pendingAction.data.exerciseName
+    : editableAddAndLog
+      ? pendingAction.data.name
+      : ''
 
   const initialSaveState = useMemo<SaveWorkoutFormState>(() => {
     if (editableSaveWorkout) {
@@ -153,8 +170,16 @@ export function ConfirmationBubble({
         })),
       }
     }
+    if (editableAddAndLog) {
+      return {
+        sets: pendingAction.data.sets.map((s) => ({
+          weight: s.weight,
+          reps: s.reps,
+        })),
+      }
+    }
     return { sets: [] }
-  }, [editableAddSession, pendingAction.data])
+  }, [editableAddSession, editableAddAndLog, pendingAction.data])
 
   const [saveState, setSaveState] =
     useState<SaveWorkoutFormState>(initialSaveState)
@@ -164,19 +189,19 @@ export function ConfirmationBubble({
 
   const totalSets = editableSaveWorkout
     ? saveState.exercises.reduce((sum, ex) => sum + ex.sets.length, 0)
-    : editableAddSession
+    : editableSingleExercise
       ? addSessionState.sets.length
       : 1
   const allSetsFilled = editableSaveWorkout
     ? saveState.exercises.every(
         (ex) => ex.sets.length > 0 && ex.sets.every((s) => s.weight > 0 && s.reps > 0),
       )
-    : editableAddSession
+    : editableSingleExercise
       ? addSessionState.sets.every((s) => s.weight > 0 && s.reps > 0)
       : true
   const canApprove = !isSettled && totalSets > 0 && allSetsFilled
   const showFillHint =
-    !isSettled && (editableSaveWorkout || editableAddSession) && totalSets > 0 && !allSetsFilled
+    !isSettled && (editableSaveWorkout || editableSingleExercise) && totalSets > 0 && !allSetsFilled
 
   const handleApprove = () => {
     if (editableSaveWorkout) {
@@ -195,6 +220,17 @@ export function ConfirmationBubble({
         actionType: 'addExerciseToSession',
         exerciseId: pendingAction.data.exerciseId,
         exerciseName: pendingAction.data.exerciseName,
+        sets: addSessionState.sets.map((s) => ({
+          weight: s.weight,
+          reps: s.reps,
+        })),
+      })
+      return
+    }
+    if (editableAddAndLog) {
+      onApprove({
+        actionType: 'addExerciseAndLog',
+        name: pendingAction.data.name,
         sets: addSessionState.sets.map((s) => ({
           weight: s.weight,
           reps: s.reps,
@@ -316,12 +352,10 @@ export function ConfirmationBubble({
           </div>
         )}
 
-        {editableAddSession && (
+        {editableSingleExercise && (
           <div className="mb-3 flex flex-col gap-2">
             <div className="font-semibold text-gym-black">
-              {pendingAction.data.actionType === 'addExerciseToSession'
-                ? pendingAction.data.exerciseName
-                : ''}
+              {singleExerciseLabel}
             </div>
             <div className="flex flex-col gap-2">
               {addSessionState.sets.map((s, setIdx) => (

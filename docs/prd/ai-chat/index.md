@@ -4,7 +4,7 @@ title: "AIチャット × Function Calling"
 type: "prd"
 status: "draft"
 created: "2026-03-08"
-updated: "2026-04-06"
+updated: "2026-05-06"
 depends-on: ["prd-gymini", "prd-api-key", "prd-workout", "prd-exercise-master", "prd-navigation"]
 tags: ["ai", "chat", "function-calling", "gemini", "phase-3"]
 category: "ai"
@@ -39,6 +39,7 @@ graph TB
             SaveWorkout[会話から記録保存]
             GetExercises[種目一覧取得]
             AddExercise[種目追加]
+            AddExerciseAndLog[種目追加+記録開始]
         end
     end
 
@@ -51,6 +52,7 @@ graph TB
     SendMessage -.->|"<<包含>>"| SaveWorkout
     SendMessage -.->|"<<包含>>"| GetExercises
     SendMessage -.->|"<<包含>>"| AddExercise
+    SendMessage -.->|"<<包含>>"| AddExerciseAndLog
 ```
 
 ---
@@ -136,6 +138,13 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement ToolAddExerciseAndLog {
+        id: FR_012_09
+        text: "未登録種目について、種目マスター追加とアクティブセッションへの追加（必要なら自動開始）と最初のセット記録を 1 回の確認で完結させるツール（ユーザー確認必須・編集可能インラインフォーム）"
+        risk: high
+        verifymethod: test
+    }
+
     requirement AIWriteConfirmation {
         id: REQ_008
         text: "AIが書き込み操作を実行する前にチャットバブル内のインラインUIでユーザー確認を求める。重量・回数を伴う提案は AI 提案値（実値または空のプレースホルダ）を初期値とする編集可能フォームを表示し、確定時はユーザー編集後の値で実行する。全セットの重量・回数が確定値（>0）でない限り「記録する」は disabled となる"
@@ -178,6 +187,7 @@ requirementDiagram
     FunctionCalling - contains -> ToolGetExercises
     FunctionCalling - contains -> ToolAddExercise
     FunctionCalling - contains -> ToolAddExerciseToSession
+    FunctionCalling - contains -> ToolAddExerciseAndLog
 ```
 
 ---
@@ -217,8 +227,9 @@ AIが会話の文脈を解析し、必要に応じて以下のツールを自律
 | ワークアウト集計 | 週・月単位の集計 | 読み取り |
 | ワークアウト保存 | 会話から記録を保存 | 書き込み（要確認・編集フォーム） |
 | 種目一覧取得 | 登録済み種目一覧を取得 | 読み取り |
-| 種目追加 | 種目マスターに追加 | 書き込み（要確認） |
+| 種目追加 | 種目マスターに追加（記録は始めない、純粋な登録のみ） | 書き込み（要確認） |
 | セッションへの種目追加 | アクティブセッションに種目（任意でセット群付き）を追加 | 書き込み（要確認・sets付きは編集フォーム） |
+| 種目追加 + 記録開始 | 未登録種目をマスター追加し、セッション（無ければ自動開始）に最初のセット記録までを 1 回の確認で完結 | 書き込み（要確認・編集フォーム） |
 
 **検証方法:** テストによる検証
 
@@ -262,6 +273,19 @@ AI: 「ナイス💪 ダンベルプレスですね。重量と回数を入力�
         [+ セットを追加]
     [キャンセル]  [記録する] (disabled)   ← 値が 0 のため
     重量と回数を入力してください    ← ヒント文言
+```
+
+**例（未登録種目を始める・FR_015 / addExerciseAndLog）:**
+
+```
+ユーザー:「背中の日。ラットプルダウンやる」（マスターに「ラットプルダウン」なし）
+AI: 「ナイス💪 ラットプルダウンを追加して始めましょう。重量と回数を入力してください」
+    「ラットプルダウン」を種目マスターに追加して、記録を始めますか？
+    ラットプルダウン
+    [1] _ kg × _ 回  [−]
+        [+ セットを追加]
+    [キャンセル]  [追加して記録する] (disabled)
+    重量と回数を入力してください
 ```
 
 **インラインボタンUIスペック:**
@@ -322,11 +346,12 @@ AI: 「ナイス💪 ダンベルプレスですね。重量と回数を入力�
 
 **フロー:**
 
-1. **種目マスター確認**: 入力された種目名が登録済みかを判断する。不明な場合は `getExercises` で確認し、未登録なら `addExercise` で追加してから次へ進む
-2. **セッション分岐**:
+1. **種目マスター確認**: 入力された種目名が登録済みかを判断する。不明な場合は `getExercises` で確認する
+2. **未登録種目を始める** → `addExerciseAndLog({ name, sets: [{ weight: 0, reps: 0 }] })` を 1 回呼び、種目追加と最初のセット記録を 1 つの確認カードで完結させる（addExercise + addExerciseToSession の 2 段確認は使わない）
+3. **登録済み + セッション分岐**:
    - **アクティブ** → `addExerciseToSession({ exerciseId, exerciseName, sets: [{ weight: 0, reps: 0 }] })`
    - **非アクティブ** → `saveWorkout({ date: 今日, exercises: [{ exerciseName, sets: [{ weight: 0, reps: 0 }] }] })`
-3. **テキスト応答**: ツール呼び出しと併せて短い励まし＋値入力の促し（例:「ナイス💪 重量と回数を入力してください」）を返す
+4. **テキスト応答**: ツール呼び出しと併せて短い励まし＋値入力の促し（例:「ナイス💪 重量と回数を入力してください」）を返す
 
 **ConfirmationBubble での挙動:**
 

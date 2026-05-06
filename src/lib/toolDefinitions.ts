@@ -12,6 +12,7 @@ export const WRITE_TOOL_NAMES = [
   'saveWorkout',
   'addExercise',
   'addExerciseToSession',
+  'addExerciseAndLog',
 ] as const
 
 export type ReadToolName = (typeof READ_TOOL_NAMES)[number]
@@ -207,6 +208,41 @@ const addExerciseToSessionDeclaration: FunctionDeclaration = {
   },
 }
 
+const addExerciseAndLogDeclaration: FunctionDeclaration = {
+  name: 'addExerciseAndLog',
+  description:
+    '未登録の種目を新たに始めるときに使う。種目マスターへの追加と、進行中セッション（無ければ自動開始）への追加・最初のセット記録までを 1 回の確認カードでまとめて行う。ユーザー確認が必要（編集可能フォームを表示）',
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      name: {
+        type: SchemaType.STRING,
+        description: '新しく追加する種目名',
+      },
+      sets: {
+        type: SchemaType.ARRAY,
+        description:
+          '最初のセット群（任意）。未指定の場合は [{weight:0, reps:0}] を既定値として確認カードに表示し、ユーザーが値を編集できる',
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            weight: {
+              type: SchemaType.NUMBER,
+              description: '重量 (kg)',
+            },
+            reps: {
+              type: SchemaType.NUMBER,
+              description: '回数',
+            },
+          },
+          required: ['weight', 'reps'],
+        },
+      },
+    },
+    required: ['name'],
+  },
+}
+
 export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   getRecentWorkoutsDeclaration,
   getWorkoutsByExerciseDeclaration,
@@ -216,4 +252,5 @@ export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   saveWorkoutDeclaration,
   addExerciseDeclaration,
   addExerciseToSessionDeclaration,
+  addExerciseAndLogDeclaration,
 ]
