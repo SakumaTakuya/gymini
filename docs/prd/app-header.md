@@ -18,8 +18,6 @@ risk: "low"
 
 **関連要求:** [navigation.md](navigation.md) - IR_001（BottomNav）、IR_002（GearIcon）
 
-**デザインリファレンス:** [design-system.html](../design-system.html) 全FRAME共通
-
 ## 概要
 
 gymini の各画面（FRAME1〜5）に共通のヘッダー領域を「規定」し、画面ごとのタイトル・補助情報・操作ボタンを統一されたレイアウトで提供する。BottomNav が IR_001 として規定されている水準と同等の構造化を、画面上部にも適用する。

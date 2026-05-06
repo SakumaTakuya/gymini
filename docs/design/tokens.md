@@ -1,7 +1,7 @@
 # デザイントークン リファレンス
 
 > AIセッション・コードレビュー向けの機械可読リファレンス。
-> ビジュアル確認は [design-system.html](../design-system.html) を参照。
+> 実装の正は `src/index.css` の `@theme` ブロックと `src/components/`（特に `src/components/ui/`）のコード本体・テスト。
 > トークンの追加・変更は `src/index.css` の `@theme` ブロックのみを変更すること（T-004）。
 
 ## カラートークン

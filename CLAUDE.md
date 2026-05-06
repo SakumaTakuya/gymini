@@ -42,79 +42,20 @@ src/
 - **Vitest カバレッジ閾値**: lines/branches/functions/statements すべて 90%。除外対象は `vite.config.ts` の `coverage.exclude` を参照（`routeTree.gen.ts` / `main.tsx` / `routes/**` / `components/ui/**` / `types/**` / `useHydrated.ts` など）。テスト追加でカバレッジを上げようとする前に除外リストを確認する
 - **Gemini モデル**: `gemini-flash-latest`（`src/lib/geminiClient.ts`）。API キーは localStorage に保存し、環境変数は使わない
 
-## ドキュメント構造
-
-このプロジェクトのドキュメントは `docs/` 配下に置きます。
-
-```
-docs/
-├── CONSTITUTION.md       # プロジェクト原則（最上位）
-├── design-system.html    # UIデザイン参照（ビジュアル）
-├── design/               # デザインシステム（機械可読）
-│   ├── tokens.md         # カラー・シャドウ・フォント・ボーダーラジウス
-│   ├── components.md     # コンポーネント規約の索引
-│   ├── focus.md          # フォーカスリング規約（focus-ring ユーティリティ）
-│   ├── button.md         # Button / IconButton / 生の button 使い分け
-│   └── input.md          # Input（prefix/suffix）/ select wrapper
-├── prd/                  # PRD（プロダクト要求仕様書）
-│   ├── index.md          # プロダクト全体の PRD
-│   ├── {feature}/index.md
-│   └── {feature}.md
-└── adr/                  # アーキテクチャ判断記録（ADR）
-    └── {feature}.md
-```
-
-**トリガー条件**:
-
-- `docs/` 配下のファイルの読み取りまたは変更
-- 新しい PRD または ADR の作成
-- `docs/` ドキュメントを参照する機能の実装
-
-### PRD の役割
-
-`docs/prd/` は「プロダクトとして何を・なぜ作るか」の唯一の真実です。機能追加・変更時に更新必須。
-
-### ADR の役割
-
-`docs/adr/` は「なぜこの技術・パターンを選んだか」のアーキテクチャ判断記録です。コードから読み取れない判断・トレードオフのみ記録します。コンポーネント構造・実装詳細は書きません。新規機能でアーキテクチャ上の判断が生じた場合のみ作成（任意）。
-
-### テストが仕様
+## テストが仕様
 
 テスト（Vitest/Playwright）が振る舞いの仕様です。テストが通れば仕様を満たしていると見なします。
 
 - **ADR とコードが乖離した場合**: テストを正とする。ADR の更新は任意。
 - **PRD とテストが矛盾した場合**: どちらかを自動的に正とせず、人間が判断する（`CONSTITUTION.md` D-003 参照）。
 
-#### 実装フローの順序（必須）
+### 実装フローの順序（必須）
 
 1. **PRD/ADR**（仕様変更を伴うなら先に更新）
 2. **失敗するテスト**（Vitest/Playwright で red を確認）
 3. **実装**（テストを green にする最小変更）
 4. **リファクタ**（必要なら）
 
-プランや作業順をファイル単位（"toolExecutor.ts を編集" → "useChatService.ts を編集" …）で組まない。フェーズ単位で組む。
+プランや作業順をファイル単位（"toolExecutor.ts を編集" → "useChatService.ts を編集" …）で組まない。フェーズ単位で組む（例: "Phase 2: toolExecutor 系の失敗テストを追加" → "Phase 3: green 化に必要なファイルをまとめて編集"）。
 
 **自己チェック** — `src/` 配下の非テストファイルを `Edit`/`Write` する直前に、対応するテストが先に書かれているかを確認する。書かれていなければフェーズ 2 に戻る。型不足でテストが書けない場合は最小の型スタブのみ先に入れ、impl は green 化フェーズに残す。
-
-### ドキュメントリンク規約
-
-ドキュメント内のマークダウンリンクは以下の形式に従ってください:
-
-| リンク先       | 形式                                    | リンクテキスト   | 例                                                    |
-|:-----------|:--------------------------------------|:----------|:-----------------------------------------------------|
-| **ファイル**   | `[filename.md](パスまたはURL)`             | ファイル名を含める | `[workout.md](../prd/workout/index.md)` |
-| **ディレクトリ** | `[directory-name](パスまたはURL/index.md)` | ディレクトリ名のみ | `[workout](../prd/workout/index.md)`               |
-
-### デザインシステム
-
-UIコンポーネントは `docs/design/` のルールに従って実装する。
-
-| リファレンス | 内容 |
-|:---|:---|
-| [tokens.md](docs/design/tokens.md) | カラー・シャドウ・ボーダーラジウス・フォントトークン、禁止クラス一覧 |
-| [components.md](docs/design/components.md) | 索引（focus / button / input へのリンク）|
-| [focus.md](docs/design/focus.md) | フォーカスリング規約（focus-ring ユーティリティ）|
-| [button.md](docs/design/button.md) | Button / IconButton / 生の button 使い分け |
-| [input.md](docs/design/input.md) | Input（prefix/suffix）/ select wrapper |
-
-**トリガー条件**: UIコンポーネント（`.tsx`）の新規作成・修正時は必ず `tokens.md` を参照し、`gym-*` トークンを使用する。`src/components/ui/` (shadcn) は対象外。

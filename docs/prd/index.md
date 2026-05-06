@@ -14,6 +14,8 @@ risk: "medium"
 
 # gymini 要求仕様書
 
+> **PRD の役割**: `docs/prd/` は「プロダクトとして何を・なぜ作るか」の唯一の真実。機能追加・変更時に更新必須。
+
 ## 概要
 
 gyminiは、筋トレ記録とAIコーチングを組み合わせたWebアプリケーションである。ユーザーが自身のGemini APIキーを持ち込み（BYOK: Bring Your Own Key）、日々のワークアウト記録をAIが自律的に参照してパーソナライズされたアドバイスを提供する。
@@ -34,8 +36,6 @@ gyminiは、筋トレ記録とAIコーチングを組み合わせたWebアプリ
 | FRAME3 | 📅 History | カレンダー + 日付別記録サマリー | 1 | [history](history/index.md) |
 | FRAME4 | 💬 AI Chat | AIチャット・Function Calling | 3 | [ai-chat](ai-chat/index.md) |
 | FRAME5 | ⚙️ Settings | APIキー・種目マスター管理 | 2 | [settings](settings/index.md), [api-key](api-key/index.md), [exercise-master](exercise-master/index.md) |
-
-**デザインリファレンス:** [design-system.html](../design-system.html)
 
 ---
 
