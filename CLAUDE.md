@@ -49,7 +49,6 @@ src/
 ```
 docs/
 ├── CONSTITUTION.md       # プロジェクト原則（最上位）
-├── design-system.html    # UIデザイン参照（ビジュアル）
 ├── design/               # デザインシステム（機械可読）
 │   ├── tokens.md         # カラー・シャドウ・フォント・ボーダーラジウス
 │   ├── components.md     # コンポーネント規約の索引

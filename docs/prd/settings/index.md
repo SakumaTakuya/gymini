@@ -16,8 +16,6 @@ risk: "low"
 
 **親要求:** [index.md](../index.md)
 
-**デザインリファレンス:** [design-system.html](../../design-system.html) FRAME5
-
 > **統合画面:** APIキー管理（[api-key](../api-key/index.md)）と種目マスター管理（[exercise-master](../exercise-master/index.md)）のUIを単一の設定画面に統合する。各ドメインロジックの詳細は個別PRDを参照。
 
 ## 概要

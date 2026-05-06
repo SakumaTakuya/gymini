@@ -16,8 +16,6 @@ risk: "high"
 
 **親要求:** [index.md](../index.md) - REQ_002
 
-**デザインリファレンス:** [design-system.html](../../design-system.html) FRAME1（Idle）、FRAME2（Active Workout）
-
 ## 概要
 
 ユーザーが日々のトレーニング内容を記録・管理する中核機能。ワークアウトは日付に紐づき、複数の種目とセットで構成される。セッション開始（FRAME1）→ セット記録（FRAME2）→ 終了・保存（FRAME1に戻る）のフローで運用する。

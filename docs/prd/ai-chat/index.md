@@ -198,8 +198,6 @@ requirementDiagram
 
 Gemini APIを用いたチャットインターフェースを提供する。ユーザーのBYOK APIキーを使ってGemini APIに接続する。
 
-**デザインリファレンス:** [design-system.html](../../design-system.html) FRAME4
-
 **チャットバブルUIスペック:**
 
 | バブル種別 | 配置 | 背景 | 角丸 | max-width |

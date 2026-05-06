@@ -18,8 +18,6 @@ risk: "medium"
 
 **関連要求:** [app-header.md](app-header.md) - 全画面共通の上部 chrome（タイトル・leading/trailing slot）
 
-**デザインリファレンス:** [design-system.html](../design-system.html) 全FRAME共通
-
 ## 概要
 
 gymini のページナビゲーションアーキテクチャを定義する。
