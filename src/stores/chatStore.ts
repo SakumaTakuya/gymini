@@ -14,7 +14,6 @@ type ChatActions = {
   addMessage: (message: ChatMessage) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
-  removeMessage: (messageId: string) => void
   clearMessages: () => void
 }
 
@@ -35,12 +34,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
       setError: (error) => {
         set({ error })
-      },
-
-      removeMessage: (messageId) => {
-        set((state) => ({
-          messages: state.messages.filter((msg) => msg.id !== messageId),
-        }))
       },
 
       clearMessages: () => {

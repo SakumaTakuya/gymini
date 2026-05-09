@@ -42,14 +42,6 @@ describe('chatStore', () => {
     expect(useChatStore.getState().error).toBeNull()
   })
 
-  test('removeMessage で一致する id のメッセージが除外される', () => {
-    useChatStore.getState().addMessage(makeMessage({ id: 'a' }))
-    useChatStore.getState().addMessage(makeMessage({ id: 'b' }))
-    useChatStore.getState().removeMessage('a')
-    const ids = useChatStore.getState().messages.map((m) => m.id)
-    expect(ids).toEqual(['b'])
-  })
-
   test('clearMessages で状態がリセットされる', () => {
     useChatStore.getState().addMessage(makeMessage())
     useChatStore.getState().setLoading(true)
