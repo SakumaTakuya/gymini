@@ -212,6 +212,7 @@ describe('executeWriteTool', () => {
     })
 
     test('種目名が見つからない場合 EXERCISE_NOT_FOUND を返す', () => {
+      useWorkoutSessionStore.getState().startSession('2026-04-18' as DateString)
       vi.mocked(ExerciseRepository.getAll).mockReturnValue([])
       const result = executeWriteTool('saveWorkout', {
         date: '2026-04-18',
