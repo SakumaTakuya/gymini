@@ -1,10 +1,12 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { AddSetButton, EditableSetRow } from './EditableSetRow'
 
-// コンテナ非依存の単体テスト: props のみで動作することを保証する。
-
 describe('EditableSetRow', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   const baseProps = {
     setNumber: 1,
     weight: 60,

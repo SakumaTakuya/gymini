@@ -1,11 +1,12 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ConfirmationActions } from './ConfirmationActions'
 
-// コンテナ非依存の単体テスト: props のみで動作することを保証する。
-// store/hook への依存は無く、ConfirmationBubble などコンテナの外でも使える。
-
 describe('ConfirmationActions', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   const baseProps = {
     label: '保存する',
     canApprove: true,

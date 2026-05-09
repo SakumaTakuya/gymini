@@ -1,10 +1,12 @@
-import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { SaveWorkoutEditor } from './SaveWorkoutEditor'
 
-// コンテナ非依存の単体テスト: props のみで動作し、chat 文脈の型/store には依存しない。
-
 describe('SaveWorkoutEditor', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   const baseProps = {
     initialExercises: [
       {
@@ -42,7 +44,6 @@ describe('SaveWorkoutEditor', () => {
   it('セット追加ボタンで該当 exercise の sets が増える', () => {
     render(<SaveWorkoutEditor {...baseProps} />)
     fireEvent.click(screen.getByRole('button', { name: /セットを追加/ }))
-    // 60/10 が複製されるので合計 4 inputs
     expect(screen.getAllByRole('spinbutton')).toHaveLength(4)
   })
 
@@ -134,13 +135,11 @@ describe('SaveWorkoutEditor', () => {
   })
 
   it('isSettled=true のとき全 disabled', () => {
-    const { container } = render(
-      <SaveWorkoutEditor {...baseProps} isSettled={true} />,
-    )
-    for (const input of within(container).getAllByRole('spinbutton')) {
+    render(<SaveWorkoutEditor {...baseProps} isSettled={true} />)
+    for (const input of screen.getAllByRole('spinbutton')) {
       expect(input).toBeDisabled()
     }
-    for (const button of within(container).getAllByRole('button')) {
+    for (const button of screen.getAllByRole('button')) {
       expect(button).toBeDisabled()
     }
   })

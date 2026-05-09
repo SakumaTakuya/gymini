@@ -1,10 +1,12 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { SingleExerciseEditor } from './SingleExerciseEditor'
 
-// コンテナ非依存の単体テスト: props のみで動作し、外部 store/hook には依存しない。
-
 describe('SingleExerciseEditor', () => {
+  beforeEach(() => {
+    vi.clearAllMocks()
+  })
+
   const baseProps = {
     exerciseLabel: 'ベンチプレス',
     initialSets: [{ weight: 60, reps: 10 }],
@@ -24,7 +26,6 @@ describe('SingleExerciseEditor', () => {
   it('セット追加ボタンで sets が増える', () => {
     render(<SingleExerciseEditor {...baseProps} />)
     fireEvent.click(screen.getByRole('button', { name: /セットを追加/ }))
-    // 既存値（60, 10）が複製されるので、合計 4 つの spinbutton が並ぶ
     expect(screen.getAllByRole('spinbutton')).toHaveLength(4)
   })
 
