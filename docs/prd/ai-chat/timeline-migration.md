@@ -125,6 +125,19 @@ risk: "high"
 - 必要に応じて `SessionTimeline.tsx` などに切り出す（任意）
 - e2e: `e2e/ai-chat-inline-edit.spec.ts` を「draft カード内編集」シナリオに書き換え。「種目追加 → AI 発話 → タイムラインに時系列で並ぶ」シナリオを追加
 
+**サブタスク: `addExerciseAndLog` の撤去**
+
+タイムライン UX の確定に伴い `isActive` 必須が技術的にも UX 的にも保証されるため、`addExerciseAndLog` の主機能であった「セッション自動開始」が不要になる。残る「マスター追加 + セッション追加 + セット記録の 1 アクション統合」は `addExerciseToSession` のシグネチャ拡張で代替できる。
+
+- `addExerciseToSession` の args を `{ exerciseName, sets, exerciseId? }` に拡張
+  - `exerciseId` あり: 従来通りセッションへ追加
+  - `exerciseId` 無し: `ExerciseRepository.create(exerciseName)` でマスター追加してからセッションへ追加
+- `executeAddExerciseAndLog` / FR_012_09 / `toolDefinitions` 該当エントリ / システムインストラクションの該当節を削除
+- 既存の AI への指示「未登録種目は `addExerciseAndLog` を使う」を「未登録種目は `addExerciseToSession` を `exerciseId` 省略で呼ぶ」に置換
+- ADR「`addExerciseAndLog` 統合」項を「`addExerciseToSession` への統合」に書き換え（または撤去履歴として残す）
+
+ロジックの整合性のため、`addExerciseAndLog` 撤去は P7 の中で同一 PR として進める（ConfirmationBubble 撤去・タイムライン化と整合した状態でリリースされるため）。
+
 ### P8: ChatInput が種目検索を吸収
 
 - 入力欄テキストに対し既存 `useExercises().search(text)` で候補チップを popover 表示
