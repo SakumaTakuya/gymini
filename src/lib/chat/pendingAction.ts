@@ -60,29 +60,22 @@ export function toPendingActionData(
       return { actionType: 'addExercise', name }
     }
     case 'addExerciseToSession': {
-      const exerciseId = call.args.exerciseId
       const exerciseName = call.args.exerciseName
-      if (typeof exerciseId !== 'string' || typeof exerciseName !== 'string')
+      if (typeof exerciseName !== 'string' || exerciseName.trim() === '') {
         return null
+      }
+      const exerciseId = call.args.exerciseId
+      if (exerciseId !== undefined && typeof exerciseId !== 'string') {
+        return null
+      }
       const parsed = parseSetsArg(call.args.sets)
       if (!parsed.ok) return null
       return {
         actionType: 'addExerciseToSession',
-        exerciseId,
+        ...(typeof exerciseId === 'string' ? { exerciseId } : {}),
         exerciseName,
         ...(parsed.sets ? { sets: parsed.sets } : {}),
       }
-    }
-    case 'addExerciseAndLog': {
-      const name = call.args.name
-      if (typeof name !== 'string' || name.trim() === '') return null
-      const parsed = parseSetsArg(call.args.sets)
-      if (!parsed.ok) return null
-      const sets =
-        parsed.sets && parsed.sets.length > 0
-          ? parsed.sets
-          : [{ weight: 0, reps: 0 }]
-      return { actionType: 'addExerciseAndLog', name, sets }
     }
     default:
       return null
@@ -95,9 +88,6 @@ export function buildWriteResultMessage(
 ): string {
   if (!result.success) {
     if (result.error === 'DUPLICATE_EXERCISE') {
-      if (data.actionType === 'addExerciseAndLog') {
-        return `「${data.name}」は既に種目マスターに登録されています。既存の種目で記録するなら「${data.name}やる」と教えてください。`
-      }
       return 'その種目は既に登録されています。'
     }
     if (result.error === 'SESSION_NOT_ACTIVE') {
@@ -119,8 +109,8 @@ export function buildWriteResultMessage(
     case 'addExercise':
       return `「${data.name}」を種目マスターに追加しました。`
     case 'addExerciseToSession':
-      return `「${data.exerciseName}」を現在のセッションに追加しました。`
-    case 'addExerciseAndLog':
-      return `「${data.name}」を種目に追加して記録を始めました！💪`
+      return typeof data.exerciseId === 'string'
+        ? `「${data.exerciseName}」を現在のセッションに追加しました。`
+        : `「${data.exerciseName}」を種目に追加して記録を始めました！💪`
   }
 }

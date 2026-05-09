@@ -1,4 +1,4 @@
-import { todayDateString, type DateString } from '../schemas/date'
+import type { DateString } from '../schemas/date'
 import type {
   ExerciseBreakdown,
   SummaryPeriod,
@@ -85,8 +85,6 @@ export function executeWriteTool(
       return executeAddExercise(args)
     case 'addExerciseToSession':
       return executeAddExerciseToSession(args)
-    case 'addExerciseAndLog':
-      return executeAddExerciseAndLog(args)
     default:
       return { success: false, error: `UNKNOWN_WRITE_TOOL:${name}` }
   }
@@ -202,9 +200,15 @@ export function parseSetsArg(
 function executeAddExerciseToSession(
   args: Record<string, unknown>,
 ): ToolExecutionResult {
-  const exerciseId = args.exerciseId
   const exerciseName = args.exerciseName
-  if (typeof exerciseId !== 'string' || typeof exerciseName !== 'string') {
+  if (typeof exerciseName !== 'string' || exerciseName.trim() === '') {
+    return { success: false, error: 'INVALID_ARGS' }
+  }
+  const explicitExerciseId = args.exerciseId
+  if (
+    explicitExerciseId !== undefined &&
+    typeof explicitExerciseId !== 'string'
+  ) {
     return { success: false, error: 'INVALID_ARGS' }
   }
   const parsed = parseSetsArg(args.sets)
@@ -215,64 +219,41 @@ function executeAddExerciseToSession(
   if (!session.isActive) {
     return { success: false, error: 'SESSION_NOT_ACTIVE' }
   }
+
+  // exerciseId 省略時はマスターに新規登録（旧 addExerciseAndLog 統合）
+  let resolvedExerciseId: string
+  if (typeof explicitExerciseId === 'string') {
+    resolvedExerciseId = explicitExerciseId
+  } else {
+    try {
+      const created = ExerciseRepository.create(exerciseName)
+      resolvedExerciseId = created.id
+    } catch (e) {
+      const message = e instanceof Error ? e.message : 'UNKNOWN_ERROR'
+      if (message.startsWith('Duplicate name')) {
+        return { success: false, error: 'DUPLICATE_EXERCISE' }
+      }
+      return { success: false, error: message }
+    }
+  }
+
   if (parsed.sets && parsed.sets.length > 0) {
     session.addExerciseWithSets({
-      exerciseId,
+      exerciseId: resolvedExerciseId,
       exerciseName,
       sets: parsed.sets,
       origin: 'ai-suggested',
     })
   } else {
-    session.addExercise({ exerciseId, exerciseName, origin: 'ai-suggested' })
+    session.addExercise({
+      exerciseId: resolvedExerciseId,
+      exerciseName,
+      origin: 'ai-suggested',
+    })
   }
-  return { success: true, data: { exerciseId, exerciseName } }
-}
-
-function executeAddExerciseAndLog(
-  args: Record<string, unknown>,
-): ToolExecutionResult {
-  const name = args.name
-  if (typeof name !== 'string' || name.trim() === '') {
-    return { success: false, error: 'INVALID_ARGS' }
-  }
-  const parsed = parseSetsArg(args.sets)
-  if (!parsed.ok) {
-    return { success: false, error: 'INVALID_ARGS' }
-  }
-  const sets =
-    parsed.sets && parsed.sets.length > 0
-      ? parsed.sets
-      : [{ weight: 0, reps: 0 }]
-
-  let exercise
-  try {
-    exercise = ExerciseRepository.create(name)
-  } catch (e) {
-    const message = e instanceof Error ? e.message : 'UNKNOWN_ERROR'
-    if (message.startsWith('Duplicate name')) {
-      return { success: false, error: 'DUPLICATE_EXERCISE' }
-    }
-    return { success: false, error: message }
-  }
-
-  const session = useWorkoutSessionStore.getState()
-  if (!session.isActive) {
-    session.startSession(todayDateString())
-  }
-  session.addExerciseWithSets({
-    exerciseId: exercise.id,
-    exerciseName: exercise.name,
-    sets,
-    origin: 'ai-suggested',
-  })
-
   return {
     success: true,
-    data: {
-      exerciseId: exercise.id,
-      exerciseName: exercise.name,
-      addedToSession: true,
-    },
+    data: { exerciseId: resolvedExerciseId, exerciseName },
   }
 }
 

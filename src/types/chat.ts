@@ -16,22 +16,15 @@ export type AddExerciseData = {
 
 export type AddExerciseToSessionData = {
   actionType: 'addExerciseToSession'
-  exerciseId: string
+  exerciseId?: string
   exerciseName: string
   sets?: Array<{ weight: number; reps: number }>
-}
-
-export type AddExerciseAndLogData = {
-  actionType: 'addExerciseAndLog'
-  name: string
-  sets: Array<{ weight: number; reps: number }>
 }
 
 export type PendingActionData =
   | SaveWorkoutData
   | AddExerciseData
   | AddExerciseToSessionData
-  | AddExerciseAndLogData
 
 export type ToolCallResult = {
   toolName: string
