@@ -37,7 +37,7 @@ export function buildPendingAction(
   }
 }
 
-function toPendingActionData(
+export function toPendingActionData(
   call: FunctionCallRequest,
 ): PendingActionData | null {
   switch (call.name) {
@@ -173,13 +173,13 @@ export function pendingActionToToolCall(action: PendingAction): {
 }
 
 export function buildWriteResultMessage(
-  action: PendingAction,
+  data: PendingActionData,
   result: ToolExecutionResult,
 ): string {
   if (!result.success) {
     if (result.error === 'DUPLICATE_EXERCISE') {
-      if (action.data.actionType === 'addExerciseAndLog') {
-        return `「${action.data.name}」は既に種目マスターに登録されています。既存の種目で記録するなら「${action.data.name}やる」と教えてください。`
+      if (data.actionType === 'addExerciseAndLog') {
+        return `「${data.name}」は既に種目マスターに登録されています。既存の種目で記録するなら「${data.name}やる」と教えてください。`
       }
       return 'その種目は既に登録されています。'
     }
@@ -196,14 +196,14 @@ export function buildWriteResultMessage(
     }
     return `実行に失敗しました：${result.error ?? '原因不明'}`
   }
-  switch (action.data.actionType) {
+  switch (data.actionType) {
     case 'saveWorkout':
       return 'ワークアウトを記録しました！お疲れ様でした。'
     case 'addExercise':
-      return `「${action.data.name}」を種目マスターに追加しました。`
+      return `「${data.name}」を種目マスターに追加しました。`
     case 'addExerciseToSession':
-      return `「${action.data.exerciseName}」を現在のセッションに追加しました。`
+      return `「${data.exerciseName}」を現在のセッションに追加しました。`
     case 'addExerciseAndLog':
-      return `「${action.data.name}」を種目に追加して記録を始めました！💪`
+      return `「${data.name}」を種目に追加して記録を始めました！💪`
   }
 }

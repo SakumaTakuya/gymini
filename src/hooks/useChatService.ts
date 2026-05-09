@@ -8,10 +8,10 @@ import {
   EMPTY_RESPONSE_FALLBACK,
 } from '../lib/chat/conversation'
 import {
-  buildPendingAction,
   buildWriteResultMessage,
   partitionFunctionCalls,
   pendingActionToToolCall,
+  toPendingActionData,
 } from '../lib/chat/pendingAction'
 import {
   createGeminiClient,
@@ -131,10 +131,11 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         const emitWriteResult = (
           call: FunctionCallRequest,
           assistantText: string | null | undefined,
+          precedingReads: ToolCallResult[],
         ): void => {
           cancelExistingPending()
-          const parsed = buildPendingAction(call)
-          if (!parsed) {
+          const data = toPendingActionData(call)
+          if (!data) {
             useChatStore
               .getState()
               .setError('書き込み操作の内容を解釈できませんでした。')
@@ -146,18 +147,18 @@ export function useChatService(options: UseChatServiceOptions = {}) {
             role: 'assistant',
             content: nonEmptyOr(
               assistantText,
-              buildWriteResultMessage(parsed, result),
+              buildWriteResultMessage(data, result),
             ),
             timestamp: nowISODateTimeString(),
             toolCalls: [
-              ...readResults,
+              ...precedingReads,
               { toolName: call.name, args: call.args, result },
             ],
           })
         }
 
         if (writeCall) {
-          emitWriteResult(writeCall, firstResponse.text)
+          emitWriteResult(writeCall, firstResponse.text, readResults)
           return
         }
 
@@ -191,7 +192,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           ? partitionFunctionCalls(follow.functionCalls).writeCall
           : null
         if (followWriteCall) {
-          emitWriteResult(followWriteCall, follow.text)
+          emitWriteResult(followWriteCall, follow.text, readResults)
           return
         }
 
@@ -234,7 +235,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       useChatStore.getState().addMessage({
         id: crypto.randomUUID(),
         role: 'assistant',
-        content: buildWriteResultMessage(effectiveAction, result),
+        content: buildWriteResultMessage(effectiveAction.data, result),
         timestamp: nowISODateTimeString(),
         toolCalls: [{ toolName, args, result }],
       })
