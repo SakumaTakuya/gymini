@@ -243,8 +243,6 @@ requirementDiagram
     AIWriteConfirmation - derives -> ToolAddExerciseAndLog
     InlineSetEditing - derives -> AIWriteConfirmation
     SessionGate - derives -> AIWriteConfirmation
-    TimelineIntegration - traces -> WorkoutManagement
-    UnifiedInput - traces -> WorkoutManagement
 ```
 
 ---
