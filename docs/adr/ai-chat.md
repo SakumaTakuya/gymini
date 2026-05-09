@@ -18,7 +18,7 @@
 
 ## 書き込み確認 UI: タイムライン上の draft カードに編集フォームを内包
 
-- **決定**: AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerciseAndLog` / `addExercise`）を呼び出した場合、対応する内容を **draft 状態の ExerciseCard** としてタイムラインに直接挿入する。draft カード内に「保存」「破棄」アクションを内蔵し、承認まではデータに反映しない。セット情報を含むアクションは draft カード内に PendingSetRow 再利用の編集可能フォームを内包する
+- **決定**: AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExercise`）を呼び出した場合、対応する内容を **draft 状態の ExerciseCard** としてタイムラインに直接挿入する。draft カード内に「保存」「破棄」アクションを内蔵し、承認まではデータに反映しない。セット情報を含むアクションは draft カード内に PendingSetRow 再利用の編集可能フォームを内包する
 - **理由**:
   - 旧版（`ConfirmationBubble` 内インラインフォーム）は、確定後に同じセット詳細を ExerciseCard で **二重表示** する DRY 違反を生んでいた
   - draft カード直挿により「セット詳細の表示は ExerciseCard が単一の責任を持つ」という Single Source of UI を確立できる
@@ -49,12 +49,11 @@
 
 ## セッション外 write tool は SESSION_NOT_ACTIVE を返す（防御線）
 
-- **決定**: ゲート対象は `saveWorkout` と `addExerciseToSession` の 2 ツールに限定する。`useWorkoutSessionStore.getState().isActive` が false なら `{ success: false, error: 'SESSION_NOT_ACTIVE' }` を返す。`addExercise` と `addExerciseAndLog` はゲート対象外
+- **決定**: ゲート対象は `saveWorkout` と `addExerciseToSession` の 2 ツールに限定する。`useWorkoutSessionStore.getState().isActive` が false なら `{ success: false, error: 'SESSION_NOT_ACTIVE' }` を返す。`addExercise` はゲート対象外
 - **理由**:
   - B-002（AI 安全操作の確認優先）の精神を「UI 撤去後の防御線」として技術的に保証する
   - タイムライン統合後はセッション外で AI に話せないため通常はここに到達しない。ただし防御的に残す
   - `addExercise` は種目マスター登録のみで、セッションと無関係。ゲートすると「セッション開始しないと種目マスターも編集できない」という UX 阻害になる
-  - `addExerciseAndLog` は「マスター追加 + セッション自動開始 + 最初のセット記録」を 1 アクションで完結させる設計（後述「`addExerciseAndLog` 統合」と一体）。ここに gate を入れると 1 アクション統合の意義が崩れる
   - 旧 `executeSaveWorkout` には「`isActive=false` で暗黙 `startSession`」のロジックがあったが、これは UX 上の意図ではなく実装上の便宜であり、削除して SESSION_NOT_ACTIVE 一律返却に整理した
 - **過去日付保存（将来要件）**: 「日付指定で過去のワークアウトを補完保存する」UX は将来要件として残す。現状の `executeSaveWorkout` は session に種目を追加するだけで `WorkoutRepository.save` を呼ばないため、過去日付保存は実質未対応。将来 PR で `date !== today()` 分岐を加えて `WorkoutRepository.save` を直接呼ぶフロー（または別ツール）に整理する
 - **トレードオフ**: テストと実装でゲート条件のメンテが必要。シンプルさよりも安全側を優先
@@ -94,16 +93,15 @@
 - **決定**: `ChatMessage` → `Content` 変換時に、連続する同ロールのメッセージをマージし、先頭が `model` ロールの場合はそれを除去する
 - **理由**: Gemini API は user/model の厳格な交互入力を要求する。`approve`/`reject` のワークフローでは連続する `model` エントリが生成される場合がある
 
-## 「未登録種目を始める」フローは単一ツール `addExerciseAndLog` に統合
+## 「未登録種目を始める」フローは `addExerciseToSession` の `exerciseId` 省略呼び出しに統合
 
-- **決定**: 未登録種目をユーザーが「やる／始める」と発話した場合、`addExercise` → `addExerciseToSession` の 2 段確認は使わず、新ツール `addExerciseAndLog`（マスター追加 + セッション自動開始 + 最初のセット記録）を 1 回呼び出して 1 つの draft カードで完結させる
+- **決定**: 未登録種目をユーザーが「やる／始める」と発話した場合、`addExercise` → `addExerciseToSession` の 2 段確認は使わず、`addExerciseToSession` を **`exerciseId` 省略**で 1 回呼び出して 1 つの draft カードで完結させる。`executeAddExerciseToSession` は `exerciseId` が無いとき内部で `ExerciseRepository.create(exerciseName)` を呼び、生成した id でセッションに追加する
 - **理由**:
   - 2 段確認は「種目マスターに追加しました」で会話が一区切りしてしまい、ユーザーが追加で発話する/別画面に行く必要が生じる（実際の UX フィードバックを反映）
-  - `approve()` 内でツール連鎖させる案は、確認 UI（draft カード）が結果的に 2 枚出る点で同じ摩擦が残る上、`pendingActionToToolCall` の「1 アクション = 1 ツール」不変条件を崩す
-  - LLM 側にツール連鎖させる案は往復回数とコストが増え、非決定的になる
-  - `saveWorkout` がエグゼキュータ側で `startSession` を自動呼出している先例（[toolExecutor.ts](../../src/lib/toolExecutor.ts)）と整合する
+  - 旧版では専用ツール `addExerciseAndLog` を使っていたが、Phase 7-A のタイムライン UX で `isActive` 必須が確定したため、`addExerciseAndLog` の主機能だった「セッション自動開始」が不要になり、`addExerciseToSession` の単純な引数拡張で代替できる
+  - ツール数が減るため、AI への system instruction がシンプルになり Function Calling の精度も上がる期待がある
 - **トレードオフ**: 「マスター登録だけしておきたい」ケース用に `addExercise` を温存し、システムインストラクションで「ユーザーが明示した場合のみ」と限定することで使い分ける
-- **タイムライン統合との関係**: `addExerciseAndLog` の出力先コンテナは `ConfirmationBubble` から **draft カード** に移行する。1 アクション統合の意義はそのまま温存される
+- **重複時の挙動**: `exerciseId` 省略 + 既登録名の場合は `DUPLICATE_EXERCISE` を返し、AI が「その種目は既に登録されています」と案内する。AI には事前に `getExercises` で確認するよう指示する（衝突は通常起きない）
 
 ## アクティブセッション文脈の AI 注入（FR_014）
 
