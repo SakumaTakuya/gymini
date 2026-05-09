@@ -203,6 +203,20 @@ describe('workoutSessionStore', () => {
       const { draftExercises } = useWorkoutSessionStore.getState()
       expect(draftExercises[0].origin).toBe('ai-suggested')
     })
+
+    it('timestamp を nowISODateTimeString() で自動設定する', () => {
+      useWorkoutSessionStore.getState().startSession()
+      const before = new Date()
+      useWorkoutSessionStore
+        .getState()
+        .addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+      const after = new Date()
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      const ts = new Date(draftExercises[0].timestamp).getTime()
+      expect(ts).toBeGreaterThanOrEqual(before.getTime())
+      expect(ts).toBeLessThanOrEqual(after.getTime())
+    })
   })
 
   describe('addExerciseWithSets', () => {
@@ -229,6 +243,22 @@ describe('workoutSessionStore', () => {
 
       const { draftExercises } = useWorkoutSessionStore.getState()
       expect(draftExercises[0].origin).toBe('ai-suggested')
+    })
+
+    it('timestamp を nowISODateTimeString() で自動設定する', () => {
+      useWorkoutSessionStore.getState().startSession()
+      const before = new Date()
+      useWorkoutSessionStore.getState().addExerciseWithSets({
+        exerciseId: 'bench',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 60, reps: 10 }],
+      })
+      const after = new Date()
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      const ts = new Date(draftExercises[0].timestamp).getTime()
+      expect(ts).toBeGreaterThanOrEqual(before.getTime())
+      expect(ts).toBeLessThanOrEqual(after.getTime())
     })
   })
 
@@ -294,6 +324,24 @@ describe('workoutSessionStore', () => {
         { weight: 80, reps: 8 },
         { weight: 75, reps: 6 },
       ])
+    })
+
+    it('manual 昇格時に timestamp を上書きしない', () => {
+      useWorkoutSessionStore.getState().startSession()
+      useWorkoutSessionStore.getState().addExerciseWithSets({
+        exerciseId: 'bench',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 60, reps: 10 }],
+        origin: 'ai-suggested',
+      })
+      const originalTs =
+        useWorkoutSessionStore.getState().draftExercises[0].timestamp
+
+      useWorkoutSessionStore.getState().acceptSuggestedExercise(0)
+
+      expect(
+        useWorkoutSessionStore.getState().draftExercises[0].timestamp,
+      ).toBe(originalTs)
     })
   })
 

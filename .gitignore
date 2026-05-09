@@ -142,6 +142,7 @@ vite.config.ts.timestamp-*
 test-results/
 playwright-report/
 .playwright-mcp/
+.playwright-cli/
 
 # Claude Code agent worktrees (local-only)
 .claude/worktrees/

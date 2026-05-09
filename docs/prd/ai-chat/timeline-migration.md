@@ -145,10 +145,21 @@ risk: "high"
 
 ### P7: ActiveSessionView タイムライン化
 
-- ExerciseCard と ChatMessage を `timestamp` でマージしてレンダ
-- `recording` カードを `position: sticky; top: <ヘッダー高さ>` で上部固定
-- 必要に応じて `SessionTimeline.tsx` などに切り出す（任意）
-- e2e: `e2e/ai-chat-inline-edit.spec.ts` を「draft カード内編集」シナリオに書き換え。「種目追加 → AI 発話 → タイムラインに時系列で並ぶ」シナリオを追加
+ユーザー判断で **2 PR に分割** した：
+
+- **P7-A**: ActiveSessionView のタイムライン化（実施完了）
+- **P7-B**: `addExerciseAndLog` 撤去（次 PR）
+
+#### P7-A 実施内容
+
+- `DraftExercise.timestamp: ISODateTimeString` を required で追加（`src/schemas/workout.ts`）
+- `workoutSessionStore.addExercise` / `addExerciseWithSets` が `nowISODateTimeString()` で timestamp を自動設定。`acceptSuggestedExercise` は spread で timestamp を保持
+- `ActiveSessionView.tsx` を ChatMessage と DraftExercise を `timestamp` でマージしてレンダリングするタイムライン UI に書き換え。`useChatStore.messages` と `draftExercises` を `localeCompare` でソート
+- `cardState === 'recording'` の `ExerciseCard` を wrapper `<div className="sticky top-14 z-10">` で囲み、AppHeader 直下にスクロール固定
+- 既存 fixture `makeDraftExercise` に timestamp デフォルトを追加し、既存テスト fixture への影響を最小化
+- 単体テスト：`workoutSessionStore.test`（timestamp 自動設定 + 保持 3 件）、`ActiveSessionView.test`（タイムラインレンダ + sticky 4 件）追加
+- e2e: `e2e/ai-chat-inline-edit.spec.ts` に「種目追加 → AI 発話 → 時系列で並ぶ」「recording カードが sticky で残る」の 2 シナリオ追加
+- AIChatPage は現状維持（P9 で削除予定）。`chatStore.messages` が両ページで重複表示されるが中間状態として許容
 
 **サブタスク: `addExerciseAndLog` の撤去**
 

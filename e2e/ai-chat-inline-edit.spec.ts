@@ -202,4 +202,150 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     })
     expect(draftCount).toBe(0)
   })
+
+  test('種目追加 → AI 発話 → タイムラインに時系列で並ぶ', async ({ page }) => {
+    // 1. 手動で「ベンチプレス」を draft に追加（過去の timestamp）
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('gymini:workout-session')!
+      const parsed = JSON.parse(raw)
+      parsed.state.draftExercises = [
+        {
+          exerciseId: 'ex-1',
+          exerciseName: 'ベンチプレス',
+          sets: [{ weight: 60, reps: 10 }],
+          pendingSet: null,
+          pendingSetDirty: false,
+          cardState: 'idle',
+          editingSetIndex: null,
+          origin: 'manual',
+          timestamp: '2026-05-04T19:00:00+09:00',
+        },
+      ]
+      localStorage.setItem('gymini:workout-session', JSON.stringify(parsed))
+    })
+    await page.reload()
+
+    // 2. AI チャットで「スクワット 100kg 5回」発話 → AI が addExerciseToSession を呼ぶ
+    await page.route(
+      '**/generativelanguage.googleapis.com/**',
+      async (route: Route) => {
+        await route.fulfill({
+          status: 200,
+          contentType: 'application/json',
+          body: JSON.stringify({
+            candidates: [
+              {
+                content: {
+                  role: 'model',
+                  parts: [
+                    { text: 'スクワットを追加しました' },
+                    {
+                      functionCall: {
+                        name: 'addExerciseToSession',
+                        args: {
+                          exerciseId: 'ex-2',
+                          exerciseName: 'スクワット',
+                          sets: [{ weight: 100, reps: 5 }],
+                        },
+                      },
+                    },
+                  ],
+                },
+                finishReason: 'STOP',
+              },
+            ],
+          }),
+        })
+      },
+    )
+
+    await page.getByRole('link', { name: 'AI' }).click()
+    const input = page.getByPlaceholder('メッセージを入力')
+    await input.fill('スクワット100kg5回')
+    await page.keyboard.press('Enter')
+    await expect(page.getByText('スクワットを追加しました')).toBeVisible({
+      timeout: 10000,
+    })
+
+    // 3. /training に戻る → タイムライン上で順序確認
+    await page.getByRole('link', { name: 'トレ' }).click()
+    await expect(page).toHaveURL(/#\/training/)
+
+    // 順序検証：ベンチプレス（手動, 19:00）が最上部にあり、
+    // AI 応答メッセージと AI 提案カード（スクワット）はそのあとに並ぶ。
+    // useChatService.emitWriteResult は executeWriteTool（draft 挿入）→ addMessage の順で
+    // 呼ぶため draft.timestamp <= message.timestamp となり、AI 提案カードが
+    // 応答メッセージより先（または同位置）になることに注意。
+    const benchY = await page
+      .getByRole('button', { name: 'ベンチプレス' })
+      .first()
+      .evaluate((el) => el.getBoundingClientRect().top)
+    const aiTextY = await page
+      .getByText('スクワットを追加しました')
+      .evaluate((el) => el.getBoundingClientRect().top)
+    const squatY = await page
+      .getByText(/AI 提案/)
+      .evaluate((el) => el.getBoundingClientRect().top)
+    expect(benchY).toBeLessThan(squatY)
+    expect(benchY).toBeLessThan(aiTextY)
+  })
+
+  test('cardState=recording のカードはスクロールしても sticky で上部に残る', async ({
+    page,
+  }) => {
+    // 5 つの種目を draft に積む（スクロールが必要な高さ確保）。1 つ目を recording にする
+    await page.evaluate(() => {
+      const raw = localStorage.getItem('gymini:workout-session')!
+      const parsed = JSON.parse(raw)
+      const baseTimestamp = new Date('2026-05-04T19:00:00+09:00').getTime()
+      parsed.state.draftExercises = [
+        ['bench', 'ベンチプレス', 'recording'],
+        ['squat', 'スクワット', 'idle'],
+        ['dl', 'デッドリフト', 'idle'],
+        ['ohp', 'オーバーヘッドプレス', 'idle'],
+        ['row', 'ベントオーバーロウ', 'idle'],
+      ].map(([id, name, state], i) => ({
+        exerciseId: id,
+        exerciseName: name,
+        sets:
+          state === 'recording'
+            ? []
+            : [
+                { weight: 60, reps: 10 },
+                { weight: 60, reps: 10 },
+                { weight: 60, reps: 10 },
+              ],
+        pendingSet: state === 'recording' ? { weight: 0, reps: 0 } : null,
+        pendingSetDirty: false,
+        cardState: state,
+        editingSetIndex: null,
+        origin: 'manual',
+        timestamp: new Date(baseTimestamp + i * 60_000).toISOString(),
+      }))
+      localStorage.setItem('gymini:workout-session', JSON.stringify(parsed))
+    })
+    await page.reload()
+
+    const recordingCard = page.getByRole('button', { name: 'ベンチプレス' })
+    await expect(recordingCard).toBeVisible()
+
+    // 下部までスクロールし、レイアウト反映のため 1 フレーム待つ
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          const container = document.querySelector('.overflow-y-auto')
+          if (container) container.scrollTop = container.scrollHeight
+          requestAnimationFrame(() => resolve())
+        }),
+    )
+
+    // recording カードがビューポート上部に留まっている（sticky が機能）。
+    // 厳密な値は AppHeader の高さやカード内 padding に依存するため、
+    // 「ビューポート上部 1/3 以内」という緩めの判定でリグレッションを検出する。
+    const top = await recordingCard.evaluate(
+      (el) => el.getBoundingClientRect().top,
+    )
+    const viewportHeight = page.viewportSize()?.height ?? 800
+    expect(top).toBeLessThan(viewportHeight / 3)
+  })
 })

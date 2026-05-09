@@ -1,10 +1,12 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ActiveSessionView } from './ActiveSessionView'
 import { useWorkoutSessionStore } from '../../stores/workoutSessionStore'
-import type { DateString } from '../../schemas/date'
+import { useChatStore } from '../../stores/chatStore'
+import type { DateString, ISODateTimeString } from '../../schemas/date'
 import { makeDraftExercise } from '../../test/fixtures/draftExercise'
+import { makeChatMessage } from '../../test/fixtures/chatMessage'
 
 function resetStore() {
   useWorkoutSessionStore.setState({
@@ -13,6 +15,7 @@ function resetStore() {
     date: null,
     draftExercises: [],
   })
+  useChatStore.setState({ messages: [], isLoading: false, error: null })
 }
 
 describe('ActiveSessionView', () => {
@@ -115,5 +118,123 @@ describe('ActiveSessionView', () => {
     await user.click(screen.getByRole('button', { name: /削除/ }))
 
     expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(0)
+  })
+
+  describe('タイムラインレンダ (ChatMessage + DraftExercise)', () => {
+    function setupTimeline(items: {
+      drafts: Array<{ exerciseName: string; timestamp: string }>
+      messages: Array<{ content: string; timestamp: string; role?: 'user' | 'assistant' }>
+    }) {
+      useWorkoutSessionStore.setState({
+        isActive: true,
+        date: '2026-05-04' as DateString,
+        startedAt: '2026-05-04T19:00:00+09:00' as ISODateTimeString,
+        draftExercises: items.drafts.map((d, i) =>
+          makeDraftExercise({
+            exerciseId: `ex-${i}`,
+            exerciseName: d.exerciseName,
+            cardState: 'idle',
+            timestamp: d.timestamp as ISODateTimeString,
+          }),
+        ),
+      })
+      useChatStore.setState({
+        messages: items.messages.map((m, i) =>
+          makeChatMessage({
+            id: `msg-${i}`,
+            role: m.role ?? 'assistant',
+            content: m.content,
+            timestamp: m.timestamp as ISODateTimeString,
+          }),
+        ),
+        isLoading: false,
+        error: null,
+      })
+    }
+
+    it('chatStore.messages と draftExercises を timestamp でマージして時系列で並べる', () => {
+      setupTimeline({
+        drafts: [
+          {
+            exerciseName: 'ベンチプレス',
+            timestamp: '2026-05-04T19:00:00+09:00',
+          },
+          {
+            exerciseName: 'スクワット',
+            timestamp: '2026-05-04T19:10:00+09:00',
+          },
+        ],
+        messages: [
+          { content: '間に挟まる AI 応答', timestamp: '2026-05-04T19:05:00+09:00' },
+        ],
+      })
+
+      const { container } = render(<ActiveSessionView />)
+      const visibleText = container.textContent ?? ''
+      const benchIdx = visibleText.indexOf('ベンチプレス')
+      const aiIdx = visibleText.indexOf('間に挟まる AI 応答')
+      const squatIdx = visibleText.indexOf('スクワット')
+      expect(benchIdx).toBeGreaterThan(-1)
+      expect(aiIdx).toBeGreaterThan(benchIdx)
+      expect(squatIdx).toBeGreaterThan(aiIdx)
+    })
+
+    it('ChatMessage は ChatBubble、DraftExercise は ExerciseCard で描画される', () => {
+      setupTimeline({
+        drafts: [
+          {
+            exerciseName: 'ベンチプレス',
+            timestamp: '2026-05-04T19:00:00+09:00',
+          },
+        ],
+        messages: [
+          { content: 'こんにちは', timestamp: '2026-05-04T19:01:00+09:00' },
+        ],
+      })
+
+      render(<ActiveSessionView />)
+      // ChatBubble の content
+      expect(screen.getByText('こんにちは')).toBeInTheDocument()
+      // ExerciseCard の種目名（同じ要素内に AI 提案バッジが無い manual ExerciseCard）
+      expect(screen.getByRole('button', { name: 'ベンチプレス' })).toBeInTheDocument()
+    })
+
+    it('cardState === "recording" のカードは sticky で上部固定される', () => {
+      useWorkoutSessionStore.setState({
+        isActive: true,
+        date: '2026-05-04' as DateString,
+        startedAt: '2026-05-04T19:00:00+09:00' as ISODateTimeString,
+        draftExercises: [
+          makeDraftExercise({
+            exerciseId: 'bench',
+            exerciseName: 'ベンチプレス',
+            cardState: 'recording',
+            pendingSet: { weight: 0, reps: 0 },
+            timestamp: '2026-05-04T19:00:00+09:00' as ISODateTimeString,
+          }),
+        ],
+      })
+
+      const { container } = render(<ActiveSessionView />)
+      const stickyEl = container.querySelector('.sticky')
+      expect(stickyEl).not.toBeNull()
+      // recording カードが sticky wrapper の中にある
+      expect(within(stickyEl as HTMLElement).getByRole('button', { name: 'ベンチプレス' })).toBeInTheDocument()
+    })
+
+    it('messages が空でも draftExercises のみで動作する（既存挙動）', () => {
+      setupTimeline({
+        drafts: [
+          {
+            exerciseName: 'ベンチプレス',
+            timestamp: '2026-05-04T19:00:00+09:00',
+          },
+        ],
+        messages: [],
+      })
+
+      render(<ActiveSessionView />)
+      expect(screen.getByRole('button', { name: 'ベンチプレス' })).toBeInTheDocument()
+    })
   })
 })
