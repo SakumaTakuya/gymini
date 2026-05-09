@@ -1,15 +1,17 @@
 import { useState } from 'react'
-import type { SaveWorkoutData } from '../../types/chat'
 import { AddSetButton, EditableSetRow } from './EditableSetRow'
 import { ConfirmationActions } from './ConfirmationActions'
 
-type ExerciseEdit = SaveWorkoutData['exercises'][number]
+export type ExerciseEdit = {
+  exerciseName: string
+  sets: Array<{ weight: number; reps: number }>
+}
 
 export type SaveWorkoutEditorProps = {
-  initialExercises: SaveWorkoutData['exercises']
+  initialExercises: ExerciseEdit[]
   isSettled: boolean
   label: string
-  onApprove: (exercises: SaveWorkoutData['exercises']) => void
+  onApprove: (exercises: ExerciseEdit[]) => void
   onReject: () => void
 }
 
