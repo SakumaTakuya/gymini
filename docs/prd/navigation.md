@@ -4,7 +4,7 @@ title: "ページナビゲーション"
 type: "prd"
 status: "draft"
 created: "2026-03-28"
-updated: "2026-05-03"
+updated: "2026-05-09"
 depends-on: ["prd-gymini", "prd-workout", "prd-history", "prd-ai-chat", "prd-settings"]
 tags: ["navigation", "routing", "bottom-nav"]
 category: "ui"
@@ -22,9 +22,9 @@ risk: "medium"
 
 gymini のページナビゲーションアーキテクチャを定義する。
 
-- **BottomNav**: 2タブ（Training + History）+ 右側 AI 専用ボタン
+- **BottomNav**: 2 タブ（Training + History）。AI 対話はワークアウトセッション内のタイムライン UX に統合されたため、独立した AI タブは持たない（[ai-chat/index.md](ai-chat/index.md) FR_034）
 - **歯車アイコン**: 全画面の右上に固定、タップで設定画面へ遷移
-- **ルーティング**: 5つの論理画面（FRAME1〜5）をクライアントサイドで管理
+- **ルーティング**: 4 つの論理画面（FRAME1, FRAME2, FRAME3, FRAME5）をクライアントサイドで管理。旧 FRAME4（独立 AI チャット画面）は段階的に撤去される（[ai-chat/timeline-migration.md](ai-chat/timeline-migration.md) Phase 8）
 
 ---
 
@@ -35,9 +35,8 @@ graph TB
     subgraph "gymini ナビゲーション"
         User((ユーザー))
         FRAME1["FRAME1: Training Idle"]
-        FRAME2["FRAME2: Active Workout"]
+        FRAME2["FRAME2: Active Workout (タイムライン UX: 種目 + AI 対話統合)"]
         FRAME3["FRAME3: History"]
-        FRAME4["FRAME4: AI Chat"]
         FRAME5["FRAME5: Settings"]
     end
 
@@ -46,15 +45,15 @@ graph TB
     FRAME2 -->|"終了ボタン"| FRAME1
 
     FRAME1 <-->|"BottomNav: 履歴タブ"| FRAME3
-    FRAME1 <-->|"BottomNav: AIボタン"| FRAME4
-    FRAME3 <-->|"BottomNav: AIボタン"| FRAME4
+    FRAME2 <-->|"BottomNav: 履歴タブ"| FRAME3
 
     FRAME1 -->|"歯車アイコン"| FRAME5
     FRAME2 -->|"歯車アイコン"| FRAME5
     FRAME3 -->|"歯車アイコン"| FRAME5
-    FRAME4 -->|"歯車アイコン"| FRAME5
     FRAME5 -->|"Xボタン"| FRAME5_PREV["遷移元に戻る"]
 ```
+
+旧 FRAME4（独立 AI チャット画面）への遷移は撤去。AI 対話は FRAME2 のタイムライン内でのみ成立する。
 
 ---
 
@@ -90,16 +89,16 @@ requirementDiagram
         verifymethod: test
     }
 
-    functionalRequirement AIChatPage {
+    functionalRequirement AIChatIntegration {
         id: FR_020
-        text: "AIチャットページ（FRAME4）: 常時アクセス可能"
+        text: "AI 対話はワークアウトセッション（FRAME2）のタイムライン UX に統合され、独立した画面を持たない"
         risk: high
         verifymethod: test
     }
 
     interfaceRequirement BottomNav {
         id: IR_001
-        text: "2タブ + AI専用ボタンのBottomNav"
+        text: "2 タブ（Training + History）の BottomNav。AI 専用タブは廃止"
         risk: medium
         verifymethod: inspection
     }
@@ -120,13 +119,13 @@ requirementDiagram
 
     PageNavigation - contains -> TrainingPage
     PageNavigation - contains -> HistoryPage
-    PageNavigation - contains -> AIChatPage
+    PageNavigation - contains -> AIChatIntegration
     PageNavigation - contains -> BottomNav
     PageNavigation - contains -> GearIcon
     PageNavigation - contains -> SPARouting
 
     TrainingPage - derives -> SessionPersistence
-    AIChatPage - derives -> SessionPersistence
+    AIChatIntegration - traces -> TrainingPage
 ```
 
 ---
@@ -154,26 +153,33 @@ BottomNavによるタブ遷移やブラウザリロードでセッションデ�
 
 **検証方法:** テストによる検証
 
-### FR_020: AIチャットページ（FRAME4）
+### FR_020: AI 対話のセッション統合
 
-BottomNavのAIボタンから常時アクセス可能。APIキー未設定時もタップ可能（ページ内で設定を促すUI表示）。詳細は [ai-chat/index.md](ai-chat/index.md) 参照。
+AI 対話は独立した画面（旧 FRAME4）を持たず、ワークアウトセッション（FRAME2）のタイムライン UX 内でのみ成立する。
+
+- AI への発話導線はセッション中の単一入力欄に集約される（[ai-chat/index.md](ai-chat/index.md) FR_035）
+- セッション非アクティブ時は AI と対話できない。書き込みツールも `SESSION_NOT_ACTIVE` を返す（[ai-chat/index.md](ai-chat/index.md) FR_036）
+- 旧 `/ai` ルート / FRAME4 / BottomNav 「AI」専用ボタンは段階的に撤去される（[ai-chat/timeline-migration.md](ai-chat/timeline-migration.md) Phase 8）
+- API キー未設定時の導線は FRAME5 設定画面に集約（IR_002 歯車アイコンの赤バッジ）
 
 **検証方法:** テストによる検証
 
 ## 4. インターフェース要求
 
-### IR_001: BottomNav（2タブ + AI専用ボタン）
+### IR_001: BottomNav（2 タブ構成）
 
-スマホ画面下部に固定配置。FRAME1〜4で常に表示（FRAME5では非表示）。
+スマホ画面下部に固定配置。FRAME1〜FRAME3 で常に表示（FRAME5 では非表示）。
 
 **レイアウト:**
 
 ```
-┌──────────┬──────────┬──────────────────┐
-│ Training │ History  │   [ AI ボタン ]   │
-└──────────┴──────────┴──────────────────┘
-  2タブ（均等 flex-1）   AI 専用ボタン（pill型）
+┌────────────────┬────────────────┐
+│    Training    │     History    │
+└────────────────┴────────────────┘
+       2 タブ（均等 flex-1）
 ```
+
+旧 AI 専用ボタンは撤去。AI 対話は FRAME2 のタイムライン内のみで成立する（FR_020）。
 
 **外観:**
 - 高さ: セーフエリア込みで十分なタップ領域（T-003 準拠）
@@ -187,29 +193,18 @@ BottomNavのAIボタンから常時アクセス可能。APIキー未設定時も
 | タブ1 | トレ | `ph-barbell` | 塗りつぶし・強調色・太字 | ミュートカラー |
 | タブ2 | 履歴 | `ph-clock-counter-clockwise` | 塗りつぶし・強調色・太字 | ミュートカラー |
 
-**AIボタン:**
-
-| 状態 | 背景 | テキスト |
-|:-----|:-----|:---------|
-| 通常 | 黒背景 | 白テキスト |
-| アクティブ（FRAME4表示中） | アクセント色（gym-accent）背景 | 白テキスト |
-
-- 形状: pill 型（`rounded-full`、tokens.md ボーダーラジウス規定「ピル・ヘッダー」準拠）
-- アイコン: ロボットアイコン + 「AI」ラベル
-
 **遷移先:**
 
 | 操作 | 遷移先 |
 |:-----|:-------|
 | トレタブ | FRAME1（Idle）/ FRAME2（セッション中の場合） |
 | 履歴タブ | FRAME3 |
-| AIボタン | FRAME4 |
 
 **検証方法:** インスペクションによる検証
 
 ### IR_002: 歯車アイコン（全画面共通）
 
-全画面（FRAME1〜4）の右上に固定表示される歯車アイコン。タップでFRAME5（設定）へ遷移する。
+全画面（FRAME1〜FRAME3）の右上に固定表示される歯車アイコン。タップで FRAME5（設定）へ遷移する。
 
 **外観:**
 - 画面右上に固定配置、スクロールしても常に表示
@@ -229,7 +224,9 @@ BottomNavのAIボタンから常時アクセス可能。APIキー未設定時も
 
 ### DC_005: クライアントサイドSPAルーティング
 
-4つの論理ルート（`training`, `history`, `ai`, `settings`）を TanStack Router の hash history モードで管理する。GitHub Pages 対応のため hash ルーティング（`/#/training` 形式）と basename（`/gymini/`）を使用する。
+3 つの論理ルート（`training`, `history`, `settings`）を TanStack Router の hash history モードで管理する。GitHub Pages 対応のため hash ルーティング（`/#/training` 形式）と basename（`/gymini/`）を使用する。
+
+旧 `ai` ルートは段階的に撤去される（[ai-chat/timeline-migration.md](ai-chat/timeline-migration.md) Phase 8）。移行期間中は `/ai` を `/training` へリダイレクト、または「セッション開始へ誘導する空ページ」として残置する。
 
 **検証方法:** インスペクションによる検証
 
@@ -239,9 +236,10 @@ BottomNavのAIボタンから常時アクセス可能。APIキー未設定時も
 
 | Phase | 追加機能 | ナビゲーションへの影響 |
 |:------|:---------|:---------------------|
-| Phase 1 | ワークアウト CRUD、履歴 | FRAME1/2/3が機能。AIボタンは「準備中」表示 |
-| Phase 2 | 設定画面（APIキー・種目管理） | FRAME5追加。歯車アイコン全画面表示 |
-| Phase 3 | AIチャット | FRAME4が完全機能。AIボタンのアクティブ状態（accent） |
+| Phase 1 | ワークアウト CRUD、履歴 | FRAME1/2/3 が機能。AI 機能は未提供 |
+| Phase 2 | 設定画面（APIキー・種目管理） | FRAME5 追加。歯車アイコン全画面表示 |
+| Phase 3（旧）| 独立 AI チャット画面 | FRAME4 を一時的に追加（AI ボタン経由）。**Phase 4 で撤去** |
+| Phase 4 | タイムライン統合 UX | FRAME2 に AI 対話を統合。FRAME4 と AI 専用ボタンを撤去（[ai-chat/timeline-migration.md](ai-chat/timeline-migration.md) Phase 1〜9）|
 
 ---
 
