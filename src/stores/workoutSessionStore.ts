@@ -4,6 +4,7 @@ import { nowISODateTimeString, todayDateString } from '../schemas/date'
 import type { DateString, ISODateTimeString } from '../schemas/date'
 import type { DraftExercise, WorkoutSet } from '../schemas/workout'
 import * as WorkoutRepository from '../lib/workoutRepository'
+import { storeBus } from './storeBus'
 
 type WorkoutSessionState = {
   // State
@@ -66,6 +67,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
           date: date ?? todayDateString(),
           draftExercises: [],
         })
+        storeBus.clearChatMessages?.()
       },
 
       endSession: () => {
@@ -92,6 +94,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
           date: null,
           draftExercises: [],
         })
+        storeBus.clearChatMessages?.()
       },
 
       deleteExercise: (exerciseIndex) => {
