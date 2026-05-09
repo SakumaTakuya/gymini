@@ -145,3 +145,6 @@ playwright-report/
 
 # Claude Code agent worktrees (local-only)
 .claude/worktrees/
+
+# Legacy AI-SDD harness scratch dir (廃止済み: PR #73 で docs/ 構造へ移行)
+.sdd/
