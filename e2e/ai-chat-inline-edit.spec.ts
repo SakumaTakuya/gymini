@@ -271,7 +271,11 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     await page.getByRole('link', { name: 'トレ' }).click()
     await expect(page).toHaveURL(/#\/training/)
 
-    // ベンチプレス（手動, 19:00）→ AI 応答（19:0x）→ スクワット ai-suggested（19:0x）の順
+    // 順序検証：ベンチプレス（手動, 19:00）が最上部にあり、
+    // AI 応答メッセージと AI 提案カード（スクワット）はそのあとに並ぶ。
+    // useChatService.emitWriteResult は executeWriteTool（draft 挿入）→ addMessage の順で
+    // 呼ぶため draft.timestamp <= message.timestamp となり、AI 提案カードが
+    // 応答メッセージより先（または同位置）になることに注意。
     const benchY = await page
       .getByRole('button', { name: 'ベンチプレス' })
       .first()
@@ -282,8 +286,8 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     const squatY = await page
       .getByText(/AI 提案/)
       .evaluate((el) => el.getBoundingClientRect().top)
+    expect(benchY).toBeLessThan(squatY)
     expect(benchY).toBeLessThan(aiTextY)
-    expect(aiTextY).toBeLessThan(squatY)
   })
 
   test('cardState=recording のカードはスクロールしても sticky で上部に残る', async ({
@@ -325,12 +329,15 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     const recordingCard = page.getByRole('button', { name: 'ベンチプレス' })
     await expect(recordingCard).toBeVisible()
 
-    // 下部までスクロール
-    await page.evaluate(() => {
-      const container = document.querySelector('.overflow-y-auto')
-      if (container) container.scrollTop = container.scrollHeight
-    })
-    await page.waitForTimeout(300)
+    // 下部までスクロールし、レイアウト反映のため 1 フレーム待つ
+    await page.evaluate(
+      () =>
+        new Promise<void>((resolve) => {
+          const container = document.querySelector('.overflow-y-auto')
+          if (container) container.scrollTop = container.scrollHeight
+          requestAnimationFrame(() => resolve())
+        }),
+    )
 
     // recording カードがビューポート上部に留まっている（sticky が機能）。
     // 厳密な値は AppHeader の高さやカード内 padding に依存するため、

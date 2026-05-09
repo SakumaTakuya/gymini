@@ -48,7 +48,9 @@ export function ActiveSessionView() {
         timestamp: d.timestamp,
       })),
     ]
-    return items.sort((a, b) => a.timestamp.localeCompare(b.timestamp))
+    return items.sort((a, b) =>
+      a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0,
+    )
   }, [messages, draftExercises])
 
   return (
@@ -68,7 +70,7 @@ export function ActiveSessionView() {
         return (
           <div
             key={`${draft.exerciseId}-${i}`}
-            className={isRecording ? 'sticky top-14 z-10' : ''}
+            className={isRecording ? 'sticky top-14 z-10' : undefined}
           >
             <ExerciseCard
               draftExercise={draft}
