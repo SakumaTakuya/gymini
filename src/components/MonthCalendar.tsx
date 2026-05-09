@@ -1,10 +1,9 @@
-import { useMemo, useRef, useState, type TransitionEvent } from 'react'
+import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { DayPicker, type DayButtonProps } from 'react-day-picker'
 import { CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { Card } from '@/components/ui/card'
 import { IconButton } from '@/components/ui/icon-button'
 import { cn } from '@/lib/utils'
-import { useSwipe } from '../hooks/useSwipe'
 import type { DateString } from '../schemas/date'
 import { toDateString, todayDateString } from '../schemas/date'
 
@@ -23,6 +22,7 @@ interface MonthCalendarProps {
 }
 
 const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土']
+const SCROLL_DEBOUNCE_MS = 120
 
 function toDateStr(date: Date): DateString {
   const y = date.getFullYear()
@@ -111,7 +111,8 @@ function MonthPanel({
 
   return (
     <div
-      className="flex-shrink-0 w-full"
+      data-testid="calendar-panel"
+      className="snap-start shrink-0 basis-full min-w-full"
       aria-hidden={interactive ? undefined : true}
       inert={!interactive}
     >
@@ -156,8 +157,6 @@ function MonthPanel({
   )
 }
 
-const SWIPE_TRANSITION = 'transform 200ms ease-out'
-
 export function MonthCalendar({
   displayMonth,
   selectedDate,
@@ -168,78 +167,74 @@ export function MonthCalendar({
 }: MonthCalendarProps) {
   const today = todayDateString()
 
-  const [centerMonth, setCenterMonth] = useState<MonthValue>(displayMonth)
-  const [dragPx, setDragPx] = useState(0)
-  const [snap, setSnap] = useState<null | 'prev' | 'next' | 'center'>(null)
-  const pendingCommitRef = useRef<null | 'prev' | 'next'>(null)
+  const viewportRef = useRef<HTMLDivElement>(null)
+  const suppressScrollRef = useRef(false)
+  const debounceRef = useRef<number | null>(null)
 
-  // Sync internal center with external displayMonth (button clicks, URL changes)
-  // unless we're mid-snap (avoid clobbering animation).
-  if (
-    !snap &&
-    (displayMonth.year !== centerMonth.year ||
-      displayMonth.month !== centerMonth.month)
-  ) {
-    setCenterMonth(displayMonth)
-  }
+  const prevMonth = useMemo(() => shiftMonth(displayMonth, -1), [displayMonth])
+  const nextMonth = useMemo(() => shiftMonth(displayMonth, 1), [displayMonth])
 
-  const prevMonth = useMemo(() => shiftMonth(centerMonth, -1), [centerMonth])
-  const nextMonth = useMemo(() => shiftMonth(centerMonth, 1), [centerMonth])
-
-  const swipeHandlers = useSwipe(
-    {
-      onDragChange: (dx) => {
-        if (snap) return
-        setDragPx(dx)
-      },
-      onSwipeLeft: () => {
-        pendingCommitRef.current = 'next'
-        setSnap('next')
-      },
-      onSwipeRight: () => {
-        pendingCommitRef.current = 'prev'
-        setSnap('prev')
-      },
-      onDragEnd: () => {
-        if (pendingCommitRef.current) return
-        if (dragPx !== 0) {
-          setSnap('center')
-          setDragPx(0)
-        } else {
-          setSnap(null)
-        }
-      },
-    },
-    { threshold: 50, verticalLimit: 60 },
-  )
-
-  function handleTransitionEnd(e: TransitionEvent<HTMLDivElement>) {
-    if (e.target !== e.currentTarget) return
-    const commit = pendingCommitRef.current
-    if (commit === 'prev') {
-      setCenterMonth(prevMonth)
-      onPrevMonth()
-    } else if (commit === 'next') {
-      setCenterMonth(nextMonth)
-      onNextMonth()
+  // Pin scrollLeft to the center panel on mount, on every displayMonth change
+  // (button click, URL change, swipe commit), and on resize. The suppress flag
+  // prevents the programmatic scroll from re-triggering the commit listener.
+  useLayoutEffect(() => {
+    const v = viewportRef.current
+    if (!v) return
+    const recenter = () => {
+      const w = v.clientWidth
+      if (w === 0) return
+      suppressScrollRef.current = true
+      v.scrollLeft = w
+      requestAnimationFrame(() =>
+        requestAnimationFrame(() => {
+          suppressScrollRef.current = false
+        }),
+      )
     }
-    pendingCommitRef.current = null
-    setSnap(null)
-    setDragPx(0)
-  }
+    recenter()
+    if (typeof ResizeObserver === 'undefined') return
+    const ro = new ResizeObserver(recenter)
+    ro.observe(v)
+    return () => ro.disconnect()
+  }, [displayMonth])
 
-  const transform =
-    snap === 'prev'
-      ? 'translateX(0%)'
-      : snap === 'next'
-        ? 'translateX(-200%)'
-        : `translateX(calc(-100% + ${dragPx}px))`
+  // Detect snap landing: when scrolling settles on prev (idx=0) or next (idx=2)
+  // panel, commit the month change. Parent updates displayMonth, which triggers
+  // the useLayoutEffect above to silently recenter.
+  useEffect(() => {
+    const v = viewportRef.current
+    if (!v) return
 
-  const transition = snap ? SWIPE_TRANSITION : 'none'
+    const commit = () => {
+      if (suppressScrollRef.current) return
+      const w = v.clientWidth
+      if (w === 0) return
+      const idx = Math.round(v.scrollLeft / w)
+      if (idx === 0) {
+        onPrevMonth()
+      } else if (idx === 2) {
+        onNextMonth()
+      }
+    }
+
+    const onScroll = () => {
+      if (debounceRef.current !== null) {
+        clearTimeout(debounceRef.current)
+      }
+      debounceRef.current = window.setTimeout(commit, SCROLL_DEBOUNCE_MS)
+    }
+    v.addEventListener('scroll', onScroll, { passive: true })
+    return () => {
+      v.removeEventListener('scroll', onScroll)
+      if (debounceRef.current !== null) {
+        clearTimeout(debounceRef.current)
+        debounceRef.current = null
+      }
+    }
+  }, [onPrevMonth, onNextMonth])
 
   return (
     <Card className="mx-4 rounded-[24px] p-5 shadow-soft border border-gym-zinc-100 mb-8 ring-0">
-      {/* Month Header */}
       <div className="flex justify-between items-center mb-6 px-2">
         <IconButton
           onClick={onPrevMonth}
@@ -249,9 +244,9 @@ export function MonthCalendar({
           <CaretLeft weight="bold" />
         </IconButton>
         <h2 className="font-outfit font-bold tracking-tight text-gym-black text-lg flex gap-1 items-center">
-          {centerMonth.year}
+          {displayMonth.year}
           <span className="font-jp text-sm font-bold text-gym-zinc-400">年</span>
-          {centerMonth.month}
+          {displayMonth.month}
           <span className="font-jp text-sm font-bold text-gym-zinc-400">月</span>
         </h2>
         <IconButton
@@ -263,39 +258,35 @@ export function MonthCalendar({
         </IconButton>
       </div>
 
-      {/* Carousel viewport: clips off-screen panels */}
-      <div className="overflow-hidden touch-pan-y" {...swipeHandlers}>
-        <div
-          data-testid="calendar-track"
-          className="flex"
-          style={{ transform, transition }}
-          onTransitionEnd={handleTransitionEnd}
-        >
-          <MonthPanel
-            month={prevMonth}
-            selectedDate={selectedDate}
-            daysWithWorkouts={daysWithWorkouts}
-            today={today}
-            onSelectDate={onSelectDate}
-            interactive={false}
-          />
-          <MonthPanel
-            month={centerMonth}
-            selectedDate={selectedDate}
-            daysWithWorkouts={daysWithWorkouts}
-            today={today}
-            onSelectDate={onSelectDate}
-            interactive
-          />
-          <MonthPanel
-            month={nextMonth}
-            selectedDate={selectedDate}
-            daysWithWorkouts={daysWithWorkouts}
-            today={today}
-            onSelectDate={onSelectDate}
-            interactive={false}
-          />
-        </div>
+      <div
+        ref={viewportRef}
+        data-testid="calendar-viewport"
+        className="flex overflow-x-auto snap-x snap-mandatory touch-pan-x overscroll-x-contain [scrollbar-width:none] [&::-webkit-scrollbar]:hidden"
+      >
+        <MonthPanel
+          month={prevMonth}
+          selectedDate={selectedDate}
+          daysWithWorkouts={daysWithWorkouts}
+          today={today}
+          onSelectDate={onSelectDate}
+          interactive={false}
+        />
+        <MonthPanel
+          month={displayMonth}
+          selectedDate={selectedDate}
+          daysWithWorkouts={daysWithWorkouts}
+          today={today}
+          onSelectDate={onSelectDate}
+          interactive
+        />
+        <MonthPanel
+          month={nextMonth}
+          selectedDate={selectedDate}
+          daysWithWorkouts={daysWithWorkouts}
+          today={today}
+          onSelectDate={onSelectDate}
+          interactive={false}
+        />
       </div>
     </Card>
   )
