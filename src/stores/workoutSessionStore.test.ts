@@ -1,6 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useWorkoutSessionStore } from './workoutSessionStore'
+import { useChatStore } from './chatStore'
 import type { DateString } from '../schemas/date'
+import type { ChatMessage } from '../types/chat'
+import type { ISODateTimeString } from '../schemas/date'
 
 // Reset store between tests
 function resetStore() {
@@ -10,6 +13,16 @@ function resetStore() {
     date: null,
     draftExercises: [],
   })
+  useChatStore.setState({ messages: [], isLoading: false, error: null })
+}
+
+function makeChatMessage(): ChatMessage {
+  return {
+    id: 'msg-1',
+    role: 'user',
+    content: 'hello',
+    timestamp: '2026-04-18T12:00:00+09:00' as ISODateTimeString,
+  }
 }
 
 describe('workoutSessionStore', () => {
@@ -47,6 +60,16 @@ describe('workoutSessionStore', () => {
       const state = useWorkoutSessionStore.getState()
       expect(state.date).toMatch(/^\d{4}-\d{2}-\d{2}$/)
     })
+
+    it('chatStore のメッセージをクリアする（前セッションの残留防止）', () => {
+      useChatStore.setState({
+        messages: [makeChatMessage()],
+        isLoading: false,
+        error: null,
+      })
+      useWorkoutSessionStore.getState().startSession()
+      expect(useChatStore.getState().messages).toEqual([])
+    })
   })
 
   describe('endSession', () => {
@@ -81,6 +104,18 @@ describe('workoutSessionStore', () => {
       expect(workouts).toHaveLength(1)
       expect(workouts[0].exercises[0].exerciseId).toBe('bench')
       expect(workouts[0].exercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
+    })
+
+    it('chatStore のメッセージをクリアする', () => {
+      const { startSession, endSession } = useWorkoutSessionStore.getState()
+      startSession('2026-03-08' as DateString)
+      useChatStore.setState({
+        messages: [makeChatMessage()],
+        isLoading: false,
+        error: null,
+      })
+      endSession()
+      expect(useChatStore.getState().messages).toEqual([])
     })
 
     it('完了を押さずにセッションを終了したとき編集中のセットを復元する', () => {

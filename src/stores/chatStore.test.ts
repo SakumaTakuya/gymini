@@ -1,5 +1,6 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { useChatStore } from './chatStore'
+import { useWorkoutSessionStore } from './workoutSessionStore'
 import type { ChatMessage, PendingAction } from '../types/chat'
 import type { ISODateTimeString } from '../schemas/date'
 
@@ -17,7 +18,14 @@ function makeMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
 
 describe('chatStore', () => {
   beforeEach(() => {
+    localStorage.clear()
     useChatStore.setState({ messages: [], isLoading: false, error: null })
+    useWorkoutSessionStore.setState({
+      isActive: false,
+      startedAt: null,
+      date: null,
+      draftExercises: [],
+    })
   })
 
   test('初期状態が空である', () => {
@@ -92,10 +100,25 @@ describe('chatStore', () => {
     expect(state.error).toBeNull()
   })
 
-  test('persist を使用しない（localStorage キーが存在しない）', () => {
+  test('セッションアクティブ中に addMessage すると gymini:chat の messages に書き出される', () => {
+    useWorkoutSessionStore.getState().startSession()
+    const msg = makeMessage()
+    useChatStore.getState().addMessage(msg)
+
+    const stored = localStorage.getItem('gymini:chat')
+    expect(stored).toBeTruthy()
+    const data = JSON.parse(stored!)
+    expect(data.state.messages).toHaveLength(1)
+    expect(data.state.messages[0].id).toBe(msg.id)
+  })
+
+  test('セッション非アクティブで addMessage しても gymini:chat の messages は空配列', () => {
+    // startSession を呼ばない（isActive = false）
     useChatStore.getState().addMessage(makeMessage())
-    // chatStore は persist を使わないため、内部的な localStorage キーは存在しない
-    const keys = Object.keys(localStorage).filter((k) => k.includes('chat'))
-    expect(keys).toEqual([])
+
+    const stored = localStorage.getItem('gymini:chat')
+    expect(stored).toBeTruthy()
+    const data = JSON.parse(stored!)
+    expect(data.state.messages).toEqual([])
   })
 })

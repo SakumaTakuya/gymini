@@ -1,5 +1,9 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useSettingsStore } from '../stores/settingsStore'
+import { useChatStore } from '../stores/chatStore'
+import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
+import type { ChatMessage } from '../types/chat'
+import type { ISODateTimeString } from '../schemas/date'
 
 describe('設定ストアの永続化', () => {
   beforeEach(() => {
@@ -28,5 +32,72 @@ describe('設定ストアの永続化', () => {
 
     expect(useSettingsStore.getState().apiKey).toBe('')
     expect(useSettingsStore.getState().hasApiKey).toBe(false)
+  })
+})
+
+describe('チャットストアのセッション同期永続化', () => {
+  function makeMessage(id = 'msg-1'): ChatMessage {
+    return {
+      id,
+      role: 'user',
+      content: 'hello',
+      timestamp: '2026-04-18T12:00:00+09:00' as ISODateTimeString,
+    }
+  }
+
+  beforeEach(() => {
+    localStorage.clear()
+    useChatStore.setState({ messages: [], isLoading: false, error: null })
+    useWorkoutSessionStore.setState({
+      isActive: false,
+      startedAt: null,
+      date: null,
+      draftExercises: [],
+    })
+  })
+
+  it('セッション中の addMessage を localStorage gymini:chat に永続化する', () => {
+    useWorkoutSessionStore.getState().startSession()
+    useChatStore.getState().addMessage(makeMessage())
+
+    const stored = localStorage.getItem('gymini:chat')
+    expect(stored).toBeTruthy()
+    const data = JSON.parse(stored!)
+    expect(data.state.messages).toHaveLength(1)
+  })
+
+  it('セッション非アクティブで addMessage しても messages を永続化しない', () => {
+    useChatStore.getState().addMessage(makeMessage())
+
+    const stored = localStorage.getItem('gymini:chat')
+    expect(stored).toBeTruthy()
+    const data = JSON.parse(stored!)
+    expect(data.state.messages).toEqual([])
+  })
+
+  it('rehydrate でセッション中の対話が復元される', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    const msg = makeMessage('persist-1')
+    useChatStore.getState().addMessage(msg)
+
+    // メモリ上の状態をクリア（リロード相当）
+    useChatStore.setState({ messages: [], isLoading: false, error: null })
+
+    // localStorage から rehydrate
+    await useChatStore.persist.rehydrate()
+
+    expect(useChatStore.getState().messages).toEqual([msg])
+  })
+
+  it('endSession 後は localStorage の gymini:chat の messages が空になる', () => {
+    useWorkoutSessionStore.getState().startSession('2026-03-08' as never)
+    useChatStore.getState().addMessage(makeMessage())
+    useWorkoutSessionStore.getState().endSession()
+
+    expect(useChatStore.getState().messages).toEqual([])
+    const stored = localStorage.getItem('gymini:chat')
+    expect(stored).toBeTruthy()
+    const data = JSON.parse(stored!)
+    expect(data.state.messages).toEqual([])
   })
 })
