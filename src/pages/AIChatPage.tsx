@@ -3,7 +3,6 @@ import { Link } from '@tanstack/react-router'
 import { SignIn } from '@phosphor-icons/react'
 import { ChatBubble } from '../components/chat/ChatBubble'
 import { ChatInput } from '../components/chat/ChatInput'
-import { ConfirmationBubble } from '../components/chat/ConfirmationBubble'
 import { GearIcon } from '../components/GearIcon'
 import { AppHeaderContent } from '../components/AppHeaderContext'
 import { useChatService } from '../hooks/useChatService'
@@ -11,15 +10,8 @@ import { useSettingsStore } from '../stores/settingsStore'
 
 export function AIChatPage() {
   const hasApiKey = useSettingsStore((s) => s.hasApiKey)
-  const {
-    messages,
-    isLoading,
-    error,
-    sendMessage,
-    stopResponse,
-    approve,
-    reject,
-  } = useChatService()
+  const { messages, isLoading, error, sendMessage, stopResponse } =
+    useChatService()
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -63,19 +55,9 @@ export function AIChatPage() {
           </div>
         )}
 
-        {messages.map((m) =>
-          m.pendingAction ? (
-            <ConfirmationBubble
-              key={m.id}
-              content={m.content}
-              pendingAction={m.pendingAction}
-              onApprove={(edited) => void approve(m.id, edited)}
-              onReject={() => reject(m.id)}
-            />
-          ) : (
-            <ChatBubble key={m.id} role={m.role} content={m.content} />
-          ),
-        )}
+        {messages.map((m) => (
+          <ChatBubble key={m.id} role={m.role} content={m.content} />
+        ))}
 
         {isLoading && (
           <div className="flex justify-start px-4 py-2">

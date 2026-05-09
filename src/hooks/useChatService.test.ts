@@ -166,7 +166,6 @@ describe('useChatService', () => {
     })
     const msgs = useChatStore.getState().messages
     const last = msgs[msgs.length - 1]
-    expect(last.pendingAction).toBeUndefined()
     expect(last.content).not.toBe(EMPTY_RESPONSE_FALLBACK)
     expect(client.generate).toHaveBeenCalledTimes(2)
     const session = useWorkoutSessionStore.getState()
@@ -215,7 +214,6 @@ describe('useChatService', () => {
     const msgs = useChatStore.getState().messages
     const last = msgs[msgs.length - 1]
     expect(last.content).toBe('記録しました！')
-    expect(last.pendingAction).toBeUndefined()
     expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(1)
   })
 
@@ -266,7 +264,6 @@ describe('useChatService', () => {
     })
     const msgs = useChatStore.getState().messages
     const last = msgs[msgs.length - 1]
-    expect(last.pendingAction).toBeUndefined()
     expect(ExerciseRepository.create).toHaveBeenCalledWith('ベンチプレス')
     expect(last.toolCalls?.[0]?.toolName).toBe('addExercise')
   })
@@ -305,8 +302,6 @@ describe('useChatService', () => {
     const session = useWorkoutSessionStore.getState()
     expect(session.draftExercises).toHaveLength(1)
     expect(session.draftExercises[0].origin).toBe('ai-suggested')
-    const last = useChatStore.getState().messages.slice(-1)[0]
-    expect(last.pendingAction).toBeUndefined()
   })
 
   test('write ツール (addExerciseToSession) を直接実行して draft カードを ai-suggested で挿入する', async () => {
@@ -593,8 +588,6 @@ describe('useChatService', () => {
       expect(session.draftExercises).toHaveLength(1)
       expect(session.draftExercises[0].origin).toBe('ai-suggested')
       expect(session.draftExercises[0].sets).toEqual([{ weight: 0, reps: 0 }])
-      const last = useChatStore.getState().messages.slice(-1)[0]
-      expect(last.pendingAction).toBeUndefined()
     })
 
     test('既に登録済みの場合 DUPLICATE_EXERCISE のヒント文言を返し、セッションは変化しない', async () => {

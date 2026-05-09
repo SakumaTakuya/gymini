@@ -1,6 +1,5 @@
 import type { AnchorHTMLAttributes, PropsWithChildren, ReactNode } from 'react'
 import { render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 
 vi.mock('@tanstack/react-router', async () => {
@@ -103,35 +102,6 @@ describe('AIChatPage', () => {
     expect(screen.getByText('こんにちは！')).toBeInTheDocument()
   })
 
-  test('pendingアクションの確認バブルを描画する', async () => {
-    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
-    useChatStore.setState({
-      messages: [
-        {
-          id: 'm1',
-          role: 'assistant',
-          content: '追加しますか？',
-          timestamp: '2026-04-18T12:00:00+09:00' as never,
-          pendingAction: {
-            id: 'pa',
-            type: 'addExercise',
-            description: '追加しますか？',
-            data: { actionType: 'addExercise', name: 'ベンチプレス' },
-            status: 'pending',
-          },
-        },
-      ],
-      isLoading: false,
-      error: null,
-    })
-    renderAIChatPage()
-    expect(screen.getByRole('button', { name: /追加する/ })).toBeInTheDocument()
-    await userEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
-    expect(useChatStore.getState().messages[0].pendingAction?.status).toBe(
-      'rejected',
-    )
-  })
-
   test('chatStoreにエラーがある場合はエラーバナーを表示する', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useChatStore.setState({
@@ -154,29 +124,4 @@ describe('AIChatPage', () => {
     expect(screen.getByText('考え中…')).toBeInTheDocument()
   })
 
-  test('確認バブルの承認ボタンクリック時にapproveを呼び出す', async () => {
-    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
-    useChatStore.setState({
-      messages: [
-        {
-          id: 'm1',
-          role: 'assistant',
-          content: '追加しますか？',
-          timestamp: '2026-04-18T12:00:00+09:00' as never,
-          pendingAction: {
-            id: 'pa',
-            type: 'addExercise',
-            description: '追加しますか？',
-            data: { actionType: 'addExercise', name: 'ベンチプレス' },
-            status: 'pending',
-          },
-        },
-      ],
-      isLoading: false,
-      error: null,
-    })
-    renderAIChatPage()
-    await userEvent.click(screen.getByRole('button', { name: /追加する/ }))
-    expect(useChatStore.getState().messages[0].pendingAction?.status).toBe('approved')
-  })
 })

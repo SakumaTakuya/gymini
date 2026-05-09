@@ -2,7 +2,6 @@ import { beforeEach, describe, expect, test } from 'vitest'
 import { useChatStore } from './chatStore'
 import { useWorkoutSessionStore } from './workoutSessionStore'
 import { makeChatMessage as makeMessage } from '../test/fixtures/chatMessage'
-import type { PendingAction } from '../types/chat'
 
 describe('chatStore', () => {
   beforeEach(() => {
@@ -41,32 +40,6 @@ describe('chatStore', () => {
     expect(useChatStore.getState().error).toBe('boom')
     useChatStore.getState().setError(null)
     expect(useChatStore.getState().error).toBeNull()
-  })
-
-  test('updatePendingAction でメッセージに pendingAction がある場合にステータスが更新される', () => {
-    const pendingAction: PendingAction = {
-      id: 'pa-1',
-      type: 'addExercise',
-      description: '追加しますか？',
-      data: { actionType: 'addExercise', name: 'ベンチプレス' },
-      status: 'pending',
-    }
-    const msg = makeMessage({
-      id: 'm-1',
-      role: 'assistant',
-      pendingAction,
-    })
-    useChatStore.getState().addMessage(msg)
-    useChatStore.getState().updatePendingAction('m-1', 'approved')
-    const updated = useChatStore.getState().messages[0]
-    expect(updated.pendingAction?.status).toBe('approved')
-  })
-
-  test('updatePendingAction は pendingAction のないメッセージでは何もしない', () => {
-    const msg = makeMessage({ id: 'm-1' })
-    useChatStore.getState().addMessage(msg)
-    useChatStore.getState().updatePendingAction('m-1', 'approved')
-    expect(useChatStore.getState().messages[0]).toEqual(msg)
   })
 
   test('removeMessage で一致する id のメッセージが除外される', () => {

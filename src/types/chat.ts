@@ -1,7 +1,5 @@
 import type { DateString, ISODateTimeString } from '../schemas/date'
 
-export type PendingActionStatus = 'pending' | 'approved' | 'rejected'
-
 export type SaveWorkoutData = {
   actionType: 'saveWorkout'
   exercises: Array<{
@@ -35,18 +33,6 @@ export type PendingActionData =
   | AddExerciseToSessionData
   | AddExerciseAndLogData
 
-export type PendingAction = {
-  id: string
-  type:
-    | 'saveWorkout'
-    | 'addExercise'
-    | 'addExerciseToSession'
-    | 'addExerciseAndLog'
-  description: string
-  data: PendingActionData
-  status: PendingActionStatus
-}
-
 export type ToolCallResult = {
   toolName: string
   args: Record<string, unknown>
@@ -59,7 +45,6 @@ export type ChatMessage = {
   content: string
   timestamp: ISODateTimeString
   toolCalls?: ToolCallResult[]
-  pendingAction?: PendingAction
 }
 
 export type SummaryPeriod = {

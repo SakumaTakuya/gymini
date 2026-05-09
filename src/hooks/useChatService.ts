@@ -10,7 +10,6 @@ import {
 import {
   buildWriteResultMessage,
   partitionFunctionCalls,
-  pendingActionToToolCall,
   toPendingActionData,
 } from '../lib/chat/pendingAction'
 import {
@@ -26,11 +25,7 @@ import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useUserProfileStore } from '../stores/userProfileStore'
 import { nowISODateTimeString } from '../schemas/date'
-import type {
-  PendingAction,
-  PendingActionData,
-  ToolCallResult,
-} from '../types/chat'
+import type { ToolCallResult } from '../types/chat'
 
 type CreateClient = (apiKey: string, systemInstruction?: string) => GeminiClient
 
@@ -133,7 +128,6 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           assistantText: string | null | undefined,
           precedingReads: ToolCallResult[],
         ): void => {
-          cancelExistingPending()
           const data = toPendingActionData(call)
           if (!data) {
             useChatStore
@@ -217,65 +211,12 @@ export function useChatService(options: UseChatServiceOptions = {}) {
     [createClient],
   )
 
-  const approve = useCallback(
-    async (messageId: string, editedData?: PendingActionData) => {
-      const message = useChatStore
-        .getState()
-        .messages.find((m) => m.id === messageId)
-      if (!message?.pendingAction) return
-      if (message.pendingAction.status !== 'pending') return
-
-      const effectiveAction: PendingAction = editedData
-        ? { ...message.pendingAction, data: editedData }
-        : message.pendingAction
-      const { toolName, args } = pendingActionToToolCall(effectiveAction)
-      const result = executeWriteTool(toolName, args)
-      useChatStore.getState().updatePendingAction(messageId, 'approved')
-
-      useChatStore.getState().addMessage({
-        id: crypto.randomUUID(),
-        role: 'assistant',
-        content: buildWriteResultMessage(effectiveAction.data, result),
-        timestamp: nowISODateTimeString(),
-        toolCalls: [{ toolName, args, result }],
-      })
-    },
-    [],
-  )
-
-  const reject = useCallback((messageId: string) => {
-    const message = useChatStore
-      .getState()
-      .messages.find((m) => m.id === messageId)
-    if (!message?.pendingAction) return
-    if (message.pendingAction.status !== 'pending') return
-
-    useChatStore.getState().updatePendingAction(messageId, 'rejected')
-    useChatStore.getState().addMessage({
-      id: crypto.randomUUID(),
-      role: 'assistant',
-      content: 'キャンセルしました。',
-      timestamp: nowISODateTimeString(),
-    })
-  }, [])
-
   return {
     messages,
     isLoading,
     error,
     sendMessage,
     stopResponse,
-    approve,
-    reject,
     clearMessages,
-  }
-}
-
-function cancelExistingPending() {
-  const { messages, updatePendingAction } = useChatStore.getState()
-  for (const m of messages) {
-    if (m.pendingAction && m.pendingAction.status === 'pending') {
-      updatePendingAction(m.id, 'rejected')
-    }
   }
 }
