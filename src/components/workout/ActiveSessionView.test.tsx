@@ -4,7 +4,7 @@ import userEvent from '@testing-library/user-event'
 import { ActiveSessionView } from './ActiveSessionView'
 import { useWorkoutSessionStore } from '../../stores/workoutSessionStore'
 import type { DateString } from '../../schemas/date'
-import type { DraftExercise } from '../../schemas/workout'
+import { makeDraftExercise } from '../../test/fixtures/draftExercise'
 
 function resetStore() {
   useWorkoutSessionStore.setState({
@@ -78,15 +78,10 @@ describe('ActiveSessionView', () => {
 
   it('toggleExerciseCardとactivateExerciseを実行できる', async () => {
     const user = userEvent.setup()
-    const idleExercise: DraftExercise = {
+    const idleExercise = makeDraftExercise({
       exerciseId: 'squat',
       exerciseName: 'スクワット',
-      sets: [],
-      pendingSet: null,
-      pendingSetDirty: false,
-      cardState: 'idle',
-      editingSetIndex: null,
-    }
+    })
     useWorkoutSessionStore.setState({
       isActive: true,
       date: '2026-03-08' as DateString,

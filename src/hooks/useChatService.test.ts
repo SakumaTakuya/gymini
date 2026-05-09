@@ -8,6 +8,7 @@ import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
 import * as ExerciseRepository from '../lib/exerciseRepository'
 import * as WorkoutRepository from '../lib/workoutRepository'
 import type { GeminiChatResponse, GeminiClient } from '../lib/geminiClient'
+import { makeDraftExercise } from '../test/fixtures/draftExercise'
 
 vi.mock('../lib/exerciseRepository')
 vi.mock('../lib/workoutRepository')
@@ -389,15 +390,7 @@ describe('useChatService', () => {
       startedAt: '2026-05-04T19:00:00+09:00' as never,
       date: '2026-05-04' as never,
       draftExercises: [
-        {
-          exerciseId: 'ex-1',
-          exerciseName: 'ベンチプレス',
-          sets: [{ weight: 60, reps: 10 }],
-          pendingSet: null,
-          pendingSetDirty: false,
-          cardState: 'idle',
-          editingSetIndex: null,
-        },
+        makeDraftExercise({ sets: [{ weight: 60, reps: 10 }] }),
       ],
     })
     const createClientMock = vi.fn(

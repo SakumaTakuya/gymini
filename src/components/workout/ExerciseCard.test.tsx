@@ -2,16 +2,9 @@ import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { ExerciseCard } from './ExerciseCard'
 import type { DraftExercise } from '../../schemas/workout'
+import { makeDraftExercise } from '../../test/fixtures/draftExercise'
 
-const baseDraft: DraftExercise = {
-  exerciseId: 'bench',
-  exerciseName: 'ベンチプレス',
-  sets: [],
-  pendingSet: null,
-  pendingSetDirty: false,
-  cardState: 'idle',
-  editingSetIndex: null,
-}
+const baseDraft = makeDraftExercise({ exerciseId: 'bench' })
 
 const defaultProps = {
   draftExercise: baseDraft,
