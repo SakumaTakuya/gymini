@@ -168,9 +168,11 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
         set((state) => {
           const target = state.draftExercises[exerciseIndex]
           if (!target || target.origin !== 'ai-suggested') return state
-          const exercises = [...state.draftExercises]
-          exercises[exerciseIndex] = { ...target, origin: 'manual' }
-          return { draftExercises: exercises }
+          return {
+            draftExercises: state.draftExercises.map((e, i) =>
+              i === exerciseIndex ? { ...e, origin: 'manual' } : e,
+            ),
+          }
         })
       },
 

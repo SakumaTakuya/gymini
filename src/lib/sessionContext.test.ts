@@ -1,21 +1,8 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { buildActiveSessionContext } from './sessionContext'
 import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
+import { makeDraftExercise } from '../test/fixtures/draftExercise'
 import type { DateString, ISODateTimeString } from '../schemas/date'
-import type { DraftExercise } from '../schemas/workout'
-
-function makeDraft(overrides: Partial<DraftExercise> = {}): DraftExercise {
-  return {
-    exerciseId: overrides.exerciseId ?? 'ex-1',
-    exerciseName: overrides.exerciseName ?? 'ベンチプレス',
-    sets: overrides.sets ?? [],
-    pendingSet: overrides.pendingSet ?? null,
-    pendingSetDirty: overrides.pendingSetDirty ?? false,
-    cardState: overrides.cardState ?? 'idle',
-    editingSetIndex: overrides.editingSetIndex ?? null,
-    origin: overrides.origin ?? 'manual',
-  }
-}
 
 describe('buildActiveSessionContext', () => {
   beforeEach(() => {
@@ -37,7 +24,7 @@ describe('buildActiveSessionContext', () => {
       startedAt: '2026-05-04T19:32:00+09:00' as ISODateTimeString,
       date: '2026-05-04' as DateString,
       draftExercises: [
-        makeDraft({
+        makeDraftExercise({
           exerciseName: 'ベンチプレス',
           sets: [
             { weight: 60, reps: 10 },
@@ -59,7 +46,7 @@ describe('buildActiveSessionContext', () => {
       startedAt: '2026-05-04T19:00:00+09:00' as ISODateTimeString,
       date: '2026-05-04' as DateString,
       draftExercises: [
-        makeDraft({
+        makeDraftExercise({
           exerciseName: 'スクワット',
           sets: [
             { weight: 80, reps: 10 },
@@ -89,7 +76,7 @@ describe('buildActiveSessionContext', () => {
       startedAt: '2026-05-04T19:00:00+09:00' as ISODateTimeString,
       date: '2026-05-04' as DateString,
       draftExercises: [
-        makeDraft({
+        makeDraftExercise({
           exerciseName: 'デッドリフト',
           sets: [{ weight: 100, reps: 5 }],
           pendingSet: { weight: 110, reps: 0 },
@@ -111,7 +98,7 @@ describe('buildActiveSessionContext', () => {
       startedAt: '2026-05-04T19:00:00+09:00' as ISODateTimeString,
       date: '2026-05-04' as DateString,
       draftExercises: [
-        makeDraft({
+        makeDraftExercise({
           exerciseName: 'ラットプルダウン',
           sets: [],
         }),
@@ -129,12 +116,12 @@ describe('buildActiveSessionContext', () => {
       startedAt: '2026-05-04T19:00:00+09:00' as ISODateTimeString,
       date: '2026-05-04' as DateString,
       draftExercises: [
-        makeDraft({
+        makeDraftExercise({
           exerciseId: 'ex-1',
           exerciseName: 'ベンチプレス',
           sets: [{ weight: 60, reps: 10 }],
         }),
-        makeDraft({
+        makeDraftExercise({
           exerciseId: 'ex-2',
           exerciseName: 'スクワット',
           sets: [{ weight: 100, reps: 5 }],
