@@ -154,7 +154,7 @@ function executeSaveWorkout(
   }
 
   for (const ex of resolved) {
-    session.addExerciseWithSets(ex)
+    session.addExerciseWithSets({ ...ex, origin: 'ai-suggested' })
   }
 
   return { success: true, data: { addedToSession: true } }
@@ -216,9 +216,14 @@ function executeAddExerciseToSession(
     return { success: false, error: 'SESSION_NOT_ACTIVE' }
   }
   if (parsed.sets && parsed.sets.length > 0) {
-    session.addExerciseWithSets({ exerciseId, exerciseName, sets: parsed.sets })
+    session.addExerciseWithSets({
+      exerciseId,
+      exerciseName,
+      sets: parsed.sets,
+      origin: 'ai-suggested',
+    })
   } else {
-    session.addExercise({ exerciseId, exerciseName })
+    session.addExercise({ exerciseId, exerciseName, origin: 'ai-suggested' })
   }
   return { success: true, data: { exerciseId, exerciseName } }
 }
@@ -258,6 +263,7 @@ function executeAddExerciseAndLog(
     exerciseId: exercise.id,
     exerciseName: exercise.name,
     sets,
+    origin: 'ai-suggested',
   })
 
   return {

@@ -128,30 +128,36 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           result: executeReadTool(fc.name, fc.args),
         }))
 
-        const emitPending = (
+        const emitWriteResult = (
           call: FunctionCallRequest,
           assistantText: string | null | undefined,
         ): void => {
           cancelExistingPending()
-          const pendingAction = buildPendingAction(call)
-          if (!pendingAction) {
+          const parsed = buildPendingAction(call)
+          if (!parsed) {
             useChatStore
               .getState()
               .setError('書き込み操作の内容を解釈できませんでした。')
             return
           }
+          const result = executeWriteTool(call.name, call.args)
           useChatStore.getState().addMessage({
             id: crypto.randomUUID(),
             role: 'assistant',
-            content: nonEmptyOr(assistantText, pendingAction.description),
+            content: nonEmptyOr(
+              assistantText,
+              buildWriteResultMessage(parsed, result),
+            ),
             timestamp: nowISODateTimeString(),
-            toolCalls: readResults.length > 0 ? readResults : undefined,
-            pendingAction,
+            toolCalls: [
+              ...readResults,
+              { toolName: call.name, args: call.args, result },
+            ],
           })
         }
 
         if (writeCall) {
-          emitPending(writeCall, firstResponse.text)
+          emitWriteResult(writeCall, firstResponse.text)
           return
         }
 
@@ -185,7 +191,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           ? partitionFunctionCalls(follow.functionCalls).writeCall
           : null
         if (followWriteCall) {
-          emitPending(followWriteCall, follow.text)
+          emitWriteResult(followWriteCall, follow.text)
           return
         }
 
