@@ -1,9 +1,8 @@
 import { describe, it, expect, beforeEach } from 'vitest'
 import { useWorkoutSessionStore } from './workoutSessionStore'
 import { useChatStore } from './chatStore'
+import { makeChatMessage } from '../test/fixtures/chatMessage'
 import type { DateString } from '../schemas/date'
-import type { ChatMessage } from '../types/chat'
-import type { ISODateTimeString } from '../schemas/date'
 
 // Reset store between tests
 function resetStore() {
@@ -14,15 +13,6 @@ function resetStore() {
     draftExercises: [],
   })
   useChatStore.setState({ messages: [], isLoading: false, error: null })
-}
-
-function makeChatMessage(): ChatMessage {
-  return {
-    id: 'msg-1',
-    role: 'user',
-    content: 'hello',
-    timestamp: '2026-04-18T12:00:00+09:00' as ISODateTimeString,
-  }
 }
 
 describe('workoutSessionStore', () => {

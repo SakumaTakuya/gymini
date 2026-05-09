@@ -62,8 +62,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
       name: 'gymini:chat',
       version: 1,
       storage: createJSONStorage(() => localStorage),
-      // セッションアクティブ中のみ messages を永続化する（FR_033 / B-001 残留防止）。
-      // 非アクティブ時は明示的に空配列を書き出して、前セッションの残留を上書き消去する。
+      // 非アクティブ時は空配列を書き出して、前セッションの残留を上書き消去する。
       partialize: (state) =>
         useWorkoutSessionStore.getState().isActive
           ? { messages: state.messages }
@@ -80,8 +79,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
   ),
 )
 
-// workoutSessionStore からの呼び出し用に clearMessages を bus に登録する。
-// 詳細は docs/adr/ai-chat.md「Store 間の循環 import 回避」を参照。
 storeBus.clearChatMessages = () => {
   useChatStore.getState().clearMessages()
 }

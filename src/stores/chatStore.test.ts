@@ -1,20 +1,8 @@
 import { beforeEach, describe, expect, test } from 'vitest'
 import { useChatStore } from './chatStore'
 import { useWorkoutSessionStore } from './workoutSessionStore'
-import type { ChatMessage, PendingAction } from '../types/chat'
-import type { ISODateTimeString } from '../schemas/date'
-
-const NOW = '2026-04-18T12:00:00+09:00' as ISODateTimeString
-
-function makeMessage(overrides: Partial<ChatMessage> = {}): ChatMessage {
-  return {
-    id: overrides.id ?? 'msg-1',
-    role: overrides.role ?? 'user',
-    content: overrides.content ?? 'hello',
-    timestamp: overrides.timestamp ?? NOW,
-    ...overrides,
-  }
-}
+import { makeChatMessage as makeMessage } from '../test/fixtures/chatMessage'
+import type { PendingAction } from '../types/chat'
 
 describe('chatStore', () => {
   beforeEach(() => {

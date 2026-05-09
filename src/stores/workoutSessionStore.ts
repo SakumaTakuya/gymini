@@ -67,7 +67,6 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
           date: date ?? todayDateString(),
           draftExercises: [],
         })
-        // Sync chat history to session lifecycle (FR_033, ai-chat.md ADR).
         storeBus.clearChatMessages?.()
       },
 
@@ -95,7 +94,6 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
           date: null,
           draftExercises: [],
         })
-        // Sync chat history to session lifecycle (FR_033, ai-chat.md ADR).
         storeBus.clearChatMessages?.()
       },
 

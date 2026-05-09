@@ -2,7 +2,7 @@ import { describe, it, expect, beforeEach } from 'vitest'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useChatStore } from '../stores/chatStore'
 import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
-import type { ChatMessage } from '../types/chat'
+import { makeChatMessage } from './fixtures/chatMessage'
 import type { DateString, ISODateTimeString } from '../schemas/date'
 
 describe('設定ストアの永続化', () => {
@@ -36,15 +36,6 @@ describe('設定ストアの永続化', () => {
 })
 
 describe('チャットストアのセッション同期永続化', () => {
-  function makeMessage(id = 'msg-1'): ChatMessage {
-    return {
-      id,
-      role: 'user',
-      content: 'hello',
-      timestamp: '2026-04-18T12:00:00+09:00' as ISODateTimeString,
-    }
-  }
-
   beforeEach(() => {
     localStorage.clear()
     useChatStore.setState({ messages: [], isLoading: false, error: null })
@@ -58,7 +49,7 @@ describe('チャットストアのセッション同期永続化', () => {
 
   it('セッション中の addMessage を localStorage gymini:chat に永続化する', () => {
     useWorkoutSessionStore.getState().startSession()
-    useChatStore.getState().addMessage(makeMessage())
+    useChatStore.getState().addMessage(makeChatMessage())
 
     const stored = localStorage.getItem('gymini:chat')
     expect(stored).toBeTruthy()
@@ -67,7 +58,7 @@ describe('チャットストアのセッション同期永続化', () => {
   })
 
   it('セッション非アクティブで addMessage しても messages を永続化しない', () => {
-    useChatStore.getState().addMessage(makeMessage())
+    useChatStore.getState().addMessage(makeChatMessage())
 
     const stored = localStorage.getItem('gymini:chat')
     expect(stored).toBeTruthy()
@@ -86,7 +77,7 @@ describe('チャットストアのセッション同期永続化', () => {
     })
 
     // リロード後に localStorage が保持していた状態を模擬する
-    const msg = makeMessage('persist-1')
+    const msg = makeChatMessage({ id: 'persist-1' })
     localStorage.setItem(
       'gymini:chat',
       JSON.stringify({ state: { messages: [msg] }, version: 1 }),
@@ -99,7 +90,7 @@ describe('チャットストアのセッション同期永続化', () => {
 
   it('endSession 後は localStorage の gymini:chat の messages が空になる', () => {
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
-    useChatStore.getState().addMessage(makeMessage())
+    useChatStore.getState().addMessage(makeChatMessage())
     useWorkoutSessionStore.getState().endSession()
 
     expect(useChatStore.getState().messages).toEqual([])
