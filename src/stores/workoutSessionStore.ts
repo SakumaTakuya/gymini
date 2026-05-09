@@ -142,6 +142,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             cardState: 'recording',
             editingSetIndex: null,
             origin: exercise.origin ?? 'manual',
+            timestamp: nowISODateTimeString(),
           }
           return { draftExercises: [...deactivated, newExercise] }
         })
@@ -159,6 +160,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             cardState: 'idle',
             editingSetIndex: null,
             origin: exercise.origin ?? 'manual',
+            timestamp: nowISODateTimeString(),
           }
           return { draftExercises: [...deactivated, newExercise] }
         })

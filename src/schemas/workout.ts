@@ -52,4 +52,5 @@ export type DraftExercise = {
   cardState: ExerciseCardState
   editingSetIndex: number | null
   origin: ExerciseOrigin
+  timestamp: ISODateTimeString
 }
