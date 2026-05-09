@@ -9,6 +9,7 @@ export function ActiveSessionView() {
     activateExercise,
     deleteExercise,
     reorderExercise,
+    acceptSuggestedExercise,
     completeSet,
     editCompletedSet,
     deleteCompletedSet,
@@ -34,6 +35,8 @@ export function ActiveSessionView() {
           onToggle={() => toggleExerciseCard(i)}
           onWeightChange={(weight) => updatePendingSet(i, { weight })}
           onRepsChange={(reps) => updatePendingSet(i, { reps })}
+          onAcceptSuggested={(sets) => acceptSuggestedExercise(i, sets)}
+          onRejectSuggested={() => deleteExercise(i)}
         />
       ))}
 

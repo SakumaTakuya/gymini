@@ -148,4 +148,69 @@ describe('ExerciseCard', () => {
       expect(inputs).toHaveLength(2)
     })
   })
+
+  describe('AI 提案バリアント (origin: ai-suggested)', () => {
+    const aiDraft = makeDraftExercise({
+      exerciseId: 'bench',
+      origin: 'ai-suggested',
+      sets: [{ weight: 60, reps: 10 }],
+    })
+
+    it('AI 提案バッジを表示する', () => {
+      render(<ExerciseCard {...defaultProps} draftExercise={aiDraft} />)
+      expect(screen.getByText(/AI 提案/)).toBeInTheDocument()
+    })
+
+    it('内部に SingleExerciseEditor をマウントし initialSets を表示する', () => {
+      render(<ExerciseCard {...defaultProps} draftExercise={aiDraft} />)
+      expect(screen.getByDisplayValue('60')).toBeInTheDocument()
+      expect(screen.getByDisplayValue('10')).toBeInTheDocument()
+    })
+
+    it('「保存」ボタンクリックで onAcceptSuggested に編集後 sets を渡す', () => {
+      const onAcceptSuggested = vi.fn()
+      render(
+        <ExerciseCard
+          {...defaultProps}
+          draftExercise={aiDraft}
+          onAcceptSuggested={onAcceptSuggested}
+        />,
+      )
+      fireEvent.click(screen.getByRole('button', { name: /保存/ }))
+      expect(onAcceptSuggested).toHaveBeenCalledWith([{ weight: 60, reps: 10 }])
+    })
+
+    it('編集して「保存」すると編集後 sets が onAcceptSuggested に渡る', () => {
+      const onAcceptSuggested = vi.fn()
+      render(
+        <ExerciseCard
+          {...defaultProps}
+          draftExercise={aiDraft}
+          onAcceptSuggested={onAcceptSuggested}
+        />,
+      )
+      const inputs = screen.getAllByRole('spinbutton')
+      fireEvent.change(inputs[0], { target: { value: '80' } })
+      fireEvent.click(screen.getByRole('button', { name: /保存/ }))
+      expect(onAcceptSuggested).toHaveBeenCalledWith([{ weight: 80, reps: 10 }])
+    })
+
+    it('「キャンセル」ボタンクリックで onRejectSuggested を呼ぶ', () => {
+      const onRejectSuggested = vi.fn()
+      render(
+        <ExerciseCard
+          {...defaultProps}
+          draftExercise={aiDraft}
+          onRejectSuggested={onRejectSuggested}
+        />,
+      )
+      fireEvent.click(screen.getByRole('button', { name: 'キャンセル' }))
+      expect(onRejectSuggested).toHaveBeenCalledOnce()
+    })
+
+    it('origin: manual のときは AI 提案バッジを表示しない', () => {
+      render(<ExerciseCard {...defaultProps} />)
+      expect(screen.queryByText(/AI 提案/)).not.toBeInTheDocument()
+    })
+  })
 })

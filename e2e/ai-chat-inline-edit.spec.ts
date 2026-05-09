@@ -12,7 +12,7 @@ const FAKE_SESSION = {
   draftExercises: [],
 }
 
-function buildGeminiResponse(args: {
+function buildGeminiAddExerciseToSessionResponse(args: {
   exerciseId: string
   exerciseName: string
   sets: Array<{ weight: number; reps: number }>
@@ -24,7 +24,7 @@ function buildGeminiResponse(args: {
           role: 'model',
           parts: [
             {
-              text: 'ベンチプレスを以下の内容で追加しますか？値は調整できます',
+              text: 'ベンチプレスを以下の内容で追加しました。値は調整できます',
             },
             {
               functionCall: {
@@ -40,7 +40,7 @@ function buildGeminiResponse(args: {
   }
 }
 
-test.describe('AI チャット内インラインセット入力フォーム (FR_013)', () => {
+test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('./')
     await page.evaluate(
@@ -58,7 +58,7 @@ test.describe('AI チャット内インラインセット入力フォーム (FR_
     await page.reload()
   })
 
-  test('AIが提案したセットをチャット内で編集してアクティブセッションに反映できる', async ({
+  test('AI 提案 → タイムライン上の AI 提案カードで編集 → 保存 → アクティブセッションに manual 反映', async ({
     page,
   }) => {
     await page.route(
@@ -68,7 +68,7 @@ test.describe('AI チャット内インラインセット入力フォーム (FR_
           status: 200,
           contentType: 'application/json',
           body: JSON.stringify(
-            buildGeminiResponse({
+            buildGeminiAddExerciseToSessionResponse({
               exerciseId: 'ex-1',
               exerciseName: 'ベンチプレス',
               sets: [
@@ -92,38 +92,46 @@ test.describe('AI チャット内インラインセット入力フォーム (FR_
     await input.fill('ベンチ60kg10回3セットで追加')
     await page.keyboard.press('Enter')
 
-    // AIの提案バブルにセット入力フォームが表示される
-    await expect(page.getByText('ベンチプレスを以下の内容で追加')).toBeVisible({
-      timeout: 10000,
-    })
+    // AI 応答テキストがチャットに表示される
+    await expect(
+      page.getByText('ベンチプレスを以下の内容で追加しました'),
+    ).toBeVisible({ timeout: 10000 })
 
-    // 6 個の数値 input が描画される（3 セット × weight + reps）
-    const setInputs = page.locator(
-      '.flex.items-center.gap-3 input[type="number"]',
-    )
+    // トレーニングタブに移動して AI 提案カードを確認
+    await page.getByRole('link', { name: 'トレ' }).click()
+    await expect(page).toHaveURL(/#\/training/)
+    await expect(page.getByText(/AI 提案/)).toBeVisible()
+
+    // ai-suggested カード内の SingleExerciseEditor 入力（3 セット × 2 = 6 個）
+    const setInputs = page.getByRole('spinbutton')
     await expect(setInputs).toHaveCount(6)
 
     // 1 セット目の重量を 60 → 65 に編集
     await setInputs.nth(0).fill('65')
 
-    // 「追加する」ボタンを押す
-    await page.getByRole('button', { name: /追加する/ }).click()
+    // 「保存」ボタンを押す
+    await page.getByRole('button', { name: /保存/ }).click()
 
-    // localStorage 上の active session の draftExercises に反映されている
-    const savedSets = await page.evaluate(() => {
+    // localStorage 上の active session の draftExercises に編集後 sets が
+    // 反映され、origin が manual に昇格していること
+    const saved = await page.evaluate(() => {
       const raw = localStorage.getItem('gymini:workout-session')
       if (!raw) return null
       const parsed = JSON.parse(raw)
-      return parsed.state?.draftExercises?.[0]?.sets ?? null
+      const draft = parsed.state?.draftExercises?.[0]
+      return draft ? { sets: draft.sets, origin: draft.origin } : null
     })
-    expect(savedSets).toEqual([
-      { weight: 65, reps: 10 },
-      { weight: 60, reps: 10 },
-      { weight: 60, reps: 10 },
-    ])
+    expect(saved).toEqual({
+      sets: [
+        { weight: 65, reps: 10 },
+        { weight: 60, reps: 10 },
+        { weight: 60, reps: 10 },
+      ],
+      origin: 'manual',
+    })
   })
 
-  test('セット情報のないアクションでは編集フォームを表示しない（addExercise）', async ({
+  test('addExercise（種目マスター追加）はタイムラインに draft を作らずチャット応答のみを返す', async ({
     page,
   }) => {
     // セッション非アクティブにしておく（addExercise 用）
@@ -155,7 +163,7 @@ test.describe('AI チャット内インラインセット入力フォーム (FR_
                 content: {
                   role: 'model',
                   parts: [
-                    { text: 'ラットプルダウンを種目に追加しますか？' },
+                    { text: 'ラットプルダウンを種目マスターに追加しました。' },
                     {
                       functionCall: {
                         name: 'addExercise',
@@ -180,17 +188,18 @@ test.describe('AI チャット内インラインセット入力フォーム (FR_
     await input.fill('ラットプルダウンを種目に追加して')
     await page.keyboard.press('Enter')
 
+    // AI 応答テキストがチャットに表示される
     await expect(
-      page.getByText('ラットプルダウンを種目に追加しますか？'),
+      page.getByText('ラットプルダウンを種目マスターに追加しました'),
     ).toBeVisible({ timeout: 10000 })
 
-    // 数値 input は描画されない
-    const setInputs = page.locator(
-      '.flex.items-center.gap-3 input[type="number"]',
-    )
-    await expect(setInputs).toHaveCount(0)
-
-    // 「追加する」ボタンは存在する
-    await expect(page.getByRole('button', { name: /追加する/ })).toBeVisible()
+    // タイムラインに draft は作られない（addExercise はマスター追加のみ）
+    const draftCount = await page.evaluate(() => {
+      const raw = localStorage.getItem('gymini:workout-session')
+      if (!raw) return 0
+      const parsed = JSON.parse(raw)
+      return parsed.state?.draftExercises?.length ?? 0
+    })
+    expect(draftCount).toBe(0)
   })
 })

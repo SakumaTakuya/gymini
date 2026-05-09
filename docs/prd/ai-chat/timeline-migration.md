@@ -118,11 +118,16 @@ risk: "high"
 
 ### P5: draft カード + AI write 提案の挿入
 
-- `ExerciseCard.tsx` に `origin: 'ai-suggested'` バリアント追加。薄色背景 + 「AI 提案」バッジ + 「保存」「破棄」ボタン
-- カード内には P4 で分離済みのフォーム部品（`SaveWorkoutEditor` / `SingleExerciseEditor` / `EditableSetRow`）をマウント
-- `useChatService.ts` の write tool ハンドリングを `pendingAction` ベースから「直接 store に suggested として挿入 + チャットへ報告メッセージ」へ変更
-- `toolExecutor.ts` の `executeAddExerciseToSession` / `executeAddExerciseAndLog` / `executeSaveWorkout`（今日日付）を「即適用」から「`origin: 'ai-suggested'` で挿入」へ書き換え
-- 旧 `pendingAction` 関連は本 Phase では併存（テスト連動切替を段階化）
+実施内容：
+
+- `ExerciseCard.tsx` に `origin === 'ai-suggested'` の **early return バリアント** を追加：薄色背景 + 「AI 提案」バッジ（`Sparkle` アイコン付き）+ 内部に `SingleExerciseEditor` をマウント。「保存」/「キャンセル」ボタンは Editor の `onApprove` / `onReject` で発火
+- ExerciseCard の props に `onAcceptSuggested?: (sets: WorkoutSet[]) => void` / `onRejectSuggested?: () => void` を追加。`ActiveSessionView` 側で `acceptSuggestedExercise(i, sets)` / `deleteExercise(i)` に bind
+- `workoutSessionStore.acceptSuggestedExercise(index, sets?)` を sets 任意引数で拡張。sets が指定されたら sets を置換しつつ `origin: 'manual'` に昇格
+- `toolExecutor.ts` の 3 関数（`executeSaveWorkout` / `executeAddExerciseToSession` / `executeAddExerciseAndLog`）すべてを `origin: 'ai-suggested'` で挿入するよう変更
+- `useChatService.ts` の write tool 経路を `pendingAction` 生成から **`executeWriteTool` 直接実行** に切り替え。AI 応答テキストはそのまま assistant メッセージに、テキスト無しの場合は既存の `buildWriteResultMessage` を fallback に使用。`toolCalls` 配列に write 結果も含める
+- `cancelExistingPending` / `buildPendingAction` / `pendingActionToToolCall` / `approve` / `reject` 関数自体は **死コードとして残置**（P6 で完全撤去）。ConfirmationBubble は併存するが、新規 AI 提案では生成されない
+- `useChatService.test.ts` の `pendingAction` 経由テスト（approve / reject / 自動キャンセル / placeholder sets / addExerciseAndLog）を新フロー期待（直接実行 + ai-suggested draft 挿入）に書き換え。`ExerciseCard.test.tsx` に AI 提案バリアントテスト 6 件を追加
+- `inline-edit.integration.test.tsx` を `ChatBubble + ConfirmationBubble` ベースから `ActiveSessionView` ベースに書き換え（AI 提案 → ai-suggested カードで編集 → 保存 → manual に昇格のフロー全体を検証）
 
 ### P6: 旧 ConfirmationBubble 撤去
 

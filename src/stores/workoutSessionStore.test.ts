@@ -271,6 +271,30 @@ describe('workoutSessionStore', () => {
 
       expect(useWorkoutSessionStore.getState().draftExercises).toBe(before)
     })
+
+    it('sets 引数を渡すと編集後の sets で保存しつつ origin を manual に昇格', () => {
+      useWorkoutSessionStore.getState().startSession()
+      useWorkoutSessionStore.getState().addExerciseWithSets({
+        exerciseId: 'bench',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 60, reps: 10 }],
+        origin: 'ai-suggested',
+      })
+
+      useWorkoutSessionStore
+        .getState()
+        .acceptSuggestedExercise(0, [
+          { weight: 80, reps: 8 },
+          { weight: 75, reps: 6 },
+        ])
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].origin).toBe('manual')
+      expect(draftExercises[0].sets).toEqual([
+        { weight: 80, reps: 8 },
+        { weight: 75, reps: 6 },
+      ])
+    })
   })
 
   describe('activateExercise', () => {

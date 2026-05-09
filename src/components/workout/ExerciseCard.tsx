@@ -1,7 +1,8 @@
-import { ArrowDown, ArrowUp, CaretDown, CaretUp, DotsThree, Plus, Trash } from '@phosphor-icons/react'
+import { ArrowDown, ArrowUp, CaretDown, CaretUp, DotsThree, Plus, Sparkle, Trash } from '@phosphor-icons/react'
 import { useState } from 'react'
 import type { DraftExercise, WorkoutSet } from '../../schemas/workout'
 import { IconButton } from '../ui/icon-button'
+import { SingleExerciseEditor } from '../chat/SingleExerciseEditor'
 import { CompletedSetRow } from './CompletedSetRow'
 import { PendingSetRow } from './PendingSetRow'
 
@@ -17,6 +18,8 @@ type ExerciseCardProps = {
   onToggle: () => void
   onWeightChange: (weight: number) => void
   onRepsChange: (reps: number) => void
+  onAcceptSuggested?: (sets: WorkoutSet[]) => void
+  onRejectSuggested?: () => void
 }
 
 export function ExerciseCard({
@@ -31,11 +34,32 @@ export function ExerciseCard({
   onToggle,
   onWeightChange,
   onRepsChange,
+  onAcceptSuggested,
+  onRejectSuggested,
 }: ExerciseCardProps) {
-  const { exerciseName, sets, pendingSet, cardState, editingSetIndex } = draftExercise
+  const { exerciseName, sets, pendingSet, cardState, editingSetIndex, origin } = draftExercise
   const isCollapsed = cardState === 'collapsed'
   const isRecording = cardState === 'recording'
   const [menuOpen, setMenuOpen] = useState(false)
+
+  if (origin === 'ai-suggested') {
+    return (
+      <div className="animate-appear relative mx-4 mb-3 bg-gym-zinc-50 rounded-[24px] p-5 shadow-soft border border-dashed border-gym-zinc-300">
+        <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-gym-black px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gym-white">
+          <Sparkle size={10} weight="fill" />
+          AI 提案
+        </div>
+        <SingleExerciseEditor
+          exerciseLabel={exerciseName}
+          initialSets={sets}
+          isSettled={false}
+          label="保存"
+          onApprove={(editedSets) => onAcceptSuggested?.(editedSets)}
+          onReject={() => onRejectSuggested?.()}
+        />
+      </div>
+    )
+  }
 
   return (
     <div
