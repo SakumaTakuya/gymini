@@ -3,7 +3,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 import { useChatStore } from '../stores/chatStore'
 import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
 import type { ChatMessage } from '../types/chat'
-import type { ISODateTimeString } from '../schemas/date'
+import type { DateString, ISODateTimeString } from '../schemas/date'
 
 describe('設定ストアの永続化', () => {
   beforeEach(() => {
@@ -76,21 +76,29 @@ describe('チャットストアのセッション同期永続化', () => {
   })
 
   it('rehydrate でセッション中の対話が復元される', async () => {
-    useWorkoutSessionStore.getState().startSession()
+    // リロード後にセッションがアクティブな状態を直接構築する
+    // （startSession を呼ぶと storeBus.clearChatMessages が走るため使わない）
+    useWorkoutSessionStore.setState({
+      isActive: true,
+      startedAt: '2026-04-18T12:00:00+09:00' as ISODateTimeString,
+      date: '2026-04-18' as DateString,
+      draftExercises: [],
+    })
+
+    // リロード後に localStorage が保持していた状態を模擬する
     const msg = makeMessage('persist-1')
-    useChatStore.getState().addMessage(msg)
+    localStorage.setItem(
+      'gymini:chat',
+      JSON.stringify({ state: { messages: [msg] }, version: 1 }),
+    )
 
-    // メモリ上の状態をクリア（リロード相当）
-    useChatStore.setState({ messages: [], isLoading: false, error: null })
-
-    // localStorage から rehydrate
     await useChatStore.persist.rehydrate()
 
     expect(useChatStore.getState().messages).toEqual([msg])
   })
 
   it('endSession 後は localStorage の gymini:chat の messages が空になる', () => {
-    useWorkoutSessionStore.getState().startSession('2026-03-08' as never)
+    useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
     useChatStore.getState().addMessage(makeMessage())
     useWorkoutSessionStore.getState().endSession()
 
