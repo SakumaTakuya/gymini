@@ -101,6 +101,11 @@ function executeSaveWorkout(
     return { success: false, error: 'INVALID_ARGS' }
   }
 
+  const session = useWorkoutSessionStore.getState()
+  if (!session.isActive) {
+    return { success: false, error: 'SESSION_NOT_ACTIVE' }
+  }
+
   type SaveExerciseInput = {
     exerciseName: string
     sets: Array<{ weight: number; reps: number }>
@@ -148,14 +153,8 @@ function executeSaveWorkout(
     }
   }
 
-  const session = useWorkoutSessionStore.getState()
-
-  if (!session.isActive) {
-    session.startSession(date as DateString)
-  }
-
   for (const ex of resolved) {
-    useWorkoutSessionStore.getState().addExerciseWithSets(ex)
+    session.addExerciseWithSets(ex)
   }
 
   return { success: true, data: { addedToSession: true } }

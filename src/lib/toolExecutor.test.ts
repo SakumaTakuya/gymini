@@ -167,7 +167,7 @@ describe('executeWriteTool', () => {
   })
 
   describe('saveWorkout', () => {
-    test('セッションなし: startSession を呼んで draftExercises にセット済み種目を追加する', () => {
+    test('セッションなし: SESSION_NOT_ACTIVE を返し draftExercises を変更しない', () => {
       vi.mocked(ExerciseRepository.getAll).mockReturnValue([
         makeExercise('ベンチプレス', 'ex-1'),
       ])
@@ -180,19 +180,15 @@ describe('executeWriteTool', () => {
           },
         ],
       })
-      expect(result.success).toBe(true)
-      expect(result.data).toEqual({ addedToSession: true })
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('SESSION_NOT_ACTIVE')
       expect(WorkoutRepository.save).not.toHaveBeenCalled()
       const state = useWorkoutSessionStore.getState()
-      expect(state.isActive).toBe(true)
-      expect(state.date).toBe('2026-04-18')
-      expect(state.draftExercises).toHaveLength(1)
-      expect(state.draftExercises[0].exerciseId).toBe('ex-1')
-      expect(state.draftExercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
-      expect(state.draftExercises[0].cardState).toBe('idle')
+      expect(state.isActive).toBe(false)
+      expect(state.draftExercises).toEqual([])
     })
 
-    test('セッションあり: startSession を呼ばずに既存セッションに種目を追加する', () => {
+    test('セッションあり: 既存セッションに種目を追加する', () => {
       useWorkoutSessionStore.getState().startSession('2026-04-18' as DateString)
       vi.mocked(ExerciseRepository.getAll).mockReturnValue([
         makeExercise('スクワット', 'ex-2'),
@@ -216,6 +212,7 @@ describe('executeWriteTool', () => {
     })
 
     test('種目名が見つからない場合 EXERCISE_NOT_FOUND を返す', () => {
+      useWorkoutSessionStore.getState().startSession('2026-04-18' as DateString)
       vi.mocked(ExerciseRepository.getAll).mockReturnValue([])
       const result = executeWriteTool('saveWorkout', {
         date: '2026-04-18',

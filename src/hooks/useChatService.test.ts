@@ -303,6 +303,7 @@ describe('useChatService', () => {
 
   test('approve(id, editedData) で editedData の値が executeWriteTool に渡る (saveWorkout)', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    useWorkoutSessionStore.getState().startSession()
     vi.mocked(ExerciseRepository.getAll).mockReturnValue([
       { id: 'ex-1', name: 'ベンチプレス' },
     ])
