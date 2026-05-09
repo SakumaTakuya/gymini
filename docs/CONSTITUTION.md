@@ -442,7 +442,7 @@ src/
 |:-----|:-------|:--------------------|
 | 行アイテム（密なレイアウト） | `rounded-xl` (12px) | CompletedSetRow, PendingSetRow |
 | カード・モーダル | `rounded-[24px]` | ExerciseCard, WorkoutSummary, MonthCalendar, SectionCard |
-| ピル・ヘッダー | `rounded-full` | AppHeader, BottomNav AIボタン |
+| ピル・ヘッダー | `rounded-full` | AppHeader, BottomNav タブ |
 | アイコンコンテナ | `rounded-[28px]` | IdleView アイコン背景 |
 
 **フォントトークン**:

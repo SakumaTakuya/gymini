@@ -32,9 +32,9 @@ gyminiは、筋トレ記録とAIコーチングを組み合わせたWebアプリ
 | FRAME | 画面 | 内容 | Phase | 要求仕様書 |
 |:------|:-----|:-----|:------|:----------|
 | FRAME1 | 🏋️ Training Idle | 待機画面・セッション開始 | 1 | [workout](workout/index.md), [navigation.md](navigation.md) |
-| FRAME2 | 🏋️ Active Workout | 種目カード・セット記録・タイマー | 1 | [workout](workout/index.md), [exercise-master](exercise-master/index.md) |
+| FRAME2 | 🏋️ Active Workout | 種目カード・セット記録・タイマー・**AI 対話タイムライン**（Phase 4 統合） | 1 / 4 | [workout](workout/index.md), [exercise-master](exercise-master/index.md), [ai-chat](ai-chat/index.md) |
 | FRAME3 | 📅 History | カレンダー + 日付別記録サマリー | 1 | [history](history/index.md) |
-| FRAME4 | 💬 AI Chat | AIチャット・Function Calling | 3 | [ai-chat](ai-chat/index.md) |
+| ~~FRAME4~~ | ~~💬 AI Chat~~ | ~~独立 AI チャット画面~~（Phase 4 で撤去・FRAME2 に統合）| 3 → 撤去 | [ai-chat](ai-chat/index.md), [timeline-migration.md](ai-chat/timeline-migration.md) |
 | FRAME5 | ⚙️ Settings | APIキー・種目マスター管理 | 2 | [settings](settings/index.md), [api-key](api-key/index.md), [exercise-master](exercise-master/index.md) |
 
 ---
@@ -186,7 +186,7 @@ requirementDiagram
 
     interfaceRequirement BottomNav {
         id: IR_001
-        text: "2タブ（Training + History）+ AI専用ボタンのBottomNav"
+        text: "2 タブ（Training + History）の BottomNav。AI 対話は FRAME2 のタイムライン UX に統合（独立タブなし）"
         risk: medium
         verifymethod: inspection
     }
@@ -249,13 +249,13 @@ Reactで開発し、クライアントサイドのみで動作する。
 
 スマートフォンでの利用を最優先としたUI設計を行う。
 
-### IR_001: BottomNav（2タブ + AI専用ボタン）
+### IR_001: BottomNav（2 タブ）
 
-2タブ（Training + History）+ 右側AI専用ボタン（pill型）のBottomNavを提供する。スマホ画面下部に固定配置。FRAME1〜4で常に表示、FRAME5（設定）では非表示。詳細は [navigation.md](navigation.md) IR_001 を参照。
+2 タブ（Training + History）の BottomNav を提供する。AI 対話は FRAME2 のタイムライン UX に統合されており、独立した AI タブは持たない。スマホ画面下部に固定配置。FRAME1〜FRAME3 で常に表示、FRAME5（設定）では非表示。詳細は [navigation.md](navigation.md) IR_001 を参照。
 
 ### IR_002: 歯車アイコン（全画面共通）
 
-全画面（FRAME1〜4）の右上に歯車アイコンを固定表示。タップでFRAME5（設定画面）へ遷移。APIキー未設定時は赤バッジ表示。詳細は [navigation.md](navigation.md) IR_002、[settings/index.md](settings/index.md) FR_022 を参照。
+全画面（FRAME1〜FRAME3）の右上に歯車アイコンを固定表示。タップで FRAME5（設定画面）へ遷移。APIキー未設定時は赤バッジ表示。詳細は [navigation.md](navigation.md) IR_002、[settings/index.md](settings/index.md) FR_022 を参照。
 
 ---
 

@@ -4,7 +4,7 @@ title: "アプリヘッダー（AppHeader）"
 type: "prd"
 status: "draft"
 created: "2026-04-29"
-updated: "2026-04-30"
+updated: "2026-05-09"
 depends-on: ["prd-gymini", "prd-navigation"]
 tags: ["navigation", "ui", "app-shell", "header"]
 category: "ui"
@@ -33,9 +33,9 @@ gymini の各画面（FRAME1〜5）に共通のヘッダー領域を「規定」
 | 観点 | 現状 | 課題 |
 |------|------|------|
 | 視覚的整合性 | 各ページが独自に `pt-16` + 浮かせた歯車を配置 | 高さ・余白がページごとに微妙に異なる |
-| 構造の重複 | `IdleView`, `HistoryPage`, `AIChatPage`, `SessionHeader`, `SettingsPage` がそれぞれ chrome を再実装 | 変更時の影響範囲が広く、保守性が低い |
-| アクセシビリティ | タイトル（`<h1>`）が一部ページにしかない（`AIChatPage` のみ） | スクリーンリーダー利用時の現在地特定が困難 |
-| AIChatPage の重複 | 独自 `<header sticky>` と浮かせた `<GearIcon>` の二重配置 | 視覚ノイズ |
+| 構造の重複 | `IdleView`, `HistoryPage`, `SessionHeader`, `SettingsPage`（旧 `AIChatPage` 含む）がそれぞれ chrome を再実装 | 変更時の影響範囲が広く、保守性が低い |
+| アクセシビリティ | タイトル（`<h1>`）が一部ページにしかない（旧 `AIChatPage` のみ） | スクリーンリーダー利用時の現在地特定が困難 |
+| 旧 AIChatPage の重複 | 独自 `<header sticky>` と浮かせた `<GearIcon>` の二重配置 | 視覚ノイズ（タイムライン統合後は FRAME2 内に吸収される） |
 
 ### 1.2. 期待する成果
 
@@ -66,7 +66,7 @@ requirementDiagram
 
     interfaceRequirement HeaderTitle {
         id: IR_004
-        text: "タイトル（<h1>）はセッション中（FRAME2）と設定（FRAME5）のみ必須表示。トップレベルページ（FRAME1, 3, 4）はアクションピルのみを表示し、タイトルは省略する"
+        text: "タイトル（<h1>）はセッション中（FRAME2）と設定（FRAME5）のみ必須表示。トップレベルページ（FRAME1, FRAME3）はアクションピルのみを表示し、タイトルは省略する"
         risk: low
         verifymethod: inspection
     }
@@ -122,7 +122,7 @@ AppHeader は `AppLayout`（`_app.tsx`）に1度だけマウントされる。Bo
 
 ### IR_004: タイトル表示（条件付き）
 
-BottomNav がタブ選択状態を視覚的に示すため、トップレベルページ（FRAME1 idle, 3, 4）ではヘッダーにタイトルを表示せず、アクションボタン専用のピルとする。タイトルは文脈が BottomNav で判断できないページのみ表示する。
+BottomNav がタブ選択状態を視覚的に示すため、トップレベルページ（FRAME1 idle, FRAME3）ではヘッダーにタイトルを表示せず、アクションボタン専用のピルとする。タイトルは文脈が BottomNav で判断できないページのみ表示する。
 
 **画面別タイトル:**
 
@@ -131,8 +131,9 @@ BottomNav がタブ選択状態を視覚的に示すため、トップレベル�
 | FRAME1 | Training Idle | 表示しない（BottomNav で判別可能） |
 | FRAME2 | Active Workout | `セッション中` |
 | FRAME3 | History | 表示しない（BottomNav で判別可能） |
-| FRAME4 | AI Chat | 表示しない（BottomNav で判別可能） |
 | FRAME5 | Settings | `設定` |
+
+旧 FRAME4（独立 AI チャット画面）は撤去。AI 対話は FRAME2 のタイムラインに統合される（[ai-chat/index.md](ai-chat/index.md) FR_034）。
 
 **検証方法:** インスペクションによる検証
 
@@ -147,8 +148,9 @@ BottomNav がタブ選択状態を視覚的に示すため、トップレベル�
 | FRAME1 | — | `<GearIcon/>` |
 | FRAME2 | — | TimerPill + 終了ボタン + GearIcon |
 | FRAME3 | — | `<GearIcon/>` |
-| FRAME4 | — | `<GearIcon/>` |
 | FRAME5 | — | X 閉じるボタン |
+
+旧 FRAME4（独立 AI チャット）は撤去。
 
 **検証方法:** インスペクションによる検証
 
@@ -158,7 +160,7 @@ BottomNav がタブ選択状態を視覚的に示すため、トップレベル�
 
 | variant | 高さ | 用途 |
 |:--------|:-----|:-----|
-| default | h-14（56px） | 通常の画面（FRAME1, 3, 4） |
+| default | h-14（56px） | 通常の画面（FRAME1, FRAME3） |
 | session-active | h-11（44px） | アクティブセッション（FRAME2） |
 | modal | h-14 | 設定画面（FRAME5）。`role="banner"` + `data-variant="modal"` でセマンティクスを明示 |
 
