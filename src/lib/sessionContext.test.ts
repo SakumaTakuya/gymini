@@ -13,6 +13,7 @@ function makeDraft(overrides: Partial<DraftExercise> = {}): DraftExercise {
     pendingSetDirty: overrides.pendingSetDirty ?? false,
     cardState: overrides.cardState ?? 'idle',
     editingSetIndex: overrides.editingSetIndex ?? null,
+    origin: overrides.origin ?? 'manual',
   }
 }
 

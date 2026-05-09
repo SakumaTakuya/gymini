@@ -11,6 +11,7 @@ const baseDraft: DraftExercise = {
   pendingSetDirty: false,
   cardState: 'idle',
   editingSetIndex: null,
+  origin: 'manual',
 }
 
 const defaultProps = {

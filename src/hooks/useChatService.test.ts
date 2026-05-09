@@ -397,6 +397,7 @@ describe('useChatService', () => {
           pendingSetDirty: false,
           cardState: 'idle',
           editingSetIndex: null,
+          origin: 'manual',
         },
       ],
     })

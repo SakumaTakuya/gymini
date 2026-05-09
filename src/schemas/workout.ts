@@ -41,6 +41,8 @@ export type WorkoutInput = Omit<Workout, 'id' | 'createdAt' | 'updatedAt'>
 
 export type ExerciseCardState = 'collapsed' | 'idle' | 'recording'
 
+export type ExerciseOrigin = 'manual' | 'ai-suggested'
+
 export type DraftExercise = {
   exerciseId: string
   exerciseName: string
@@ -49,4 +51,5 @@ export type DraftExercise = {
   pendingSetDirty: boolean
   cardState: ExerciseCardState
   editingSetIndex: number | null
+  origin: ExerciseOrigin
 }

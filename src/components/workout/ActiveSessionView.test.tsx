@@ -86,6 +86,7 @@ describe('ActiveSessionView', () => {
       pendingSetDirty: false,
       cardState: 'idle',
       editingSetIndex: null,
+      origin: 'manual',
     }
     useWorkoutSessionStore.setState({
       isActive: true,

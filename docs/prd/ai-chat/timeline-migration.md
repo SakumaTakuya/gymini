@@ -93,9 +93,11 @@ risk: "high"
 
 ### P3: DraftExercise の origin
 
-- `src/schemas/workout.ts` の `DraftExercise` に `origin?: 'manual' | 'ai-suggested'` を追加（任意フィールド、デフォルト 'manual'）
-- `workoutSessionStore.ts` に `acceptSuggestedExercise(index)`, `rejectSuggestedExercise(index)` を追加
-- 既存の `addExerciseWithSets` は `origin` を任意で受けるように拡張
+- `src/schemas/workout.ts` に `ExerciseOrigin = 'manual' | 'ai-suggested'` を追加し、`DraftExercise.origin: ExerciseOrigin` を **required** で導入する（ドメイン上、種目は必ず由来を持つ）
+- `workoutSessionStore.ts` の `addExercise` / `addExerciseWithSets` 引数に `origin?: ExerciseOrigin` を追加。未指定時は内部で 'manual' を補完する（呼び出し側の破壊的変更を最小化）
+- 新メソッド `acceptSuggestedExercise(index)` を追加。`origin === 'ai-suggested'` のときだけ 'manual' に昇格させる（それ以外は no-op）
+- **却下は既存の `deleteExercise(index)` を再利用**し、専用メソッドは作らない（同一動作の API 重複を避ける）
+- 既存の DraftExercise を直接構築するテスト fixture（`ExerciseCard.test`, `ActiveSessionView.test`, `useChatService.test`, `sessionContext.test`）に `origin: 'manual'` を追加
 
 ### P4: 編集フォーム部品をコンテナ非依存に分離
 
