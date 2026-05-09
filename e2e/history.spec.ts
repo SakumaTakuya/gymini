@@ -53,6 +53,21 @@ test.describe('履歴画面 (FRAME3)', () => {
     expect(afterNext).toBe(initialText)
   })
 
+  test('カレンダーを次月パネルへスクロールするとヘッダーが変わる', async ({ page }) => {
+    await page.goto('./#/history')
+    const header = page.locator('h2')
+    const before = await header.textContent()
+    const viewport = page.getByTestId('calendar-viewport')
+
+    await viewport.evaluate((el: HTMLDivElement) => {
+      el.scrollTo({ left: el.clientWidth * 2, behavior: 'smooth' })
+    })
+
+    await expect
+      .poll(async () => await header.textContent(), { timeout: 3000 })
+      .not.toBe(before)
+  })
+
   test('記録なし日に空状態UIが表示される', async ({ page }) => {
     await page.goto('./#/history')
     await expect(page.getByTestId('empty-day-state')).toBeVisible()

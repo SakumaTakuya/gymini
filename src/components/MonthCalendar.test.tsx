@@ -152,104 +152,94 @@ describe('MonthCalendar', () => {
     expect(outsideSpan).toBeDefined()
   })
 
-  describe('スワイプ月遷移', () => {
-    function getTrack() {
-      return document.querySelector(
-        '[data-testid="calendar-track"]',
-      ) as HTMLElement
+  describe('スクロール月遷移', () => {
+    const PANEL_WIDTH = 320
+
+    function getViewport() {
+      return screen.getByTestId('calendar-viewport') as HTMLDivElement
     }
 
-    function touchEvent(x: number, y: number) {
-      return {
-        touches: [{ clientX: x, clientY: y }],
-        changedTouches: [{ clientX: x, clientY: y }],
-      }
+    function setProperty(el: HTMLDivElement, prop: string, value: number) {
+      Object.defineProperty(el, prop, {
+        configurable: true,
+        writable: true,
+        value,
+      })
     }
 
-    it('内側トラックが初期状態で translateX(-100%) に位置する', () => {
+    it('viewport が snap-x snap-mandatory overflow-x-auto を持つ', () => {
       setup()
-      const track = getTrack()
-      expect(track).toBeTruthy()
-      expect(track.style.transform).toContain('translateX(calc(-100%')
+      const viewport = getViewport()
+      expect(viewport.className).toMatch(/snap-x/)
+      expect(viewport.className).toMatch(/snap-mandatory/)
+      expect(viewport.className).toMatch(/overflow-x-auto/)
     })
 
-    it('touchmove 中にトラックの transform が指の動きを反映する', () => {
+    it('3 つのパネルがそれぞれ snap-start を持つ', () => {
       setup()
-      const track = getTrack()
-      const surface = track.parentElement!
-
-      fireEvent.touchStart(surface, touchEvent(200, 100))
-      fireEvent.touchMove(surface, touchEvent(150, 100))
-
-      expect(track.style.transform).toContain('-50px')
+      const panels = screen.getAllByTestId('calendar-panel')
+      expect(panels).toHaveLength(3)
+      panels.forEach((p) => expect(p.className).toMatch(/snap-start/))
     })
 
-    it('閾値超えの左スワイプで transitionend 後に onNextMonth が呼ばれる', () => {
+    it('viewport を次月位置にスクロールすると onNextMonth が呼ばれる', async () => {
+      vi.useFakeTimers()
       const props = setup()
-      const track = getTrack()
-      const surface = track.parentElement!
-
-      fireEvent.touchStart(surface, touchEvent(250, 100))
-      fireEvent.touchMove(surface, touchEvent(100, 100))
-      fireEvent.touchEnd(surface, touchEvent(100, 100))
-
-      // スナップ中: 次月方向 -200%
-      expect(track.style.transform).toContain('translateX(-200%)')
-      expect(props.onNextMonth).not.toHaveBeenCalled()
-
-      // アニメ完了をシミュレート
-      fireEvent.transitionEnd(track, { propertyName: 'transform' })
+      const viewport = getViewport()
+      setProperty(viewport, 'clientWidth', PANEL_WIDTH)
+      setProperty(viewport, 'scrollLeft', PANEL_WIDTH * 2)
+      fireEvent.scroll(viewport)
+      await vi.advanceTimersByTimeAsync(150)
       expect(props.onNextMonth).toHaveBeenCalledOnce()
       expect(props.onPrevMonth).not.toHaveBeenCalled()
+      vi.useRealTimers()
     })
 
-    it('閾値超えの右スワイプで transitionend 後に onPrevMonth が呼ばれる', () => {
+    it('viewport を前月位置にスクロールすると onPrevMonth が呼ばれる', async () => {
+      vi.useFakeTimers()
       const props = setup()
-      const track = getTrack()
-      const surface = track.parentElement!
-
-      fireEvent.touchStart(surface, touchEvent(50, 100))
-      fireEvent.touchMove(surface, touchEvent(200, 100))
-      fireEvent.touchEnd(surface, touchEvent(200, 100))
-
-      expect(track.style.transform).toContain('translateX(0%)')
-      expect(props.onPrevMonth).not.toHaveBeenCalled()
-
-      fireEvent.transitionEnd(track, { propertyName: 'transform' })
+      const viewport = getViewport()
+      setProperty(viewport, 'clientWidth', PANEL_WIDTH)
+      setProperty(viewport, 'scrollLeft', 0)
+      fireEvent.scroll(viewport)
+      await vi.advanceTimersByTimeAsync(150)
       expect(props.onPrevMonth).toHaveBeenCalledOnce()
       expect(props.onNextMonth).not.toHaveBeenCalled()
+      vi.useRealTimers()
     })
 
-    it('閾値未満のリリースで月遷移は起きずトラックが中央に戻る', () => {
+    it('中央位置 (scrollLeft = clientWidth) では何も呼ばれない', async () => {
+      vi.useFakeTimers()
       const props = setup()
-      const track = getTrack()
-      const surface = track.parentElement!
-
-      fireEvent.touchStart(surface, touchEvent(100, 100))
-      fireEvent.touchMove(surface, touchEvent(110, 100))
-      fireEvent.touchEnd(surface, touchEvent(110, 100))
-
-      expect(track.style.transform).toContain('translateX(calc(-100%')
-      expect(track.style.transform).toContain('0px')
-      fireEvent.transitionEnd(track, { propertyName: 'transform' })
+      const viewport = getViewport()
+      setProperty(viewport, 'clientWidth', PANEL_WIDTH)
+      setProperty(viewport, 'scrollLeft', PANEL_WIDTH)
+      fireEvent.scroll(viewport)
+      await vi.advanceTimersByTimeAsync(150)
       expect(props.onPrevMonth).not.toHaveBeenCalled()
       expect(props.onNextMonth).not.toHaveBeenCalled()
+      vi.useRealTimers()
     })
 
-    it('縦移動が大きい場合は月遷移が発生しない', () => {
-      const props = setup()
-      const track = getTrack()
-      const surface = track.parentElement!
-
-      fireEvent.touchStart(surface, touchEvent(200, 100))
-      // まず縦に大きく動く → 縦スクロール扱いで以降破棄
-      fireEvent.touchMove(surface, touchEvent(200, 200))
-      fireEvent.touchMove(surface, touchEvent(50, 200))
-      fireEvent.touchEnd(surface, touchEvent(50, 200))
-
-      fireEvent.transitionEnd(track, { propertyName: 'transform' })
-      expect(props.onPrevMonth).not.toHaveBeenCalled()
-      expect(props.onNextMonth).not.toHaveBeenCalled()
+    it('外部 displayMonth 変更でヘッダーが更新される', () => {
+      const props = {
+        displayMonth: { year: 2026, month: 4 },
+        selectedDate: '2026-04-12' as DateString,
+        daysWithWorkouts: new Set<DateString>(),
+        onPrevMonth: vi.fn(),
+        onNextMonth: vi.fn(),
+        onSelectDate: vi.fn(),
+      }
+      const { rerender } = render(<MonthCalendar {...props} />)
+      expect(
+        screen.getByRole('heading', { level: 2 }).textContent,
+      ).toContain('4')
+      rerender(
+        <MonthCalendar {...props} displayMonth={{ year: 2026, month: 6 }} />,
+      )
+      expect(
+        screen.getByRole('heading', { level: 2 }).textContent,
+      ).toContain('6')
     })
   })
 })
