@@ -101,9 +101,20 @@ risk: "high"
 
 ### P4: 編集フォーム部品をコンテナ非依存に分離
 
-- `EditableSetRow` / `SaveWorkoutEditor` / `SingleExerciseEditor` / `ConfirmationActions` は **すでにコンテナ（ChatBubble）非依存に近い設計** だが、props を見直して「draft カード内」「ConfirmationBubble 内」両方で同等に使えるようにする
-- 例: `onCancel` / `onApprove` は呼び出し元から渡す形、disabled 制御も外部からハンドル
-- これは純粋なリファクタ Phase（振る舞い変更なし、テスト追加のみ）
+監査の結果、4 部品はすべて既に `props` のみで動作し、`store` / `hook` への直接依存は無い：
+
+| 部品 | コンテナ非依存度 | 既存呼び出し元 |
+|:---|:---|:---|
+| `EditableSetRow` | ◎ 完全（ステートレス, callback ベース） | `SaveWorkoutEditor`, `SingleExerciseEditor` |
+| `ConfirmationActions` | ◎ 完全（ステートレス） | `SaveWorkoutEditor`, `SingleExerciseEditor`, `ConfirmationBubble` |
+| `SingleExerciseEditor` | ◎ 完全（ローカル `SetEdit` 型で完結） | `ConfirmationBubble` |
+| `SaveWorkoutEditor` | ○ 軽微（chat 文脈の `SaveWorkoutData['exercises']` を import） | `ConfirmationBubble` |
+
+実施内容：
+
+- `SaveWorkoutEditor` の `SaveWorkoutData['exercises']` 参照を撤去し、chat 中立な `ExerciseEdit` 型としてエクスポート（ローカル定義した `SingleExerciseEditor.SetEdit` と同じ流儀）。`ConfirmationBubble` は structural typing により無修正
+- 4 部品それぞれに単独テスト（`EditableSetRow.test`, `ConfirmationActions.test`, `SingleExerciseEditor.test`, `SaveWorkoutEditor.test`）を追加し、「props のみで動作」を保証。テスト合計 32 件
+- これにより P5（draft カードへ部品をそのままマウント）への着手が安全になる
 
 ### P5: draft カード + AI write 提案の挿入
 
