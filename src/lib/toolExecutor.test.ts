@@ -351,91 +351,68 @@ describe('executeWriteTool', () => {
       expect(result.success).toBe(false)
       expect(result.error).toBe('INVALID_ARGS')
     })
-  })
 
-  describe('addExerciseAndLog', () => {
-    test('セッションなし: 種目作成 + startSession + sets 既定値で addExerciseWithSets', () => {
+    test('exerciseId 省略時はマスター追加してからセッションへ追加（旧 addExerciseAndLog 統合）', () => {
+      useWorkoutSessionStore.getState().startSession()
       const created = makeExercise('ラットプルダウン', 'ex-lat')
       vi.mocked(ExerciseRepository.create).mockReturnValue(created)
-      const result = executeWriteTool('addExerciseAndLog', {
-        name: 'ラットプルダウン',
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseName: 'ラットプルダウン',
+        sets: [{ weight: 50, reps: 10 }],
       })
       expect(result.success).toBe(true)
       expect(result.data).toEqual({
         exerciseId: 'ex-lat',
         exerciseName: 'ラットプルダウン',
-        addedToSession: true,
       })
       expect(ExerciseRepository.create).toHaveBeenCalledWith('ラットプルダウン')
       const state = useWorkoutSessionStore.getState()
-      expect(state.isActive).toBe(true)
       expect(state.draftExercises).toHaveLength(1)
       expect(state.draftExercises[0].exerciseId).toBe('ex-lat')
-      expect(state.draftExercises[0].sets).toEqual([{ weight: 0, reps: 0 }])
-      expect(state.draftExercises[0].origin).toBe('ai-suggested')
-    })
-
-    test('セッションあり: startSession を呼ばずに既存セッションへ追加', () => {
-      useWorkoutSessionStore.getState().startSession('2026-04-18' as DateString)
-      const startedAt = useWorkoutSessionStore.getState().startedAt
-      const created = makeExercise('シーテッドロー', 'ex-row')
-      vi.mocked(ExerciseRepository.create).mockReturnValue(created)
-      const result = executeWriteTool('addExerciseAndLog', {
-        name: 'シーテッドロー',
-        sets: [{ weight: 50, reps: 10 }],
-      })
-      expect(result.success).toBe(true)
-      const state = useWorkoutSessionStore.getState()
-      expect(state.startedAt).toBe(startedAt)
-      expect(state.date).toBe('2026-04-18')
-      expect(state.draftExercises).toHaveLength(1)
       expect(state.draftExercises[0].sets).toEqual([{ weight: 50, reps: 10 }])
       expect(state.draftExercises[0].origin).toBe('ai-suggested')
     })
 
-    test('重複種目名のとき DUPLICATE_EXERCISE を返し、セッションを変更しない', () => {
+    test('exerciseId 省略 + 既存名: DUPLICATE_EXERCISE を返してセッションを変更しない', () => {
+      useWorkoutSessionStore.getState().startSession()
       vi.mocked(ExerciseRepository.create).mockImplementation(() => {
         throw new Error('Duplicate name: ベンチプレス')
       })
-      const result = executeWriteTool('addExerciseAndLog', {
-        name: 'ベンチプレス',
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseName: 'ベンチプレス',
       })
       expect(result.success).toBe(false)
       expect(result.error).toBe('DUPLICATE_EXERCISE')
-      const state = useWorkoutSessionStore.getState()
-      expect(state.isActive).toBe(false)
-      expect(state.draftExercises).toHaveLength(0)
+      expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(0)
     })
 
-    test('空 name は INVALID_ARGS', () => {
-      const result = executeWriteTool('addExerciseAndLog', { name: '   ' })
-      expect(result.success).toBe(false)
-      expect(result.error).toBe('INVALID_ARGS')
-      expect(ExerciseRepository.create).not.toHaveBeenCalled()
-    })
-
-    test('sets に不正要素が含まれていれば INVALID_ARGS（種目作成も発生しない）', () => {
-      const result = executeWriteTool('addExerciseAndLog', {
-        name: 'ラットプルダウン',
-        sets: [{ weight: 'oops', reps: 10 }],
-      })
-      expect(result.success).toBe(false)
-      expect(result.error).toBe('INVALID_ARGS')
-      expect(ExerciseRepository.create).not.toHaveBeenCalled()
-    })
-
-    test('sets が空配列でも既定値 [{0,0}] が使われる', () => {
+    test('exerciseId 省略 + sets 空: マスター追加 + addExercise（空 sets 種目）', () => {
+      useWorkoutSessionStore.getState().startSession()
       const created = makeExercise('デッドリフト', 'ex-dl')
       vi.mocked(ExerciseRepository.create).mockReturnValue(created)
-      const result = executeWriteTool('addExerciseAndLog', {
-        name: 'デッドリフト',
-        sets: [],
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseName: 'デッドリフト',
       })
       expect(result.success).toBe(true)
-      const state = useWorkoutSessionStore.getState()
-      expect(state.draftExercises[0].sets).toEqual([{ weight: 0, reps: 0 }])
-      expect(state.draftExercises[0].origin).toBe('ai-suggested')
+      expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(1)
+      expect(useWorkoutSessionStore.getState().draftExercises[0].sets).toEqual([])
     })
+
+    test('exerciseName が空文字 / 空白のみ → INVALID_ARGS', () => {
+      useWorkoutSessionStore.getState().startSession()
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseName: '   ',
+      })
+      expect(result.success).toBe(false)
+      expect(result.error).toBe('INVALID_ARGS')
+      expect(ExerciseRepository.create).not.toHaveBeenCalled()
+    })
+  })
+
+  test('addExerciseAndLog ツール名は撤去済みで UNKNOWN_WRITE_TOOL', () => {
+    const result = executeWriteTool('addExerciseAndLog', { name: 'ラットプルダウン' })
+    expect(result.success).toBe(false)
+    expect(result.error).toContain('UNKNOWN_WRITE_TOOL')
   })
 
   test('不明な write ツールはエラーを返す', () => {
