@@ -83,9 +83,13 @@ risk: "high"
 
 ### P2: SESSION_NOT_ACTIVE gate
 
-- `executeWriteTool` 入口で `useWorkoutSessionStore.getState().isActive === false` なら `{ success: false, error: 'SESSION_NOT_ACTIVE', message: '...' }` を返す
-- 例外: `executeSaveWorkout` は `date !== today()`（過去日付）の場合のみアクティブ要件を緩和し通常処理する。今日日付（または `addExerciseAndLog`）はゲート対象
-- 既存テストで「saveWorkout が isActive=false でも動く」前提のものは「過去日付のみ通る」へ書き換え
+- 対象は `executeSaveWorkout` と `executeAddExerciseToSession` の 2 ツールに限定
+  - `executeAddExerciseToSession` は最新 main で既に gate 済み（`{ success: false, error: 'SESSION_NOT_ACTIVE' }` を返す）
+  - `executeSaveWorkout` は旧版で `isActive=false` 時に暗黙 `startSession` を呼んでいたが、これを削除して `SESSION_NOT_ACTIVE` 一律返却に変更
+- `addExercise` は対象外（種目マスター登録、セッション無関係）
+- `addExerciseAndLog` は対象外（マスター追加 + セッション自動開始 + セット記録の 1 アクション統合設計）
+- 既存テスト「saveWorkout: セッションなし: startSession を呼んで…」を「セッションなし: SESSION_NOT_ACTIVE を返す」へ書き換え
+- **過去日付保存**: 旧 ADR 案の「`date !== today()` 例外で通常処理」は将来要件として残し、本 Phase では実装しない（現状の `executeSaveWorkout` は `WorkoutRepository.save` を呼ばないため過去日付保存は実質未対応）
 
 ### P3: DraftExercise の origin
 

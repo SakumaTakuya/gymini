@@ -213,7 +213,7 @@ requirementDiagram
 
     functionalRequirement SessionGate {
         id: FR_036
-        text: "セッション非アクティブ時、書き込みツールは SESSION_NOT_ACTIVE を返してユーザーにセッション開始を促す（B-002 の補強）"
+        text: "セッション非アクティブ時、saveWorkout と addExerciseToSession は SESSION_NOT_ACTIVE を返してユーザーにセッション開始を促す（B-002 の補強）。addExercise・addExerciseAndLog は対象外"
         risk: high
         verifymethod: test
     }
@@ -278,7 +278,7 @@ AI が会話の文脈を解析し、必要に応じて以下のツールを自�
 | セッションへの種目追加 | アクティブセッションに種目（任意でセット群付き）を追加 | 書き込み（draft カード + sets 付きは編集フォーム） |
 | 種目追加 + 記録開始 | 未登録種目をマスター追加し、セッション（無ければ自動開始）に最初のセット記録までを 1 回の確認で完結 | 書き込み（draft カード + 編集フォーム） |
 
-セッション非アクティブ時、書き込みツールは `SESSION_NOT_ACTIVE` を返す（FR_036）。
+セッション非アクティブ時、`saveWorkout` と `addExerciseToSession` は `SESSION_NOT_ACTIVE` を返す（FR_036）。`addExercise` と `addExerciseAndLog` は対象外。
 
 **検証方法:** テストによる検証
 
@@ -487,11 +487,14 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 ### FR_036: セッションゲート（書き込みツール）
 
-セッションが非アクティブな状態で書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerciseAndLog` 等）が呼ばれた場合、ツール実行は `SESSION_NOT_ACTIVE` を返し、AI はユーザーに「先にセッションを開始してください」と案内する。
+セッションが非アクティブな状態で `saveWorkout` または `addExerciseToSession` が呼ばれた場合、ツール実行は `SESSION_NOT_ACTIVE` を返し、AI はユーザーに「先にセッションを開始してください」と案内する。
 
 - セッション開始導線は [workout/index.md](../workout/index.md) の FRAME1 に従う
 - UI 上はタイムライン入力欄が非アクティブ時には無効化されるため、通常はこのガードに到達しない（防御線）
-- 例外: `saveWorkout` は過去日付向けに利用される場合があるため、`date !== today()` のときは `SESSION_NOT_ACTIVE` を返さず通常処理する（[ai-chat ADR](../../adr/ai-chat.md) で扱う詳細判断）
+- **対象外ツール**:
+  - `addExercise`（種目マスター登録）はセッションと無関係なため対象外
+  - `addExerciseAndLog`（マスター追加 + セッション自動開始 + 最初のセット記録の 1 アクション統合）は設計上 `isActive=false` でも `startSession` を内部で呼ぶため対象外（[ai-chat ADR](../../adr/ai-chat.md)「addExerciseAndLog 統合」と一体）
+- **過去日付保存（将来要件）**: 「日付指定で過去のワークアウトを補完保存する」UX は将来要件として残す。本 PRD では現状 `saveWorkout` も `isActive=false` で一律 `SESSION_NOT_ACTIVE` を返す。詳細は [ai-chat ADR](../../adr/ai-chat.md)「セッション外 write tool」項
 
 **検証方法:** テストによる検証
 

@@ -49,13 +49,15 @@
 
 ## セッション外 write tool は SESSION_NOT_ACTIVE を返す（防御線）
 
-- **決定**: `executeWriteTool`（`saveWorkout` / `addExerciseToSession` / `addExerciseAndLog` / `addExercise`）の入口で `useWorkoutSessionStore.getState().isActive` を確認し、false なら `{ success: false, error: 'SESSION_NOT_ACTIVE', message: '...' }` を返す。例外として `saveWorkout` は過去日付（`date !== today()`）の場合のみアクティブ状態を要求しない
+- **決定**: ゲート対象は `saveWorkout` と `addExerciseToSession` の 2 ツールに限定する。`useWorkoutSessionStore.getState().isActive` が false なら `{ success: false, error: 'SESSION_NOT_ACTIVE' }` を返す。`addExercise` と `addExerciseAndLog` はゲート対象外
 - **理由**:
   - B-002（AI 安全操作の確認優先）の精神を「UI 撤去後の防御線」として技術的に保証する
   - タイムライン統合後はセッション外で AI に話せないため通常はここに到達しない。ただし防御的に残す
-  - `saveWorkout` の例外は「過去日付の手動補完」という有用なユースケースを温存するため
+  - `addExercise` は種目マスター登録のみで、セッションと無関係。ゲートすると「セッション開始しないと種目マスターも編集できない」という UX 阻害になる
+  - `addExerciseAndLog` は「マスター追加 + セッション自動開始 + 最初のセット記録」を 1 アクションで完結させる設計（後述「`addExerciseAndLog` 統合」と一体）。ここに gate を入れると 1 アクション統合の意義が崩れる
+  - 旧 `executeSaveWorkout` には「`isActive=false` で暗黙 `startSession`」のロジックがあったが、これは UX 上の意図ではなく実装上の便宜であり、削除して SESSION_NOT_ACTIVE 一律返却に整理した
+- **過去日付保存（将来要件）**: 「日付指定で過去のワークアウトを補完保存する」UX は将来要件として残す。現状の `executeSaveWorkout` は session に種目を追加するだけで `WorkoutRepository.save` を呼ばないため、過去日付保存は実質未対応。将来 PR で `date !== today()` 分岐を加えて `WorkoutRepository.save` を直接呼ぶフロー（または別ツール）に整理する
 - **トレードオフ**: テストと実装でゲート条件のメンテが必要。シンプルさよりも安全側を優先
-- **既存実装との関係**: 旧版 `executeSaveWorkout` 内の暗黙 `startSession` ロジックは、`addExerciseAndLog` の 1 アクション統合判断（後述）と整合させて温存する。「過去日付セーブのみゲートを外す」分岐に整理する
 
 ## Store 間の循環 import 回避: `storeBus` 中継
 

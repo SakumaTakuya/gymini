@@ -151,7 +151,7 @@ function executeSaveWorkout(
   const session = useWorkoutSessionStore.getState()
 
   if (!session.isActive) {
-    session.startSession(date as DateString)
+    return { success: false, error: 'SESSION_NOT_ACTIVE' }
   }
 
   for (const ex of resolved) {
