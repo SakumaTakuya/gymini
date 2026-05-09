@@ -181,6 +181,96 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].sets[1]).toEqual({ weight: 65, reps: 8 })
       expect(draftExercises[0].pendingSet).toBeNull()
     })
+
+    it('origin 未指定時はデフォルトで manual になる', () => {
+      useWorkoutSessionStore.getState().startSession()
+      useWorkoutSessionStore
+        .getState()
+        .addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].origin).toBe('manual')
+    })
+
+    it('origin: ai-suggested を指定すると ai-suggested で追加される', () => {
+      useWorkoutSessionStore.getState().startSession()
+      useWorkoutSessionStore.getState().addExercise({
+        exerciseId: 'bench',
+        exerciseName: 'ベンチプレス',
+        origin: 'ai-suggested',
+      })
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].origin).toBe('ai-suggested')
+    })
+  })
+
+  describe('addExerciseWithSets', () => {
+    it('origin 未指定時はデフォルトで manual になる', () => {
+      useWorkoutSessionStore.getState().startSession()
+      useWorkoutSessionStore.getState().addExerciseWithSets({
+        exerciseId: 'bench',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 60, reps: 10 }],
+      })
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].origin).toBe('manual')
+    })
+
+    it('origin: ai-suggested を指定すると ai-suggested で追加される', () => {
+      useWorkoutSessionStore.getState().startSession()
+      useWorkoutSessionStore.getState().addExerciseWithSets({
+        exerciseId: 'bench',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 60, reps: 10 }],
+        origin: 'ai-suggested',
+      })
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].origin).toBe('ai-suggested')
+    })
+  })
+
+  describe('acceptSuggestedExercise', () => {
+    it('ai-suggested の種目を manual に昇格させる', () => {
+      useWorkoutSessionStore.getState().startSession()
+      useWorkoutSessionStore.getState().addExerciseWithSets({
+        exerciseId: 'bench',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 60, reps: 10 }],
+        origin: 'ai-suggested',
+      })
+
+      useWorkoutSessionStore.getState().acceptSuggestedExercise(0)
+
+      const { draftExercises } = useWorkoutSessionStore.getState()
+      expect(draftExercises[0].origin).toBe('manual')
+      expect(draftExercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
+    })
+
+    it('manual の種目には作用しない（no-op）', () => {
+      useWorkoutSessionStore.getState().startSession()
+      useWorkoutSessionStore.getState().addExerciseWithSets({
+        exerciseId: 'bench',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 60, reps: 10 }],
+      })
+      const before = useWorkoutSessionStore.getState().draftExercises
+
+      useWorkoutSessionStore.getState().acceptSuggestedExercise(0)
+
+      expect(useWorkoutSessionStore.getState().draftExercises).toBe(before)
+    })
+
+    it('範囲外の index に対しては作用しない（no-op）', () => {
+      useWorkoutSessionStore.getState().startSession()
+      const before = useWorkoutSessionStore.getState().draftExercises
+
+      useWorkoutSessionStore.getState().acceptSuggestedExercise(99)
+
+      expect(useWorkoutSessionStore.getState().draftExercises).toBe(before)
+    })
   })
 
   describe('activateExercise', () => {
