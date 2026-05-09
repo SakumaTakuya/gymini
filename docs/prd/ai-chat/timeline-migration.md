@@ -131,10 +131,17 @@ risk: "high"
 
 ### P6: 旧 ConfirmationBubble 撤去
 
-- `ConfirmationBubble.tsx` と関連テスト・型（`pendingAction` の確認バブル経路）を削除
-- `ChatMessageList` から ConfirmationBubble の表示分岐を削除
-- `pendingAction.ts` は draft カード経路のロジックに簡素化または完全撤去（用途消失なら）
-- `useChatService.ts` の write tool ハンドリングを完全に draft カード経路に統一
+実施内容（純粋な撤去フェーズ。Phase 5 で死コード化済みのため振る舞いの変更は無し）：
+
+- `src/components/chat/ConfirmationBubble.tsx` と `ConfirmationBubble.test.tsx` を完全削除
+- `src/pages/AIChatPage.tsx` の `messages.map()` から `ConfirmationBubble` 分岐を削除し、`<ChatBubble>` のみに統一。`useChatService()` の destructure から `approve` / `reject` も削除
+- `src/hooks/useChatService.ts` の `approve` / `reject` 関数、`cancelExistingPending` 関数、`pendingActionToToolCall` import を削除
+- `src/lib/chat/pendingAction.ts` の `buildPendingAction` / `pendingActionToToolCall` / `describePendingAction` を削除。残す API は `partitionFunctionCalls` / `toPendingActionData` / `buildWriteResultMessage` のみ
+- `src/types/chat.ts` の `PendingActionStatus` / `PendingAction` 型を削除し、`ChatMessage.pendingAction` フィールドも削除（`PendingActionData` は `toPendingActionData` の戻り値として残す）
+- `src/stores/chatStore.ts` から `updatePendingAction` メソッドと `PendingActionStatus` import を削除。`chatStore.test` の `updatePendingAction` テスト 2 件、`AIChatPage.test` の ConfirmationBubble 関連テスト 2 件を削除
+- `useChatService.test` の `expect(last.pendingAction).toBeUndefined()` 系 assertion を削除（フィールド自体が消えたため不要）
+
+`PendingActionData` 型と `pendingAction.ts` ファイル名は意味的に古いが、命名整理は別 PR に切り出す。
 
 ### P7: ActiveSessionView タイムライン化
 

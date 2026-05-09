@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
-import type { ChatMessage, PendingActionStatus } from '../types/chat'
+import type { ChatMessage } from '../types/chat'
 import { useWorkoutSessionStore } from './workoutSessionStore'
 import { storeBus } from './storeBus'
 
@@ -14,8 +14,6 @@ type ChatActions = {
   addMessage: (message: ChatMessage) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
-  updatePendingAction: (messageId: string, status: PendingActionStatus) => void
-  removeMessage: (messageId: string) => void
   clearMessages: () => void
 }
 
@@ -36,22 +34,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
       setError: (error) => {
         set({ error })
-      },
-
-      updatePendingAction: (messageId, status) => {
-        set((state) => ({
-          messages: state.messages.map((msg) =>
-            msg.id === messageId && msg.pendingAction
-              ? { ...msg, pendingAction: { ...msg.pendingAction, status } }
-              : msg,
-          ),
-        }))
-      },
-
-      removeMessage: (messageId) => {
-        set((state) => ({
-          messages: state.messages.filter((msg) => msg.id !== messageId),
-        }))
       },
 
       clearMessages: () => {

@@ -1,8 +1,5 @@
 import type { DateString } from '../../schemas/date'
-import type {
-  PendingAction,
-  PendingActionData,
-} from '../../types/chat'
+import type { PendingActionData } from '../../types/chat'
 import type { FunctionCallRequest } from '../geminiClient'
 import { isWriteTool } from '../toolDefinitions'
 import { parseSetsArg, type ToolExecutionResult } from '../toolExecutor'
@@ -21,20 +18,6 @@ export function partitionFunctionCalls(calls: FunctionCallRequest[]): {
     }
   }
   return { readCalls, writeCall }
-}
-
-export function buildPendingAction(
-  call: FunctionCallRequest,
-): PendingAction | null {
-  const data = toPendingActionData(call)
-  if (!data) return null
-  return {
-    id: crypto.randomUUID(),
-    type: data.actionType,
-    description: describePendingAction(data),
-    data,
-    status: 'pending',
-  }
 }
 
 export function toPendingActionData(
@@ -103,72 +86,6 @@ export function toPendingActionData(
     }
     default:
       return null
-  }
-}
-
-function describePendingAction(data: PendingActionData): string {
-  switch (data.actionType) {
-    case 'saveWorkout': {
-      const lines = data.exercises.map((ex) => {
-        const sets = ex.sets
-          .map((s) => `${s.weight}kg × ${s.reps}回`)
-          .join('、')
-        return `${ex.exerciseName}: ${sets}`
-      })
-      return `以下のワークアウトを ${data.date} に記録しますか？\n${lines.join('\n')}`
-    }
-    case 'addExercise':
-      return `「${data.name}」を種目マスターに追加しますか？`
-    case 'addExerciseToSession': {
-      if (data.sets && data.sets.length > 0) {
-        const setsText = data.sets
-          .map((s) => `${s.weight}kg × ${s.reps}回`)
-          .join('、')
-        return `「${data.exerciseName}」を現在のセッションに以下の内容で追加しますか？値は調整できます\n${setsText}`
-      }
-      return `「${data.exerciseName}」を現在のセッションに追加しますか？`
-    }
-    case 'addExerciseAndLog': {
-      const setsText = data.sets
-        .map((s) => `${s.weight}kg × ${s.reps}回`)
-        .join('、')
-      return `「${data.name}」を種目マスターに追加して、記録を始めますか？値は調整できます\n${setsText}`
-    }
-  }
-}
-
-export function pendingActionToToolCall(action: PendingAction): {
-  toolName: string
-  args: Record<string, unknown>
-} {
-  switch (action.data.actionType) {
-    case 'saveWorkout':
-      return {
-        toolName: 'saveWorkout',
-        args: {
-          date: action.data.date,
-          exercises: action.data.exercises,
-        },
-      }
-    case 'addExercise':
-      return { toolName: 'addExercise', args: { name: action.data.name } }
-    case 'addExerciseToSession':
-      return {
-        toolName: 'addExerciseToSession',
-        args: {
-          exerciseId: action.data.exerciseId,
-          exerciseName: action.data.exerciseName,
-          ...(action.data.sets ? { sets: action.data.sets } : {}),
-        },
-      }
-    case 'addExerciseAndLog':
-      return {
-        toolName: 'addExerciseAndLog',
-        args: {
-          name: action.data.name,
-          sets: action.data.sets,
-        },
-      }
   }
 }
 

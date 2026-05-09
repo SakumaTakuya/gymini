@@ -6,7 +6,7 @@ export const EMPTY_RESPONSE_FALLBACK =
 
 export function messagesToContents(messages: ChatMessage[]): Content[] {
   // Gemini API は role が user/model で交互に並んでいることを要求する。
-  // approve 後の結果メッセージなど assistant が連続した場合は本文を改行で連結し、
+  // assistant が連続した場合は本文を改行で連結し、
   // 先頭が model の場合は破棄する（user 起点でないと 400 になる）。
   const contents: Content[] = []
   for (const m of messages) {
