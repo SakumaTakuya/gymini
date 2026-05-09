@@ -1,4 +1,4 @@
-import { useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { DayPicker, type DayButtonProps } from 'react-day-picker'
 import { CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { Card } from '@/components/ui/card'
@@ -23,6 +23,8 @@ interface MonthCalendarProps {
 
 const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土']
 const SCROLL_DEBOUNCE_MS = 120
+const PREV_PANEL_IDX = 0
+const NEXT_PANEL_IDX = 2
 
 function toDateStr(date: Date): DateString {
   const y = date.getFullYear()
@@ -174,29 +176,33 @@ export function MonthCalendar({
   const prevMonth = useMemo(() => shiftMonth(displayMonth, -1), [displayMonth])
   const nextMonth = useMemo(() => shiftMonth(displayMonth, 1), [displayMonth])
 
-  // Pin scrollLeft to the center panel on mount, on every displayMonth change
-  // (button click, URL change, swipe commit), and on resize. The suppress flag
-  // prevents the programmatic scroll from re-triggering the commit listener.
-  useLayoutEffect(() => {
+  // Pin scrollLeft to the center panel. The suppress flag prevents the
+  // programmatic scroll from re-triggering the commit listener.
+  const recenter = useCallback(() => {
     const v = viewportRef.current
     if (!v) return
-    const recenter = () => {
-      const w = v.clientWidth
-      if (w === 0) return
-      suppressScrollRef.current = true
-      v.scrollLeft = w
-      requestAnimationFrame(() =>
-        requestAnimationFrame(() => {
-          suppressScrollRef.current = false
-        }),
-      )
-    }
+    const w = v.clientWidth
+    if (w === 0) return
+    suppressScrollRef.current = true
+    v.scrollLeft = w
+    requestAnimationFrame(() =>
+      requestAnimationFrame(() => {
+        suppressScrollRef.current = false
+      }),
+    )
+  }, [])
+
+  useLayoutEffect(() => {
     recenter()
-    if (typeof ResizeObserver === 'undefined') return
+  }, [displayMonth, recenter])
+
+  useEffect(() => {
+    const v = viewportRef.current
+    if (!v || typeof ResizeObserver === 'undefined') return
     const ro = new ResizeObserver(recenter)
     ro.observe(v)
     return () => ro.disconnect()
-  }, [displayMonth])
+  }, [recenter])
 
   // Detect snap landing: when scrolling settles on prev (idx=0) or next (idx=2)
   // panel, commit the month change. Parent updates displayMonth, which triggers
@@ -210,9 +216,9 @@ export function MonthCalendar({
       const w = v.clientWidth
       if (w === 0) return
       const idx = Math.round(v.scrollLeft / w)
-      if (idx === 0) {
+      if (idx === PREV_PANEL_IDX) {
         onPrevMonth()
-      } else if (idx === 2) {
+      } else if (idx === NEXT_PANEL_IDX) {
         onNextMonth()
       }
     }

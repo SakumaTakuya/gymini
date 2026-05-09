@@ -159,15 +159,8 @@ describe('MonthCalendar', () => {
       return screen.getByTestId('calendar-viewport') as HTMLDivElement
     }
 
-    function mockViewportWidth(viewport: HTMLDivElement) {
-      Object.defineProperty(viewport, 'clientWidth', {
-        configurable: true,
-        value: PANEL_WIDTH,
-      })
-    }
-
-    function setScrollLeft(viewport: HTMLDivElement, value: number) {
-      Object.defineProperty(viewport, 'scrollLeft', {
+    function setProperty(el: HTMLDivElement, prop: string, value: number) {
+      Object.defineProperty(el, prop, {
         configurable: true,
         writable: true,
         value,
@@ -193,8 +186,8 @@ describe('MonthCalendar', () => {
       vi.useFakeTimers()
       const props = setup()
       const viewport = getViewport()
-      mockViewportWidth(viewport)
-      setScrollLeft(viewport, PANEL_WIDTH * 2)
+      setProperty(viewport, 'clientWidth', PANEL_WIDTH)
+      setProperty(viewport, 'scrollLeft', PANEL_WIDTH * 2)
       fireEvent.scroll(viewport)
       await vi.advanceTimersByTimeAsync(150)
       expect(props.onNextMonth).toHaveBeenCalledOnce()
@@ -206,8 +199,8 @@ describe('MonthCalendar', () => {
       vi.useFakeTimers()
       const props = setup()
       const viewport = getViewport()
-      mockViewportWidth(viewport)
-      setScrollLeft(viewport, 0)
+      setProperty(viewport, 'clientWidth', PANEL_WIDTH)
+      setProperty(viewport, 'scrollLeft', 0)
       fireEvent.scroll(viewport)
       await vi.advanceTimersByTimeAsync(150)
       expect(props.onPrevMonth).toHaveBeenCalledOnce()
@@ -219,8 +212,8 @@ describe('MonthCalendar', () => {
       vi.useFakeTimers()
       const props = setup()
       const viewport = getViewport()
-      mockViewportWidth(viewport)
-      setScrollLeft(viewport, PANEL_WIDTH)
+      setProperty(viewport, 'clientWidth', PANEL_WIDTH)
+      setProperty(viewport, 'scrollLeft', PANEL_WIDTH)
       fireEvent.scroll(viewport)
       await vi.advanceTimersByTimeAsync(150)
       expect(props.onPrevMonth).not.toHaveBeenCalled()
