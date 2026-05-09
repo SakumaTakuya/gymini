@@ -237,12 +237,6 @@ requirementDiagram
     FunctionCalling - contains -> ToolAddExercise
     FunctionCalling - contains -> ToolAddExerciseToSession
     FunctionCalling - contains -> ToolAddExerciseAndLog
-    AIWriteConfirmation - derives -> ToolSaveWorkout
-    AIWriteConfirmation - derives -> ToolAddExercise
-    AIWriteConfirmation - derives -> ToolAddExerciseToSession
-    AIWriteConfirmation - derives -> ToolAddExerciseAndLog
-    InlineSetEditing - derives -> AIWriteConfirmation
-    SessionGate - derives -> AIWriteConfirmation
 ```
 
 ---
