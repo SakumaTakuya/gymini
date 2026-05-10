@@ -10,7 +10,7 @@ test.describe('ナビゲーション基本動作', () => {
     await expect(page.getByRole('heading', { name: '準備はいいですか？' })).toBeVisible()
   })
 
-  test('② BottomNav でタブ遷移: トレ → 履歴 → AI', async ({ page }) => {
+  test('② BottomNav でタブ遷移: トレ → 履歴 → トレ', async ({ page }) => {
     // Initially on training
     await expect(page.getByRole('heading', { name: '準備はいいですか？' })).toBeVisible()
 
@@ -19,14 +19,13 @@ test.describe('ナビゲーション基本動作', () => {
     await expect(page).toHaveURL(/#\/history/)
     await expect(page.getByLabel('前月')).toBeVisible()
 
-    // Navigate to AI
-    await page.getByRole('link', { name: 'AI' }).click()
-    await expect(page).toHaveURL(/#\/ai/)
-    await expect(page.getByText('AI コーチとチャットを始めましょう')).toBeVisible()
-
     // Navigate back to training
     await page.getByRole('link', { name: 'トレ' }).click()
     await expect(page).toHaveURL(/#\/training/)
+  })
+
+  test('AI 専用タブは存在しない (P9 撤去)', async ({ page }) => {
+    await expect(page.getByRole('link', { name: 'AI' })).toHaveCount(0)
   })
 
   test('③ 歯車アイコン → 設定画面 → X ボタンで戻る', async ({ page }) => {
@@ -66,20 +65,15 @@ test.describe('ナビゲーション基本動作', () => {
 })
 
 test.describe('BottomNav レイアウト', () => {
-  test('FRAME1-4 では BottomNav + GearIcon が表示', async ({ page }) => {
+  test('トレ / 履歴 では BottomNav + GearIcon が表示', async ({ page }) => {
     await page.goto('./')
 
     // Training page
     await expect(page.getByRole('link', { name: 'トレ' })).toBeVisible()
     await expect(page.getByRole('link', { name: '履歴' })).toBeVisible()
-    await expect(page.getByRole('link', { name: 'AI' })).toBeVisible()
 
     // History page
     await page.getByRole('link', { name: '履歴' }).click()
-    await expect(page.getByRole('link', { name: 'トレ' })).toBeVisible()
-
-    // AI page
-    await page.getByRole('link', { name: 'AI' }).click()
     await expect(page.getByRole('link', { name: 'トレ' })).toBeVisible()
   })
 

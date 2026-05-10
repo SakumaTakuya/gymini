@@ -32,13 +32,7 @@ function renderBottomNav(initialPath = '/training') {
     component: () => <div>History Page</div>,
   })
 
-  const aiRoute = createRoute({
-    getParentRoute: () => rootRoute,
-    path: '/ai',
-    component: () => <div>AI Page</div>,
-  })
-
-  const routeTree = rootRoute.addChildren([trainingRoute, historyRoute, aiRoute])
+  const routeTree = rootRoute.addChildren([trainingRoute, historyRoute])
   const hashHistory = createHashHistory()
 
   const router = createRouter({
@@ -52,18 +46,18 @@ function renderBottomNav(initialPath = '/training') {
 }
 
 describe('BottomNav', () => {
-  it('3つのナビゲーション項目（タブ2つ＋AIボタン）を描画する', async () => {
+  it('2 つのナビゲーションタブ（トレ / 履歴）を描画する', async () => {
     renderBottomNav()
     expect(await screen.findByText('トレ')).toBeInTheDocument()
     expect(screen.getByText('履歴')).toBeInTheDocument()
-    expect(screen.getByText('AI')).toBeInTheDocument()
+    expect(screen.queryByText('AI')).not.toBeInTheDocument()
   })
 
-  it('ナビゲーションリンクを持つ', async () => {
+  it('2 つのナビゲーションリンクを持つ', async () => {
     renderBottomNav()
     await screen.findByText('トレ')
     const links = screen.getAllByRole('link')
-    expect(links.length).toBe(3)
+    expect(links.length).toBe(2)
   })
 
   it('アクセシブルなタップターゲット（最小44px）を持つ', async () => {
