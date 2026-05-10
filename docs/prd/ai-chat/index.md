@@ -16,7 +16,7 @@ risk: "high"
 
 **親要求:** [index.md](../index.md) - REQ_005
 
-**関連:** [timeline-migration.md](timeline-migration.md)（旧 UX → タイムライン UX への段階的移行ロードマップ。移行完了後に削除可）
+**注:** 旧 UX（独立 AI チャット画面 + ConfirmationBubble + `addExerciseAndLog` 等）からタイムライン UX への段階的移行は完了済み（旧ロードマップ `timeline-migration.md` は削除）。
 
 ## 概要
 
@@ -485,7 +485,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 タイムライン UX のレイアウトは [workout/index.md](../workout/index.md) FRAME2 を参照。AI チャットは独立した FRAME を持たず、FRAME2 内のタイムラインに統合される。
 
-旧 FRAME4（独立 AI チャット画面）は段階的に撤去される（[navigation.md](../navigation.md) FR_020 の改訂、[timeline-migration.md](timeline-migration.md) Phase 8 を参照）。
+旧 FRAME4（独立 AI チャット画面）は撤去済み。AI 対話はすべて FRAME2 のタイムライン上で完結する（詳細は [navigation.md](../navigation.md) FR_020 を参照）。
 
 ---
 

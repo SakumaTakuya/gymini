@@ -14,7 +14,6 @@ import { Route as AppRouteImport } from './routes/_app'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as AppTrainingRouteImport } from './routes/_app/training'
 import { Route as AppHistoryRouteImport } from './routes/_app/history'
-import { Route as AppAiRouteImport } from './routes/_app/ai'
 
 const SettingsRoute = SettingsRouteImport.update({
   id: '/settings',
@@ -40,23 +39,16 @@ const AppHistoryRoute = AppHistoryRouteImport.update({
   path: '/history',
   getParentRoute: () => AppRoute,
 } as any)
-const AppAiRoute = AppAiRouteImport.update({
-  id: '/ai',
-  path: '/ai',
-  getParentRoute: () => AppRoute,
-} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
-  '/ai': typeof AppAiRoute
   '/history': typeof AppHistoryRoute
   '/training': typeof AppTrainingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/settings': typeof SettingsRoute
-  '/ai': typeof AppAiRoute
   '/history': typeof AppHistoryRoute
   '/training': typeof AppTrainingRoute
 }
@@ -65,21 +57,19 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/_app': typeof AppRouteWithChildren
   '/settings': typeof SettingsRoute
-  '/_app/ai': typeof AppAiRoute
   '/_app/history': typeof AppHistoryRoute
   '/_app/training': typeof AppTrainingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/settings' | '/ai' | '/history' | '/training'
+  fullPaths: '/' | '/settings' | '/history' | '/training'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/settings' | '/ai' | '/history' | '/training'
+  to: '/' | '/settings' | '/history' | '/training'
   id:
     | '__root__'
     | '/'
     | '/_app'
     | '/settings'
-    | '/_app/ai'
     | '/_app/history'
     | '/_app/training'
   fileRoutesById: FileRoutesById
@@ -127,24 +117,15 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppHistoryRouteImport
       parentRoute: typeof AppRoute
     }
-    '/_app/ai': {
-      id: '/_app/ai'
-      path: '/ai'
-      fullPath: '/ai'
-      preLoaderRoute: typeof AppAiRouteImport
-      parentRoute: typeof AppRoute
-    }
   }
 }
 
 interface AppRouteChildren {
-  AppAiRoute: typeof AppAiRoute
   AppHistoryRoute: typeof AppHistoryRoute
   AppTrainingRoute: typeof AppTrainingRoute
 }
 
 const AppRouteChildren: AppRouteChildren = {
-  AppAiRoute: AppAiRoute,
   AppHistoryRoute: AppHistoryRoute,
   AppTrainingRoute: AppTrainingRoute,
 }

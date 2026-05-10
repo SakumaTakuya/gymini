@@ -1,9 +1,39 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import type { AnchorHTMLAttributes, PropsWithChildren, ReactNode } from 'react'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+
+vi.mock('@tanstack/react-router', async () => {
+  const actual =
+    await vi.importActual<typeof import('@tanstack/react-router')>(
+      '@tanstack/react-router',
+    )
+  return {
+    ...actual,
+    Link: ({
+      children,
+      to,
+      ...rest
+    }: PropsWithChildren<{ to: string; children?: ReactNode } & Record<string, unknown>>) => {
+      const { activeProps: _a, inactiveProps: _i, ...domProps } = rest as {
+        activeProps?: unknown
+        inactiveProps?: unknown
+      } & Record<string, unknown>
+      void _a
+      void _i
+      return (
+        <a href={to} {...(domProps as AnchorHTMLAttributes<HTMLAnchorElement>)}>
+          {children}
+        </a>
+      )
+    },
+  }
+})
+
 import { ActiveSessionView } from './ActiveSessionView'
 import { useWorkoutSessionStore } from '../../stores/workoutSessionStore'
 import { useChatStore } from '../../stores/chatStore'
+import { useSettingsStore } from '../../stores/settingsStore'
 import type { DateString, ISODateTimeString } from '../../schemas/date'
 import { makeDraftExercise } from '../../test/fixtures/draftExercise'
 import { makeChatMessage } from '../../test/fixtures/chatMessage'
@@ -16,6 +46,7 @@ function resetStore() {
     draftExercises: [],
   })
   useChatStore.setState({ messages: [], isLoading: false, error: null })
+  useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
 }
 
 describe('ActiveSessionView', () => {
@@ -239,6 +270,41 @@ describe('ActiveSessionView', () => {
 
       render(<ActiveSessionView />)
       expect(screen.getByRole('button', { name: 'ベンチプレス' })).toBeInTheDocument()
+    })
+  })
+
+  describe('error / APIキーガイダンス (P9)', () => {
+    beforeEach(() => {
+      useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
+    })
+
+    it('useChatService.error がセットされたとき ChatInput の直上にバナーを表示する', () => {
+      useChatStore.setState({
+        messages: [],
+        isLoading: false,
+        error: 'API 呼び出しに失敗しました',
+      })
+      render(<ActiveSessionView />)
+      expect(screen.getByText('API 呼び出しに失敗しました')).toBeInTheDocument()
+    })
+
+    it('error が null のときバナーは表示されない', () => {
+      useChatStore.setState({ messages: [], isLoading: false, error: null })
+      render(<ActiveSessionView />)
+      expect(screen.queryByText(/呼び出しに失敗/)).not.toBeInTheDocument()
+    })
+
+    it('hasApiKey === false のとき APIキーガイドカードを表示する', () => {
+      useSettingsStore.setState({ apiKey: '', hasApiKey: false })
+      render(<ActiveSessionView />)
+      expect(screen.getByText('APIキーが必要です')).toBeInTheDocument()
+      expect(screen.getByRole('link', { name: /設定画面へ/ })).toBeInTheDocument()
+    })
+
+    it('hasApiKey === true のとき APIキーガイドカードは表示されない', () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      render(<ActiveSessionView />)
+      expect(screen.queryByText('APIキーが必要です')).not.toBeInTheDocument()
     })
   })
 })

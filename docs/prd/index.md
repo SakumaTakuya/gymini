@@ -34,7 +34,7 @@ gyminiは、筋トレ記録とAIコーチングを組み合わせたWebアプリ
 | FRAME1 | 🏋️ Training Idle | 待機画面・セッション開始 | 1 | [workout](workout/index.md), [navigation.md](navigation.md) |
 | FRAME2 | 🏋️ Active Workout | 種目カード・セット記録・タイマー・**AI 対話タイムライン**（Phase 4 統合） | 1 / 4 | [workout](workout/index.md), [exercise-master](exercise-master/index.md), [ai-chat](ai-chat/index.md) |
 | FRAME3 | 📅 History | カレンダー + 日付別記録サマリー | 1 | [history](history/index.md) |
-| ~~FRAME4~~ | ~~💬 AI Chat~~ | ~~独立 AI チャット画面~~（Phase 4 で撤去・FRAME2 に統合）| 3 → 撤去 | [ai-chat](ai-chat/index.md), [timeline-migration.md](ai-chat/timeline-migration.md) |
+| ~~FRAME4~~ | ~~💬 AI Chat~~ | ~~独立 AI チャット画面~~（撤去済み・FRAME2 に統合） | 3 → 撤去 | [ai-chat](ai-chat/index.md) |
 | FRAME5 | ⚙️ Settings | APIキー・種目マスター管理 | 2 | [settings](settings/index.md), [api-key](api-key/index.md), [exercise-master](exercise-master/index.md) |
 
 ---

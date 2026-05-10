@@ -1,5 +1,5 @@
 import { Link } from '@tanstack/react-router'
-import { Barbell, ClockCounterClockwise, Robot } from '@phosphor-icons/react'
+import { Barbell, ClockCounterClockwise } from '@phosphor-icons/react'
 
 const NAV_TABS = [
   {
@@ -41,24 +41,6 @@ export function BottomNav() {
           )}
         </Link>
       ))}
-      <Link
-        to="/ai"
-        className="flex items-center justify-center min-h-[44px] min-w-[44px] ml-1"
-        activeProps={{ className: 'flex items-center justify-center min-h-[44px] min-w-[44px] ml-1' }}
-      >
-        {({ isActive }) => (
-          <span
-            className={`flex items-center gap-1.5 px-4 h-11 rounded-full transition-colors ${
-              isActive
-                ? 'bg-gym-accent text-gym-white shadow-float'
-                : 'bg-gym-black text-gym-white border border-gym-zinc-800'
-            }`}
-          >
-            <Robot size={20} weight="bold" />
-            <span className="text-xs font-bold">AI</span>
-          </span>
-        )}
-      </Link>
     </nav>
   )
 }

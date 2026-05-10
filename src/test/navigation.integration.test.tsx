@@ -58,17 +58,6 @@ function createTestRouter(initialPath = '/training') {
     ),
   })
 
-  const aiRoute = createRoute({
-    getParentRoute: () => appLayoutRoute,
-    path: '/ai',
-    component: () => (
-      <div data-testid="ai-page">
-        <GearIcon className="absolute top-12 right-4 z-30" />
-        AI チャット
-      </div>
-    ),
-  })
-
   const settingsRoute = createRoute({
     getParentRoute: () => rootRoute,
     path: '/settings',
@@ -81,7 +70,7 @@ function createTestRouter(initialPath = '/training') {
   })
 
   const routeTree = rootRoute.addChildren([
-    appLayoutRoute.addChildren([trainingRoute, historyRoute, aiRoute]),
+    appLayoutRoute.addChildren([trainingRoute, historyRoute]),
     settingsRoute,
   ])
 
@@ -105,25 +94,21 @@ describe('ナビゲーション統合テスト', () => {
     expect(await screen.findByTestId('history-page')).toBeInTheDocument()
   })
 
-  it('BottomNav でトレーニングから AI へ遷移する', async () => {
-    const user = userEvent.setup()
+  it('AI 専用タブは存在しない (P9 撤去)', async () => {
     const router = createTestRouter('/training')
     render(<RouterProvider router={router} />)
 
     await screen.findByTestId('training-page')
-
-    await user.click(screen.getByText('AI'))
-    expect(await screen.findByTestId('ai-page')).toBeInTheDocument()
+    expect(screen.queryByText('AI')).not.toBeInTheDocument()
   })
 
-  it('FRAME1-4 のページで BottomNav を表示する', async () => {
+  it('トレ / 履歴 のページで BottomNav を表示する', async () => {
     const router = createTestRouter('/training')
     render(<RouterProvider router={router} />)
 
     await screen.findByTestId('training-page')
     expect(screen.getByText('トレ')).toBeInTheDocument()
     expect(screen.getByText('履歴')).toBeInTheDocument()
-    expect(screen.getByText('AI')).toBeInTheDocument()
   })
 
   it('設定ページでは BottomNav を非表示にする', async () => {
@@ -164,11 +149,6 @@ describe('ナビゲーション統合テスト', () => {
     // Go to history
     await user.click(screen.getByText('履歴'))
     await screen.findByTestId('history-page')
-    expect(screen.getByText('トレ')).toBeInTheDocument() // BottomNav still visible
-
-    // Go to AI
-    await user.click(screen.getByText('AI'))
-    await screen.findByTestId('ai-page')
     expect(screen.getByText('トレ')).toBeInTheDocument() // BottomNav still visible
 
     // Back to training
