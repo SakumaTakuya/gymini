@@ -1,5 +1,5 @@
 import { describe, it, expect, beforeEach } from 'vitest'
-import { render, screen, fireEvent, within } from '@testing-library/react'
+import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { ActiveSessionView } from './ActiveSessionView'
 import { useWorkoutSessionStore } from '../../stores/workoutSessionStore'
@@ -24,15 +24,15 @@ describe('ActiveSessionView', () => {
     resetStore()
   })
 
-  it('種目検索フィールドを描画する', () => {
+  it('ChatInput（メッセージ入力欄）を末尾に描画する', () => {
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
     render(<ActiveSessionView />)
-    expect(screen.getByPlaceholderText('種目を追加...')).toBeInTheDocument()
+    expect(screen.getByPlaceholderText(/メッセージ.*種目名/)).toBeInTheDocument()
   })
 
-  it('種目を追加するとExerciseCardを表示する', () => {
+  it('ChatInput 経由で種目を選ぶと ExerciseCard が表示される', async () => {
+    const user = userEvent.setup()
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
-    // Seed exercise data
     localStorage.setItem(
       'gymini:exercises',
       JSON.stringify([{ id: 'bench', name: 'ベンチプレス' }]),
@@ -40,13 +40,17 @@ describe('ActiveSessionView', () => {
 
     render(<ActiveSessionView />)
 
-    // Search and select
-    const input = screen.getByPlaceholderText('種目を追加...')
-    fireEvent.change(input, { target: { value: 'ベンチ' } })
-    fireEvent.click(screen.getByText('ベンチプレス'))
+    const input = screen.getByPlaceholderText(/メッセージ.*種目名/)
+    await user.type(input, 'ベンチ')
+    // popover の候補チップ（複数の「ベンチプレス」テキストの最初の button）をクリック
+    const chip = screen.getAllByRole('button', { name: 'ベンチプレス' })[0]
+    await user.click(chip)
 
-    // ExerciseCard should appear
-    expect(screen.getByText('ベンチプレス')).toBeInTheDocument()
+    // ExerciseCard が描画される
+    expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(1)
+    expect(useWorkoutSessionStore.getState().draftExercises[0].exerciseName).toBe(
+      'ベンチプレス',
+    )
   })
 
   it('セッションのUI要素を描画しない（TrainingPage/SessionHeaderに委譲）', () => {

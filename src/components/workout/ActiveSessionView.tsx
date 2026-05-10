@@ -1,11 +1,12 @@
 import { useMemo } from 'react'
 import { useWorkoutSession } from '@/hooks/useWorkoutSession'
+import { useChatService } from '@/hooks/useChatService'
 import { useChatStore } from '@/stores/chatStore'
 import { ChatBubble } from '../chat/ChatBubble'
+import { ChatInput } from '../chat/ChatInput'
 import type { DraftExercise } from '../../schemas/workout'
 import type { ChatMessage } from '../../types/chat'
 import { ExerciseCard } from './ExerciseCard'
-import { ExerciseSearchField } from './ExerciseSearchField'
 
 type TimelineItem =
   | { kind: 'message'; data: ChatMessage; timestamp: string }
@@ -33,6 +34,18 @@ export function ActiveSessionView() {
     createExercise,
   } = useWorkoutSession()
   const messages = useChatStore((s) => s.messages)
+  const { isLoading, sendMessage, stopResponse } = useChatService()
+
+  // ChatInput 内の useMemo([exerciseSearch, trimmed]) を毎レンダ無効化しないよう
+  // 同一参照を維持する。中身の関数群は zustand store / useExercises 由来で安定。
+  const exerciseSearch = useMemo(
+    () => ({
+      search: searchExercises,
+      onSelect: addExercise,
+      create: createExercise,
+    }),
+    [searchExercises, addExercise, createExercise],
+  )
 
   const timelineItems = useMemo<TimelineItem[]>(() => {
     const items: TimelineItem[] = [
@@ -95,10 +108,12 @@ export function ActiveSessionView() {
         )
       })}
 
-      <ExerciseSearchField
-        onSelectExercise={addExercise}
-        searchExercises={searchExercises}
-        createExercise={createExercise}
+      <ChatInput
+        isLoading={isLoading}
+        onSend={(text) => void sendMessage(text)}
+        onStop={stopResponse}
+        exerciseSearch={exerciseSearch}
+        placeholder="メッセージ or 種目名"
       />
     </div>
   )

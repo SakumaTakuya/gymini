@@ -62,11 +62,10 @@ describe('AIChatPage', () => {
     expect(settingsLink).toBeDefined()
   })
 
-  test('APIキーが設定済みのときinputを有効にする', () => {
+  test('APIキーが設定済みのときガイダンスを表示しない', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     renderAIChatPage()
     expect(screen.queryByText('APIキーが必要です')).not.toBeInTheDocument()
-    expect(screen.getByPlaceholderText('メッセージを入力')).not.toBeDisabled()
   })
 
   test('メッセージがない場合は空状態メッセージを表示する', () => {

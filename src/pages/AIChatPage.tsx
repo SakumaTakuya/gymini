@@ -2,7 +2,6 @@ import { useEffect, useRef } from 'react'
 import { Link } from '@tanstack/react-router'
 import { SignIn } from '@phosphor-icons/react'
 import { ChatBubble } from '../components/chat/ChatBubble'
-import { ChatInput } from '../components/chat/ChatInput'
 import { GearIcon } from '../components/GearIcon'
 import { AppHeaderContent } from '../components/AppHeaderContext'
 import { useChatService } from '../hooks/useChatService'
@@ -10,8 +9,7 @@ import { useSettingsStore } from '../stores/settingsStore'
 
 export function AIChatPage() {
   const hasApiKey = useSettingsStore((s) => s.hasApiKey)
-  const { messages, isLoading, error, sendMessage, stopResponse } =
-    useChatService()
+  const { messages, isLoading, error } = useChatService()
   const bottomRef = useRef<HTMLDivElement | null>(null)
 
   useEffect(() => {
@@ -75,16 +73,6 @@ export function AIChatPage() {
 
         <div ref={bottomRef} />
       </main>
-
-      <ChatInput
-        isLoading={isLoading}
-        onSend={(text) => void sendMessage(text)}
-        onStop={stopResponse}
-        disabled={!hasApiKey}
-        placeholder={
-          hasApiKey ? 'メッセージを入力' : 'APIキーを設定してください'
-        }
-      />
     </div>
   )
 }

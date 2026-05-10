@@ -82,24 +82,16 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
       },
     )
 
-    // BottomNav の AI リンクから AI チャットへ
-    await page.getByRole('link', { name: 'AI' }).click()
-    await expect(page).toHaveURL(/#\/ai/)
-
-    // メッセージを送信
-    const input = page.getByPlaceholder('メッセージを入力')
+    // ActiveSessionView の ChatInput からメッセージを送信
+    const input = page.getByPlaceholder('メッセージ or 種目名')
     await expect(input).toBeVisible()
     await input.fill('ベンチ60kg10回3セットで追加')
     await page.keyboard.press('Enter')
 
-    // AI 応答テキストがチャットに表示される
+    // タイムラインに AI 応答テキストと AI 提案カードが表示される
     await expect(
       page.getByText('ベンチプレスを以下の内容で追加しました'),
     ).toBeVisible({ timeout: 10000 })
-
-    // トレーニングタブに移動して AI 提案カードを確認
-    await page.getByRole('link', { name: 'トレ' }).click()
-    await expect(page).toHaveURL(/#\/training/)
     await expect(page.getByText(/AI 提案/)).toBeVisible()
 
     // ai-suggested カード内の SingleExerciseEditor 入力（3 セット × 2 = 6 個）
@@ -134,22 +126,8 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
   test('addExercise（種目マスター追加）はタイムラインに draft を作らずチャット応答のみを返す', async ({
     page,
   }) => {
-    // セッション非アクティブにしておく（addExercise 用）
-    await page.evaluate(() => {
-      localStorage.setItem(
-        'gymini:workout-session',
-        JSON.stringify({
-          state: {
-            isActive: false,
-            startedAt: null,
-            date: null,
-            draftExercises: [],
-          },
-          version: 0,
-        }),
-      )
-    })
-    await page.reload()
+    // セッションはアクティブのまま（ChatInput を出すため）。
+    // AI が addExercise を返した場合、draft は作られず chat メッセージのみ追加される。
 
     await page.route(
       '**/generativelanguage.googleapis.com/**',
@@ -180,10 +158,7 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
       },
     )
 
-    await page.getByRole('link', { name: 'AI' }).click()
-    await expect(page).toHaveURL(/#\/ai/)
-
-    const input = page.getByPlaceholder('メッセージを入力')
+    const input = page.getByPlaceholder('メッセージ or 種目名')
     await expect(input).toBeVisible()
     await input.fill('ラットプルダウンを種目に追加して')
     await page.keyboard.press('Enter')
@@ -259,17 +234,12 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
       },
     )
 
-    await page.getByRole('link', { name: 'AI' }).click()
-    const input = page.getByPlaceholder('メッセージを入力')
+    const input = page.getByPlaceholder('メッセージ or 種目名')
     await input.fill('スクワット100kg5回')
     await page.keyboard.press('Enter')
     await expect(page.getByText('スクワットを追加しました')).toBeVisible({
       timeout: 10000,
     })
-
-    // 3. /training に戻る → タイムライン上で順序確認
-    await page.getByRole('link', { name: 'トレ' }).click()
-    await expect(page).toHaveURL(/#\/training/)
 
     // 順序検証：ベンチプレス（手動, 19:00）が最上部にあり、
     // AI 応答メッセージと AI 提案カード（スクワット）はそのあとに並ぶ。

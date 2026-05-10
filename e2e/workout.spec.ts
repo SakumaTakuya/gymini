@@ -18,8 +18,8 @@ test.beforeEach(async ({ page }) => {
 
 async function startSession(page: Page) {
   await page.getByRole('button', { name: /トレーニングを始める/ }).click()
-  await page.getByPlaceholder('種目を追加...').fill('ベンチ')
-  await page.getByText('ベンチプレス', { exact: true }).click()
+  await page.getByPlaceholder('メッセージ or 種目名').fill('ベンチ')
+  await page.getByRole('button', { name: 'ベンチプレス', exact: true }).click()
 }
 
 async function recordSet(page: Page, weight: string, reps: string) {
@@ -50,11 +50,11 @@ test.describe('トレーニング記録フロー', () => {
     await page.getByRole('button', { name: /トレーニングを始める/ }).click()
 
     // FRAME2: ワークアウト画面が表示される
-    await expect(page.getByPlaceholder('種目を追加...')).toBeVisible()
+    await expect(page.getByPlaceholder('メッセージ or 種目名')).toBeVisible()
 
     // 種目を検索して選択
-    await page.getByPlaceholder('種目を追加...').fill('ベンチ')
-    await page.getByText('ベンチプレス', { exact: true }).click()
+    await page.getByPlaceholder('メッセージ or 種目名').fill('ベンチ')
+    await page.getByRole('button', { name: 'ベンチプレス', exact: true }).click()
 
     // ExerciseCard が表示される（recording状態）
     await expect(page.getByText('ベンチプレス')).toBeVisible()
@@ -93,8 +93,8 @@ test.describe('トレーニング記録フロー', () => {
     await page.getByRole('button', { name: /トレーニングを始める/ }).click()
 
     // 1種目目: ベンチプレス
-    await page.getByPlaceholder('種目を追加...').fill('ベンチ')
-    await page.getByText('ベンチプレス', { exact: true }).click()
+    await page.getByPlaceholder('メッセージ or 種目名').fill('ベンチ')
+    await page.getByRole('button', { name: 'ベンチプレス', exact: true }).click()
     await expect(page.getByText('ベンチプレス')).toBeVisible()
 
     // セット記録
@@ -105,8 +105,8 @@ test.describe('トレーニング記録フロー', () => {
     await page.getByRole('button', { name: '完了' }).click()
 
     // 2種目目: スクワット追加（ベンチプレスはidleに降格）
-    await page.getByPlaceholder('種目を追加...').fill('スクワット')
-    await page.getByText('スクワット', { exact: true }).click()
+    await page.getByPlaceholder('メッセージ or 種目名').fill('スクワット')
+    await page.getByRole('button', { name: 'スクワット', exact: true }).click()
 
     // 両方の種目が表示される
     await expect(page.getByText('ベンチプレス')).toBeVisible()
@@ -125,8 +125,8 @@ test.describe('トレーニング記録フロー', () => {
     await page.getByRole('button', { name: /トレーニングを始める/ }).click()
 
     // 種目追加
-    await page.getByPlaceholder('種目を追加...').fill('ベンチ')
-    await page.getByText('ベンチプレス', { exact: true }).click()
+    await page.getByPlaceholder('メッセージ or 種目名').fill('ベンチ')
+    await page.getByRole('button', { name: 'ベンチプレス', exact: true }).click()
 
     // セット記録
     const weightInput = page.locator('input[type="number"]').first()
@@ -146,8 +146,8 @@ test.describe('トレーニング記録フロー', () => {
   test('完了済みセットの削除', async ({ page }) => {
     await page.getByRole('button', { name: /トレーニングを始める/ }).click()
 
-    await page.getByPlaceholder('種目を追加...').fill('ベンチ')
-    await page.getByText('ベンチプレス', { exact: true }).click()
+    await page.getByPlaceholder('メッセージ or 種目名').fill('ベンチ')
+    await page.getByRole('button', { name: 'ベンチプレス', exact: true }).click()
 
     // 2セット記録
     const weightInput = page.locator('input[type="number"]').first()
@@ -172,8 +172,8 @@ test.describe('トレーニング記録フロー', () => {
     await page.getByRole('button', { name: /トレーニングを始める/ }).click()
 
     // 種目追加
-    await page.getByPlaceholder('種目を追加...').fill('ベンチ')
-    await page.getByText('ベンチプレス', { exact: true }).click()
+    await page.getByPlaceholder('メッセージ or 種目名').fill('ベンチ')
+    await page.getByRole('button', { name: 'ベンチプレス', exact: true }).click()
 
     // セット記録
     const weightInput = page.locator('input[type="number"]').first()
@@ -183,8 +183,8 @@ test.describe('トレーニング記録フロー', () => {
     await page.getByRole('button', { name: '完了' }).click()
 
     // 2種目目を追加（1種目目はidleに）
-    await page.getByPlaceholder('種目を追加...').fill('スクワット')
-    await page.getByText('スクワット', { exact: true }).click()
+    await page.getByPlaceholder('メッセージ or 種目名').fill('スクワット')
+    await page.getByRole('button', { name: 'スクワット', exact: true }).click()
 
     // カードヘッダーをクリックして折りたたみ
     await page.getByText('ベンチプレス').click()
@@ -203,7 +203,7 @@ test.describe('トレーニング記録フロー', () => {
     await page.getByRole('button', { name: /トレーニングを始める/ }).click()
 
     // 存在しない種目を検索
-    await page.getByPlaceholder('種目を追加...').fill('ラットプルダウン')
+    await page.getByPlaceholder('メッセージ or 種目名').fill('ラットプルダウン')
 
     // 新規追加オプションが表示される
     await expect(page.getByText(/「ラットプルダウン」を新規追加/)).toBeVisible()
@@ -274,8 +274,8 @@ test.describe('セット編集バグ修正', () => {
     await expect(completedRows(page)).toHaveCount(1)
 
     // 新種目を追加 → deactivateRecording が走り編集中セットが復元されるはず
-    await page.getByPlaceholder('種目を追加...').fill('スクワット')
-    await page.getByText('スクワット', { exact: true }).click()
+    await page.getByPlaceholder('メッセージ or 種目名').fill('スクワット')
+    await page.getByRole('button', { name: 'スクワット', exact: true }).click()
 
     // ベンチプレスの完了済みセットが2件に戻っている
     await expect(completedRows(page)).toHaveCount(2)

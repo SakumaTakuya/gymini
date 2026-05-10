@@ -3,7 +3,7 @@
 ## Hook + Store + Repository の 3 層構成
 
 - **決定**: UI → `useExercises` hook → `exerciseMasterStore` → `ExerciseMasterRepository` の依存チェーンを強制する
-- **理由**: 初期設計の「Repository のみ」では各 UI コンポーネントが独立した `useState + refresh()` を持ち、`ExerciseMasterSection` と `ExerciseSearchField` 間で状態が同期しない問題が発生した。Zustand キャッシュを単一にすることで同一タブ内のミューテーション伝播と、`storage` イベントを通じたクロスタブ同期を実現する。
+- **理由**: 初期設計の「Repository のみ」では各 UI コンポーネントが独立した `useState + refresh()` を持ち、`ExerciseMasterSection` と種目検索 UI（旧 `ExerciseSearchField`、現在は `ChatInput` の popover に統合）間で状態が同期しない問題が発生した。Zustand キャッシュを単一にすることで同一タブ内のミューテーション伝播と、`storage` イベントを通じたクロスタブ同期を実現する。
 
 ## UI が Repository を直接インポートすることを禁止
 
