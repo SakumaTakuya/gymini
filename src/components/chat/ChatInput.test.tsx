@@ -70,4 +70,150 @@ describe('ChatInput', () => {
     await userEvent.type(input, '   {Enter}')
     expect(onSend).not.toHaveBeenCalled()
   })
+
+  describe('種目検索 popover (P8)', () => {
+    const exercises = [
+      { id: 'ex-1', name: 'ベンチプレス' },
+      { id: 'ex-2', name: 'ベントオーバーロウ' },
+      { id: 'ex-3', name: 'スクワット' },
+    ]
+    const searchExercises = (q: string) =>
+      exercises.filter((e) =>
+        e.name.toLowerCase().includes(q.toLowerCase()),
+      )
+
+    test('入力中に候補が見つかれば popover を表示する', async () => {
+      render(
+        <ChatInput
+          isLoading={false}
+          onSend={vi.fn()}
+          onStop={vi.fn()}
+          searchExercises={searchExercises}
+          onSelectExercise={vi.fn()}
+          createExercise={vi.fn()}
+        />,
+      )
+      const input = screen.getByPlaceholderText('メッセージを入力')
+      await userEvent.type(input, 'ベ')
+      expect(
+        screen.getByRole('button', { name: 'ベンチプレス' }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: 'ベントオーバーロウ' }),
+      ).toBeInTheDocument()
+    })
+
+    test('候補チップタップで onSelectExercise を呼びテキストをクリアする', async () => {
+      const onSelectExercise = vi.fn()
+      render(
+        <ChatInput
+          isLoading={false}
+          onSend={vi.fn()}
+          onStop={vi.fn()}
+          searchExercises={searchExercises}
+          onSelectExercise={onSelectExercise}
+          createExercise={vi.fn()}
+        />,
+      )
+      const input = screen.getByPlaceholderText('メッセージを入力')
+      await userEvent.type(input, 'ベンチ')
+      await userEvent.click(
+        screen.getByRole('button', { name: 'ベンチプレス' }),
+      )
+      expect(onSelectExercise).toHaveBeenCalledWith({
+        exerciseId: 'ex-1',
+        exerciseName: 'ベンチプレス',
+      })
+      expect(input).toHaveValue('')
+    })
+
+    test('候補が完全一致しない場合「『○○』を新規追加」チップを表示する', async () => {
+      render(
+        <ChatInput
+          isLoading={false}
+          onSend={vi.fn()}
+          onStop={vi.fn()}
+          searchExercises={searchExercises}
+          onSelectExercise={vi.fn()}
+          createExercise={vi.fn()}
+        />,
+      )
+      const input = screen.getByPlaceholderText('メッセージを入力')
+      await userEvent.type(input, 'ラットプルダウン')
+      expect(
+        screen.getByRole('button', { name: /「ラットプルダウン」を新規追加/ }),
+      ).toBeInTheDocument()
+    })
+
+    test('「新規追加」チップタップで createExercise + onSelectExercise + クリアを実行する', async () => {
+      const onSelectExercise = vi.fn()
+      const createExercise = vi.fn(() => ({ id: 'ex-new', name: 'ラットプルダウン' }))
+      render(
+        <ChatInput
+          isLoading={false}
+          onSend={vi.fn()}
+          onStop={vi.fn()}
+          searchExercises={searchExercises}
+          onSelectExercise={onSelectExercise}
+          createExercise={createExercise}
+        />,
+      )
+      const input = screen.getByPlaceholderText('メッセージを入力')
+      await userEvent.type(input, 'ラットプルダウン')
+      await userEvent.click(
+        screen.getByRole('button', { name: /「ラットプルダウン」を新規追加/ }),
+      )
+      expect(createExercise).toHaveBeenCalledWith('ラットプルダウン')
+      expect(onSelectExercise).toHaveBeenCalledWith({
+        exerciseId: 'ex-new',
+        exerciseName: 'ラットプルダウン',
+      })
+      expect(input).toHaveValue('')
+    })
+
+    test('Enter キーは候補があっても AI 送信を呼ぶ', async () => {
+      const onSend = vi.fn()
+      const onSelectExercise = vi.fn()
+      render(
+        <ChatInput
+          isLoading={false}
+          onSend={onSend}
+          onStop={vi.fn()}
+          searchExercises={searchExercises}
+          onSelectExercise={onSelectExercise}
+          createExercise={vi.fn()}
+        />,
+      )
+      const input = screen.getByPlaceholderText('メッセージを入力')
+      await userEvent.type(input, 'ベンチ{Enter}')
+      expect(onSend).toHaveBeenCalledWith('ベンチ')
+      expect(onSelectExercise).not.toHaveBeenCalled()
+    })
+
+    test('テキストが空のときは popover を表示しない', async () => {
+      render(
+        <ChatInput
+          isLoading={false}
+          onSend={vi.fn()}
+          onStop={vi.fn()}
+          searchExercises={searchExercises}
+          onSelectExercise={vi.fn()}
+          createExercise={vi.fn()}
+        />,
+      )
+      expect(
+        screen.queryByRole('button', { name: 'ベンチプレス' }),
+      ).not.toBeInTheDocument()
+    })
+
+    test('searchExercises prop が無くても従来挙動で AI 送信は機能する', async () => {
+      const onSend = vi.fn()
+      render(
+        <ChatInput isLoading={false} onSend={onSend} onStop={vi.fn()} />,
+      )
+      const input = screen.getByPlaceholderText('メッセージを入力')
+      await userEvent.type(input, 'ベンチ{Enter}')
+      expect(onSend).toHaveBeenCalledWith('ベンチ')
+    })
+  })
 })

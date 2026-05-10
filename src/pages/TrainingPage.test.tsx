@@ -66,7 +66,9 @@ describe('TrainingPage', () => {
   it('セッション中はSessionHeaderのUIとともにActiveSessionViewを表示する', async () => {
     useWorkoutSessionStore.getState().startSession()
     renderTrainingPage()
-    expect(await screen.findByPlaceholderText('種目を追加...')).toBeInTheDocument()
+    expect(
+      await screen.findByPlaceholderText(/メッセージ.*種目名/),
+    ).toBeInTheDocument()
     expect(screen.getByRole('button', { name: '終了' })).toBeInTheDocument()
     expect(screen.getByText('00:00:00')).toBeInTheDocument()
   })
