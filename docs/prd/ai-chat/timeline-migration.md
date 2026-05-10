@@ -178,10 +178,17 @@ risk: "high"
 
 ### P8: ChatInput が種目検索を吸収
 
-- 入力欄テキストに対し既存 `useExercises().search(text)` で候補チップを popover 表示
-- タップで種目を追加 → `addExercise`（origin: 'manual'）
-- `ExerciseSearchField.tsx` と `useChatService` 連携の重複を整理
-- `ExerciseSearchField` 撤去に伴い、[exercise-master.md](../../adr/exercise-master.md) と [settings.md](../../adr/settings.md) の `ExerciseSearchField` 言及を更新（任意・テストが正、ADR 更新は推奨）
+実施内容：
+
+- `ChatInput` に optional props（`searchExercises` / `onSelectExercise` / `createExercise`）を追加し、入力欄テキストに対し `useExercises().search(text)` で候補チップを popover 表示する機能を統合。AI 送信ボタン上にスティッキー、popover は textarea の **直上**（`absolute bottom-full left-0 right-0 mb-2`）
+- 候補チップタップで `addExercise({ exerciseId, exerciseName, origin: 'manual' })` を呼び ChatInput をクリア
+- 候補が完全一致しないとき「『○○』を新規追加」チップを表示、タップで `createExercise(name)` → `addExercise(...)` → クリアの一括処理
+- **Enter キーは常に AI 送信**（候補があってもチップタップで明示選択、コンテキスト依存の挙動を避け予測可能性を優先）
+- ChatInput を `AIChatPage` から削除し、`ActiveSessionView` の末尾に配置（`ExerciseSearchField` の代わり）。AIChatPage は messages 表示のみに縮退（P9 で AI タブ削除予定）
+- `ExerciseSearchField.tsx` + `.test.tsx` を完全削除
+- ChatInput の placeholder を「メッセージ or 種目名」に変更し、AI と種目追加の両用途を示唆
+- ADR `exercise-master.md` の `ExerciseSearchField` 言及を「`ChatInput` の popover に統合」に更新
+- e2e: `workout.spec.ts` の placeholder を一括置換、`ai-chat-inline-edit.spec.ts` の AI ページ遷移を削除（ActiveSessionView 上で完結）し、popover チップの選択を `getByRole('button', exact: true)` に明示化（textarea テキストとの strict-mode 衝突回避）
 
 ### P9: AI タブ撤去
 
