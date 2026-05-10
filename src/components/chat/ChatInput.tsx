@@ -38,7 +38,10 @@ export function ChatInput({
       popoverEnabled && trimmed !== '' ? searchExercises!(trimmed) : [],
     [popoverEnabled, searchExercises, trimmed],
   )
-  const exactMatch = candidates.some((e) => e.name === trimmed)
+  // useExercises.search が case-insensitive なので exact 判定もそれに揃える
+  const exactMatch = candidates.some(
+    (e) => e.name.toLowerCase() === trimmed.toLowerCase(),
+  )
   const showCreateChip =
     popoverEnabled && trimmed !== '' && !exactMatch && !!createExercise
   const showPopover =
@@ -95,6 +98,8 @@ export function ChatInput({
     >
       <div className="mx-auto max-w-xl relative">
         {showPopover && (
+          // チップの onMouseDown.preventDefault は textarea の blur で popover が
+          // 200ms 待つ前に閉じるのを防ぎ、click イベントを確実に拾うため。
           <div className="absolute bottom-full left-0 right-0 mb-2 bg-gym-white rounded-xl shadow-float border border-gym-zinc-200 z-50 max-h-48 overflow-y-auto">
             {candidates.map((exercise) => (
               <button
