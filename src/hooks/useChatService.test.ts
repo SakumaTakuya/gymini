@@ -558,9 +558,10 @@ describe('useChatService', () => {
     })
   })
 
-  describe('addExerciseAndLog（新種目を即記録開始）', () => {
-    test('Gemini が addExerciseAndLog を呼ぶと種目作成 + セッション開始 + ai-suggested draft 挿入を一括で行う', async () => {
+  describe('addExerciseToSession の exerciseId 省略（旧 addExerciseAndLog 統合）', () => {
+    test('Gemini が exerciseId 省略で呼ぶと種目作成 + ai-suggested draft 挿入を行う', async () => {
       useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      useWorkoutSessionStore.getState().startSession()
       vi.mocked(ExerciseRepository.create).mockReturnValue({
         id: 'ex-lat',
         name: 'ラットプルダウン',
@@ -570,8 +571,8 @@ describe('useChatService', () => {
           text: 'ナイス💪 重量と回数を入力してください',
           functionCalls: [
             {
-              name: 'addExerciseAndLog',
-              args: { name: 'ラットプルダウン' },
+              name: 'addExerciseToSession',
+              args: { exerciseName: 'ラットプルダウン' },
             },
           ],
         },
@@ -584,14 +585,14 @@ describe('useChatService', () => {
       })
       expect(ExerciseRepository.create).toHaveBeenCalledWith('ラットプルダウン')
       const session = useWorkoutSessionStore.getState()
-      expect(session.isActive).toBe(true)
       expect(session.draftExercises).toHaveLength(1)
       expect(session.draftExercises[0].origin).toBe('ai-suggested')
-      expect(session.draftExercises[0].sets).toEqual([{ weight: 0, reps: 0 }])
+      expect(session.draftExercises[0].exerciseId).toBe('ex-lat')
     })
 
     test('既に登録済みの場合 DUPLICATE_EXERCISE のヒント文言を返し、セッションは変化しない', async () => {
       useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      useWorkoutSessionStore.getState().startSession()
       vi.mocked(ExerciseRepository.create).mockImplementation(() => {
         throw new Error('Duplicate name: ベンチプレス')
       })
@@ -599,7 +600,7 @@ describe('useChatService', () => {
         {
           text: null,
           functionCalls: [
-            { name: 'addExerciseAndLog', args: { name: 'ベンチプレス' } },
+            { name: 'addExerciseToSession', args: { exerciseName: 'ベンチプレス' } },
           ],
         },
       ])
@@ -610,11 +611,8 @@ describe('useChatService', () => {
         await result.current.sendMessage('ベンチプレスやる')
       })
       const last = useChatStore.getState().messages.slice(-1)[0]
-      expect(last.content).toMatch(/既に種目マスターに登録/)
-      expect(last.content).toMatch(/ベンチプレス/)
-      const session = useWorkoutSessionStore.getState()
-      expect(session.isActive).toBe(false)
-      expect(session.draftExercises).toHaveLength(0)
+      expect(last.content).toMatch(/その種目は既に登録されています/)
+      expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(0)
     })
   })
 

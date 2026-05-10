@@ -161,18 +161,20 @@ risk: "high"
 - e2e: `e2e/ai-chat-inline-edit.spec.ts` に「種目追加 → AI 発話 → 時系列で並ぶ」「recording カードが sticky で残る」の 2 シナリオ追加
 - AIChatPage は現状維持（P9 で削除予定）。`chatStore.messages` が両ページで重複表示されるが中間状態として許容
 
-**サブタスク: `addExerciseAndLog` の撤去**
+#### P7-B 実施内容（`addExerciseAndLog` 撤去）
 
-タイムライン UX の確定に伴い `isActive` 必須が技術的にも UX 的にも保証されるため、`addExerciseAndLog` の主機能であった「セッション自動開始」が不要になる。残る「マスター追加 + セッション追加 + セット記録の 1 アクション統合」は `addExerciseToSession` のシグネチャ拡張で代替できる。
+- `executeAddExerciseToSession` の args を `{ exerciseName, sets, exerciseId? }` に拡張。`exerciseId` 省略時は `ExerciseRepository.create(exerciseName)` でマスター追加してからセッションへ追加（重複名は `DUPLICATE_EXERCISE` を返却）
+- `executeAddExerciseAndLog` 関数を削除し、`writeToolDispatcher` の `case 'addExerciseAndLog'` も除去
+- `toolDefinitions.ts`: `WRITE_TOOL_NAMES` から `'addExerciseAndLog'` を除去、`addExerciseAndLogDeclaration` を削除、`addExerciseToSessionDeclaration` の `description` と `required` を更新（`exerciseId` を optional 化）
+- `geminiClient.ts` システムインストラクション: 「未登録種目は `addExerciseAndLog`」を「未登録種目は `addExerciseToSession` を `exerciseId` 省略で呼ぶ」に置換、例 3 を更新
+- `pendingAction.ts`: `toPendingActionData` の `addExerciseAndLog` ケースを削除し、`addExerciseToSession` ケースを `exerciseId` optional に対応。`buildWriteResultMessage` の `addExerciseAndLog` 分岐も `addExerciseToSession`（`exerciseId` 有無で文言切り替え）に統合
+- `types/chat.ts`: `AddExerciseAndLogData` 型を削除し、`AddExerciseToSessionData.exerciseId` を `optional` に
+- 旧テスト `describe('addExerciseAndLog')` を `toolExecutor.test` / `useChatService.test` から削除し、`addExerciseToSession` の `exerciseId` 省略ケース（マスター追加 / DUPLICATE / sets 空）テストに統合
+- `toolDefinitions.test`: ツール数を 9 → 8、`isWriteTool('addExerciseAndLog')` を false 期待に
+- PRD `index.md` の FR_012_09 削除、UML / 機能要求表の `AddExerciseAndLog` ノード削除、システム指示・例の表現を `addExerciseToSession` に統一
+- ADR `ai-chat.md` の「`addExerciseAndLog` 統合」項を「`addExerciseToSession` への統合（`exerciseId` 省略）」に書き換え
 
-- `addExerciseToSession` の args を `{ exerciseName, sets, exerciseId? }` に拡張
-  - `exerciseId` あり: 従来通りセッションへ追加
-  - `exerciseId` 無し: `ExerciseRepository.create(exerciseName)` でマスター追加してからセッションへ追加
-- `executeAddExerciseAndLog` / FR_012_09 / `toolDefinitions` 該当エントリ / システムインストラクションの該当節を削除
-- 既存の AI への指示「未登録種目は `addExerciseAndLog` を使う」を「未登録種目は `addExerciseToSession` を `exerciseId` 省略で呼ぶ」に置換
-- ADR「`addExerciseAndLog` 統合」項を「`addExerciseToSession` への統合」に書き換え（または撤去履歴として残す）
-
-ロジックの整合性のため、`addExerciseAndLog` 撤去は P7 の中で同一 PR として進める（ConfirmationBubble 撤去・タイムライン化と整合した状態でリリースされるため）。
+これで Phase 7（タイムライン化 + ツール撤去）が完結。
 
 ### P8: ChatInput が種目検索を吸収
 

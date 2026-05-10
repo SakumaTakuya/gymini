@@ -22,7 +22,7 @@ risk: "high"
 
 Gemini API を用いた対話インターフェースを、独立したチャット画面ではなく **ワークアウトセッション内のタイムライン UX** として提供する。種目カード（ExerciseCard）と AI メッセージ（ChatMessage）が時系列で同一スクロール領域に並び、ユーザーは単一の入力欄から自然言語コマンド・種目検索・AI への質問をすべて行う。AI は Function Calling で文脈を参照する。書き込み操作は **タイムラインに draft カードを直接挿入** する形でユーザー確認を求める（REQ_008）。
 
-draft カード内の編集 UI には、最新 main で確立した PendingSetRow 再利用の編集フォーム（FR_013）と placeholder 提案フロー（FR_015）と Active Session Context Injection（FR_014）と addExerciseAndLog 1 アクション統合（FR_012_09）をそのまま継承する。**配置するコンテナがチャットバブル内インラインからタイムライン上 draft カードに移る**だけで、編集 UI 部品自体は温存される。
+draft カード内の編集 UI には、最新 main で確立した PendingSetRow 再利用の編集フォーム（FR_013）と placeholder 提案フロー（FR_015）と Active Session Context Injection（FR_014）をそのまま継承する。未登録種目の 1 アクション統合は `addExerciseToSession` の `exerciseId` 省略呼び出しで実現する。**配置するコンテナがチャットバブル内インラインからタイムライン上 draft カードに移る**だけで、編集 UI 部品自体は温存される。
 
 チャット履歴はワークアウトセッションのライフサイクルに同期し、セッションがアクティブな間のみリロード復元され、終了で破棄される（B-001 の不要データ残留防止と「セッション中のリロード耐性」を両立）。
 
@@ -48,8 +48,7 @@ graph TB
             SaveWorkout[会話から記録保存（draft 挿入）]
             GetExercises[種目一覧取得]
             AddExercise[種目マスター追加]
-            AddExerciseToSession[セッションへ種目追加（draft 挿入）]
-            AddExerciseAndLog[未登録種目を記録開始まで 1 アクション（draft 挿入）]
+            AddExerciseToSession[セッションへ種目追加（draft 挿入）。exerciseId 省略時はマスター新規登録 + セッション追加を 1 アクションで完結]
         end
     end
 
@@ -66,10 +65,8 @@ graph TB
     UnifiedInput -.->|"<<包含>>"| GetExercises
     UnifiedInput -.->|"<<包含>>"| AddExercise
     UnifiedInput -.->|"<<包含>>"| AddExerciseToSession
-    UnifiedInput -.->|"<<包含>>"| AddExerciseAndLog
     SaveWorkout -.->|"<<生成>>"| ReviewDraftCard
     AddExerciseToSession -.->|"<<生成>>"| ReviewDraftCard
-    AddExerciseAndLog -.->|"<<生成>>"| ReviewDraftCard
 ```
 
 ---
@@ -155,12 +152,6 @@ requirementDiagram
         verifymethod: test
     }
 
-    functionalRequirement ToolAddExerciseAndLog {
-        id: FR_012_09
-        text: "未登録種目について、種目マスター追加とアクティブセッションへの追加（必要なら自動開始）と最初のセット記録を 1 回の確認で完結させるツール（draft カード + 編集フォーム）"
-        risk: high
-        verifymethod: test
-    }
 
     requirement AIWriteConfirmation {
         id: REQ_008
@@ -171,7 +162,7 @@ requirementDiagram
 
     functionalRequirement InlineSetEditing {
         id: FR_013
-        text: "saveWorkout / addExerciseToSession(sets付き) / addExerciseAndLog の確認 UI は draft カード内に PendingSetRow 再利用の編集可能フォームを描画する。値が 0 のセットは空入力＋プレースホルダ（kg/回）で表示し、全セット weight>0 かつ reps>0 でない限り確定不可。種目名・種目並び替え・種目追加削除は draft カード上では編集不可"
+        text: "saveWorkout / addExerciseToSession(sets付き) の確認 UI は draft カード内に PendingSetRow 再利用の編集可能フォームを描画する。値が 0 のセットは空入力＋プレースホルダ（kg/回）で表示し、全セット weight>0 かつ reps>0 でない限り確定不可。種目名・種目並び替え・種目追加削除は draft カード上では編集不可"
         risk: high
         verifymethod: test
     }
@@ -185,7 +176,7 @@ requirementDiagram
 
     functionalRequirement ExerciseOnlyPlaceholderProposal {
         id: FR_015
-        text: "ユーザーが具体値（kg/回数）を伴わずに種目名のみを言及した場合も、AI は placeholder sets [{weight:0, reps:0}] 付きで書き込みツールを呼び出し、draft カード内に編集可能フォームを提示する。セッションアクティブ時は addExerciseToSession（未登録種目は addExerciseAndLog）、非アクティブ時は saveWorkout(date=今日) を使う"
+        text: "ユーザーが具体値（kg/回数）を伴わずに種目名のみを言及した場合も、AI は placeholder sets [{weight:0, reps:0}] 付きで書き込みツールを呼び出し、draft カード内に編集可能フォームを提示する。セッションアクティブ時は addExerciseToSession（未登録種目は exerciseId 省略でマスター追加と同時に挿入）、非アクティブ時は saveWorkout(date=今日) を使う"
         risk: medium
         verifymethod: test
     }
@@ -213,7 +204,7 @@ requirementDiagram
 
     functionalRequirement SessionGate {
         id: FR_036
-        text: "セッション非アクティブ時、saveWorkout と addExerciseToSession は SESSION_NOT_ACTIVE を返してユーザーにセッション開始を促す（B-002 の補強）。addExercise・addExerciseAndLog は対象外"
+        text: "セッション非アクティブ時、saveWorkout と addExerciseToSession は SESSION_NOT_ACTIVE を返してユーザーにセッション開始を促す（B-002 の補強）。addExercise は対象外"
         risk: high
         verifymethod: test
     }
@@ -236,7 +227,6 @@ requirementDiagram
     FunctionCalling - contains -> ToolGetExercises
     FunctionCalling - contains -> ToolAddExercise
     FunctionCalling - contains -> ToolAddExerciseToSession
-    FunctionCalling - contains -> ToolAddExerciseAndLog
 ```
 
 ---
@@ -278,18 +268,18 @@ AI が会話の文脈を解析し、必要に応じて以下のツールを自�
 | セッションへの種目追加 | アクティブセッションに種目（任意でセット群付き）を追加 | 書き込み（draft カード + sets 付きは編集フォーム） |
 | 種目追加 + 記録開始 | 未登録種目をマスター追加し、セッション（無ければ自動開始）に最初のセット記録までを 1 回の確認で完結 | 書き込み（draft カード + 編集フォーム） |
 
-セッション非アクティブ時、`saveWorkout` と `addExerciseToSession` は `SESSION_NOT_ACTIVE` を返す（FR_036）。`addExercise` と `addExerciseAndLog` は対象外。
+セッション非アクティブ時、`saveWorkout` と `addExerciseToSession` は `SESSION_NOT_ACTIVE` を返す（FR_036）。`addExercise` は対象外。
 
 **検証方法:** テストによる検証
 
 ### REQ_008: AI 書き込み操作のユーザー確認（タイムライン上 draft カード）
 
-AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerciseAndLog` / `addExercise`）を呼び出した場合、対応する内容を **draft 状態の ExerciseCard** としてタイムラインに直接挿入し、ユーザーの承認まではデータに反映しない。
+AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExercise`）を呼び出した場合、対応する内容を **draft 状態の ExerciseCard** としてタイムラインに直接挿入し、ユーザーの承認まではデータに反映しない。
 
 **draft カード仕様:**
 
 - ExerciseCard の `origin: 'ai-suggested'` バリアントとして表示（薄色背景 + 「AI 提案」バッジ）
-- セット情報を含むアクション（`saveWorkout` / `addExerciseToSession`(sets 付き) / `addExerciseAndLog`）は draft カード内に **編集可能フォーム**（FR_013）を内包する
+- セット情報を含むアクション（`saveWorkout` / `addExerciseToSession`(sets 付き)）は draft カード内に **編集可能フォーム**（FR_013）を内包する
 - セット情報を伴わないアクション（`addExercise` / `addExerciseToSession`(sets 無し)）は draft カード内に確認テキスト＋ボタンのみ
 - カード内に「保存」「破棄」のアクションを内蔵する
 - 確定時はユーザーが編集後の値で `executeWriteTool` を呼び出す
@@ -325,7 +315,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 └─────────────────────────────────┘
 ```
 
-**例（未登録種目を始める・FR_015 / addExerciseAndLog）:**
+**例（未登録種目を始める・FR_015 / addExerciseToSession exerciseId 省略）:**
 
 ```
 （ユーザー発話: "背中の日。ラットプルダウンやる"）
@@ -352,13 +342,13 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 過去日付の記録（セッションが既に終了している、または今日以外の日付）を会話から作成するツール。draft カードに編集フォームを内包する（FR_013）。
 
-セッションがアクティブな場合は `addExerciseToSession`（および `addExerciseAndLog`）を優先する（FR_014）。
+セッションがアクティブな場合は `addExerciseToSession` を優先する（FR_014）。未登録種目の場合は `exerciseId` を省略して呼び出すことで、マスター追加とセッション追加を 1 アクションで完結させる。
 
 **検証方法:** テストによる検証
 
 ### FR_012_07: ToolAddExercise（種目マスター純粋追加）
 
-種目マスターに種目名を登録する（記録は始めない）。draft カード内で「追加」ボタンを単独表示し、「ユーザーが明示的にマスター登録だけ希望した」場合のみ呼ばれる。FR_015 の placeholder 提案フローでは使わない（未登録種目→記録開始は `addExerciseAndLog` で 1 アクション化）。
+種目マスターに種目名を登録する（記録は始めない）。draft カード内で「追加」ボタンを単独表示し、「ユーザーが明示的にマスター登録だけ希望した」場合のみ呼ばれる。FR_015 の placeholder 提案フローでは使わない（未登録種目→記録開始は `addExerciseToSession` の `exerciseId` 省略呼び出しで 1 アクション化）。
 
 **検証方法:** テストによる検証
 
@@ -368,14 +358,6 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 - sets 付き: draft カード内に PendingSetRow 再利用の編集フォーム
 - sets 無し: draft カード内に確認テキスト＋「追加」ボタンのみ
-
-**検証方法:** テストによる検証
-
-### FR_012_09: ToolAddExerciseAndLog（未登録種目を 1 アクションで始める）
-
-未登録種目をマスター追加し、セッション（無ければ自動開始）に最初のセット記録までを 1 回の確認で完結させる。draft カードは「種目登録＋セット記録」のラベルを掲げ、編集フォーム内蔵。
-
-**理由:** `addExercise` → `addExerciseToSession` の 2 段確認は会話が一区切りしてしまい、ユーザーに追加発話を強いる（[ai-chat ADR](../../adr/ai-chat.md) 参照）。
 
 **検証方法:** テストによる検証
 
@@ -421,7 +403,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 **AI への指示追加:**
 
-- セッションがアクティブな場合は `saveWorkout`（過去日付向け）ではなく `addExerciseToSession`（sets 付き）または `addExerciseAndLog` を優先する
+- セッションがアクティブな場合は `saveWorkout`（過去日付向け）ではなく `addExerciseToSession`（sets 付き、未登録種目は `exerciseId` 省略）を優先する
 - ユーザーが具体的な重量・回数を伝えたらそのまま提案として返す（ユーザーが draft カード内で編集できる）
 - ユーザーが具体値を伴わずに種目名のみを述べた場合は FR_015 のフローを適用する
 - 進行中セッション情報があるときは、それを踏まえて「前セットからの増減」を 1 行で提案する
@@ -435,7 +417,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 **フロー:**
 
 1. **種目マスター確認**: 入力された種目名が登録済みかを判断する。不明な場合は `getExercises` で確認する
-2. **未登録種目を始める** → `addExerciseAndLog({ name, sets: [{ weight: 0, reps: 0 }] })` を 1 回呼び、種目追加と最初のセット記録を 1 つの draft カードで完結させる
+2. **未登録種目を始める** → `addExerciseToSession({ exerciseName, sets: [{ weight: 0, reps: 0 }] })`（`exerciseId` 省略）を 1 回呼び、種目マスター追加とセッション追加を 1 つの draft カードで完結させる
 3. **登録済み + セッション分岐**:
    - **アクティブ** → `addExerciseToSession({ exerciseId, exerciseName, sets: [{ weight: 0, reps: 0 }] })`
    - **非アクティブ** → `saveWorkout({ date: 今日, exercises: [{ exerciseName, sets: [{ weight: 0, reps: 0 }] }] })`
@@ -479,7 +461,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 - 自然言語入力（例: 「今日のスクワットの調子はどう?」）→ AI 応答
 - 種目名の入力（例: 「ベンチ」）→ 候補チップを popover で提示し、タップで種目を追加
-- 数値・記録の指示（例: 「ベンチ 60kg×10×3 で記録」）→ AI が `addExerciseToSession` または `saveWorkout` または `addExerciseAndLog` を呼び出し、draft カードを挿入
+- 数値・記録の指示（例: 「ベンチ 60kg×10×3 で記録」）→ AI が `addExerciseToSession` または `saveWorkout` を呼び出し、draft カードを挿入
 
 旧 ExerciseSearchField は廃止し、検索機能をこの入力欄に統合する。
 
@@ -493,7 +475,6 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 - UI 上はタイムライン入力欄が非アクティブ時には無効化されるため、通常はこのガードに到達しない（防御線）
 - **対象外ツール**:
   - `addExercise`（種目マスター登録）はセッションと無関係なため対象外
-  - `addExerciseAndLog`（マスター追加 + セッション自動開始 + 最初のセット記録の 1 アクション統合）は設計上 `isActive=false` でも `startSession` を内部で呼ぶため対象外（[ai-chat ADR](../../adr/ai-chat.md)「addExerciseAndLog 統合」と一体）
 - **過去日付保存（将来要件）**: 「日付指定で過去のワークアウトを補完保存する」UX は将来要件として残す。本 PRD では現状 `saveWorkout` も `isActive=false` で一律 `SESSION_NOT_ACTIVE` を返す。詳細は [ai-chat ADR](../../adr/ai-chat.md)「セッション外 write tool」項
 
 **検証方法:** テストによる検証
