@@ -36,6 +36,17 @@ export function ActiveSessionView() {
   const messages = useChatStore((s) => s.messages)
   const { isLoading, sendMessage, stopResponse } = useChatService()
 
+  // ChatInput 内の useMemo([exerciseSearch, trimmed]) を毎レンダ無効化しないよう
+  // 同一参照を維持する。中身の関数群は zustand store / useExercises 由来で安定。
+  const exerciseSearch = useMemo(
+    () => ({
+      search: searchExercises,
+      onSelect: addExercise,
+      create: createExercise,
+    }),
+    [searchExercises, addExercise, createExercise],
+  )
+
   const timelineItems = useMemo<TimelineItem[]>(() => {
     const items: TimelineItem[] = [
       ...messages.map((m) => ({
@@ -101,11 +112,7 @@ export function ActiveSessionView() {
         isLoading={isLoading}
         onSend={(text) => void sendMessage(text)}
         onStop={stopResponse}
-        exerciseSearch={{
-          search: searchExercises,
-          onSelect: addExercise,
-          create: createExercise,
-        }}
+        exerciseSearch={exerciseSearch}
         placeholder="メッセージ or 種目名"
       />
     </div>
