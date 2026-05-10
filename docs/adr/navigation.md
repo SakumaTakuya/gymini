@@ -28,4 +28,4 @@
   - タブを減らすことで親指操作の選択肢が単純化され、Mobile-First UI（T-003）に沿う
 - **トレードオフ**:
   - 「セッション開始しないと AI と話せない」UX 制約。ただしビジョン上は意図された制約。API キー設定や種目マスター閲覧など、対話を必要としない情報はそれぞれ FRAME5 / 既存ページで提供する
-  - 旧 `/ai` ルートは段階的に撤去（[ai-chat/timeline-migration.md](../prd/ai-chat/timeline-migration.md) Phase 8）。移行期間は `/ai` を `/training` へリダイレクト、または「セッション開始へ誘導する空ページ」として残置する
+  - 旧 `/ai` ルートは Phase 9 で完全撤去済み。`/ai` への直接アクセスは `notFoundComponent` 経由で `/training` にフォールバックする

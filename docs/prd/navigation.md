@@ -24,7 +24,7 @@ gymini のページナビゲーションアーキテクチャを定義する。
 
 - **BottomNav**: 2 タブ（Training + History）。AI 対話はワークアウトセッション内のタイムライン UX に統合されたため、独立した AI タブは持たない（[ai-chat/index.md](ai-chat/index.md) FR_034）
 - **歯車アイコン**: 全画面の右上に固定、タップで設定画面へ遷移
-- **ルーティング**: 4 つの論理画面（FRAME1, FRAME2, FRAME3, FRAME5）をクライアントサイドで管理。旧 FRAME4（独立 AI チャット画面）は段階的に撤去される（[ai-chat/timeline-migration.md](ai-chat/timeline-migration.md) Phase 8）
+- **ルーティング**: 4 つの論理画面（FRAME1, FRAME2, FRAME3, FRAME5）をクライアントサイドで管理。旧 FRAME4（独立 AI チャット画面）は撤去済み（AI 対話は FRAME2 タイムラインに統合）
 
 ---
 
@@ -159,7 +159,7 @@ AI 対話は独立した画面（旧 FRAME4）を持たず、ワークアウト�
 
 - AI への発話導線はセッション中の単一入力欄に集約される（[ai-chat/index.md](ai-chat/index.md) FR_035）
 - セッション非アクティブ時は AI と対話できない。書き込みツールも `SESSION_NOT_ACTIVE` を返す（[ai-chat/index.md](ai-chat/index.md) FR_036）
-- 旧 `/ai` ルート / FRAME4 / BottomNav 「AI」専用ボタンは段階的に撤去される（[ai-chat/timeline-migration.md](ai-chat/timeline-migration.md) Phase 8）
+- 旧 `/ai` ルート / FRAME4 / BottomNav 「AI」専用ボタンは撤去済み
 - API キー未設定時の導線は FRAME5 設定画面に集約（IR_002 歯車アイコンの赤バッジ）
 
 **検証方法:** テストによる検証
@@ -226,7 +226,7 @@ AI 対話は独立した画面（旧 FRAME4）を持たず、ワークアウト�
 
 3 つの論理ルート（`training`, `history`, `settings`）を TanStack Router の hash history モードで管理する。GitHub Pages 対応のため hash ルーティング（`/#/training` 形式）と basename（`/gymini/`）を使用する。
 
-旧 `ai` ルートは段階的に撤去される（[ai-chat/timeline-migration.md](ai-chat/timeline-migration.md) Phase 8）。移行期間中は `/ai` を `/training` へリダイレクト、または「セッション開始へ誘導する空ページ」として残置する。
+旧 `ai` ルートは撤去済み。`/ai` への直接アクセスは `notFoundComponent` 経由で `/training` にフォールバックする。
 
 **検証方法:** インスペクションによる検証
 
@@ -239,7 +239,7 @@ AI 対話は独立した画面（旧 FRAME4）を持たず、ワークアウト�
 | Phase 1 | ワークアウト CRUD、履歴 | FRAME1/2/3 が機能。AI 機能は未提供 |
 | Phase 2 | 設定画面（APIキー・種目管理） | FRAME5 追加。歯車アイコン全画面表示 |
 | Phase 3（旧）| 独立 AI チャット画面 | FRAME4 を一時的に追加（AI ボタン経由）。**Phase 4 で撤去** |
-| Phase 4 | タイムライン統合 UX | FRAME2 に AI 対話を統合。FRAME4 と AI 専用ボタンを撤去（[ai-chat/timeline-migration.md](ai-chat/timeline-migration.md) Phase 1〜9）|
+| Phase 4 | タイムライン統合 UX | FRAME2 に AI 対話を統合。FRAME4 と AI 専用ボタンを撤去（実施済み） |
 
 ---
 

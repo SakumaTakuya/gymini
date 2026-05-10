@@ -178,7 +178,7 @@ FRAME1（Idle）で「トレーニングを始める」ボタンを押すとセ�
 - 入力欄に種目名（例: 「ベンチ」）を入力すると候補チップが popover で提示され、タップで種目カードを追加
 - 自然言語コマンド（例: 「ベンチ 60kg×10×3 で記録」）を送ると、AI が draft カードとして提案する（[ai-chat/index.md](../ai-chat/index.md) REQ_008）
 
-旧「種目を追加...」専用検索フィールド（`ExerciseSearchField`）は段階的に撤去される（[ai-chat/timeline-migration.md](../ai-chat/timeline-migration.md) Phase 7）。
+旧「種目を追加...」専用検索フィールド（`ExerciseSearchField`）は撤去済み。種目検索は `ChatInput` の popover に統合された。
 
 **検証方法:** テストによる検証
 

@@ -38,14 +38,14 @@
   - Modeless: モーダル/シート切替を排し、Locus of attention を維持
   - sticky な recording カードにより、スクロール中も入力 UI が常時可視
 - **トレードオフ**:
-  - `ChatMessageList` / `ExerciseList` の責務再編が必要（実装は段階的、[timeline-migration.md](../prd/ai-chat/timeline-migration.md) Phase 6 で実施）
+  - `ChatMessageList` / `ExerciseList` の責務再編が必要（実施済み）
   - sticky とスクロールの相互作用に関するモバイル各機種互換確認が必要
 
 ## 単一入力欄の採用（種目検索を ChatInput が吸収、ExerciseSearchField 撤去）
 
 - **決定**: セッション中の唯一の入力欄が、自然言語コマンド・種目検索・AI への質問を兼ねる。種目名を入力すると候補チップが popover で提示される
 - **理由**: Locus of attention 原則。同じ目的（次の操作を入れる）の入力ボックスを画面に複数配置しない
-- **トレードオフ**: 種目検索の操作回数がわずかに増える可能性（候補 popover で吸収）。実装は [timeline-migration.md](../prd/ai-chat/timeline-migration.md) Phase 7 で実施
+- **トレードオフ**: 種目検索の操作回数がわずかに増える可能性（候補 popover で吸収）。実施済み
 
 ## セッション外 write tool は SESSION_NOT_ACTIVE を返す（防御線）
 
