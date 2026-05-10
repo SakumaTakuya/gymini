@@ -3,7 +3,6 @@ import { Link } from '@tanstack/react-router'
 import { SignIn } from '@phosphor-icons/react'
 import { useWorkoutSession } from '@/hooks/useWorkoutSession'
 import { useChatService } from '@/hooks/useChatService'
-import { useChatStore } from '@/stores/chatStore'
 import { useSettingsStore } from '@/stores/settingsStore'
 import { ChatBubble } from '../chat/ChatBubble'
 import { ChatInput } from '../chat/ChatInput'
@@ -36,8 +35,8 @@ export function ActiveSessionView() {
     searchExercises,
     createExercise,
   } = useWorkoutSession()
-  const messages = useChatStore((s) => s.messages)
-  const { isLoading, sendMessage, stopResponse, error } = useChatService()
+  const { messages, isLoading, sendMessage, stopResponse, error } =
+    useChatService()
   const hasApiKey = useSettingsStore((s) => s.hasApiKey)
 
   // ChatInput 内の useMemo([exerciseSearch, trimmed]) を毎レンダ無効化しないよう

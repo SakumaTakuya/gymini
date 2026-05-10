@@ -1,4 +1,4 @@
-import type { AnchorHTMLAttributes, PropsWithChildren } from 'react'
+import type { AnchorHTMLAttributes, PropsWithChildren, ReactNode } from 'react'
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
@@ -11,16 +11,22 @@ vi.mock('@tanstack/react-router', async () => {
   return {
     ...actual,
     Link: ({
-      to,
       children,
+      to,
       ...rest
-    }: PropsWithChildren<
-      AnchorHTMLAttributes<HTMLAnchorElement> & { to?: string }
-    >) => (
-      <a href={to as string} {...rest}>
-        {children}
-      </a>
-    ),
+    }: PropsWithChildren<{ to: string; children?: ReactNode } & Record<string, unknown>>) => {
+      const { activeProps: _a, inactiveProps: _i, ...domProps } = rest as {
+        activeProps?: unknown
+        inactiveProps?: unknown
+      } & Record<string, unknown>
+      void _a
+      void _i
+      return (
+        <a href={to} {...(domProps as AnchorHTMLAttributes<HTMLAnchorElement>)}>
+          {children}
+        </a>
+      )
+    },
   }
 })
 
