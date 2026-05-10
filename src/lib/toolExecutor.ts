@@ -220,7 +220,6 @@ function executeAddExerciseToSession(
     return { success: false, error: 'SESSION_NOT_ACTIVE' }
   }
 
-  // exerciseId 省略時はマスターに新規登録（旧 addExerciseAndLog 統合）
   let resolvedExerciseId: string
   if (typeof explicitExerciseId === 'string') {
     resolvedExerciseId = explicitExerciseId
