@@ -1,7 +1,10 @@
 import { useMemo } from 'react'
+import { Link } from '@tanstack/react-router'
+import { SignIn } from '@phosphor-icons/react'
 import { useWorkoutSession } from '@/hooks/useWorkoutSession'
 import { useChatService } from '@/hooks/useChatService'
 import { useChatStore } from '@/stores/chatStore'
+import { useSettingsStore } from '@/stores/settingsStore'
 import { ChatBubble } from '../chat/ChatBubble'
 import { ChatInput } from '../chat/ChatInput'
 import type { DraftExercise } from '../../schemas/workout'
@@ -34,7 +37,8 @@ export function ActiveSessionView() {
     createExercise,
   } = useWorkoutSession()
   const messages = useChatStore((s) => s.messages)
-  const { isLoading, sendMessage, stopResponse } = useChatService()
+  const { isLoading, sendMessage, stopResponse, error } = useChatService()
+  const hasApiKey = useSettingsStore((s) => s.hasApiKey)
 
   // ChatInput 内の useMemo([exerciseSearch, trimmed]) を毎レンダ無効化しないよう
   // 同一参照を維持する。中身の関数群は zustand store / useExercises 由来で安定。
@@ -68,6 +72,21 @@ export function ActiveSessionView() {
 
   return (
     <div className="flex-1 bg-gym-zinc-50 pb-content-bottom-scroll overflow-y-auto">
+      {!hasApiKey && (
+        <div className="mx-4 my-4 rounded-2xl bg-gym-white border border-gym-zinc-200 shadow-soft p-4 text-sm">
+          <p className="font-semibold mb-2">APIキーが必要です</p>
+          <p className="text-gym-zinc-600 mb-3">
+            Gemini APIキーを設定するとチャットが利用できます。
+          </p>
+          <Link
+            to="/settings"
+            className="focus-ring inline-flex items-center gap-1.5 h-11 px-4 rounded-xl bg-gym-black text-gym-white font-semibold"
+          >
+            <SignIn size={16} weight="bold" />
+            設定画面へ
+          </Link>
+        </div>
+      )}
       {timelineItems.map((item) => {
         if (item.kind === 'message') {
           return (
@@ -107,6 +126,12 @@ export function ActiveSessionView() {
           </div>
         )
       })}
+
+      {error && (
+        <div className="mx-4 my-2 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
+          {error}
+        </div>
+      )}
 
       <ChatInput
         isLoading={isLoading}
