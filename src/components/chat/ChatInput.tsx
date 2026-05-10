@@ -4,18 +4,19 @@ import { cn } from '../../lib/utils'
 import { IconButton } from '../ui/icon-button'
 import type { Exercise } from '@/types'
 
+export type ExerciseSearchConfig = {
+  search: (query: string) => Exercise[]
+  onSelect: (exercise: { exerciseId: string; exerciseName: string }) => void
+  create?: (name: string) => Exercise
+}
+
 export type ChatInputProps = {
   isLoading: boolean
   onSend: (text: string) => void
   onStop: () => void
   placeholder?: string
   disabled?: boolean
-  searchExercises?: (query: string) => Exercise[]
-  onSelectExercise?: (exercise: {
-    exerciseId: string
-    exerciseName: string
-  }) => void
-  createExercise?: (name: string) => Exercise
+  exerciseSearch?: ExerciseSearchConfig
 }
 
 export function ChatInput({
@@ -24,29 +25,26 @@ export function ChatInput({
   onStop,
   placeholder = 'メッセージを入力',
   disabled = false,
-  searchExercises,
-  onSelectExercise,
-  createExercise,
+  exerciseSearch,
 }: ChatInputProps) {
   const [text, setText] = useState('')
   const [popoverOpen, setPopoverOpen] = useState(false)
 
   const trimmed = text.trim()
-  const popoverEnabled = !!(searchExercises && onSelectExercise)
   const candidates = useMemo<Exercise[]>(
     () =>
-      popoverEnabled && trimmed !== '' ? searchExercises!(trimmed) : [],
-    [popoverEnabled, searchExercises, trimmed],
+      exerciseSearch && trimmed !== '' ? exerciseSearch.search(trimmed) : [],
+    [exerciseSearch, trimmed],
   )
   // useExercises.search が case-insensitive なので exact 判定もそれに揃える
   const exactMatch = candidates.some(
     (e) => e.name.toLowerCase() === trimmed.toLowerCase(),
   )
   const showCreateChip =
-    popoverEnabled && trimmed !== '' && !exactMatch && !!createExercise
+    !!exerciseSearch?.create && trimmed !== '' && !exactMatch
   const showPopover =
     popoverOpen &&
-    popoverEnabled &&
+    !!exerciseSearch &&
     trimmed !== '' &&
     (candidates.length > 0 || showCreateChip)
 
@@ -66,7 +64,7 @@ export function ChatInput({
   }
 
   const handleSelect = (exercise: Exercise) => {
-    onSelectExercise?.({
+    exerciseSearch?.onSelect({
       exerciseId: exercise.id,
       exerciseName: exercise.name,
     })
@@ -75,10 +73,10 @@ export function ChatInput({
   }
 
   const handleCreate = () => {
-    if (!createExercise || !onSelectExercise) return
+    if (!exerciseSearch?.create) return
     try {
-      const created = createExercise(trimmed)
-      onSelectExercise({
+      const created = exerciseSearch.create(trimmed)
+      exerciseSearch.onSelect({
         exerciseId: created.id,
         exerciseName: created.name,
       })

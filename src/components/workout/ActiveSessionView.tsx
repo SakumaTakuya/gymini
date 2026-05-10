@@ -101,9 +101,11 @@ export function ActiveSessionView() {
         isLoading={isLoading}
         onSend={(text) => void sendMessage(text)}
         onStop={stopResponse}
-        searchExercises={searchExercises}
-        onSelectExercise={addExercise}
-        createExercise={createExercise}
+        exerciseSearch={{
+          search: searchExercises,
+          onSelect: addExercise,
+          create: createExercise,
+        }}
         placeholder="メッセージ or 種目名"
       />
     </div>
