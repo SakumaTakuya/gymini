@@ -234,7 +234,7 @@ describe('ActiveSessionView', () => {
       expect(screen.getByRole('button', { name: 'ベンチプレス' })).toBeInTheDocument()
     })
 
-    it('全ての種目カードが sticky wrapper の中に描画される（recording 限定ではない）', () => {
+    it('全ての種目カードが sticky で上部固定される', () => {
       useWorkoutSessionStore.setState({
         isActive: true,
         date: '2026-05-04' as DateString,

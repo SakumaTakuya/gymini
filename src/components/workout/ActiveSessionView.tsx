@@ -18,6 +18,8 @@ type TimelineItem =
       index: number
       timestamp: string
     }
+type TimelineMessage = Extract<TimelineItem, { kind: 'message' }>
+type TimelineDraft = Extract<TimelineItem, { kind: 'draft' }>
 
 export function ActiveSessionView() {
   const {
@@ -74,10 +76,10 @@ export function ActiveSessionView() {
   // そのセクション内だけで上部固定され、次のセクションが到達した瞬間に押し出される。
   // 最初のカードより前にあるメッセージは preamble として section の外に並べる。
   const { preamble, sections } = useMemo(() => {
-    const preamble: Array<Extract<TimelineItem, { kind: 'message' }>> = []
+    const preamble: TimelineMessage[] = []
     const sections: Array<{
-      draft: Extract<TimelineItem, { kind: 'draft' }>
-      messages: Array<Extract<TimelineItem, { kind: 'message' }>>
+      draft: TimelineDraft
+      messages: TimelineMessage[]
     }> = []
     let current: (typeof sections)[number] | null = null
     for (const item of timelineItems) {
@@ -93,10 +95,7 @@ export function ActiveSessionView() {
     return { preamble, sections }
   }, [timelineItems])
 
-  const renderDraft = (
-    draft: Extract<TimelineItem, { kind: 'draft' }>['data'],
-    i: number,
-  ) => (
+  const renderDraft = (draft: TimelineDraft['data'], i: number) => (
     <ExerciseCard
       draftExercise={draft}
       onActivate={() => activateExercise(i)}

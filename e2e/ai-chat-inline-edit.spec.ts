@@ -335,7 +335,7 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
 
     // (1) section 1 内をスクロール（section bottom より十分手前で止める）。
     //     sticky が効いていれば c1 はヘッダー直下にピン留めされ top∈(0,220]、
-    //     効いていなければ c1 は画面外上方へ流れて top<0 になる（RED）。
+    //     効いていなければ c1 は画面外上方へ流れて top<0 になる。
     await scrollContainerBy(200)
     const c1AfterStick = await c1.evaluate(
       (el) => el.getBoundingClientRect().top,
@@ -344,13 +344,21 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     expect(c1AfterStick).toBeGreaterThan(0)
     expect(c1AfterStick).toBeLessThan(220)
 
-    // (2) section 2 へハンドオフ: 容器を c2 の section 内まで進める。
+    // (2) section 2 へハンドオフ: c2 を viewport y=200 付近 (sticky anchor 通過後) まで進める。
     //     c2 がピン留めに切り替わり、c1 は section 1 が終わったので押し出されている。
-    const c2CurrentTop = await c2.evaluate(
-      (el) => el.getBoundingClientRect().top,
+    //     c2 位置の読み取りとスクロールは同一 evaluate で行い IPC を 1 往復に抑える。
+    await c2.evaluate(
+      (el) =>
+        new Promise<void>((resolve) => {
+          const container = document.querySelector(
+            '.overflow-y-auto',
+          ) as HTMLElement
+          container.scrollBy(0, el.getBoundingClientRect().top - 200)
+          requestAnimationFrame(() =>
+            requestAnimationFrame(() => resolve()),
+          )
+        }),
     )
-    // c2 を viewport y=200 付近 (sticky anchor 通過後) に持ってくる
-    await scrollContainerBy(c2CurrentTop - 200)
     const c1AfterHandoff = await c1.evaluate(
       (el) => el.getBoundingClientRect().top,
     )
