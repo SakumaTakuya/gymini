@@ -56,7 +56,7 @@ export function AppHeaderProvider({ children }: ProviderProps) {
       <header
         role="banner"
         data-variant={variant}
-        className="fixed top-0 left-0 right-0 z-30 pointer-events-none px-4 pt-3 flex items-start justify-between"
+        className="fixed top-0 left-0 right-0 z-30 pointer-events-none px-4 pt-[calc(env(safe-area-inset-top)+0.75rem)] flex items-start justify-between"
       >
         <>
           {showLeftPill && (
