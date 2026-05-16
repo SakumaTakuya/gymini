@@ -234,7 +234,7 @@ describe('ActiveSessionView', () => {
       expect(screen.getByRole('button', { name: 'ベンチプレス' })).toBeInTheDocument()
     })
 
-    it('cardState === "recording" のカードは sticky で上部固定される', () => {
+    it('全ての種目カードが sticky wrapper の中に描画される（recording 限定ではない）', () => {
       useWorkoutSessionStore.setState({
         isActive: true,
         date: '2026-05-04' as DateString,
@@ -243,18 +243,55 @@ describe('ActiveSessionView', () => {
           makeDraftExercise({
             exerciseId: 'bench',
             exerciseName: 'ベンチプレス',
+            cardState: 'idle',
+            timestamp: '2026-05-04T19:00:00+09:00' as ISODateTimeString,
+          }),
+          makeDraftExercise({
+            exerciseId: 'squat',
+            exerciseName: 'スクワット',
             cardState: 'recording',
             pendingSet: { weight: 0, reps: 0 },
-            timestamp: '2026-05-04T19:00:00+09:00' as ISODateTimeString,
+            timestamp: '2026-05-04T19:05:00+09:00' as ISODateTimeString,
+          }),
+          makeDraftExercise({
+            exerciseId: 'dl',
+            exerciseName: 'デッドリフト',
+            cardState: 'collapsed',
+            timestamp: '2026-05-04T19:10:00+09:00' as ISODateTimeString,
           }),
         ],
       })
 
       const { container } = render(<ActiveSessionView />)
-      const stickyEl = container.querySelector('.sticky')
-      expect(stickyEl).not.toBeNull()
-      // recording カードが sticky wrapper の中にある
-      expect(within(stickyEl as HTMLElement).getByRole('button', { name: 'ベンチプレス' })).toBeInTheDocument()
+      const stickyEls = container.querySelectorAll('.sticky')
+      expect(stickyEls).toHaveLength(3)
+      for (const name of ['ベンチプレス', 'スクワット', 'デッドリフト']) {
+        const sticky = Array.from(stickyEls).find(
+          (el) => within(el as HTMLElement).queryByRole('button', { name }) !== null,
+        )
+        expect(sticky).toBeDefined()
+      }
+    })
+
+    it('タイムラインは「種目カード + 次の種目までの ChatMessage」のセクション単位で描画される', () => {
+      setupTimeline({
+        drafts: [
+          { exerciseName: 'ベンチプレス', timestamp: '2026-05-04T19:00:00+09:00' },
+          { exerciseName: 'スクワット', timestamp: '2026-05-04T19:10:00+09:00' },
+        ],
+        messages: [
+          { content: 'ベンチ後の AI 応答', timestamp: '2026-05-04T19:05:00+09:00' },
+          { content: 'スクワット後の AI 応答', timestamp: '2026-05-04T19:15:00+09:00' },
+        ],
+      })
+
+      const { container } = render(<ActiveSessionView />)
+      const sections = container.querySelectorAll('section')
+      expect(sections).toHaveLength(2)
+      expect(within(sections[0] as HTMLElement).getByRole('button', { name: 'ベンチプレス' })).toBeInTheDocument()
+      expect(within(sections[0] as HTMLElement).getByText('ベンチ後の AI 応答')).toBeInTheDocument()
+      expect(within(sections[1] as HTMLElement).getByRole('button', { name: 'スクワット' })).toBeInTheDocument()
+      expect(within(sections[1] as HTMLElement).getByText('スクワット後の AI 応答')).toBeInTheDocument()
     })
 
     it('messages が空でも draftExercises のみで動作する（既存挙動）', () => {

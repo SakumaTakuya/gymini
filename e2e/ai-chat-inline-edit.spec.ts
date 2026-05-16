@@ -260,78 +260,105 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     expect(benchY).toBeLessThan(aiTextY)
   })
 
-  test('cardState=recording のカードはスクロールしても sticky で上部に残る', async ({
+  test('種目カードはそのセクション内をスクロール中、上部にピン留めされる（stacking sticky）', async ({
     page,
   }) => {
-    // recording カードを中間 (index 2) に配置することで、sticky が効かなければ下端まで
-    // スクロールしたとき画面外 (top<0) に消える状況を作る。timestamp 昇順 = タイムライン描画順。
+    // 各 section に 5 件の ChatMessage を挟むことで section 高さを稼ぎ、stickable range を
+    // viewport 幅に依らず確保する（短い chat 1 件だけだと desktop で section が浅く、
+    // 小さいスクロールでもカードが section bottom に押されて sticky が外れてしまう）。
     await page.evaluate(() => {
       const raw = localStorage.getItem('gymini:workout-session')!
       const parsed = JSON.parse(raw)
-      const baseTimestamp = new Date('2026-05-04T19:00:00+09:00').getTime()
+      const base = new Date('2026-05-04T19:00:00+09:00').getTime()
       parsed.state.draftExercises = [
-        ['squat', 'スクワット', 'idle'],
-        ['dl', 'デッドリフト', 'idle'],
-        ['bench', 'ベンチプレス', 'recording'],
-        ['ohp', 'オーバーヘッドプレス', 'idle'],
-        ['row', 'ベントオーバーロウ', 'idle'],
-      ].map(([id, name, state], i) => ({
+        ['squat', 'スクワット'],
+        ['dl', 'デッドリフト'],
+        ['bench', 'ベンチプレス'],
+      ].map(([id, name], i) => ({
         exerciseId: id,
         exerciseName: name,
-        sets:
-          state === 'recording'
-            ? []
-            : [
-                { weight: 60, reps: 10 },
-                { weight: 60, reps: 10 },
-                { weight: 60, reps: 10 },
-              ],
-        pendingSet: state === 'recording' ? { weight: 0, reps: 0 } : null,
+        sets: [
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+        ],
+        pendingSet: null,
         pendingSetDirty: false,
-        cardState: state,
+        cardState: 'idle',
         editingSetIndex: null,
         origin: 'manual',
-        timestamp: new Date(baseTimestamp + i * 60_000).toISOString(),
+        timestamp: new Date(base + i * 10 * 60_000).toISOString(),
       }))
       localStorage.setItem('gymini:workout-session', JSON.stringify(parsed))
+      const messages = (
+        [
+          ['squat', 0],
+          ['dl', 10],
+          ['bench', 20],
+        ] as const
+      ).flatMap(([id, offsetMin]) =>
+        Array.from({ length: 5 }, (_, j) => ({
+          id: `${id}-msg-${j}`,
+          role: 'assistant' as const,
+          content: `${id} section message #${j}`,
+          timestamp: new Date(
+            base + (offsetMin + 1 + j) * 60_000,
+          ).toISOString(),
+        })),
+      )
+      localStorage.setItem(
+        'gymini:chat',
+        JSON.stringify({ state: { messages }, version: 1 }),
+      )
     })
     await page.reload()
 
-    const recordingCard = page.getByRole('button', { name: 'ベンチプレス' })
-    await expect(recordingCard).toBeVisible()
+    const c1 = page.getByRole('button', { name: 'スクワット' })
+    const c2 = page.getByRole('button', { name: 'デッドリフト' })
+    await expect(c1).toBeVisible()
 
-    // window と内部スクロールコンテナ両方を末尾までスクロール（修正前は window、
-    // 修正後は .overflow-y-auto がスクロールする）。sticky 再計算のため rAF を 2 回待つ。
-    // 同じ evaluate 内で実スクロール量も返し、no-op スクロールの false positive を防ぐ。
-    const scrolled = await page.evaluate(
-      () =>
-        new Promise<{ containerScroll: number; windowScroll: number }>(
-          (resolve) => {
+    const scrollContainerBy = async (amount: number) => {
+      await page.evaluate(
+        (delta) =>
+          new Promise<void>((resolve) => {
             const container = document.querySelector(
               '.overflow-y-auto',
             ) as HTMLElement
-            container.scrollTop = container.scrollHeight
-            window.scrollTo(0, document.body.scrollHeight)
+            container.scrollBy(0, delta)
             requestAnimationFrame(() =>
-              requestAnimationFrame(() =>
-                resolve({
-                  containerScroll: container.scrollTop,
-                  windowScroll: window.scrollY,
-                }),
-              ),
+              requestAnimationFrame(() => resolve()),
             )
-          },
-        ),
-    )
-    expect(scrolled.containerScroll + scrolled.windowScroll).toBeGreaterThan(0)
+          }),
+        amount,
+      )
+    }
 
-    // sticky が効いていれば recording カードはヘッダー直下にピン留めされ top>0 を保つ。
-    // 効いていなければ中間カードは画面外 (top<0) に消える。上限 220 は
-    // top-14 (56px) + AppHeader クリアランス + ExerciseCard p-5 のオフセット帯域。
-    const top = await recordingCard.evaluate(
+    // (1) section 1 内をスクロール（section bottom より十分手前で止める）。
+    //     sticky が効いていれば c1 はヘッダー直下にピン留めされ top∈(0,220]、
+    //     効いていなければ c1 は画面外上方へ流れて top<0 になる（RED）。
+    await scrollContainerBy(200)
+    const c1AfterStick = await c1.evaluate(
       (el) => el.getBoundingClientRect().top,
     )
-    expect(top).toBeGreaterThan(0)
-    expect(top).toBeLessThan(220)
+    // top-14 (56px) + AppHeader クリアランス + ExerciseCard p-5 の帯域に c1 がピン留めされている
+    expect(c1AfterStick).toBeGreaterThan(0)
+    expect(c1AfterStick).toBeLessThan(220)
+
+    // (2) section 2 へハンドオフ: 容器を c2 の section 内まで進める。
+    //     c2 がピン留めに切り替わり、c1 は section 1 が終わったので押し出されている。
+    const c2CurrentTop = await c2.evaluate(
+      (el) => el.getBoundingClientRect().top,
+    )
+    // c2 を viewport y=200 付近 (sticky anchor 通過後) に持ってくる
+    await scrollContainerBy(c2CurrentTop - 200)
+    const c1AfterHandoff = await c1.evaluate(
+      (el) => el.getBoundingClientRect().top,
+    )
+    const c2AfterHandoff = await c2.evaluate(
+      (el) => el.getBoundingClientRect().top,
+    )
+    expect(c1AfterHandoff).toBeLessThan(0)
+    expect(c2AfterHandoff).toBeGreaterThan(0)
+    expect(c2AfterHandoff).toBeLessThan(220)
   })
 })

@@ -31,12 +31,12 @@
 
 ## タイムライン統合 UX の採用（ExerciseCard と ChatMessage を時系列で同一スクロール領域）
 
-- **決定**: ワークアウトセッション中、ExerciseCard と ChatMessage を `timestamp` でマージして同一スクロール領域に並べる。`recording` 状態の ExerciseCard は画面上部に `position: sticky` で固定する
+- **決定**: ワークアウトセッション中、ExerciseCard と ChatMessage を `timestamp` でマージして同一スクロール領域に並べる。種目カードはセクション単位（カード + 次の種目までの ChatMessage）で `position: sticky` を適用し、stacking で上部に固定する
 - **理由**:
   - Direct manipulation（数値入力）と Conversational UI（自然言語）を切り替えなしで併存させる
   - Single source of truth: 種目データの正は ExerciseCard、対話の正は ChatMessage、両者は時系列で並ぶ
   - Modeless: モーダル/シート切替を排し、Locus of attention を維持
-  - sticky な recording カードにより、スクロール中も入力 UI が常時可視
+  - stacking sticky により、スクロール中もその種目の文脈（後続メッセージ）と入力 UI を常時参照可能
 - **トレードオフ**:
   - `ChatMessageList` / `ExerciseList` の責務再編が必要（実施済み）
   - sticky とスクロールの相互作用に関するモバイル各機種互換確認が必要

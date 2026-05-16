@@ -69,6 +69,55 @@ export function ActiveSessionView() {
     )
   }, [messages, draftExercises])
 
+  // 各種目カードを stacking sticky にするため、「カード + 次のカードまでの ChatMessage」を
+  // 1 つの <section> にまとめる。<section> が containing block になることで、sticky なカードは
+  // そのセクション内だけで上部固定され、次のセクションが到達した瞬間に押し出される。
+  // 最初のカードより前にあるメッセージは preamble として section の外に並べる。
+  const { preamble, sections } = useMemo(() => {
+    const preamble: Array<Extract<TimelineItem, { kind: 'message' }>> = []
+    const sections: Array<{
+      draft: Extract<TimelineItem, { kind: 'draft' }>
+      messages: Array<Extract<TimelineItem, { kind: 'message' }>>
+    }> = []
+    let current: (typeof sections)[number] | null = null
+    for (const item of timelineItems) {
+      if (item.kind === 'draft') {
+        current = { draft: item, messages: [] }
+        sections.push(current)
+      } else if (current) {
+        current.messages.push(item)
+      } else {
+        preamble.push(item)
+      }
+    }
+    return { preamble, sections }
+  }, [timelineItems])
+
+  const renderDraft = (
+    draft: Extract<TimelineItem, { kind: 'draft' }>['data'],
+    i: number,
+  ) => (
+    <ExerciseCard
+      draftExercise={draft}
+      onActivate={() => activateExercise(i)}
+      onComplete={(set) => completeSet(i, set)}
+      onEdit={(setIndex) => editCompletedSet(i, setIndex)}
+      onDelete={(setIndex) => deleteCompletedSet(i, setIndex)}
+      onDeleteExercise={() => deleteExercise(i)}
+      onMoveUp={i > 0 ? () => reorderExercise(i, 'up') : undefined}
+      onMoveDown={
+        i < draftExercises.length - 1
+          ? () => reorderExercise(i, 'down')
+          : undefined
+      }
+      onToggle={() => toggleExerciseCard(i)}
+      onWeightChange={(weight) => updatePendingSet(i, { weight })}
+      onRepsChange={(reps) => updatePendingSet(i, { reps })}
+      onAcceptSuggested={(sets) => acceptSuggestedExercise(i, sets)}
+      onRejectSuggested={() => deleteExercise(i)}
+    />
+  )
+
   return (
     <div className="flex-1 bg-gym-zinc-50 pb-content-bottom-scroll overflow-y-auto">
       {!hasApiKey && (
@@ -86,43 +135,26 @@ export function ActiveSessionView() {
           </Link>
         </div>
       )}
-      {timelineItems.map((item) => {
-        if (item.kind === 'message') {
-          return (
-            <ChatBubble
-              key={item.data.id}
-              role={item.data.role}
-              content={item.data.content}
-            />
-          )
-        }
-        const { data: draft, index: i } = item
-        const isRecording = draft.cardState === 'recording'
+      {preamble.map((item) => (
+        <ChatBubble
+          key={item.data.id}
+          role={item.data.role}
+          content={item.data.content}
+        />
+      ))}
+      {sections.map((section) => {
+        const { data: draft, index: i } = section.draft
         return (
-          <div
-            key={`${draft.exerciseId}-${i}`}
-            className={isRecording ? 'sticky top-14 z-10' : undefined}
-          >
-            <ExerciseCard
-              draftExercise={draft}
-              onActivate={() => activateExercise(i)}
-              onComplete={(set) => completeSet(i, set)}
-              onEdit={(setIndex) => editCompletedSet(i, setIndex)}
-              onDelete={(setIndex) => deleteCompletedSet(i, setIndex)}
-              onDeleteExercise={() => deleteExercise(i)}
-              onMoveUp={i > 0 ? () => reorderExercise(i, 'up') : undefined}
-              onMoveDown={
-                i < draftExercises.length - 1
-                  ? () => reorderExercise(i, 'down')
-                  : undefined
-              }
-              onToggle={() => toggleExerciseCard(i)}
-              onWeightChange={(weight) => updatePendingSet(i, { weight })}
-              onRepsChange={(reps) => updatePendingSet(i, { reps })}
-              onAcceptSuggested={(sets) => acceptSuggestedExercise(i, sets)}
-              onRejectSuggested={() => deleteExercise(i)}
-            />
-          </div>
+          <section key={`${draft.exerciseId}-${i}`}>
+            <div className="sticky top-14 z-10">{renderDraft(draft, i)}</div>
+            {section.messages.map((m) => (
+              <ChatBubble
+                key={m.data.id}
+                role={m.data.role}
+                content={m.data.content}
+              />
+            ))}
+          </section>
         )
       })}
 

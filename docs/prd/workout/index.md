@@ -321,7 +321,7 @@ FRAME2の右上に固定表示される「終了」ボタンを押すとセッ�
 
 ### FRAME2: Active Workout（セッション中・タイムライン UX）
 
-種目カード（ExerciseCard）と AI メッセージ（ChatMessage）を時系列で同一スクロール領域に並べる。`recording` 状態のカードは画面上部に sticky で固定し、入力 UI を常時可視に保つ。
+種目カード（ExerciseCard）と AI メッセージ（ChatMessage）を時系列で同一スクロール領域に並べる。**全ての種目カードは画面上部に sticky で固定され、次の種目カードに到達すると押し出される（stacking sticky section header）**。これにより、その種目の文脈（カードに紐づく後続 ChatMessage）をスクロール中もカードを常時参照できる。
 
 ```
 ┌─────────────────────────────────┐
@@ -329,10 +329,10 @@ FRAME2の右上に固定表示される「終了」ボタンを押すとセッ�
 │                    [⚙] [終了]  │  ← 固定: 歯車 + 終了
 │                       00:14:32  │  ← 固定: タイマー
 │                                 │
-│ ╔═ STICKY: 記録中 Card ═══════╗ │  ← cardState=recording のカードを上部固定
+│ ╔═ STICKY: 現在セクションの種目 Card ═╗ │  ← その時点のセクションのカードを上部固定
 │ ║ [···] Incline DB Press [^]  ║ │
 │ ║ [🗑] 30kg  10回      [✏️]  ║ │
-│ ║ █ 2  [30] kg [10] 回  [+]   ║ │  ← SET入力 UI が常時見える
+│ ║ █ 2  [30] kg [10] 回  [+]   ║ │  ← recording 中は SET入力 UI が常時見える
 │ ╚════════════════════════════ ╝ │
 │                                 │
 │  ── タイムライン（時系列） ──    │  ← スクロールコンテンツ
@@ -371,7 +371,7 @@ FRAME2の右上に固定表示される「終了」ボタンを押すとセッ�
 ```
 
 - 種目カードと ChatMessage は `timestamp` でマージしてレンダリング
-- `recording` カードは `position: sticky` で上部固定（同時に 1 種目のみ recording に入れるルールは FR_030）
+- **全ての種目カードを `position: sticky` で上部固定**。containing block を「カード + 次の種目までの ChatMessage」のセクション単位にすることで stacking 化し、次の種目カードに到達すると前のカードが押し出される（同時に 1 種目のみ recording に入れるルールは FR_030）
 - draft カード内の編集フォームは `PendingSetRow` を再利用（[ai-chat/index.md](../ai-chat/index.md) FR_013）
 - 旧 BottomNav の「AI」専用ボタンは撤去（[navigation.md](../navigation.md) IR_001 改訂を参照）
 
