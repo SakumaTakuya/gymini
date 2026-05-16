@@ -28,7 +28,7 @@ function createTestRouter(initialPath = '/training') {
     id: '_app',
     component: () => (
       <>
-        <main className="flex-1 pt-content-top pb-content-bottom">
+        <main className="h-dvh flex flex-col pt-content-top pb-content-bottom">
           <Outlet />
         </main>
         <BottomNav />

@@ -263,15 +263,16 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
   test('cardState=recording のカードはスクロールしても sticky で上部に残る', async ({
     page,
   }) => {
-    // 5 つの種目を draft に積む（スクロールが必要な高さ確保）。1 つ目を recording にする
+    // recording カードを中間 (index 2) に置く。sticky が効かなければ下端まで
+    // スクロールしたとき画面外 (top<0) に消える。timestamp 昇順 = タイムライン描画順。
     await page.evaluate(() => {
       const raw = localStorage.getItem('gymini:workout-session')!
       const parsed = JSON.parse(raw)
       const baseTimestamp = new Date('2026-05-04T19:00:00+09:00').getTime()
       parsed.state.draftExercises = [
-        ['bench', 'ベンチプレス', 'recording'],
         ['squat', 'スクワット', 'idle'],
         ['dl', 'デッドリフト', 'idle'],
+        ['bench', 'ベンチプレス', 'recording'],
         ['ohp', 'オーバーヘッドプレス', 'idle'],
         ['row', 'ベントオーバーロウ', 'idle'],
       ].map(([id, name, state], i) => ({
@@ -299,23 +300,39 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     const recordingCard = page.getByRole('button', { name: 'ベンチプレス' })
     await expect(recordingCard).toBeVisible()
 
-    // 下部までスクロールし、レイアウト反映のため 1 フレーム待つ
+    // window と内部スクロールコンテナ両方を末尾までスクロール（修正前は window、
+    // 修正後は .overflow-y-auto がスクロールする）。sticky 再計算のため rAF を 2 回待つ。
     await page.evaluate(
       () =>
         new Promise<void>((resolve) => {
-          const container = document.querySelector('.overflow-y-auto')
+          const container = document.querySelector(
+            '.overflow-y-auto',
+          ) as HTMLElement | null
           if (container) container.scrollTop = container.scrollHeight
-          requestAnimationFrame(() => resolve())
+          window.scrollTo(0, document.body.scrollHeight)
+          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
         }),
     )
 
-    // recording カードがビューポート上部に留まっている（sticky が機能）。
-    // 厳密な値は AppHeader の高さやカード内 padding に依存するため、
-    // 「ビューポート上部 1/3 以内」という緩めの判定でリグレッションを検出する。
+    // sticky が効いていれば recording カードはヘッダー直下にピン留めされ top>0 を保つ。
+    // 効いていなければ中間カードは画面外 (top<0) に消える。上限 220 は
+    // top-14 (56px) + AppHeader クリアランス + ExerciseCard p-5 のオフセット帯域。
     const top = await recordingCard.evaluate(
       (el) => el.getBoundingClientRect().top,
     )
-    const viewportHeight = page.viewportSize()?.height ?? 800
-    expect(top).toBeLessThan(viewportHeight / 3)
+    expect(top).toBeGreaterThan(0)
+    expect(top).toBeLessThan(220)
+
+    // no-op スクロールの false positive 防止 — 実際にスクロールが発生したことも確認する。
+    const scrolled = await page.evaluate(() => {
+      const c = document.querySelector(
+        '.overflow-y-auto',
+      ) as HTMLElement | null
+      return {
+        containerScroll: c?.scrollTop ?? 0,
+        windowScroll: window.scrollY,
+      }
+    })
+    expect(scrolled.containerScroll + scrolled.windowScroll).toBeGreaterThan(0)
   })
 })
