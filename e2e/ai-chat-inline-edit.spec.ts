@@ -263,8 +263,8 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
   test('cardState=recording のカードはスクロールしても sticky で上部に残る', async ({
     page,
   }) => {
-    // recording カードを中間 (index 2) に置く。sticky が効かなければ下端まで
-    // スクロールしたとき画面外 (top<0) に消える。timestamp 昇順 = タイムライン描画順。
+    // recording カードを中間 (index 2) に配置することで、sticky が効かなければ下端まで
+    // スクロールしたとき画面外 (top<0) に消える状況を作る。timestamp 昇順 = タイムライン描画順。
     await page.evaluate(() => {
       const raw = localStorage.getItem('gymini:workout-session')!
       const parsed = JSON.parse(raw)
@@ -302,17 +302,28 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
 
     // window と内部スクロールコンテナ両方を末尾までスクロール（修正前は window、
     // 修正後は .overflow-y-auto がスクロールする）。sticky 再計算のため rAF を 2 回待つ。
-    await page.evaluate(
+    // 同じ evaluate 内で実スクロール量も返し、no-op スクロールの false positive を防ぐ。
+    const scrolled = await page.evaluate(
       () =>
-        new Promise<void>((resolve) => {
-          const container = document.querySelector(
-            '.overflow-y-auto',
-          ) as HTMLElement | null
-          if (container) container.scrollTop = container.scrollHeight
-          window.scrollTo(0, document.body.scrollHeight)
-          requestAnimationFrame(() => requestAnimationFrame(() => resolve()))
-        }),
+        new Promise<{ containerScroll: number; windowScroll: number }>(
+          (resolve) => {
+            const container = document.querySelector(
+              '.overflow-y-auto',
+            ) as HTMLElement
+            container.scrollTop = container.scrollHeight
+            window.scrollTo(0, document.body.scrollHeight)
+            requestAnimationFrame(() =>
+              requestAnimationFrame(() =>
+                resolve({
+                  containerScroll: container.scrollTop,
+                  windowScroll: window.scrollY,
+                }),
+              ),
+            )
+          },
+        ),
     )
+    expect(scrolled.containerScroll + scrolled.windowScroll).toBeGreaterThan(0)
 
     // sticky が効いていれば recording カードはヘッダー直下にピン留めされ top>0 を保つ。
     // 効いていなければ中間カードは画面外 (top<0) に消える。上限 220 は
@@ -322,17 +333,5 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     )
     expect(top).toBeGreaterThan(0)
     expect(top).toBeLessThan(220)
-
-    // no-op スクロールの false positive 防止 — 実際にスクロールが発生したことも確認する。
-    const scrolled = await page.evaluate(() => {
-      const c = document.querySelector(
-        '.overflow-y-auto',
-      ) as HTMLElement | null
-      return {
-        containerScroll: c?.scrollTop ?? 0,
-        windowScroll: window.scrollY,
-      }
-    })
-    expect(scrolled.containerScroll + scrolled.windowScroll).toBeGreaterThan(0)
   })
 })
