@@ -340,7 +340,7 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     const c1AfterStick = await c1.evaluate(
       (el) => el.getBoundingClientRect().top,
     )
-    // top-14 (56px) + AppHeader クリアランス + ExerciseCard p-5 の帯域に c1 がピン留めされている
+    // sticky top-0 + AppHeader クリアランス (pt-content-top) + ExerciseCard p-5 の帯域に c1 がピン留めされている
     expect(c1AfterStick).toBeGreaterThan(0)
     expect(c1AfterStick).toBeLessThan(220)
 
