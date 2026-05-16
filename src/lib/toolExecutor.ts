@@ -236,6 +236,10 @@ function executeAddExerciseToSession(
     }
   }
 
+  if (session.draftExercises.some((e) => e.exerciseId === resolvedExerciseId)) {
+    return { success: false, error: 'EXERCISE_ALREADY_IN_SESSION' }
+  }
+
   if (parsed.sets && parsed.sets.length > 0) {
     session.addExerciseWithSets({
       exerciseId: resolvedExerciseId,

@@ -359,6 +359,13 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 - sets 付き: draft カード内に PendingSetRow 再利用の編集フォーム
 - sets 無し: draft カード内に確認テキスト＋「追加」ボタンのみ
 
+**重複ガード:**
+
+- 解決済み `exerciseId` が現在のアクティブセッションの `draftExercises` に既存の場合、`EXERCISE_ALREADY_IN_SESSION` を返してセッションを変更しない（防御線）
+- AI には system instruction で「既存セッションに同じ種目がある状態で値の助言を求められた場合はツールを呼ばずテキストで重量・回数を答える」と指示する
+- 重複検出キーは解決後の `exerciseId`。`exerciseName` の表記揺れは検出しない
+- エラー時はチャットに「その種目は既にセッションに追加されています。」のヒント文言を表示する
+
 **検証方法:** テストによる検証
 
 ### FR_013: draft カード内インライン編集フォーム
@@ -433,6 +440,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 - 種目名が決まったのにテキストのみで応答すること（フォームが出ないと UX が壊れる）
 - placeholder の値を 0 以外（例: 50kg/10 等の架空値）で埋めること（事実誤認の元）
+- 既にアクティブセッションの `draftExercises` に同じ種目がある状態で「何キロがいいかな」「重さ提案して」などの **値の助言** に対して `addExerciseToSession` を再呼び出しすること（重複 draft カードが生成される。代わりにテキスト応答で前セットからの増減を提案する）
 
 **検証方法:** テストによる検証
 

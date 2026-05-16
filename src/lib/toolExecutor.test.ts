@@ -407,6 +407,59 @@ describe('executeWriteTool', () => {
       expect(result.error).toBe('INVALID_ARGS')
       expect(ExerciseRepository.create).not.toHaveBeenCalled()
     })
+
+    describe('セッション内重複ガード（EXERCISE_ALREADY_IN_SESSION）', () => {
+      test('exerciseId 明示 + 既に同 id が draftExercises にある → EXERCISE_ALREADY_IN_SESSION', () => {
+        useWorkoutSessionStore.getState().startSession()
+        useWorkoutSessionStore.getState().addExercise({
+          exerciseId: 'ex-1',
+          exerciseName: 'ベンチプレス',
+          origin: 'manual',
+        })
+        const result = executeWriteTool('addExerciseToSession', {
+          exerciseId: 'ex-1',
+          exerciseName: 'ベンチプレス',
+        })
+        expect(result.success).toBe(false)
+        expect(result.error).toBe('EXERCISE_ALREADY_IN_SESSION')
+        expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(1)
+      })
+
+      test('exerciseId 明示 + sets 付き + 既存重複 → EXERCISE_ALREADY_IN_SESSION（既存 sets は書き換わらない）', () => {
+        useWorkoutSessionStore.getState().startSession()
+        useWorkoutSessionStore.getState().addExerciseWithSets({
+          exerciseId: 'ex-1',
+          exerciseName: 'ベンチプレス',
+          sets: [{ weight: 60, reps: 10 }],
+          origin: 'ai-suggested',
+        })
+        const result = executeWriteTool('addExerciseToSession', {
+          exerciseId: 'ex-1',
+          exerciseName: 'ベンチプレス',
+          sets: [{ weight: 65, reps: 8 }],
+        })
+        expect(result.success).toBe(false)
+        expect(result.error).toBe('EXERCISE_ALREADY_IN_SESSION')
+        const state = useWorkoutSessionStore.getState()
+        expect(state.draftExercises).toHaveLength(1)
+        expect(state.draftExercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
+      })
+
+      test('異なる exerciseId は重複しない（並んで正常追加）', () => {
+        useWorkoutSessionStore.getState().startSession()
+        useWorkoutSessionStore.getState().addExercise({
+          exerciseId: 'ex-1',
+          exerciseName: 'ベンチプレス',
+          origin: 'manual',
+        })
+        const result = executeWriteTool('addExerciseToSession', {
+          exerciseId: 'ex-2',
+          exerciseName: 'スクワット',
+        })
+        expect(result.success).toBe(true)
+        expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(2)
+      })
+    })
   })
 
   test('addExerciseAndLog ツール名は撤去済みで UNKNOWN_WRITE_TOOL', () => {

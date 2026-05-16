@@ -614,6 +614,41 @@ describe('useChatService', () => {
       expect(last.content).toMatch(/その種目は既に登録されています/)
       expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(0)
     })
+
+    test('既存セッションに同じ種目がある状態で再 addExerciseToSession を呼んでも draft は増えず EXERCISE_ALREADY_IN_SESSION のヒントを返す', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      useWorkoutSessionStore.getState().startSession()
+      useWorkoutSessionStore.getState().addExercise({
+        exerciseId: 'ex-bench',
+        exerciseName: 'ベンチプレス',
+        origin: 'ai-suggested',
+      })
+      const beforeCount = useWorkoutSessionStore.getState().draftExercises.length
+      const client = mockClient([
+        {
+          text: null,
+          functionCalls: [
+            {
+              name: 'addExerciseToSession',
+              args: {
+                exerciseId: 'ex-bench',
+                exerciseName: 'ベンチプレス',
+                sets: [{ weight: 65, reps: 8 }],
+              },
+            },
+          ],
+        },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('何キロがいいかな')
+      })
+      expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(beforeCount)
+      const last = useChatStore.getState().messages.slice(-1)[0]
+      expect(last.content).toMatch(/既にセッションに追加されています/)
+    })
   })
 
 

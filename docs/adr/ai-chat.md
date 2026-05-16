@@ -101,7 +101,16 @@
   - 旧版では専用ツール `addExerciseAndLog` を使っていたが、Phase 7-A のタイムライン UX で `isActive` 必須が確定したため、`addExerciseAndLog` の主機能だった「セッション自動開始」が不要になり、`addExerciseToSession` の単純な引数拡張で代替できる
   - ツール数が減るため、AI への system instruction がシンプルになり Function Calling の精度も上がる期待がある
 - **トレードオフ**: 「マスター登録だけしておきたい」ケース用に `addExercise` を温存し、システムインストラクションで「ユーザーが明示した場合のみ」と限定することで使い分ける
-- **重複時の挙動**: `exerciseId` 省略 + 既登録名の場合は `DUPLICATE_EXERCISE` を返し、AI が「その種目は既に登録されています」と案内する。AI には事前に `getExercises` で確認するよう指示する（衝突は通常起きない）
+- **重複時の挙動**: `exerciseId` 省略 + 既登録名の場合は `DUPLICATE_EXERCISE`、解決後 `exerciseId` が既にアクティブセッションの `draftExercises` にある場合は `EXERCISE_ALREADY_IN_SESSION` を返す。AI には事前に `getExercises` で確認するよう指示する（衝突は通常起きない）
+
+## セッション内重複追加のブロック: `addExerciseToSession` は `EXERCISE_ALREADY_IN_SESSION` を返す
+
+- **決定**: `executeAddExerciseToSession` は、解決済み `exerciseId` が現在の `useWorkoutSessionStore.getState().draftExercises` に既存の場合、`{ success: false, error: 'EXERCISE_ALREADY_IN_SESSION' }` を返してセッションを変更しない。重複検査は `exerciseId` 解決後に行い、`exerciseId` 省略時のマスター作成失敗（`DUPLICATE_EXERCISE`）よりも後に評価する。AI には system instruction で「既存セッションに同じ種目がある状態で値の助言を求められた場合はツールを呼ばずテキストで答える」と指示し、エラーが返ったらテキスト応答に切り替えるようガイドする
+- **理由**:
+  - AI は `buildActiveSessionContext()` 経由でセッションの `draftExercises` を認識しているが、「ベンチプレス追加して」と「何キロがいいかな」の区別に失敗して `addExerciseToSession` を再呼び出しし、2 枚目の draft カードを生成するバグが観測された
+  - プロンプトだけに頼ると LLM の指示不遵守で漏れるため、`SESSION_NOT_ACTIVE` と同じく toolExecutor 側にも防御線を置く
+  - `acceptSuggestedExercise` などユーザー操作経由の編集フローと、`workoutSessionStore.addExercise` 自体の挙動は変えず、AI ツール由来の重複追加のみをブロックする
+- **トレードオフ**: 同一種目を意図的に複数セクション設けたいケースはブロックされる（筋トレ的にも通常 1 種目 = 1 セクションのため許容）。重複検出キーは解決後 `exerciseId` で、`exerciseName` の表記揺れは検出しない
 
 ## アクティブセッション文脈の AI 注入（FR_014）
 
