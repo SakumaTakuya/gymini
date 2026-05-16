@@ -16,7 +16,7 @@ function AppLayout() {
 
   return (
     <AppHeaderProvider>
-      <main className="h-dvh flex flex-col pt-content-top pb-content-bottom">
+      <main className="h-dvh flex flex-col pb-content-bottom">
         <Outlet />
       </main>
       <BottomNav />
