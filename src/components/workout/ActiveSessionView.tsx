@@ -145,7 +145,7 @@ export function ActiveSessionView() {
         const { data: draft, index: i } = section.draft
         return (
           <section key={`${draft.exerciseId}-${i}`}>
-            <div className="sticky top-14 z-10">{renderDraft(draft, i)}</div>
+            <div className="sticky top-0 z-10">{renderDraft(draft, i)}</div>
             {section.messages.map((m) => (
               <ChatBubble
                 key={m.data.id}
