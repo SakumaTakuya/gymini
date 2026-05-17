@@ -1,6 +1,8 @@
 import { render, screen } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import userEvent from '@testing-library/user-event'
+import { describe, expect, it, vi } from 'vitest'
 import { ChatBubble } from './ChatBubble'
+import type { ProposedAction } from '../../types/chat'
 
 describe('ChatBubble', () => {
   describe('ユーザーメッセージ', () => {
@@ -52,6 +54,102 @@ describe('ChatBubble', () => {
     it('content が空のとき "..." を表示する', () => {
       render(<ChatBubble role="assistant" content="" />)
       expect(screen.getByText('...')).toBeInTheDocument()
+    })
+  })
+
+  describe('提案チップ (actions)', () => {
+    const actions: ProposedAction[] = [
+      {
+        id: 'a1',
+        label: 'ベンチプレスを始める',
+        kind: 'start-exercise',
+        payload: { exerciseName: 'ベンチプレス' },
+      },
+      {
+        id: 'a2',
+        label: '前回履歴を見る',
+        kind: 'show-history',
+        payload: { exerciseName: 'ベンチプレス' },
+      },
+    ]
+
+    it('actions が渡されたとき chip がボタンとして表示される', () => {
+      render(
+        <ChatBubble
+          role="assistant"
+          content="候補:"
+          actions={actions}
+          onActionClick={() => {}}
+        />,
+      )
+      expect(
+        screen.getByRole('button', { name: /ベンチプレスを始める/ }),
+      ).toBeInTheDocument()
+      expect(
+        screen.getByRole('button', { name: /前回履歴を見る/ }),
+      ).toBeInTheDocument()
+    })
+
+    it('chip クリックで onActionClick がその action を引数に呼ばれる', async () => {
+      const user = userEvent.setup()
+      const onActionClick = vi.fn()
+      render(
+        <ChatBubble
+          role="assistant"
+          content="候補:"
+          actions={actions}
+          onActionClick={onActionClick}
+        />,
+      )
+      await user.click(
+        screen.getByRole('button', { name: /ベンチプレスを始める/ }),
+      )
+      expect(onActionClick).toHaveBeenCalledTimes(1)
+      expect(onActionClick).toHaveBeenCalledWith(actions[0])
+    })
+
+    it('consumedActionId が指定されたとき全 chip が disabled になる', () => {
+      render(
+        <ChatBubble
+          role="assistant"
+          content="候補:"
+          actions={actions}
+          consumedActionId="a1"
+          onActionClick={() => {}}
+        />,
+      )
+      expect(
+        screen.getByRole('button', { name: /ベンチプレスを始める/ }),
+      ).toBeDisabled()
+      expect(
+        screen.getByRole('button', { name: /前回履歴を見る/ }),
+      ).toBeDisabled()
+    })
+
+    it('user メッセージには actions を描画しない', () => {
+      render(
+        <ChatBubble
+          role="user"
+          content="やあ"
+          actions={actions}
+          onActionClick={() => {}}
+        />,
+      )
+      expect(
+        screen.queryByRole('button', { name: /ベンチプレスを始める/ }),
+      ).not.toBeInTheDocument()
+    })
+
+    it('actions が空配列のときも chip エリアは描画しない', () => {
+      render(
+        <ChatBubble
+          role="assistant"
+          content="ただのテキスト"
+          actions={[]}
+          onActionClick={() => {}}
+        />,
+      )
+      expect(screen.queryByRole('button')).not.toBeInTheDocument()
     })
   })
 })

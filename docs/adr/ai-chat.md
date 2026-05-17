@@ -129,3 +129,32 @@
   - placeholder 経由なら、ユーザーは「フォームが出ている」事実から自然に値入力に進める
   - 0 以外の架空値（例: 50kg/10）を AI が埋めると事実誤認の元になるため、明示的に 0/0 とする
 - **トレードオフ**: フォーム disabled 状態が初期値となるため「保存」ボタンの非活性ルールが必要（FR_013）
+- **2026-05-17 改訂**: 本ルールの適用範囲を「種目を 1 つに **断定** した発話」に限定した。未決定発話（「何やろう」「胸の日」「メニュー」など）に対しては `proposeAction` を呼ぶ Proposed フローへ振り分ける（FR_037 / 下記 ADR）
+
+## `proposeAction` ツール導入（Proposed UX 分離、FR_037）
+
+- **決定**: 副作用なしの提案チップ専用ツール `proposeAction` を 1 つ追加し、AI 応答を Conversational / Proposed / Committed の 3 形態に分離する。`proposeAction` は read/write のどちらでもない第三カテゴリ（`isProposeTool` 判定）。`useChatService` 内のアダプタ `toProposalMessage(call)` が「actions 付き assistant メッセージ」を 1 つ生成し、`executeProposeTool` は作らない
+- **理由**:
+  - 旧 system prompt の「種目名のみで必ず write tool を呼べ」が、未決定発話（「何やろう」など）まで誤って Committed 化していた。AI が「決定者」になり、ユーザーの「選びたい」意図を踏みにじる UX バグ
+  - Proposer/Decider 分離（AI は提案者・ユーザーは決定者）が AI プロダクト設計の基本原則（Boris Cherny / Sid Bidasaria 系）。chip タップを経由することで B-002 のユーザー確認原則をむしろ強化（chip 選択 + draft 保存の 2 段確認）
+  - 新メッセージタイプ（`'assistant-proposal'`）を作らず、既存 ChatMessage に `actions?` / `consumedActionId?` の optional フィールドを追加するだけで表現可能。`messagesToContents` の二値ロール変換ロジックに影響を与えない
+- **トレードオフ**:
+  - ツール数増加（8 → 9）で Gemini Flash の Function Calling 選択精度がやや低下するリスク。system prompt の 3 モード判定基準を明確に記述し、判定例を 5〜6 個ずつ列挙して緩和する
+  - LLM が境界判定を誤る場合（Committed であるべきが Proposed 化）でも、chip タップ 1 回の追加コストで済む。逆方向（Proposed であるべきが Committed 化）は draft カードを破棄して再入力できる
+  - 旧 ADR「ツール数最小化」（`addExerciseAndLog` → `addExerciseToSession` 統合）と方針が逆行するが、Proposed UX の表現力には新ツール不可避と判断
+- **過去の判断との関係**: 旧版 system prompt「種目名のみの場合は **必ず** 書き込みツールを呼び出してください」の絶対指令を撤回する
+
+## 提案チップの実行経路を kind 別に分岐（FR_038）
+
+- **決定**: 提案チップの kind 3 種それぞれに異なる実行経路を割り当てる
+  - `start-exercise`: クライアントで直接 `executeWriteTool('addExerciseToSession', { exerciseName, sets:[{0,0}] })` を呼ぶ
+  - `show-history`: クライアントで直接 `executeReadTool('getWorkoutsByExercise', { exerciseName })` を呼ぶ
+  - `ask-followup`: `payload.prompt ?? label` を擬似発話として `sendMessage()` で再投入
+- **理由**:
+  - `start-exercise` / `show-history` は chip タップ時点でユーザーの「決定」が確定済み。AI 再呼出は (1) 1〜2 秒の遅延、(2) 別 tool への迷走で「2 枚目の draft」や「失敗テキスト」のブレ、(3) トークン消費の追加を招く
+  - chip payload に `exerciseName` が確定しているため AI 再解釈は冗長
+  - `ask-followup` は会話継続が本質なので AI 再呼出が自然
+- **トレードオフ**:
+  - クライアント側に kind→tool の対応マップが必要（`useChatService` 内のヘルパー関数として実装、独立ファイル化しない）
+  - kind を追加する場合は system prompt の例示とディスパッチマップの両方を更新する必要がある
+- **エラー時の挙動**: `executeWriteTool` が `SESSION_NOT_ACTIVE` / `EXERCISE_ALREADY_IN_SESSION` を返した場合や `executeReadTool` が失敗した場合は、対応するヒント文言を assistant メッセージとして追加する。`consumedActionId` は更新され同一チップの再タップは no-op

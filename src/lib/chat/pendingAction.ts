@@ -1,23 +1,105 @@
-import type { DateString } from '../../schemas/date'
-import type { PendingActionData } from '../../types/chat'
+import { nowISODateTimeString, type DateString } from '../../schemas/date'
+import type {
+  ChatMessage,
+  PendingActionData,
+  ProposedAction,
+  ProposedActionKind,
+  ProposedActionPayload,
+} from '../../types/chat'
 import type { FunctionCallRequest } from '../geminiClient'
-import { isWriteTool } from '../toolDefinitions'
+import { isProposeTool, isWriteTool } from '../toolDefinitions'
 import { parseSetsArg, type ToolExecutionResult } from '../toolExecutor'
+
+const MAX_PROPOSAL_OPTIONS = 5
+const VALID_KINDS: readonly ProposedActionKind[] = [
+  'start-exercise',
+  'ask-followup',
+  'show-history',
+]
 
 export function partitionFunctionCalls(calls: FunctionCallRequest[]): {
   readCalls: FunctionCallRequest[]
   writeCall: FunctionCallRequest | null
+  proposeCall: FunctionCallRequest | null
 } {
   const readCalls: FunctionCallRequest[] = []
   let writeCall: FunctionCallRequest | null = null
+  let proposeCall: FunctionCallRequest | null = null
   for (const fc of calls) {
     if (isWriteTool(fc.name)) {
       if (!writeCall) writeCall = fc
+    } else if (isProposeTool(fc.name)) {
+      if (!proposeCall) proposeCall = fc
     } else {
       readCalls.push(fc)
     }
   }
-  return { readCalls, writeCall }
+  return { readCalls, writeCall, proposeCall }
+}
+
+function isValidKind(value: unknown): value is ProposedActionKind {
+  return (
+    typeof value === 'string' &&
+    (VALID_KINDS as readonly string[]).includes(value)
+  )
+}
+
+function parsePayload(raw: unknown): ProposedActionPayload | undefined {
+  if (typeof raw !== 'object' || raw === null) return undefined
+  const p = raw as Record<string, unknown>
+  const payload: ProposedActionPayload = {}
+  if (typeof p.exerciseName === 'string') payload.exerciseName = p.exerciseName
+  if (typeof p.exerciseId === 'string') payload.exerciseId = p.exerciseId
+  if (typeof p.prompt === 'string') payload.prompt = p.prompt
+  return Object.keys(payload).length > 0 ? payload : undefined
+}
+
+export function toProposalMessage(
+  call: FunctionCallRequest,
+): ChatMessage | null {
+  if (call.name !== 'proposeAction') return null
+  const rationale = call.args.rationale
+  const rawOptions = call.args.options
+  if (typeof rationale !== 'string') return null
+  if (!Array.isArray(rawOptions) || rawOptions.length === 0) return null
+
+  const actions: ProposedAction[] = []
+  for (const raw of rawOptions) {
+    if (actions.length >= MAX_PROPOSAL_OPTIONS) break
+    if (typeof raw !== 'object' || raw === null) continue
+    const r = raw as {
+      id?: unknown
+      label?: unknown
+      kind?: unknown
+      payload?: unknown
+    }
+    if (typeof r.id !== 'string' || r.id === '') continue
+    if (typeof r.label !== 'string' || r.label === '') continue
+    if (!isValidKind(r.kind)) continue
+    const payload = parsePayload(r.payload)
+    if (
+      (r.kind === 'start-exercise' || r.kind === 'show-history') &&
+      !payload?.exerciseName
+    ) {
+      continue
+    }
+    actions.push({
+      id: r.id,
+      label: r.label,
+      kind: r.kind,
+      ...(payload ? { payload } : {}),
+    })
+  }
+
+  if (actions.length === 0) return null
+
+  return {
+    id: crypto.randomUUID(),
+    role: 'assistant',
+    content: rationale,
+    timestamp: nowISODateTimeString(),
+    actions,
+  }
 }
 
 export function toPendingActionData(

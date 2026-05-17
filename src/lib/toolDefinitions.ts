@@ -14,9 +14,12 @@ export const WRITE_TOOL_NAMES = [
   'addExerciseToSession',
 ] as const
 
+export const PROPOSE_TOOL_NAMES = ['proposeAction'] as const
+
 export type ReadToolName = (typeof READ_TOOL_NAMES)[number]
 export type WriteToolName = (typeof WRITE_TOOL_NAMES)[number]
-export type ToolName = ReadToolName | WriteToolName
+export type ProposeToolName = (typeof PROPOSE_TOOL_NAMES)[number]
+export type ToolName = ReadToolName | WriteToolName | ProposeToolName
 
 export function isWriteTool(name: string): name is WriteToolName {
   return (WRITE_TOOL_NAMES as readonly string[]).includes(name)
@@ -24,6 +27,10 @@ export function isWriteTool(name: string): name is WriteToolName {
 
 export function isReadTool(name: string): name is ReadToolName {
   return (READ_TOOL_NAMES as readonly string[]).includes(name)
+}
+
+export function isProposeTool(name: string): name is ProposeToolName {
+  return (PROPOSE_TOOL_NAMES as readonly string[]).includes(name)
 }
 
 const getRecentWorkoutsDeclaration: FunctionDeclaration = {
@@ -207,6 +214,70 @@ const addExerciseToSessionDeclaration: FunctionDeclaration = {
   },
 }
 
+const proposeActionDeclaration: FunctionDeclaration = {
+  name: 'proposeAction',
+  description:
+    'ユーザーが種目を未決定のまま選択肢を求めた場合（例: 「何やろう」「胸の日」「メニュー提案して」）に呼び出す、副作用のない提案ツール。draft カードは作らず、ユーザーがチップをタップして初めて write/read tool が実行される。具体的な値（kg/回数/セット数）や種目名 1 個の断定発話に対しては呼ばないこと（その場合は addExerciseToSession / saveWorkout を使う）',
+  parameters: {
+    type: SchemaType.OBJECT,
+    properties: {
+      rationale: {
+        type: SchemaType.STRING,
+        description:
+          '提案の理由・本文。ChatBubble に表示されるテキスト。短い導入 + 候補の概要を 1〜2 文で書く',
+      },
+      options: {
+        type: SchemaType.ARRAY,
+        description: '提案チップ群（1〜5 個、推奨は 2〜4 個）',
+        items: {
+          type: SchemaType.OBJECT,
+          properties: {
+            id: {
+              type: SchemaType.STRING,
+              description: 'チップを一意に識別する ID（任意の短い文字列で良い）',
+            },
+            label: {
+              type: SchemaType.STRING,
+              description:
+                'チップに表示するテキスト。例: "ベンチプレスを始める" / "前回の履歴を見る" / "重量を指定したい"',
+            },
+            kind: {
+              type: SchemaType.STRING,
+              format: 'enum',
+              enum: ['start-exercise', 'ask-followup', 'show-history'],
+              description:
+                'start-exercise: アクティブセッションに種目を追加する（payload.exerciseName 必須）。show-history: 種目別履歴を表示する（payload.exerciseName 必須）。ask-followup: 擬似発話としてユーザー側から再入力する（payload.prompt 推奨）',
+            },
+            payload: {
+              type: SchemaType.OBJECT,
+              description: 'kind に応じたペイロード',
+              properties: {
+                exerciseName: {
+                  type: SchemaType.STRING,
+                  description:
+                    'start-exercise / show-history で必須。提案する種目名',
+                },
+                exerciseId: {
+                  type: SchemaType.STRING,
+                  description:
+                    'start-exercise で既知の場合のみ。未指定なら exerciseName でマスター登録から行う',
+                },
+                prompt: {
+                  type: SchemaType.STRING,
+                  description:
+                    'ask-followup の場合に、ユーザーが投げる擬似発話の文面を書く（無ければ label が使われる）',
+                },
+              },
+            },
+          },
+          required: ['id', 'label', 'kind'],
+        },
+      },
+    },
+    required: ['rationale', 'options'],
+  },
+}
+
 export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   getRecentWorkoutsDeclaration,
   getWorkoutsByExerciseDeclaration,
@@ -216,4 +287,5 @@ export const TOOL_DECLARATIONS: FunctionDeclaration[] = [
   saveWorkoutDeclaration,
   addExerciseDeclaration,
   addExerciseToSessionDeclaration,
+  proposeActionDeclaration,
 ]

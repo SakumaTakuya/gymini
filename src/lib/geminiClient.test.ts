@@ -204,6 +204,30 @@ describe('buildSystemInstruction', () => {
       expect(result).toMatch(/addExercise/)
     })
   })
+
+  describe('応答モード判定 (FR_037 / Proposed 段階)', () => {
+    test('SYSTEM_INSTRUCTION に proposeAction ツールの言及がある', () => {
+      const result = buildSystemInstruction(null, null)
+      expect(result).toMatch(/proposeAction/)
+    })
+
+    test('Conversational / Proposed / Committed の 3 モードが言及される', () => {
+      const result = buildSystemInstruction(null, null)
+      expect(result).toMatch(/Proposed/i)
+      expect(result).toMatch(/Committed/i)
+    })
+
+    test('「具体値を含む発話は Committed」の最優先ルールが明示される', () => {
+      const result = buildSystemInstruction(null, null)
+      // 具体的な kg/回数/セット数が含まれたら無条件で書き込みツールを呼ぶ
+      expect(result).toMatch(/具体.*(重量|kg|回数|セット)/)
+    })
+
+    test('未決定発話（「何やろう」「○○の日」「メニュー」「おすすめ」）の例示が含まれる', () => {
+      const result = buildSystemInstruction(null, null)
+      expect(result).toMatch(/何やろう|何やる|メニュー|おすすめ|候補|の日/)
+    })
+  })
 })
 
 describe('getErrorMessage', () => {

@@ -11,6 +11,7 @@ import {
   buildWriteResultMessage,
   partitionFunctionCalls,
   toPendingActionData,
+  toProposalMessage,
 } from '../lib/chat/pendingAction'
 import {
   createGeminiClient,
@@ -20,12 +21,13 @@ import {
   type GeminiClient,
 } from '../lib/geminiClient'
 import { executeReadTool, executeWriteTool } from '../lib/toolExecutor'
+import * as ExerciseRepository from '../lib/exerciseRepository'
 import { buildActiveSessionContext } from '../lib/sessionContext'
 import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useUserProfileStore } from '../stores/userProfileStore'
 import { nowISODateTimeString } from '../schemas/date'
-import type { ToolCallResult } from '../types/chat'
+import type { ProposedAction, ToolCallResult } from '../types/chat'
 
 type CreateClient = (apiKey: string, systemInstruction?: string) => GeminiClient
 
@@ -117,7 +119,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           return
         }
 
-        const { readCalls, writeCall } = partitionFunctionCalls(
+        const { readCalls, writeCall, proposeCall } = partitionFunctionCalls(
           firstResponse.functionCalls,
         )
         const readResults: ToolCallResult[] = readCalls.map((fc) => ({
@@ -159,6 +161,14 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           return
         }
 
+        if (proposeCall) {
+          const proposalMsg = toProposalMessage(proposeCall)
+          if (proposalMsg) {
+            useChatStore.getState().addMessage(proposalMsg)
+            return
+          }
+        }
+
         if (readCalls.length === 0) return
 
         // Gemini 2.5 系では functionCall に thought_signature が付与されており、
@@ -185,12 +195,22 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         ]
         const follow = await client.generate(followUpContents, ctrl.signal)
 
-        const followWriteCall = follow.functionCalls
-          ? partitionFunctionCalls(follow.functionCalls).writeCall
+        const followPartition = follow.functionCalls
+          ? partitionFunctionCalls(follow.functionCalls)
           : null
-        if (followWriteCall) {
-          emitWriteResult(followWriteCall, follow.text, readResults)
+        if (followPartition?.writeCall) {
+          emitWriteResult(followPartition.writeCall, follow.text, readResults)
           return
+        }
+        if (followPartition?.proposeCall) {
+          const proposalMsg = toProposalMessage(followPartition.proposeCall)
+          if (proposalMsg) {
+            useChatStore.getState().addMessage({
+              ...proposalMsg,
+              toolCalls: readResults,
+            })
+            return
+          }
         }
 
         useChatStore.getState().addMessage({
@@ -224,6 +244,81 @@ export function useChatService(options: UseChatServiceOptions = {}) {
     await sendMessage(input)
   }, [sendMessage])
 
+  const triggerAction = useCallback(
+    async (messageId: string, action: ProposedAction) => {
+      const chatState = useChatStore.getState()
+      const target = chatState.messages.find((m) => m.id === messageId)
+      if (!target) return
+      if (target.consumedActionId) return
+
+      chatState.consumeAction(messageId, action.id)
+
+      switch (action.kind) {
+        case 'start-exercise': {
+          const exerciseName = action.payload?.exerciseName
+          if (!exerciseName) return
+          // payload.exerciseId が無いとき、既存種目名と一致すればその id を使う。
+          // AI が proposeAction で未指定の場合でも、既登録種目を「未登録扱い」で
+          // create 重複させないため。
+          let resolvedExerciseId = action.payload?.exerciseId
+          if (!resolvedExerciseId) {
+            const existing = ExerciseRepository.getAll().find(
+              (e) => e.name === exerciseName,
+            )
+            if (existing) resolvedExerciseId = existing.id
+          }
+          const args: Record<string, unknown> = {
+            exerciseName,
+            sets: [{ weight: 0, reps: 0 }],
+          }
+          if (resolvedExerciseId) {
+            args.exerciseId = resolvedExerciseId
+          }
+          const result = executeWriteTool('addExerciseToSession', args)
+          const data = toPendingActionData({
+            name: 'addExerciseToSession',
+            args,
+          })
+          useChatStore.getState().addMessage({
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: data
+              ? buildWriteResultMessage(data, result)
+              : '提案を実行できませんでした。',
+            timestamp: nowISODateTimeString(),
+            toolCalls: [
+              { toolName: 'addExerciseToSession', args, result },
+            ],
+          })
+          return
+        }
+        case 'show-history': {
+          const exerciseName = action.payload?.exerciseName
+          if (!exerciseName) return
+          const args = { exerciseName }
+          const result = executeReadTool('getWorkoutsByExercise', args)
+          const content = formatHistoryResultMessage(exerciseName, result)
+          useChatStore.getState().addMessage({
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content,
+            timestamp: nowISODateTimeString(),
+            toolCalls: [
+              { toolName: 'getWorkoutsByExercise', args, result },
+            ],
+          })
+          return
+        }
+        case 'ask-followup': {
+          const prompt = action.payload?.prompt ?? action.label
+          await sendMessage(prompt)
+          return
+        }
+      }
+    },
+    [sendMessage],
+  )
+
   return {
     messages,
     isLoading,
@@ -233,5 +328,29 @@ export function useChatService(options: UseChatServiceOptions = {}) {
     stopResponse,
     clearMessages,
     retryLastMessage,
+    triggerAction,
   }
+}
+
+function formatHistoryResultMessage(
+  exerciseName: string,
+  result: unknown,
+): string {
+  if (
+    result &&
+    typeof result === 'object' &&
+    'success' in result &&
+    (result as { success?: unknown }).success === false
+  ) {
+    return `${exerciseName} の履歴を取得できませんでした。`
+  }
+  const records = Array.isArray(result)
+    ? result
+    : Array.isArray((result as { workouts?: unknown[] } | undefined)?.workouts)
+      ? (result as { workouts: unknown[] }).workouts
+      : []
+  if (records.length === 0) {
+    return `${exerciseName} の履歴はまだありません。`
+  }
+  return `${exerciseName} の直近の記録 ${records.length} 件を表示します。`
 }

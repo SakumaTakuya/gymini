@@ -46,6 +46,7 @@ export function ActiveSessionView() {
     error,
     lastFailedInput,
     retryLastMessage,
+    triggerAction,
   } = useChatService()
   const hasApiKey = useSettingsStore((s) => s.hasApiKey)
   const {
@@ -165,6 +166,11 @@ export function ActiveSessionView() {
           key={item.data.id}
           role={item.data.role}
           content={item.data.content}
+          actions={item.data.actions}
+          consumedActionId={item.data.consumedActionId}
+          onActionClick={(action) =>
+            void triggerAction(item.data.id, action)
+          }
         />
       ))}
       {sections.map((section) => {
@@ -177,6 +183,11 @@ export function ActiveSessionView() {
                 key={m.data.id}
                 role={m.data.role}
                 content={m.data.content}
+                actions={m.data.actions}
+                consumedActionId={m.data.consumedActionId}
+                onActionClick={(action) =>
+                  void triggerAction(m.data.id, action)
+                }
               />
             ))}
           </section>

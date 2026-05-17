@@ -18,6 +18,7 @@ type ChatActions = {
   setError: (error: string | null) => void
   setLastFailedInput: (input: string | null) => void
   clearMessages: () => void
+  consumeAction: (messageId: string, actionId: string) => void
 }
 
 export const useChatStore = create<ChatState & ChatActions>()(
@@ -56,6 +57,17 @@ export const useChatStore = create<ChatState & ChatActions>()(
           isLoading: false,
           error: null,
           lastFailedInput: null,
+        })
+      },
+
+      consumeAction: (messageId, actionId) => {
+        set((state) => {
+          const idx = state.messages.findIndex((m) => m.id === messageId)
+          if (idx === -1) return state
+          if (state.messages[idx].consumedActionId === actionId) return state
+          const updated = [...state.messages]
+          updated[idx] = { ...updated[idx], consumedActionId: actionId }
+          return { messages: updated }
         })
       },
     }),
