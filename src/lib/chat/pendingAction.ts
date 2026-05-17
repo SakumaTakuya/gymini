@@ -90,6 +90,9 @@ export function buildWriteResultMessage(
     if (result.error === 'DUPLICATE_EXERCISE') {
       return 'その種目は既に登録されています。'
     }
+    if (result.error === 'EXERCISE_ALREADY_IN_SESSION') {
+      return 'その種目は既にセッションに追加されています。'
+    }
     if (result.error === 'SESSION_NOT_ACTIVE') {
       return 'ワークアウトセッションが開始されていません。セッションを開始してから追加してください。'
     }
