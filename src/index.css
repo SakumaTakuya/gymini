@@ -70,6 +70,16 @@
   animation: pop var(--duration-normal) var(--ease-spring-soft) both;
 }
 
+@keyframes breath {
+  0% { transform: scale(1); }
+  50% { transform: scale(1.02); }
+  100% { transform: scale(1); }
+}
+
+@utility animate-breath {
+  animation: breath var(--duration-breath) var(--ease-spring-soft) both;
+}
+
 @utility chat-markdown {
   & p {
     @apply my-1 leading-relaxed;
