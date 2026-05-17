@@ -13,6 +13,7 @@ type ChatState = {
 
 type ChatActions = {
   addMessage: (message: ChatMessage) => void
+  removeMessage: (id: string) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
   setLastFailedInput: (input: string | null) => void
@@ -29,6 +30,12 @@ export const useChatStore = create<ChatState & ChatActions>()(
 
       addMessage: (message) => {
         set((state) => ({ messages: [...state.messages, message] }))
+      },
+
+      removeMessage: (id) => {
+        set((state) => ({
+          messages: state.messages.filter((m) => m.id !== id),
+        }))
       },
 
       setLoading: (loading) => {

@@ -203,10 +203,8 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       } catch (err) {
         if (isAbortError(err)) return
         console.error('[ai-chat] Gemini API error:', err)
-        useChatStore.setState((s) => ({
-          messages: s.messages.filter((m) => m.id !== userMessageId),
-        }))
         const store = useChatStore.getState()
+        store.removeMessage(userMessageId)
         store.setLastFailedInput(trimmed)
         store.setError(getErrorMessage(err))
       } finally {

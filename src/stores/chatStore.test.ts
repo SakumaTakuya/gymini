@@ -34,6 +34,22 @@ describe('chatStore', () => {
     expect(useChatStore.getState().messages).toEqual([msg])
   })
 
+  test('removeMessage で指定 id のメッセージが除去される', () => {
+    const a = makeMessage({ id: 'a' })
+    const b = makeMessage({ id: 'b' })
+    useChatStore.getState().addMessage(a)
+    useChatStore.getState().addMessage(b)
+    useChatStore.getState().removeMessage('a')
+    expect(useChatStore.getState().messages).toEqual([b])
+  })
+
+  test('removeMessage で存在しない id を指定しても何も起こらない', () => {
+    const msg = makeMessage({ id: 'a' })
+    useChatStore.getState().addMessage(msg)
+    useChatStore.getState().removeMessage('does-not-exist')
+    expect(useChatStore.getState().messages).toEqual([msg])
+  })
+
   test('setLoading で isLoading が切り替わる', () => {
     useChatStore.getState().setLoading(true)
     expect(useChatStore.getState().isLoading).toBe(true)
