@@ -76,6 +76,13 @@ describe('ActiveSessionView', () => {
     expect(scrollContainer.className).not.toContain('bg-gym-zinc-50')
   })
 
+  it('縦スクロールコンテナに view-transition-name: session-frame を持つ (spatial 遷移)', () => {
+    useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
+    render(<ActiveSessionView />)
+    const scrollContainer = screen.getByTestId('active-session-scroll')
+    expect(scrollContainer.style.viewTransitionName).toBe('session-frame')
+  })
+
   it('ChatInput 経由で種目を選ぶと ExerciseCard が表示される', async () => {
     const user = userEvent.setup()
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)

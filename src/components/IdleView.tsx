@@ -38,6 +38,7 @@ export function IdleView({ onStartTraining }: IdleViewProps) {
         <button
           type="button"
           onClick={onStartTraining}
+          style={{ viewTransitionName: 'session-frame' }}
           className="focus-ring w-[85%] h-13 bg-gym-black text-gym-white font-bold rounded-2xl flex items-center justify-center gap-2 shadow-float active:scale-95 transition-transform"
         >
           <Lightning size={20} weight="bold" className="text-gym-accent" />

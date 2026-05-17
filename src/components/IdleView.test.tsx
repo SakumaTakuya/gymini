@@ -60,4 +60,12 @@ describe('IdleView', () => {
     })
     expect(button.className).toContain('h-13')
   })
+
+  it('CTA ボタンに view-transition-name: session-frame を持つ (spatial 遷移)', async () => {
+    renderIdleView()
+    const button = await screen.findByRole('button', {
+      name: /トレーニングを始める/,
+    })
+    expect(button.style.viewTransitionName).toBe('session-frame')
+  })
 })

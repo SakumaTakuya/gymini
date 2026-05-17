@@ -127,6 +127,7 @@ export function ActiveSessionView() {
   return (
     <div
       data-testid="active-session-scroll"
+      style={{ viewTransitionName: 'session-frame' }}
       className="flex-1 pt-content-top bg-gym-paper pb-content-bottom-scroll overflow-y-auto overscroll-contain"
     >
       {!hasApiKey && (
