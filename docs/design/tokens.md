@@ -19,6 +19,7 @@
 | `gym-zinc-600` | `#52525b` | セカンダリテキスト |
 | `gym-zinc-900` | `#18181b` | 見出し（最暗）|
 | `gym-accent` | `#DE3A2B` | アクセント（赤）、通知バッジ |
+| `gym-paper` | `#FAF8F4` | Active Session 限定の暖色背景（[tactile-direction.md](tactile-direction.md) Matas 哲学 1）|
 
 Opacity 修飾子は許容: `bg-gym-white/80`、`border-gym-zinc-200/60` など。
 

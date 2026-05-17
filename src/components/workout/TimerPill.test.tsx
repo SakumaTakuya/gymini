@@ -1,6 +1,7 @@
-import { describe, it, expect } from 'vitest'
-import { render, screen } from '@testing-library/react'
+import { describe, it, expect, vi, afterEach } from 'vitest'
+import { render, screen, act } from '@testing-library/react'
 import { TimerPill } from './TimerPill'
+import { setupHapticMocks } from '@/test/hapticMocks'
 
 describe('TimerPill', () => {
   it('ゼロ秒のとき00:00:00を描画する', () => {
@@ -31,6 +32,57 @@ describe('TimerPill', () => {
       render(<TimerPill elapsedSeconds={0} />)
       const span = screen.getByText('00:00:00')
       expect(span.className).toContain('tabular-nums')
+    })
+  })
+
+  describe('Cox 毎分呼吸', () => {
+    let restore: () => void = () => {}
+    afterEach(() => { vi.useRealTimers(); restore() })
+
+    it('elapsedSeconds=0 で render 時は animate-breath を持たない', () => {
+      ;({ restore } = setupHapticMocks())
+      const { container } = render(<TimerPill elapsedSeconds={0} />)
+      const pill = container.firstChild as HTMLElement
+      expect(pill.className).not.toContain('animate-breath')
+    })
+
+    it('elapsedSeconds が 60 の倍数のフレームで animate-breath を持つ', () => {
+      ;({ restore } = setupHapticMocks())
+      vi.useFakeTimers()
+      const { container, rerender } = render(<TimerPill elapsedSeconds={59} />)
+      act(() => {
+        rerender(<TimerPill elapsedSeconds={60} />)
+      })
+      act(() => {
+        vi.advanceTimersByTime(1)
+      })
+      const pill = container.firstChild as HTMLElement
+      expect(pill.className).toContain('animate-breath')
+    })
+
+    it('1500ms 後に animate-breath が外れる', () => {
+      ;({ restore } = setupHapticMocks())
+      vi.useFakeTimers()
+      const { container, rerender } = render(<TimerPill elapsedSeconds={59} />)
+      act(() => {
+        rerender(<TimerPill elapsedSeconds={60} />)
+      })
+      act(() => {
+        vi.advanceTimersByTime(1)
+      })
+      act(() => {
+        vi.advanceTimersByTime(1500)
+      })
+      const pill = container.firstChild as HTMLElement
+      expect(pill.className).not.toContain('animate-breath')
+    })
+
+    it('prefers-reduced-motion: reduce の時は呼吸を発火しない', () => {
+      ;({ restore } = setupHapticMocks({ reducedMotion: true }))
+      const { container, rerender } = render(<TimerPill elapsedSeconds={59} />)
+      rerender(<TimerPill elapsedSeconds={60} />)
+      const pill = container.firstChild as HTMLElement
+      expect(pill.className).not.toContain('animate-breath')
     })
   })
 })

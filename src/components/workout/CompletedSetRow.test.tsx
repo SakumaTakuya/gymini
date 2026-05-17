@@ -4,6 +4,7 @@ import { CompletedSetRow } from './CompletedSetRow'
 
 describe('CompletedSetRow', () => {
   const defaultProps = {
+    setNumber: 2,
     set: { weight: 60, reps: 10 },
     onEdit: vi.fn(),
     onDelete: vi.fn(),
@@ -64,6 +65,31 @@ describe('CompletedSetRow', () => {
       const row = container.firstChild as HTMLElement
       expect(row.className).toContain('animate-pop')
       expect(row.className).not.toContain('animate-appear')
+    })
+  })
+
+  describe('Matas 章番号透かし', () => {
+    it('setNumber を背景に透かしとして描画する', () => {
+      const { container } = render(<CompletedSetRow {...defaultProps} setNumber={3} />)
+      const watermark = container.querySelector('[data-testid="completed-set-watermark"]')
+      expect(watermark).toBeInTheDocument()
+      expect(watermark!.textContent).toBe('3')
+    })
+
+    it('透かしは text-5xl text-gym-zinc-200 absolute pointer-events-none を持つ', () => {
+      const { container } = render(<CompletedSetRow {...defaultProps} />)
+      const watermark = container.querySelector('[data-testid="completed-set-watermark"]')
+      expect(watermark!.className).toContain('text-5xl')
+      expect(watermark!.className).toContain('text-gym-zinc-200')
+      expect(watermark!.className).toContain('absolute')
+      expect(watermark!.className).toContain('pointer-events-none')
+    })
+
+    it('行 div は relative overflow-hidden を持ち、透かしをクリップする', () => {
+      const { container } = render(<CompletedSetRow {...defaultProps} />)
+      const row = container.firstChild as HTMLElement
+      expect(row.className).toContain('relative')
+      expect(row.className).toContain('overflow-hidden')
     })
   })
 })

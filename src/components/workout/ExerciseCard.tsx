@@ -63,14 +63,14 @@ export function ExerciseCard({
 
   return (
     <div
-      className={`animate-appear relative mx-4 mb-3 bg-gym-white rounded-[24px] p-5 shadow-soft border border-gym-zinc-100 ${
+      className={`animate-appear relative mx-4 mb-3 bg-gym-white rounded-[24px] p-5 shadow-soft ${
         isCollapsed ? 'opacity-70' : ''
       } ${menuOpen ? 'z-10' : ''}`}
     >
       {/* Header */}
       <div
         className={`flex items-center gap-3 ${
-          !isCollapsed ? 'mb-4 border-b border-gym-zinc-50 pb-3' : ''
+          !isCollapsed ? 'mb-4' : ''
         }`}
       >
         <div className="relative flex-shrink-0">
@@ -150,7 +150,7 @@ export function ExerciseCard({
                 const insertAt = editingSetIndex ?? sets.length
                 return [
                   ...sets.slice(0, insertAt).map((set, i) => (
-                    <CompletedSetRow key={i} set={set} onEdit={() => onEdit(i)} onDelete={() => onDelete(i)} />
+                    <CompletedSetRow key={i} setNumber={i + 1} set={set} onEdit={() => onEdit(i)} onDelete={() => onDelete(i)} />
                   )),
                   <PendingSetRow
                     key="pending"
@@ -164,13 +164,13 @@ export function ExerciseCard({
                   ...sets.slice(insertAt).map((set, sliceI) => {
                     const idx = insertAt + sliceI
                     return (
-                      <CompletedSetRow key={idx + 1} set={set} onEdit={() => onEdit(idx)} onDelete={() => onDelete(idx)} />
+                      <CompletedSetRow key={idx + 1} setNumber={idx + 1} set={set} onEdit={() => onEdit(idx)} onDelete={() => onDelete(idx)} />
                     )
                   }),
                 ]
               })() : (
                 sets.map((set, i) => (
-                  <CompletedSetRow key={i} set={set} onEdit={() => onEdit(i)} onDelete={() => onDelete(i)} />
+                  <CompletedSetRow key={i} setNumber={i + 1} set={set} onEdit={() => onEdit(i)} onDelete={() => onDelete(i)} />
                 ))
               )}
             </div>

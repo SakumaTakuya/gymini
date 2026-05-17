@@ -4,6 +4,7 @@ import { ActiveSessionView } from '../components/workout/ActiveSessionView'
 import { TimerPill } from '../components/workout/TimerPill'
 import { AppHeaderContent } from '../components/AppHeaderContext'
 import { GearIcon } from '../components/GearIcon'
+import { withViewTransition } from '../lib/viewTransition'
 
 export function TrainingPage() {
   const { isActive, startSession, elapsedSeconds, endSession } =
@@ -37,7 +38,7 @@ export function TrainingPage() {
   return (
     <>
       <AppHeaderContent trailing={<GearIcon variant="overlay" />} />
-      <IdleView onStartTraining={() => startSession()} />
+      <IdleView onStartTraining={() => withViewTransition(() => startSession())} />
     </>
   )
 }
