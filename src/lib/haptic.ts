@@ -1,3 +1,5 @@
+export const HAPTIC_SET_COMPLETE_MS = 10
+
 export function tactileVibrate(ms: number): void {
   if (typeof window === 'undefined') return
   if (window.matchMedia?.('(prefers-reduced-motion: reduce)').matches) return

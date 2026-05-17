@@ -2,7 +2,7 @@ import { Check, Plus } from '@phosphor-icons/react'
 import { type FocusEvent, type KeyboardEvent, useRef } from 'react'
 import { IconButton } from '../ui/icon-button'
 import { Input } from '../ui/input'
-import { tactileVibrate } from '@/lib/haptic'
+import { tactileVibrate, HAPTIC_SET_COMPLETE_MS } from '@/lib/haptic'
 
 type PendingSetRowProps = {
   setNumber: number
@@ -28,7 +28,7 @@ export function PendingSetRow({
   const buttonPressedRef = useRef(false)
 
   const completeWithHaptic = () => {
-    tactileVibrate(10)
+    tactileVibrate(HAPTIC_SET_COMPLETE_MS)
     onComplete()
   }
 
