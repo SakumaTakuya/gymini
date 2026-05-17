@@ -44,7 +44,7 @@ export function ExerciseCard({
 
   if (origin === 'ai-suggested') {
     return (
-      <div className="animate-appear relative mx-4 mb-3 bg-gym-zinc-50 rounded-[24px] p-5 shadow-soft border border-dashed border-gym-zinc-300">
+      <div className="animate-appear relative mx-4 mb-3 bg-gym-white rounded-[24px] p-5 shadow-soft border border-dashed border-gym-zinc-300">
         <div className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-gym-black px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gym-white">
           <Sparkle size={10} weight="fill" />
           AI 提案
