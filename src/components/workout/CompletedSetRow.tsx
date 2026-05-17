@@ -43,7 +43,7 @@ export function CompletedSetRow({ setNumber, set, onEdit, onDelete }: CompletedS
     <div
       ref={containerRef}
       data-testid="completed-set-row"
-      className="relative overflow-hidden rounded-xl"
+      className="animate-pop relative overflow-hidden rounded-xl"
     >
       <div
         aria-hidden="true"
@@ -69,7 +69,7 @@ export function CompletedSetRow({ setNumber, set, onEdit, onDelete }: CompletedS
         onPointerMove={swipeOnPointerMove}
         onPointerUp={swipeOnPointerUp}
         onPointerCancel={swipeOnPointerCancel}
-        className="animate-pop relative overflow-hidden flex items-center gap-3 py-2 px-2 bg-gym-zinc-50 rounded-xl touch-pan-y"
+        className="relative overflow-hidden flex items-center gap-3 py-2 px-2 bg-gym-zinc-50 rounded-xl touch-pan-y"
       >
         <span
           data-testid="completed-set-watermark"

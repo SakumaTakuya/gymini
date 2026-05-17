@@ -60,11 +60,17 @@ describe('CompletedSetRow', () => {
       expect(reps.className).toContain('text-[10px]')
     })
 
-    it('foreground は animate-pop を持つ (完了直後の scale spring、animate-appear は廃止)', () => {
+    it('container は animate-pop を持つ (完了直後の scale spring、animate-appear は廃止)', () => {
+      render(<CompletedSetRow {...defaultProps} />)
+      const row = screen.getByTestId('completed-set-row')
+      expect(row.className).toContain('animate-pop')
+      expect(row.className).not.toContain('animate-appear')
+    })
+
+    it('foreground は animate-pop を持たない (swipe の transform と競合するため)', () => {
       render(<CompletedSetRow {...defaultProps} />)
       const fg = screen.getByTestId('completed-set-foreground')
-      expect(fg.className).toContain('animate-pop')
-      expect(fg.className).not.toContain('animate-appear')
+      expect(fg.className).not.toContain('animate-pop')
     })
   })
 
