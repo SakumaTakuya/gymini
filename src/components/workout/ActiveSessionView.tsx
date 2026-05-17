@@ -13,11 +13,11 @@ import { ExerciseCard } from './ExerciseCard'
 type TimelineItem =
   | { kind: 'message'; data: ChatMessage; timestamp: string }
   | {
-      kind: 'draft'
-      data: DraftExercise
-      index: number
-      timestamp: string
-    }
+    kind: 'draft'
+    data: DraftExercise
+    index: number
+    timestamp: string
+  }
 type TimelineMessage = Extract<TimelineItem, { kind: 'message' }>
 type TimelineDraft = Extract<TimelineItem, { kind: 'draft' }>
 
@@ -145,7 +145,7 @@ export function ActiveSessionView() {
         const { data: draft, index: i } = section.draft
         return (
           <section key={`${draft.exerciseId}-${i}`}>
-            <div className="sticky top-content-top z-10">{renderDraft(draft, i)}</div>
+            <div className="sticky top-safe-top z-10">{renderDraft(draft, i)}</div>
             {section.messages.map((m) => (
               <ChatBubble
                 key={m.data.id}

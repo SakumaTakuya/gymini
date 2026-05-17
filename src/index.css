@@ -25,6 +25,7 @@
   --shadow-float: 0 8px 24px rgba(0, 0, 0, 0.10);
   --spacing-content-top: calc(env(safe-area-inset-top) + 4rem); /* safe-area + 64px — fixed header clearance */
   --spacing-header-top: calc(env(safe-area-inset-top) + 0.75rem); /* safe-area + 12px — fixed header internal top padding */
+  --spacing-safe-top: env(safe-area-inset-top); /* safe-area only — pin just below the notch, let content pass behind the floating pill */
   --spacing-content-bottom: 6rem;         /* 96px — BottomNav clearance */
   --spacing-content-bottom-scroll: 8rem;  /* 128px — scroll containers (extra breathing room) */
   --spacing-content-bottom-chat: 10rem;   /* 160px — chat input + BottomNav */
