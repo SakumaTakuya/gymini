@@ -19,13 +19,13 @@ export function CompletedSetRow({ set, onEdit, onDelete }: CompletedSetRowProps)
         <Trash size={14} weight="bold" />
       </IconButton>
       <div className="flex-1 flex gap-6">
-        <p className="font-outfit font-semibold text-lg text-gym-black">
+        <p className="font-outfit font-semibold text-2xl text-gym-black tabular-nums">
           {set.weight}{' '}
-          <span className="text-xs font-normal text-gym-zinc-400">kg</span>
+          <span className="text-[10px] font-normal text-gym-zinc-400">kg</span>
         </p>
-        <p className="font-outfit font-semibold text-lg text-gym-black">
+        <p className="font-outfit font-semibold text-2xl text-gym-black tabular-nums">
           {set.reps}{' '}
-          <span className="text-xs font-normal text-gym-zinc-400">回</span>
+          <span className="text-[10px] font-normal text-gym-zinc-400">回</span>
         </p>
       </div>
       <IconButton

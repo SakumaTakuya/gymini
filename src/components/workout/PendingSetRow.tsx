@@ -54,8 +54,8 @@ export function PendingSetRow({
   }
 
   return (
-    <div className="animate-appear flex items-center gap-3 py-2 px-2 rounded-xl border border-gym-zinc-200 bg-gym-white shadow-soft relative overflow-hidden">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gym-black" />
+    <div className="animate-appear group flex items-center gap-3 py-2 px-2 rounded-xl border border-gym-zinc-200 bg-gym-white shadow-soft relative overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gym-black transition-colors duration-quick group-focus-within:bg-gym-accent" />
       <div className="w-6 h-6 rounded bg-gym-zinc-100 flex items-center justify-center text-gym-black ml-1">
         <span className="font-outfit font-bold text-xs">{setNumber}</span>
       </div>
@@ -67,9 +67,9 @@ export function PendingSetRow({
           onBlur={handleWeightBlur}
           onKeyDown={handleWeightKeyDown}
           inputMode="decimal"
-          suffix={<span className="text-xs font-medium text-gym-zinc-400">kg</span>}
+          suffix={<span className="text-[10px] font-medium text-gym-zinc-400">kg</span>}
           containerClassName="items-baseline gap-1 h-auto pb-0.5"
-          className="w-10 text-xl font-outfit font-bold"
+          className="w-16 text-3xl font-outfit font-bold tabular-nums"
         />
         <Input
           ref={repsRef}
@@ -79,9 +79,9 @@ export function PendingSetRow({
           onBlur={handleRepsBlur}
           onKeyDown={handleRepsKeyDown}
           inputMode="numeric"
-          suffix={<span className="text-xs font-medium text-gym-zinc-400">回</span>}
+          suffix={<span className="text-[10px] font-medium text-gym-zinc-400">回</span>}
           containerClassName="items-baseline gap-1 h-auto pb-0.5"
-          className="w-8 text-xl font-outfit font-bold"
+          className="w-12 text-3xl font-outfit font-bold tabular-nums"
         />
       </div>
       <IconButton

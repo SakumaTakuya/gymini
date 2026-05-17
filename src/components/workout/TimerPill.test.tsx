@@ -17,4 +17,20 @@ describe('TimerPill', () => {
     render(<TimerPill elapsedSeconds={2 * 3600 + 5 * 60 + 9} />)
     expect(screen.getByText('02:05:09')).toBeInTheDocument()
   })
+
+  describe('Matas / Cox 整理', () => {
+    it('Clock アイコンは animate-pulse を持たない (常時拍動を撤去)', () => {
+      const { container } = render(<TimerPill elapsedSeconds={0} />)
+      const clockSvg = container.querySelector('svg')
+      expect(clockSvg).not.toBeNull()
+      const cls = clockSvg!.getAttribute('class') ?? ''
+      expect(cls).not.toContain('animate-pulse')
+    })
+
+    it('時刻 span は tabular-nums を持つ (フォントサイズ変動防止)', () => {
+      render(<TimerPill elapsedSeconds={0} />)
+      const span = screen.getByText('00:00:00')
+      expect(span.className).toContain('tabular-nums')
+    })
+  })
 })

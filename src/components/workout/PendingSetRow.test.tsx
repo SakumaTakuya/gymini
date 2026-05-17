@@ -53,6 +53,45 @@ describe('PendingSetRow', () => {
     expect(bar).toBeInTheDocument()
   })
 
+  describe('Matas 数字拡大 + accent focus 発光', () => {
+    it('weight input は text-3xl クラスを持つ', () => {
+      render(<PendingSetRow {...defaultProps} />)
+      const [weightInput] = screen.getAllByRole('spinbutton')
+      expect(weightInput.className).toContain('text-3xl')
+    })
+
+    it('reps input は text-3xl クラスを持つ', () => {
+      render(<PendingSetRow {...defaultProps} />)
+      const [, repsInput] = screen.getAllByRole('spinbutton')
+      expect(repsInput.className).toContain('text-3xl')
+    })
+
+    it('kg サフィックスは text-[10px] クラスを持つ (褪色)', () => {
+      render(<PendingSetRow {...defaultProps} />)
+      const kg = screen.getByText('kg')
+      expect(kg.className).toContain('text-[10px]')
+    })
+
+    it('回 サフィックスは text-[10px] クラスを持つ', () => {
+      render(<PendingSetRow {...defaultProps} />)
+      const reps = screen.getByText('回')
+      expect(reps.className).toContain('text-[10px]')
+    })
+
+    it('行コンテナに group クラスを持つ (focus-within の親)', () => {
+      const { container } = render(<PendingSetRow {...defaultProps} />)
+      const row = container.firstChild as HTMLElement
+      expect(row.className).toContain('group')
+    })
+
+    it('accent stripe は group-focus-within で gym-accent に変化する', () => {
+      const { container } = render(<PendingSetRow {...defaultProps} />)
+      const stripe = container.querySelector('div.absolute.bg-gym-black')
+      expect(stripe).toBeInTheDocument()
+      expect(stripe!.className).toContain('group-focus-within:bg-gym-accent')
+    })
+  })
+
   describe('オートフォーカス動作', () => {
     it('重量inputがフォーカスを失うとレップ数inputにフォーカスする', () => {
       render(<PendingSetRow {...defaultProps} />)
