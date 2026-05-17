@@ -18,7 +18,7 @@ export function CompletedSetRow({ setNumber, set, onEdit, onDelete }: CompletedS
       <span
         data-testid="completed-set-watermark"
         aria-hidden="true"
-        className="absolute right-0 top-0 bottom-0 flex items-center pr-4 font-outfit font-bold text-5xl text-gym-zinc-100 pointer-events-none select-none tabular-nums"
+        className="absolute right-0 top-0 bottom-0 flex items-center pr-4 font-outfit font-bold text-5xl text-gym-zinc-200 pointer-events-none select-none tabular-nums"
       >
         {setNumber}
       </span>

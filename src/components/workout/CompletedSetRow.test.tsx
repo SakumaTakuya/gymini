@@ -76,11 +76,11 @@ describe('CompletedSetRow', () => {
       expect(watermark!.textContent).toBe('3')
     })
 
-    it('透かしは text-5xl text-gym-zinc-100 absolute pointer-events-none を持つ', () => {
+    it('透かしは text-5xl text-gym-zinc-200 absolute pointer-events-none を持つ', () => {
       const { container } = render(<CompletedSetRow {...defaultProps} />)
       const watermark = container.querySelector('[data-testid="completed-set-watermark"]')
       expect(watermark!.className).toContain('text-5xl')
-      expect(watermark!.className).toContain('text-gym-zinc-100')
+      expect(watermark!.className).toContain('text-gym-zinc-200')
       expect(watermark!.className).toContain('absolute')
       expect(watermark!.className).toContain('pointer-events-none')
     })
