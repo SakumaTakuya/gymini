@@ -37,6 +37,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
   const messages = useChatStore((s) => s.messages)
   const isLoading = useChatStore((s) => s.isLoading)
   const error = useChatStore((s) => s.error)
+  const lastFailedInput = useChatStore((s) => s.lastFailedInput)
 
   const abortControllerRef = useRef<AbortController | null>(null)
 
@@ -66,11 +67,11 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       const settings = useSettingsStore.getState()
       const { profile } = useUserProfileStore.getState()
       if (!settings.hasApiKey) {
-        useChatStore
-          .getState()
-          .setError(
-            'AIチャットを利用するにはAPIキーの設定が必要です。設定画面からGemini APIキーを入力してください。',
-          )
+        const store = useChatStore.getState()
+        store.setError(
+          'AIチャットを利用するにはAPIキーの設定が必要です。設定画面からGemini APIキーを入力してください。',
+        )
+        store.setLastFailedInput(trimmed)
         return
       }
 
@@ -80,8 +81,10 @@ export function useChatService(options: UseChatServiceOptions = {}) {
 
       const chat = useChatStore.getState()
       chat.setError(null)
+      chat.setLastFailedInput(null)
+      const userMessageId = crypto.randomUUID()
       chat.addMessage({
-        id: crypto.randomUUID(),
+        id: userMessageId,
         role: 'user',
         content: trimmed,
         timestamp: nowISODateTimeString(),
@@ -200,7 +203,10 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       } catch (err) {
         if (isAbortError(err)) return
         console.error('[ai-chat] Gemini API error:', err)
-        useChatStore.getState().setError(getErrorMessage(err))
+        const store = useChatStore.getState()
+        store.removeMessage(userMessageId)
+        store.setLastFailedInput(trimmed)
+        store.setError(getErrorMessage(err))
       } finally {
         if (abortControllerRef.current === ctrl) {
           abortControllerRef.current = null
@@ -211,12 +217,21 @@ export function useChatService(options: UseChatServiceOptions = {}) {
     [createClient],
   )
 
+  const retryLastMessage = useCallback(async () => {
+    const { lastFailedInput: input, isLoading: loading } =
+      useChatStore.getState()
+    if (!input || loading) return
+    await sendMessage(input)
+  }, [sendMessage])
+
   return {
     messages,
     isLoading,
     error,
+    lastFailedInput,
     sendMessage,
     stopResponse,
     clearMessages,
+    retryLastMessage,
   }
 }

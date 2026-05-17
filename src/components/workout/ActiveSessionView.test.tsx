@@ -338,6 +338,39 @@ describe('ActiveSessionView', () => {
       expect(screen.getByRole('link', { name: /設定画面へ/ })).toBeInTheDocument()
     })
 
+    it('error と lastFailedInput がセットされたとき再送ボタンが表示される', () => {
+      useChatStore.setState({
+        messages: [],
+        isLoading: false,
+        error: 'ネットワークエラー',
+        lastFailedInput: '再送したい',
+      })
+      render(<ActiveSessionView />)
+      expect(screen.getByRole('button', { name: '再送' })).toBeInTheDocument()
+    })
+
+    it('lastFailedInput が null のとき再送ボタンは表示されない', () => {
+      useChatStore.setState({
+        messages: [],
+        isLoading: false,
+        error: 'ネットワークエラー',
+        lastFailedInput: null,
+      })
+      render(<ActiveSessionView />)
+      expect(screen.queryByRole('button', { name: '再送' })).not.toBeInTheDocument()
+    })
+
+    it('isLoading=true のとき再送ボタンは disabled になる', () => {
+      useChatStore.setState({
+        messages: [],
+        isLoading: true,
+        error: 'ネットワークエラー',
+        lastFailedInput: '再送したい',
+      })
+      render(<ActiveSessionView />)
+      expect(screen.getByRole('button', { name: '再送' })).toBeDisabled()
+    })
+
     it('hasApiKey === true のとき APIキーガイドカードは表示されない', () => {
       useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
       render(<ActiveSessionView />)

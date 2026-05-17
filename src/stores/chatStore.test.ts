@@ -6,7 +6,12 @@ import { makeChatMessage as makeMessage } from '../test/fixtures/chatMessage'
 describe('chatStore', () => {
   beforeEach(() => {
     localStorage.clear()
-    useChatStore.setState({ messages: [], isLoading: false, error: null })
+    useChatStore.setState({
+      messages: [],
+      isLoading: false,
+      error: null,
+      lastFailedInput: null,
+    })
     useWorkoutSessionStore.setState({
       isActive: false,
       startedAt: null,
@@ -20,11 +25,28 @@ describe('chatStore', () => {
     expect(state.messages).toEqual([])
     expect(state.isLoading).toBe(false)
     expect(state.error).toBeNull()
+    expect(state.lastFailedInput).toBeNull()
   })
 
   test('addMessage でメッセージが追加される', () => {
     const msg = makeMessage()
     useChatStore.getState().addMessage(msg)
+    expect(useChatStore.getState().messages).toEqual([msg])
+  })
+
+  test('removeMessage で指定 id のメッセージが除去される', () => {
+    const a = makeMessage({ id: 'a' })
+    const b = makeMessage({ id: 'b' })
+    useChatStore.getState().addMessage(a)
+    useChatStore.getState().addMessage(b)
+    useChatStore.getState().removeMessage('a')
+    expect(useChatStore.getState().messages).toEqual([b])
+  })
+
+  test('removeMessage で存在しない id を指定しても何も起こらない', () => {
+    const msg = makeMessage({ id: 'a' })
+    useChatStore.getState().addMessage(msg)
+    useChatStore.getState().removeMessage('does-not-exist')
     expect(useChatStore.getState().messages).toEqual([msg])
   })
 
@@ -46,11 +68,30 @@ describe('chatStore', () => {
     useChatStore.getState().addMessage(makeMessage())
     useChatStore.getState().setLoading(true)
     useChatStore.getState().setError('err')
+    useChatStore.getState().setLastFailedInput('やあ')
     useChatStore.getState().clearMessages()
     const state = useChatStore.getState()
     expect(state.messages).toEqual([])
     expect(state.isLoading).toBe(false)
     expect(state.error).toBeNull()
+    expect(state.lastFailedInput).toBeNull()
+  })
+
+  test('setLastFailedInput で入力テキストが保持される', () => {
+    useChatStore.getState().setLastFailedInput('再送したい')
+    expect(useChatStore.getState().lastFailedInput).toBe('再送したい')
+    useChatStore.getState().setLastFailedInput(null)
+    expect(useChatStore.getState().lastFailedInput).toBeNull()
+  })
+
+  test('lastFailedInput は永続化されない', () => {
+    useWorkoutSessionStore.getState().startSession()
+    useChatStore.getState().setLastFailedInput('再送したい')
+
+    const stored = localStorage.getItem('gymini:chat')
+    expect(stored).toBeTruthy()
+    const data = JSON.parse(stored!)
+    expect(data.state.lastFailedInput).toBeUndefined()
   })
 
   test('セッションアクティブ中に addMessage すると gymini:chat の messages に書き出される', () => {

@@ -31,7 +31,12 @@ function mockClient(
 }
 
 function resetStores() {
-  useChatStore.setState({ messages: [], isLoading: false, error: null })
+  useChatStore.setState({
+    messages: [],
+    isLoading: false,
+    error: null,
+    lastFailedInput: null,
+  })
   useSettingsStore.setState({ apiKey: '', hasApiKey: false })
   useWorkoutSessionStore.setState({
     isActive: false,
@@ -57,6 +62,7 @@ describe('useChatService', () => {
     })
     expect(useChatStore.getState().messages).toEqual([])
     expect(useChatStore.getState().error).toMatch(/APIキー/)
+    expect(useChatStore.getState().lastFailedInput).toBe('hi')
     expect(client.generate).not.toHaveBeenCalled()
   })
 
@@ -424,6 +430,135 @@ describe('useChatService', () => {
     })
     expect(useChatStore.getState().error).toMatch(/APIキー/)
     expect(useChatStore.getState().isLoading).toBe(false)
+  })
+
+  describe('再送 (retry) フロー', () => {
+    test('API エラー時、直前のユーザーメッセージが messages から削除され lastFailedInput に保存される', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      const client = mockClient([new Error('HTTP 500 server error')])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('再送したい')
+      })
+      const state = useChatStore.getState()
+      expect(state.messages).toEqual([])
+      expect(state.lastFailedInput).toBe('再送したい')
+      expect(state.error).toBeTruthy()
+    })
+
+    test('送信成功時に lastFailedInput と error が null にクリアされる', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      useChatStore.setState({
+        messages: [],
+        isLoading: false,
+        error: '以前のエラー',
+        lastFailedInput: '以前の入力',
+      })
+      const client = mockClient([{ text: 'ok', functionCalls: null }])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('やあ')
+      })
+      const state = useChatStore.getState()
+      expect(state.lastFailedInput).toBeNull()
+      expect(state.error).toBeNull()
+    })
+
+    test('retryLastMessage が lastFailedInput を sendMessage に渡し、成功後にクリアする', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      const client = mockClient([
+        new Error('HTTP 500'),
+        { text: 'やあ！', functionCalls: null },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('再送したい')
+      })
+      expect(useChatStore.getState().lastFailedInput).toBe('再送したい')
+
+      await act(async () => {
+        await result.current.retryLastMessage()
+      })
+      const state = useChatStore.getState()
+      expect(state.lastFailedInput).toBeNull()
+      expect(state.error).toBeNull()
+      expect(state.messages.map((m) => ({ role: m.role, content: m.content }))).toEqual([
+        { role: 'user', content: '再送したい' },
+        { role: 'assistant', content: 'やあ！' },
+      ])
+    })
+
+    test('retryLastMessage は lastFailedInput が null なら何もしない', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      const client = mockClient([{ text: 'ok', functionCalls: null }])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.retryLastMessage()
+      })
+      expect(client.generate).not.toHaveBeenCalled()
+      expect(useChatStore.getState().messages).toEqual([])
+    })
+
+    test('失敗→再送のフローで Gemini に送る contents に失敗ユーザーメッセージが含まれない', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      const client = mockClient([
+        new Error('HTTP 500'),
+        { text: 'やあ！', functionCalls: null },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('再送したい')
+      })
+      await act(async () => {
+        await result.current.retryLastMessage()
+      })
+      const generateMock = client.generate as ReturnType<typeof vi.fn>
+      expect(generateMock).toHaveBeenCalledTimes(2)
+      const retryContents = generateMock.mock.calls[1][0] as Array<{
+        role: 'user' | 'model'
+      }>
+      const userTurns = retryContents.filter((c) => c.role === 'user')
+      expect(userTurns).toHaveLength(1)
+    })
+
+    test('stopResponse による AbortError は lastFailedInput を設定しない', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      let resolve: ((r: GeminiChatResponse) => void) | null = null
+      const generateMock = vi.fn(
+        (_contents: unknown, signal?: AbortSignal) =>
+          new Promise<GeminiChatResponse>((res, rej) => {
+            resolve = res
+            signal?.addEventListener('abort', () => {
+              rej(new DOMException('Aborted', 'AbortError'))
+            })
+          }),
+      )
+      const client: GeminiClient = { generate: generateMock }
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      let promise: Promise<void> = Promise.resolve()
+      act(() => {
+        promise = result.current.sendMessage('途中で止める')
+      })
+      await waitFor(() => expect(useChatStore.getState().isLoading).toBe(true))
+      await act(async () => {
+        result.current.stopResponse()
+        await promise
+      })
+      expect(useChatStore.getState().lastFailedInput).toBeNull()
+      void resolve
+    })
   })
 
   test('clearMessages がチャットストアをリセットする', async () => {
