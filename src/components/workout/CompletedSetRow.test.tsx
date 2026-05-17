@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent, act } from '@testing-library/react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { CompletedSetRow } from './CompletedSetRow'
+import { firePointer } from '@/test/pointerEvents'
 
 describe('CompletedSetRow', () => {
   const defaultProps = {
@@ -100,23 +101,6 @@ describe('CompletedSetRow', () => {
   })
 
   describe('Badeen swipe 統合', () => {
-    function firePointer(
-      el: Element,
-      type: 'pointerdown' | 'pointermove' | 'pointerup',
-      opts: { clientX?: number; pointerType?: string } = {},
-    ) {
-      const ev = new MouseEvent(type, {
-        bubbles: true,
-        cancelable: true,
-        ...(opts.clientX !== undefined ? { clientX: opts.clientX } : {}),
-      })
-      Object.defineProperty(ev, 'pointerType', {
-        value: opts.pointerType ?? 'touch',
-        configurable: true,
-      })
-      act(() => { el.dispatchEvent(ev) })
-    }
-
     it('a11y: 削除ボタンは sr-only で残り、role=button で取得可能 (screen reader 互換)', () => {
       render(<CompletedSetRow {...defaultProps} />)
       const btn = screen.getByRole('button', { name: /削除/ })

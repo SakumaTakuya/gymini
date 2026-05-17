@@ -1,17 +1,8 @@
 import { describe, it, expect, afterEach } from 'vitest'
-import { render, act } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { useRubberBandScroll } from './useRubberBandScroll'
 import { setupHapticMocks } from '@/test/hapticMocks'
-
-function firePointer(el: Element, type: 'pointerdown' | 'pointermove' | 'pointerup', clientY?: number) {
-  const ev = new MouseEvent(type, {
-    bubbles: true,
-    cancelable: true,
-    ...(clientY !== undefined ? { clientY } : {}),
-  })
-  Object.defineProperty(ev, 'pointerType', { value: 'touch', configurable: true })
-  act(() => { el.dispatchEvent(ev) })
-}
+import { firePointer } from '@/test/pointerEvents'
 
 function Harness({ scrollTop = 0, atBottom = false }: { scrollTop?: number; atBottom?: boolean }) {
   const binding = useRubberBandScroll()
@@ -46,8 +37,8 @@ describe('useRubberBandScroll', () => {
     ;({ restore } = setupHapticMocks())
     const { getByTestId } = render(<Harness scrollTop={0} />)
     const el = getByTestId('rb')
-    firePointer(el, 'pointerdown', 100)
-    firePointer(el, 'pointermove', 200)
+    firePointer(el, 'pointerdown', { clientY: 100 })
+    firePointer(el, 'pointermove', { clientY: 200 })
     expect(el.style.transform).toMatch(/translateY\(\d+(\.\d+)?px\)/)
   })
 
@@ -55,8 +46,8 @@ describe('useRubberBandScroll', () => {
     ;({ restore } = setupHapticMocks())
     const { getByTestId } = render(<Harness scrollTop={0} />)
     const el = getByTestId('rb')
-    firePointer(el, 'pointerdown', 100)
-    firePointer(el, 'pointermove', 1000)
+    firePointer(el, 'pointerdown', { clientY: 100 })
+    firePointer(el, 'pointermove', { clientY: 1000 })
     const m = el.style.transform.match(/translateY\((\d+(?:\.\d+)?)px\)/)
     const value = m ? Number(m[1]) : 0
     expect(value).toBeGreaterThan(0)
@@ -67,8 +58,8 @@ describe('useRubberBandScroll', () => {
     ;({ restore } = setupHapticMocks())
     const { getByTestId } = render(<Harness scrollTop={0} />)
     const el = getByTestId('rb')
-    firePointer(el, 'pointerdown', 100)
-    firePointer(el, 'pointermove', 200)
+    firePointer(el, 'pointerdown', { clientY: 100 })
+    firePointer(el, 'pointermove', { clientY: 200 })
     firePointer(el, 'pointerup')
     expect(el.style.transform).toBe('')
   })
@@ -77,9 +68,9 @@ describe('useRubberBandScroll', () => {
     ;({ restore } = setupHapticMocks())
     const { getByTestId } = render(<Harness scrollTop={0} />)
     const el = getByTestId('rb')
-    firePointer(el, 'pointerdown', 100)
-    firePointer(el, 'pointermove', 200)
-    firePointer(el, 'pointermove', 250)
+    firePointer(el, 'pointerdown', { clientY: 100 })
+    firePointer(el, 'pointermove', { clientY: 200 })
+    firePointer(el, 'pointermove', { clientY: 250 })
     expect(navigator.vibrate).toHaveBeenCalledWith(5)
     expect(navigator.vibrate).toHaveBeenCalledTimes(1)
   })
@@ -88,8 +79,8 @@ describe('useRubberBandScroll', () => {
     ;({ restore } = setupHapticMocks())
     const { getByTestId } = render(<Harness scrollTop={300} />)
     const el = getByTestId('rb')
-    firePointer(el, 'pointerdown', 100)
-    firePointer(el, 'pointermove', 200)
+    firePointer(el, 'pointerdown', { clientY: 100 })
+    firePointer(el, 'pointermove', { clientY: 200 })
     expect(el.style.transform).toBe('')
   })
 
@@ -97,8 +88,8 @@ describe('useRubberBandScroll', () => {
     ;({ restore } = setupHapticMocks())
     const { getByTestId } = render(<Harness scrollTop={0} atBottom={true} />)
     const el = getByTestId('rb')
-    firePointer(el, 'pointerdown', 200)
-    firePointer(el, 'pointermove', 100)
+    firePointer(el, 'pointerdown', { clientY: 200 })
+    firePointer(el, 'pointermove', { clientY: 100 })
     expect(el.style.transform).toMatch(/translateY\(-\d+(\.\d+)?px\)/)
   })
 
@@ -106,8 +97,8 @@ describe('useRubberBandScroll', () => {
     ;({ restore } = setupHapticMocks({ reducedMotion: true }))
     const { getByTestId } = render(<Harness scrollTop={0} />)
     const el = getByTestId('rb')
-    firePointer(el, 'pointerdown', 100)
-    firePointer(el, 'pointermove', 200)
+    firePointer(el, 'pointerdown', { clientY: 100 })
+    firePointer(el, 'pointermove', { clientY: 200 })
     expect(navigator.vibrate).not.toHaveBeenCalled()
   })
 
@@ -115,10 +106,8 @@ describe('useRubberBandScroll', () => {
     ;({ restore } = setupHapticMocks())
     const { getByTestId } = render(<Harness scrollTop={0} />)
     const el = getByTestId('rb')
-    const downEv = new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientY: 100 })
-    Object.defineProperty(downEv, 'pointerType', { value: 'mouse', configurable: true })
-    act(() => { el.dispatchEvent(downEv) })
-    firePointer(el, 'pointermove', 300)
+    firePointer(el, 'pointerdown', { clientY: 100, pointerType: 'mouse' })
+    firePointer(el, 'pointermove', { clientY: 300 })
     expect(el.style.transform).toBe('')
   })
 
@@ -126,8 +115,8 @@ describe('useRubberBandScroll', () => {
     ;({ restore } = setupHapticMocks())
     const { getByTestId } = render(<Harness scrollTop={0} />)
     const el = getByTestId('rb')
-    firePointer(el, 'pointerdown', 100)
-    firePointer(el, 'pointermove', 105) // dy=5, デッドゾーン以内
+    firePointer(el, 'pointerdown', { clientY: 100 })
+    firePointer(el, 'pointermove', { clientY: 105 }) // dy=5, デッドゾーン以内
     expect(el.style.transform).toBe('')
     expect(navigator.vibrate).not.toHaveBeenCalled()
   })

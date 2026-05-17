@@ -1,31 +1,20 @@
 import { describe, it, expect, afterEach, vi } from 'vitest'
-import { render, act } from '@testing-library/react'
+import { render } from '@testing-library/react'
 import { useSwipeGesture } from './useSwipeGesture'
 import { setupHapticMocks } from '@/test/hapticMocks'
+import { firePointer } from '@/test/pointerEvents'
 
 const ROW_WIDTH = 300
 
 let mockNow = 0
-function setNow(t: number) {
-  mockNow = t
-}
 
-function firePointer(
+function fireSwipe(
   el: Element,
   type: 'pointerdown' | 'pointermove' | 'pointerup' | 'pointercancel',
-  opts: { clientX?: number; timeStamp?: number; pointerType?: string } = {},
+  opts: { clientX?: number; timeStamp?: number; pointerType?: 'touch' | 'mouse' | 'pen' } = {},
 ) {
-  if (opts.timeStamp !== undefined) setNow(opts.timeStamp)
-  const ev = new MouseEvent(type, {
-    bubbles: true,
-    cancelable: true,
-    ...(opts.clientX !== undefined ? { clientX: opts.clientX } : {}),
-  })
-  Object.defineProperty(ev, 'pointerType', {
-    value: opts.pointerType ?? 'touch',
-    configurable: true,
-  })
-  act(() => { el.dispatchEvent(ev) })
+  if (opts.timeStamp !== undefined) mockNow = opts.timeStamp
+  firePointer(el, type, opts)
 }
 
 function Harness({
@@ -72,8 +61,8 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 100, timeStamp: 0, pointerType: 'mouse' })
-      firePointer(el, 'pointermove', { clientX: 200, timeStamp: 100, pointerType: 'mouse' })
+      fireSwipe(el, 'pointerdown', { clientX: 100, timeStamp: 0, pointerType: 'mouse' })
+      fireSwipe(el, 'pointermove', { clientX: 200, timeStamp: 100, pointerType: 'mouse' })
       expect(el.style.transform).toBe('')
     })
 
@@ -81,8 +70,8 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 105, timeStamp: 50 })
+      fireSwipe(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 105, timeStamp: 50 })
       expect(el.style.transform).toBe('')
     })
   })
@@ -92,8 +81,8 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 150, timeStamp: 100 })
+      fireSwipe(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 150, timeStamp: 100 })
       expect(el.style.transform).toMatch(/translateX\((\d+(\.\d+)?)px\)/)
     })
 
@@ -101,8 +90,8 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 200, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 150, timeStamp: 100 })
+      fireSwipe(el, 'pointerdown', { clientX: 200, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 150, timeStamp: 100 })
       expect(el.style.transform).toMatch(/translateX\(-\d+(\.\d+)?px\)/)
     })
 
@@ -110,9 +99,9 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
+      fireSwipe(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
       // 50% 変位 → 0.75deg 程度
-      firePointer(el, 'pointermove', { clientX: 250, timeStamp: 100 })
+      fireSwipe(el, 'pointermove', { clientX: 250, timeStamp: 100 })
       expect(el.style.transform).toMatch(/rotate\(\d+\.\d+deg\)/)
     })
 
@@ -120,8 +109,8 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 150, timeStamp: 100 })
+      fireSwipe(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 150, timeStamp: 100 })
       expect(Number(el.getAttribute('data-displacement') ?? 0)).toBeGreaterThan(0)
     })
   })
@@ -131,9 +120,9 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
+      fireSwipe(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
       // dx=400 (rowWidth=300, limit=180), 過剰 220px
-      firePointer(el, 'pointermove', { clientX: 400, timeStamp: 100 })
+      fireSwipe(el, 'pointermove', { clientX: 400, timeStamp: 100 })
       const m = el.style.transform.match(/translateX\((\d+(?:\.\d+)?)px\)/)
       const v = m ? Number(m[1]) : 0
       // limit 180 + 220 * 0.3 = 246 程度に減衰
@@ -148,9 +137,9 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness onCommitRight={onCommitRight} />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 200, timeStamp: 100 }) // 200 > 300*0.4=120
-      firePointer(el, 'pointerup', { clientX: 200, timeStamp: 110 })
+      fireSwipe(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 200, timeStamp: 100 }) // 200 > 300*0.4=120
+      fireSwipe(el, 'pointerup', { clientX: 200, timeStamp: 110 })
       expect(onCommitRight).toHaveBeenCalledOnce()
     })
 
@@ -159,10 +148,10 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness onCommitRight={onCommitRight} />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
+      fireSwipe(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
       // dx=50, 速度=50/10=5 px/ms (高速 fling)
-      firePointer(el, 'pointermove', { clientX: 50, timeStamp: 10 })
-      firePointer(el, 'pointerup', { clientX: 50, timeStamp: 11 })
+      fireSwipe(el, 'pointermove', { clientX: 50, timeStamp: 10 })
+      fireSwipe(el, 'pointerup', { clientX: 50, timeStamp: 11 })
       expect(onCommitRight).toHaveBeenCalledOnce()
     })
 
@@ -171,9 +160,9 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness onCommitLeft={onCommitLeft} />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 300, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 100, timeStamp: 100 }) // dx=-200
-      firePointer(el, 'pointerup', { clientX: 100, timeStamp: 110 })
+      fireSwipe(el, 'pointerdown', { clientX: 300, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 100, timeStamp: 100 }) // dx=-200
+      fireSwipe(el, 'pointerup', { clientX: 100, timeStamp: 110 })
       expect(onCommitLeft).toHaveBeenCalledOnce()
     })
 
@@ -183,9 +172,9 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness onCommitLeft={onCommitLeft} onCommitRight={onCommitRight} />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 150, timeStamp: 500 }) // 速度=0.1, 変位=50<120
-      firePointer(el, 'pointerup', { clientX: 150, timeStamp: 510 })
+      fireSwipe(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 150, timeStamp: 500 }) // 速度=0.1, 変位=50<120
+      fireSwipe(el, 'pointerup', { clientX: 150, timeStamp: 510 })
       expect(onCommitLeft).not.toHaveBeenCalled()
       expect(onCommitRight).not.toHaveBeenCalled()
       expect(el.style.transform).toBe('')
@@ -197,10 +186,10 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 50, timeStamp: 50 }) // 50 < 120 (40%)
+      fireSwipe(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 50, timeStamp: 50 }) // 50 < 120 (40%)
       expect(navigator.vibrate).not.toHaveBeenCalled()
-      firePointer(el, 'pointermove', { clientX: 150, timeStamp: 100 }) // 150 > 120
+      fireSwipe(el, 'pointermove', { clientX: 150, timeStamp: 100 }) // 150 > 120
       expect(navigator.vibrate).toHaveBeenCalledWith(8)
     })
 
@@ -208,9 +197,9 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness onCommitRight={vi.fn()} />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 200, timeStamp: 100 })
-      firePointer(el, 'pointerup', { clientX: 200, timeStamp: 110 })
+      fireSwipe(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 200, timeStamp: 100 })
+      fireSwipe(el, 'pointerup', { clientX: 200, timeStamp: 110 })
       expect(navigator.vibrate).toHaveBeenCalledWith(12)
     })
 
@@ -218,9 +207,9 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks())
       const { getByTestId } = render(<Harness onCommitRight={vi.fn()} />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 150, timeStamp: 500 })
-      firePointer(el, 'pointerup', { clientX: 150, timeStamp: 510 })
+      fireSwipe(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 150, timeStamp: 500 })
+      fireSwipe(el, 'pointerup', { clientX: 150, timeStamp: 510 })
       // vibrate(12) は呼ばれない (pre-haptic も呼ばれない)
       expect(navigator.vibrate).not.toHaveBeenCalledWith(12)
     })
@@ -229,9 +218,9 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks({ reducedMotion: true }))
       const { getByTestId } = render(<Harness onCommitRight={vi.fn()} />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 200, timeStamp: 100 })
-      firePointer(el, 'pointerup', { clientX: 200, timeStamp: 110 })
+      fireSwipe(el, 'pointerdown', { clientX: 0, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 200, timeStamp: 100 })
+      fireSwipe(el, 'pointerup', { clientX: 200, timeStamp: 110 })
       expect(navigator.vibrate).not.toHaveBeenCalled()
     })
   })
@@ -241,8 +230,8 @@ describe('useSwipeGesture', () => {
       ;({ restore } = setupHapticMocks({ reducedMotion: true }))
       const { getByTestId } = render(<Harness />)
       const el = getByTestId('sw')
-      firePointer(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
-      firePointer(el, 'pointermove', { clientX: 250, timeStamp: 100 })
+      fireSwipe(el, 'pointerdown', { clientX: 100, timeStamp: 0 })
+      fireSwipe(el, 'pointermove', { clientX: 250, timeStamp: 100 })
       // translate は乗るが rotate(0deg) になる
       expect(el.style.transform).toMatch(/translateX\(\d+(\.\d+)?px\)/)
       expect(el.style.transform).not.toMatch(/rotate\(\d+\.\d+deg\)/)
