@@ -2,6 +2,7 @@ import { Check, Plus } from '@phosphor-icons/react'
 import { type FocusEvent, type KeyboardEvent, useRef } from 'react'
 import { IconButton } from '../ui/icon-button'
 import { Input } from '../ui/input'
+import { tactileVibrate, HAPTIC_SET_COMPLETE_MS } from '@/lib/haptic'
 
 type PendingSetRowProps = {
   setNumber: number
@@ -26,6 +27,11 @@ export function PendingSetRow({
   // that would otherwise fire simultaneously with the button click.
   const buttonPressedRef = useRef(false)
 
+  const completeWithHaptic = () => {
+    tactileVibrate(HAPTIC_SET_COMPLETE_MS)
+    onComplete()
+  }
+
   const handleWeightBlur = () => {
     repsRef.current?.focus()
   }
@@ -43,19 +49,19 @@ export function PendingSetRow({
       buttonPressedRef.current = false
       return
     }
-    if (pendingSet.reps > 0) onComplete()
+    if (pendingSet.reps > 0) completeWithHaptic()
   }
 
   const handleRepsKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
-      if (pendingSet.reps > 0) onComplete()
+      if (pendingSet.reps > 0) completeWithHaptic()
     }
   }
 
   return (
-    <div className="animate-appear flex items-center gap-3 py-2 px-2 rounded-xl border border-gym-zinc-200 bg-gym-white shadow-soft relative overflow-hidden">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gym-black" />
+    <div className="animate-appear group flex items-center gap-3 py-2 px-2 rounded-xl border border-gym-zinc-200 bg-gym-white shadow-soft relative overflow-hidden">
+      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gym-black transition-colors duration-quick group-focus-within:bg-gym-accent" />
       <div className="w-6 h-6 rounded bg-gym-zinc-100 flex items-center justify-center text-gym-black ml-1">
         <span className="font-outfit font-bold text-xs">{setNumber}</span>
       </div>
@@ -67,9 +73,9 @@ export function PendingSetRow({
           onBlur={handleWeightBlur}
           onKeyDown={handleWeightKeyDown}
           inputMode="decimal"
-          suffix={<span className="text-xs font-medium text-gym-zinc-400">kg</span>}
+          suffix={<span className="text-[10px] font-medium text-gym-zinc-400">kg</span>}
           containerClassName="items-baseline gap-1 h-auto pb-0.5"
-          className="w-10 text-xl font-outfit font-bold"
+          className="w-16 text-3xl font-outfit font-bold tabular-nums"
         />
         <Input
           ref={repsRef}
@@ -79,15 +85,15 @@ export function PendingSetRow({
           onBlur={handleRepsBlur}
           onKeyDown={handleRepsKeyDown}
           inputMode="numeric"
-          suffix={<span className="text-xs font-medium text-gym-zinc-400">回</span>}
+          suffix={<span className="text-[10px] font-medium text-gym-zinc-400">回</span>}
           containerClassName="items-baseline gap-1 h-auto pb-0.5"
-          className="w-8 text-xl font-outfit font-bold"
+          className="w-12 text-3xl font-outfit font-bold tabular-nums"
         />
       </div>
       <IconButton
         ref={completeButtonRef}
         onPointerDown={() => { buttonPressedRef.current = true }}
-        onClick={onComplete}
+        onClick={completeWithHaptic}
         aria-label="完了"
         className="rounded bg-gym-black text-gym-white shadow-soft hover:bg-gym-black/90"
       >

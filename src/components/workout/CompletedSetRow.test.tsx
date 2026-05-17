@@ -37,4 +37,33 @@ describe('CompletedSetRow', () => {
     expect(row.className).toContain('bg-gym-zinc-50')
     expect(row.className).toContain('rounded-xl')
   })
+
+  describe('Matas 数字拡大', () => {
+    it('weight/reps 表示の p タグは text-2xl クラスを持つ', () => {
+      const { container } = render(<CompletedSetRow {...defaultProps} />)
+      const paras = container.querySelectorAll('p')
+      expect(paras).toHaveLength(2)
+      expect(paras[0].className).toContain('text-2xl')
+      expect(paras[1].className).toContain('text-2xl')
+    })
+
+    it('kg サフィックスは text-[10px] クラスを持つ', () => {
+      render(<CompletedSetRow {...defaultProps} />)
+      const kg = screen.getByText('kg')
+      expect(kg.className).toContain('text-[10px]')
+    })
+
+    it('回 サフィックスは text-[10px] クラスを持つ', () => {
+      render(<CompletedSetRow {...defaultProps} />)
+      const reps = screen.getByText('回')
+      expect(reps.className).toContain('text-[10px]')
+    })
+
+    it('行は animate-pop を持つ (完了直後の scale spring、animate-appear は廃止)', () => {
+      const { container } = render(<CompletedSetRow {...defaultProps} />)
+      const row = container.firstChild as HTMLElement
+      expect(row.className).toContain('animate-pop')
+      expect(row.className).not.toContain('animate-appear')
+    })
+  })
 })

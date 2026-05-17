@@ -1,6 +1,7 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { PendingSetRow } from './PendingSetRow'
+import { setupHapticMocks } from '@/test/hapticMocks'
 
 describe('PendingSetRow', () => {
   const defaultProps = {
@@ -51,6 +52,45 @@ describe('PendingSetRow', () => {
     const { container } = render(<PendingSetRow {...defaultProps} />)
     const bar = container.querySelector('.bg-gym-black')
     expect(bar).toBeInTheDocument()
+  })
+
+  describe('Matas 数字拡大 + accent focus 発光', () => {
+    it('weight input は text-3xl クラスを持つ', () => {
+      render(<PendingSetRow {...defaultProps} />)
+      const [weightInput] = screen.getAllByRole('spinbutton')
+      expect(weightInput.className).toContain('text-3xl')
+    })
+
+    it('reps input は text-3xl クラスを持つ', () => {
+      render(<PendingSetRow {...defaultProps} />)
+      const [, repsInput] = screen.getAllByRole('spinbutton')
+      expect(repsInput.className).toContain('text-3xl')
+    })
+
+    it('kg サフィックスは text-[10px] クラスを持つ (褪色)', () => {
+      render(<PendingSetRow {...defaultProps} />)
+      const kg = screen.getByText('kg')
+      expect(kg.className).toContain('text-[10px]')
+    })
+
+    it('回 サフィックスは text-[10px] クラスを持つ', () => {
+      render(<PendingSetRow {...defaultProps} />)
+      const reps = screen.getByText('回')
+      expect(reps.className).toContain('text-[10px]')
+    })
+
+    it('行コンテナに group クラスを持つ (focus-within の親)', () => {
+      const { container } = render(<PendingSetRow {...defaultProps} />)
+      const row = container.firstChild as HTMLElement
+      expect(row.className).toContain('group')
+    })
+
+    it('accent stripe は group-focus-within で gym-accent に変化する', () => {
+      const { container } = render(<PendingSetRow {...defaultProps} />)
+      const stripe = container.querySelector('div.absolute.bg-gym-black')
+      expect(stripe).toBeInTheDocument()
+      expect(stripe!.className).toContain('group-focus-within:bg-gym-accent')
+    })
   })
 
   describe('オートフォーカス動作', () => {
@@ -119,6 +159,25 @@ describe('PendingSetRow', () => {
       fireEvent.blur(repsInput)
       fireEvent.click(checkButton)
       expect(onComplete).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('Cox / Badeen ハプティック', () => {
+    let restore: () => void = () => {}
+    afterEach(() => { restore() })
+
+    it('完了ボタン押下で navigator.vibrate(10) を呼ぶ', () => {
+      ;({ restore } = setupHapticMocks())
+      render(<PendingSetRow {...defaultProps} />)
+      fireEvent.click(screen.getByRole('button', { name: /完了/ }))
+      expect(navigator.vibrate).toHaveBeenCalledWith(10)
+    })
+
+    it('prefers-reduced-motion: reduce の時は完了ボタン押下で vibrate を呼ばない', () => {
+      ;({ restore } = setupHapticMocks({ reducedMotion: true }))
+      render(<PendingSetRow {...defaultProps} />)
+      fireEvent.click(screen.getByRole('button', { name: /完了/ }))
+      expect(navigator.vibrate).not.toHaveBeenCalled()
     })
   })
 })

@@ -61,6 +61,13 @@ describe('ActiveSessionView', () => {
     expect(screen.getByPlaceholderText(/メッセージ.*種目名/)).toBeInTheDocument()
   })
 
+  it('縦スクロールコンテナに overscroll-contain を持つ (iOS Safari の body ラバーバンドを抑止)', () => {
+    useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
+    render(<ActiveSessionView />)
+    const scrollContainer = screen.getByTestId('active-session-scroll')
+    expect(scrollContainer.className).toContain('overscroll-contain')
+  })
+
   it('ChatInput 経由で種目を選ぶと ExerciseCard が表示される', async () => {
     const user = userEvent.setup()
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
