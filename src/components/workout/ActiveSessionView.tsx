@@ -37,8 +37,15 @@ export function ActiveSessionView() {
     searchExercises,
     createExercise,
   } = useWorkoutSession()
-  const { messages, isLoading, sendMessage, stopResponse, error } =
-    useChatService()
+  const {
+    messages,
+    isLoading,
+    sendMessage,
+    stopResponse,
+    error,
+    lastFailedInput,
+    retryLastMessage,
+  } = useChatService()
   const hasApiKey = useSettingsStore((s) => s.hasApiKey)
 
   // ChatInput 内の useMemo([exerciseSearch, trimmed]) を毎レンダ無効化しないよう
@@ -158,8 +165,18 @@ export function ActiveSessionView() {
       })}
 
       {error && (
-        <div className="mx-4 my-2 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700">
-          {error}
+        <div className="mx-4 my-2 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700 flex items-start justify-between gap-3">
+          <span className="flex-1">{error}</span>
+          {lastFailedInput && (
+            <button
+              type="button"
+              onClick={() => void retryLastMessage()}
+              disabled={isLoading}
+              className="focus-ring shrink-0 h-9 px-3 rounded-lg bg-gym-black text-gym-white text-xs font-semibold disabled:opacity-50"
+            >
+              再送
+            </button>
+          )}
         </div>
       )}
 

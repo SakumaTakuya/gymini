@@ -8,12 +8,14 @@ type ChatState = {
   messages: ChatMessage[]
   isLoading: boolean
   error: string | null
+  lastFailedInput: string | null
 }
 
 type ChatActions = {
   addMessage: (message: ChatMessage) => void
   setLoading: (loading: boolean) => void
   setError: (error: string | null) => void
+  setLastFailedInput: (input: string | null) => void
   clearMessages: () => void
 }
 
@@ -23,6 +25,7 @@ export const useChatStore = create<ChatState & ChatActions>()(
       messages: [],
       isLoading: false,
       error: null,
+      lastFailedInput: null,
 
       addMessage: (message) => {
         set((state) => ({ messages: [...state.messages, message] }))
@@ -36,8 +39,17 @@ export const useChatStore = create<ChatState & ChatActions>()(
         set({ error })
       },
 
+      setLastFailedInput: (input) => {
+        set({ lastFailedInput: input })
+      },
+
       clearMessages: () => {
-        set({ messages: [], isLoading: false, error: null })
+        set({
+          messages: [],
+          isLoading: false,
+          error: null,
+          lastFailedInput: null,
+        })
       },
     }),
     {
