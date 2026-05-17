@@ -3,6 +3,7 @@ import { tactileVibrate, HAPTIC_SCROLL_EDGE_MS } from '@/lib/haptic'
 
 const RUBBER_BAND_LIMIT_PX = 80
 const RUBBER_BAND_DAMP = 0.3
+const RUBBER_BAND_DEAD_ZONE_PX = 8
 
 type PointerStart = { y: number; scrollTop: number }
 
@@ -28,6 +29,7 @@ export function useRubberBandScroll(): RubberBandBinding {
 
   const onPointerDown = useCallback((e: PointerEvent<HTMLDivElement>) => {
     if (!elRef.current) return
+    if (e.pointerType !== 'touch') return
     startRef.current = { y: e.clientY, scrollTop: elRef.current.scrollTop }
     hapticFiredRef.current = false
   }, [])
@@ -37,6 +39,7 @@ export function useRubberBandScroll(): RubberBandBinding {
     const start = startRef.current
     if (!el || !start) return
     const dy = e.clientY - start.y
+    if (Math.abs(dy) < RUBBER_BAND_DEAD_ZONE_PX) return
     const scrollTop = el.scrollTop
     const maxScroll = el.scrollHeight - el.clientHeight
 
@@ -45,9 +48,11 @@ export function useRubberBandScroll(): RubberBandBinding {
 
     let next = 0
     if (dy > 0 && atTop) {
-      next = Math.min(dy * RUBBER_BAND_DAMP, RUBBER_BAND_LIMIT_PX)
+      const effective = dy - RUBBER_BAND_DEAD_ZONE_PX
+      next = Math.min(effective * RUBBER_BAND_DAMP, RUBBER_BAND_LIMIT_PX)
     } else if (dy < 0 && atBottom) {
-      next = Math.max(dy * RUBBER_BAND_DAMP, -RUBBER_BAND_LIMIT_PX)
+      const effective = dy + RUBBER_BAND_DEAD_ZONE_PX
+      next = Math.max(effective * RUBBER_BAND_DAMP, -RUBBER_BAND_LIMIT_PX)
     }
 
     if (next !== 0 && !hapticFiredRef.current) {

@@ -9,6 +9,7 @@ function firePointer(el: Element, type: 'pointerdown' | 'pointermove' | 'pointer
     cancelable: true,
     ...(clientY !== undefined ? { clientY } : {}),
   })
+  Object.defineProperty(ev, 'pointerType', { value: 'touch', configurable: true })
   act(() => { el.dispatchEvent(ev) })
 }
 
@@ -107,6 +108,27 @@ describe('useRubberBandScroll', () => {
     const el = getByTestId('rb')
     firePointer(el, 'pointerdown', 100)
     firePointer(el, 'pointermove', 200)
+    expect(navigator.vibrate).not.toHaveBeenCalled()
+  })
+
+  it('マウス操作 (pointerType=mouse) ではラバーバンドが発動しない (touch 専用)', () => {
+    ;({ restore } = setupHapticMocks())
+    const { getByTestId } = render(<Harness scrollTop={0} />)
+    const el = getByTestId('rb')
+    const downEv = new MouseEvent('pointerdown', { bubbles: true, cancelable: true, clientY: 100 })
+    Object.defineProperty(downEv, 'pointerType', { value: 'mouse', configurable: true })
+    act(() => { el.dispatchEvent(downEv) })
+    firePointer(el, 'pointermove', 300)
+    expect(el.style.transform).toBe('')
+  })
+
+  it('デッドゾーン (8px) 以内の小さな動きでは発動しない', () => {
+    ;({ restore } = setupHapticMocks())
+    const { getByTestId } = render(<Harness scrollTop={0} />)
+    const el = getByTestId('rb')
+    firePointer(el, 'pointerdown', 100)
+    firePointer(el, 'pointermove', 105) // dy=5, デッドゾーン以内
+    expect(el.style.transform).toBe('')
     expect(navigator.vibrate).not.toHaveBeenCalled()
   })
 })

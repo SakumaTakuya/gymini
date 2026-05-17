@@ -134,6 +134,7 @@ export function ActiveSessionView() {
   )
 
   return (
+    <>
     <div
       data-testid="active-session-scroll"
       ref={scrollRef}
@@ -198,13 +199,14 @@ export function ActiveSessionView() {
         </div>
       )}
 
-      <ChatInput
-        isLoading={isLoading}
-        onSend={(text) => void sendMessage(text)}
-        onStop={stopResponse}
-        exerciseSearch={exerciseSearch}
-        placeholder="メッセージ or 種目名"
-      />
     </div>
+    <ChatInput
+      isLoading={isLoading}
+      onSend={(text) => void sendMessage(text)}
+      onStop={stopResponse}
+      exerciseSearch={exerciseSearch}
+      placeholder="メッセージ or 種目名"
+    />
+    </>
   )
 }
