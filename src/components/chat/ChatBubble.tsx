@@ -1,13 +1,24 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { cn } from '../../lib/utils'
+import { ProposalChips } from './ProposalChips'
+import type { ProposedAction } from '../../types/chat'
 
 export type ChatBubbleProps = {
   role: 'user' | 'assistant'
   content: string
+  actions?: ProposedAction[]
+  consumedActionId?: string | null
+  onActionClick?: (action: ProposedAction) => void
 }
 
-export function ChatBubble({ role, content }: ChatBubbleProps) {
+export function ChatBubble({
+  role,
+  content,
+  actions,
+  consumedActionId,
+  onActionClick,
+}: ChatBubbleProps) {
   const isUser = role === 'user'
 
   if (isUser) {
@@ -25,6 +36,8 @@ export function ChatBubble({ role, content }: ChatBubbleProps) {
     )
   }
 
+  const hasActions = Array.isArray(actions) && actions.length > 0
+
   return (
     <div className="flex justify-start px-4 py-1">
       <div
@@ -39,6 +52,13 @@ export function ChatBubble({ role, content }: ChatBubbleProps) {
             {content || '...'}
           </ReactMarkdown>
         </div>
+        {hasActions && onActionClick && (
+          <ProposalChips
+            actions={actions}
+            consumedActionId={consumedActionId}
+            onClick={onActionClick}
+          />
+        )}
       </div>
     </div>
   )

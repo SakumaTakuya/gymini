@@ -32,12 +32,32 @@ export type ToolCallResult = {
   result: unknown
 }
 
+export type ProposedActionKind =
+  | 'start-exercise'
+  | 'ask-followup'
+  | 'show-history'
+
+export type ProposedActionPayload = {
+  exerciseName?: string
+  exerciseId?: string
+  prompt?: string
+}
+
+export type ProposedAction = {
+  id: string
+  label: string
+  kind: ProposedActionKind
+  payload?: ProposedActionPayload
+}
+
 export type ChatMessage = {
   id: string
   role: 'user' | 'assistant'
   content: string
   timestamp: ISODateTimeString
   toolCalls?: ToolCallResult[]
+  actions?: ProposedAction[]
+  consumedActionId?: string | null
 }
 
 export type SummaryPeriod = {

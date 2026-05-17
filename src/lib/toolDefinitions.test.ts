@@ -1,15 +1,17 @@
 import { describe, expect, test } from 'vitest'
 import {
+  PROPOSE_TOOL_NAMES,
   READ_TOOL_NAMES,
   TOOL_DECLARATIONS,
   WRITE_TOOL_NAMES,
+  isProposeTool,
   isReadTool,
   isWriteTool,
 } from './toolDefinitions'
 
 describe('toolDefinitions', () => {
-  test('正確に 8 つのツールを定義する', () => {
-    expect(TOOL_DECLARATIONS).toHaveLength(8)
+  test('正確に 9 つのツールを定義する（read 5 + write 3 + propose 1）', () => {
+    expect(TOOL_DECLARATIONS).toHaveLength(9)
   })
 
   test('全ツール名が一意である', () => {
@@ -19,7 +21,11 @@ describe('toolDefinitions', () => {
 
   test('期待するすべてのツール名を網羅する', () => {
     const names = TOOL_DECLARATIONS.map((d) => d.name).sort()
-    const expected = [...READ_TOOL_NAMES, ...WRITE_TOOL_NAMES].sort()
+    const expected = [
+      ...READ_TOOL_NAMES,
+      ...WRITE_TOOL_NAMES,
+      ...PROPOSE_TOOL_NAMES,
+    ].sort()
     expect(names).toEqual(expected)
   })
 
@@ -47,7 +53,33 @@ describe('toolDefinitions', () => {
     expect(isReadTool('getWorkoutSummary')).toBe(true)
     expect(isReadTool('getExercises')).toBe(true)
     expect(isReadTool('saveWorkout')).toBe(false)
+    expect(isReadTool('proposeAction')).toBe(false)
     expect(isReadTool('unknown')).toBe(false)
+  })
+
+  test('isProposeTool が propose ツールを識別する', () => {
+    expect(isProposeTool('proposeAction')).toBe(true)
+    expect(isProposeTool('saveWorkout')).toBe(false)
+    expect(isProposeTool('addExerciseToSession')).toBe(false)
+    expect(isProposeTool('getRecentWorkouts')).toBe(false)
+    expect(isProposeTool('unknown')).toBe(false)
+  })
+
+  test('proposeAction が rationale と options を必須とし、options.kind を enum 化している', () => {
+    const decl = TOOL_DECLARATIONS.find((d) => d.name === 'proposeAction')
+    expect(decl).toBeDefined()
+    expect(decl?.parameters?.required).toEqual(['rationale', 'options'])
+    const optionsSchema = decl?.parameters?.properties?.options as
+      | { items?: { properties?: Record<string, { enum?: string[] }> } }
+      | undefined
+    const kindEnum = optionsSchema?.items?.properties?.kind?.enum
+    expect(kindEnum).toEqual(
+      expect.arrayContaining([
+        'start-exercise',
+        'ask-followup',
+        'show-history',
+      ]),
+    )
   })
 
   test('saveWorkout が date と exercises を必須とする', () => {

@@ -115,4 +115,72 @@ describe('chatStore', () => {
     const data = JSON.parse(stored!)
     expect(data.state.messages).toEqual([])
   })
+
+  describe('consumeAction', () => {
+    test('対象メッセージの consumedActionId が更新される', () => {
+      const msg = makeMessage({
+        id: 'm1',
+        role: 'assistant',
+        content: '候補です',
+        actions: [
+          { id: 'a1', label: 'A', kind: 'start-exercise' },
+          { id: 'a2', label: 'B', kind: 'start-exercise' },
+        ],
+      })
+      useChatStore.getState().addMessage(msg)
+      useChatStore.getState().consumeAction('m1', 'a1')
+      const stored = useChatStore.getState().messages[0]
+      expect(stored.consumedActionId).toBe('a1')
+    })
+
+    test('他メッセージには影響しない', () => {
+      const m1 = makeMessage({
+        id: 'm1',
+        role: 'assistant',
+        actions: [{ id: 'a1', label: 'A', kind: 'start-exercise' }],
+      })
+      const m2 = makeMessage({
+        id: 'm2',
+        role: 'assistant',
+        actions: [{ id: 'b1', label: 'B', kind: 'start-exercise' }],
+      })
+      useChatStore.getState().addMessage(m1)
+      useChatStore.getState().addMessage(m2)
+      useChatStore.getState().consumeAction('m1', 'a1')
+      const messages = useChatStore.getState().messages
+      expect(messages[0].consumedActionId).toBe('a1')
+      expect(messages[1].consumedActionId).toBeUndefined()
+    })
+
+    test('存在しない messageId を指定しても何も起きない', () => {
+      const msg = makeMessage({
+        id: 'm1',
+        role: 'assistant',
+        actions: [{ id: 'a1', label: 'A', kind: 'start-exercise' }],
+      })
+      useChatStore.getState().addMessage(msg)
+      useChatStore.getState().consumeAction('does-not-exist', 'a1')
+      expect(useChatStore.getState().messages[0].consumedActionId).toBeUndefined()
+    })
+  })
+
+  test('アクティブセッション中に actions/consumedActionId が永続化される', () => {
+    useWorkoutSessionStore.getState().startSession()
+    const msg = makeMessage({
+      id: 'm1',
+      role: 'assistant',
+      actions: [
+        { id: 'a1', label: 'A', kind: 'start-exercise' },
+        { id: 'a2', label: 'B', kind: 'start-exercise' },
+      ],
+    })
+    useChatStore.getState().addMessage(msg)
+    useChatStore.getState().consumeAction('m1', 'a1')
+
+    const stored = localStorage.getItem('gymini:chat')
+    expect(stored).toBeTruthy()
+    const data = JSON.parse(stored!)
+    expect(data.state.messages[0].actions).toHaveLength(2)
+    expect(data.state.messages[0].consumedActionId).toBe('a1')
+  })
 })

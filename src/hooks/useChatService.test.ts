@@ -787,6 +787,274 @@ describe('useChatService', () => {
   })
 
 
+  describe('Proposed メッセージ (FR_037 / FR_038)', () => {
+    test('proposeAction のみが返ったとき assistant メッセージに actions が付与され draft は作られない', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      useWorkoutSessionStore.getState().startSession()
+      const client = mockClient([
+        {
+          text: null,
+          functionCalls: [
+            {
+              name: 'proposeAction',
+              args: {
+                rationale: '胸の日ですね。候補:',
+                options: [
+                  {
+                    id: 'p1',
+                    label: 'ベンチプレスを始める',
+                    kind: 'start-exercise',
+                    payload: { exerciseName: 'ベンチプレス' },
+                  },
+                  {
+                    id: 'p2',
+                    label: 'ダンベルプレスを始める',
+                    kind: 'start-exercise',
+                    payload: { exerciseName: 'ダンベルプレス' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('何やろう')
+      })
+      const msgs = useChatStore.getState().messages
+      const last = msgs[msgs.length - 1]
+      expect(last.role).toBe('assistant')
+      expect(last.content).toBe('胸の日ですね。候補:')
+      expect(last.actions).toHaveLength(2)
+      expect(last.actions?.[0].kind).toBe('start-exercise')
+      expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(0)
+    })
+
+    test('read → followup で proposeAction を返したとき Proposed メッセージが追加される', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      vi.mocked(WorkoutRepository.listByDateDesc).mockReturnValue([])
+      const client = mockClient([
+        {
+          text: null,
+          functionCalls: [{ name: 'getRecentWorkouts', args: { count: 5 } }],
+        },
+        {
+          text: null,
+          functionCalls: [
+            {
+              name: 'proposeAction',
+              args: {
+                rationale: '直近の記録が無いので候補:',
+                options: [
+                  {
+                    id: 'q1',
+                    label: 'スクワットを始める',
+                    kind: 'start-exercise',
+                    payload: { exerciseName: 'スクワット' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('何かおすすめは?')
+      })
+      const msgs = useChatStore.getState().messages
+      const last = msgs[msgs.length - 1]
+      expect(last.role).toBe('assistant')
+      expect(last.actions).toHaveLength(1)
+      expect(client.generate).toHaveBeenCalledTimes(2)
+    })
+
+    test('write と propose が同時に返ったら write 優先（draft 作成、actions は捨てる）', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      useWorkoutSessionStore.getState().startSession()
+      const client = mockClient([
+        {
+          text: null,
+          functionCalls: [
+            {
+              name: 'addExerciseToSession',
+              args: {
+                exerciseId: 'ex-1',
+                exerciseName: 'ベンチプレス',
+                sets: [{ weight: 60, reps: 10 }],
+              },
+            },
+            {
+              name: 'proposeAction',
+              args: {
+                rationale: '別案も:',
+                options: [
+                  {
+                    id: 'x1',
+                    label: 'ダンベルプレスを始める',
+                    kind: 'start-exercise',
+                    payload: { exerciseName: 'ダンベルプレス' },
+                  },
+                ],
+              },
+            },
+          ],
+        },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      await act(async () => {
+        await result.current.sendMessage('ベンチプレス 60kg 10 回でやる')
+      })
+      const session = useWorkoutSessionStore.getState()
+      expect(session.draftExercises).toHaveLength(1)
+      const last = useChatStore.getState().messages.slice(-1)[0]
+      expect(last.actions).toBeUndefined()
+    })
+
+    test('triggerAction(start-exercise) で直接 draft が追加され consumedActionId が更新される', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      useWorkoutSessionStore.getState().startSession()
+      vi.mocked(ExerciseRepository.getAll).mockReturnValue([])
+      vi.mocked(ExerciseRepository.create).mockReturnValue({
+        id: 'ex-new',
+        name: 'インクラインダンベルプレス',
+      })
+      useChatStore.setState({
+        messages: [
+          {
+            id: 'prop-1',
+            role: 'assistant',
+            content: '候補:',
+            timestamp: '2026-05-17T19:00:00+09:00' as never,
+            actions: [
+              {
+                id: 'a1',
+                label: 'インクラインダンベルプレスを始める',
+                kind: 'start-exercise',
+                payload: { exerciseName: 'インクラインダンベルプレス' },
+              },
+            ],
+          },
+        ],
+        isLoading: false,
+        error: null,
+        lastFailedInput: null,
+      })
+      const client = mockClient([])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      const action = useChatStore.getState().messages[0].actions![0]
+      await act(async () => {
+        await result.current.triggerAction('prop-1', action)
+      })
+      const session = useWorkoutSessionStore.getState()
+      expect(session.draftExercises).toHaveLength(1)
+      expect(session.draftExercises[0].origin).toBe('ai-suggested')
+      expect(session.draftExercises[0].sets).toEqual([{ weight: 0, reps: 0 }])
+      const stored = useChatStore.getState().messages.find((m) => m.id === 'prop-1')
+      expect(stored?.consumedActionId).toBe('a1')
+      // クライアント Gemini は呼ばれない
+      expect(client.generate).not.toHaveBeenCalled()
+    })
+
+    test('triggerAction(ask-followup) で擬似発話が user メッセージとして送信され Gemini が呼ばれる', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      useChatStore.setState({
+        messages: [
+          {
+            id: 'prop-2',
+            role: 'assistant',
+            content: '候補:',
+            timestamp: '2026-05-17T19:00:00+09:00' as never,
+            actions: [
+              {
+                id: 'a1',
+                label: '重量を指定したい',
+                kind: 'ask-followup',
+                payload: { prompt: 'ベンチプレスの重量を 60kg にしたい' },
+              },
+            ],
+          },
+        ],
+        isLoading: false,
+        error: null,
+        lastFailedInput: null,
+      })
+      const client = mockClient([
+        { text: '了解しました。', functionCalls: null },
+      ])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      const action = useChatStore.getState().messages[0].actions![0]
+      await act(async () => {
+        await result.current.triggerAction('prop-2', action)
+      })
+      const msgs = useChatStore.getState().messages
+      const userMsg = msgs.find(
+        (m) => m.role === 'user' && m.content === 'ベンチプレスの重量を 60kg にしたい',
+      )
+      expect(userMsg).toBeDefined()
+      expect(client.generate).toHaveBeenCalledTimes(1)
+      expect(msgs.find((m) => m.id === 'prop-2')?.consumedActionId).toBe('a1')
+    })
+
+    test('同じ chip を 2 回 triggerAction しても 2 回目は no-op（消費済みは disabled）', async () => {
+      useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+      useWorkoutSessionStore.getState().startSession()
+      vi.mocked(ExerciseRepository.getAll).mockReturnValue([])
+      vi.mocked(ExerciseRepository.create).mockReturnValue({
+        id: 'ex-new',
+        name: 'スクワット',
+      })
+      useChatStore.setState({
+        messages: [
+          {
+            id: 'prop-3',
+            role: 'assistant',
+            content: '候補:',
+            timestamp: '2026-05-17T19:00:00+09:00' as never,
+            actions: [
+              {
+                id: 'a1',
+                label: 'スクワットを始める',
+                kind: 'start-exercise',
+                payload: { exerciseName: 'スクワット' },
+              },
+            ],
+          },
+        ],
+        isLoading: false,
+        error: null,
+        lastFailedInput: null,
+      })
+      const client = mockClient([])
+      const { result } = renderHook(() =>
+        useChatService({ createClient: () => client }),
+      )
+      const action = useChatStore.getState().messages[0].actions![0]
+      await act(async () => {
+        await result.current.triggerAction('prop-3', action)
+      })
+      const draftsAfterFirst = useWorkoutSessionStore.getState().draftExercises.length
+      expect(draftsAfterFirst).toBe(1)
+      await act(async () => {
+        await result.current.triggerAction('prop-3', action)
+      })
+      expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(
+        draftsAfterFirst,
+      )
+    })
+  })
+
   describe('EMPTY_RESPONSE_FALLBACK 文言（FR_015 補完）', () => {
     test('エラー風表現を含まず、励まし＋入力例を含むコーチ風文言である', () => {
       expect(EMPTY_RESPONSE_FALLBACK).not.toMatch(/うまく応答を生成できませんでした/)

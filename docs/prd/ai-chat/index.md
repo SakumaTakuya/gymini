@@ -4,7 +4,7 @@ title: "AIチャット × Function Calling（タイムライン統合）"
 type: "prd"
 status: "draft"
 created: "2026-03-08"
-updated: "2026-05-09"
+updated: "2026-05-17"
 depends-on: ["prd-gymini", "prd-api-key", "prd-workout", "prd-exercise-master", "prd-navigation"]
 tags: ["ai", "chat", "function-calling", "gemini", "timeline", "phase-3"]
 category: "ai"
@@ -36,6 +36,7 @@ graph TB
         User((ユーザー))
         UnifiedInput[単一入力欄に発話／検索]
         ReceiveAdvice[アドバイス受信]
+        SelectProposalChip[提案チップをタップ]
         ReviewDraftCard[draft カードを確認・編集]
         ApproveDraft[保存（draft → 確定カード）]
         RejectDraft[破棄]
@@ -49,11 +50,13 @@ graph TB
             GetExercises[種目一覧取得]
             AddExercise[種目マスター追加]
             AddExerciseToSession[セッションへ種目追加（draft 挿入）。exerciseId 省略時はマスター新規登録 + セッション追加を 1 アクションで完結]
+            ProposeAction[提案チップ群を返す（副作用なし）]
         end
     end
 
     User --- UnifiedInput
     User --- ReceiveAdvice
+    User --- SelectProposalChip
     User --- ReviewDraftCard
     ReviewDraftCard --- ApproveDraft
     ReviewDraftCard --- RejectDraft
@@ -65,8 +68,11 @@ graph TB
     UnifiedInput -.->|"<<包含>>"| GetExercises
     UnifiedInput -.->|"<<包含>>"| AddExercise
     UnifiedInput -.->|"<<包含>>"| AddExerciseToSession
+    UnifiedInput -.->|"<<包含>>"| ProposeAction
     SaveWorkout -.->|"<<生成>>"| ReviewDraftCard
     AddExerciseToSession -.->|"<<生成>>"| ReviewDraftCard
+    SelectProposalChip -.->|"<<包含>>"| AddExerciseToSession
+    SelectProposalChip -.->|"<<包含>>"| GetByExercise
 ```
 
 ---
@@ -152,6 +158,13 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement ToolProposeAction {
+        id: FR_012_09
+        text: "副作用なしの提案チップ群を返すツール（kind = start-exercise / ask-followup / show-history）。テキスト返答と併せて assistant メッセージに actions を付与し、ユーザー側のタップで初めて write/read tool が実行される"
+        risk: medium
+        verifymethod: test
+    }
+
 
     requirement AIWriteConfirmation {
         id: REQ_008
@@ -209,6 +222,20 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement ProposedActionMode {
+        id: FR_037
+        text: "ユーザーが種目を未決定のまま選択肢を求めた場合（例: 「何やろう」「胸の日」「メニュー提案して」）、AI は proposeAction ツールを呼び、テキスト + 提案チップ 1〜5 個を返す。副作用ゼロ（draft カードは作らない）。同一メッセージ内のチップは 1 個タップで他もすべて disabled になる"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement ProposalChipDispatch {
+        id: FR_038
+        text: "提案チップの kind 3 種（start-exercise / ask-followup / show-history）ごとに分岐実行する。start-exercise はクライアントで直接 addExerciseToSession を呼び draft カードを生成、show-history は直接 read tool を呼び結果を assistant メッセージ化、ask-followup は payload.prompt を擬似発話として AI に再投入する"
+        risk: medium
+        verifymethod: test
+    }
+
     AIChatCoaching - contains -> ChatConversation
     AIChatCoaching - contains -> FunctionCalling
     AIChatCoaching - contains -> AIWriteConfirmation
@@ -219,6 +246,8 @@ requirementDiagram
     AIChatCoaching - contains -> TimelineIntegration
     AIChatCoaching - contains -> UnifiedInput
     AIChatCoaching - contains -> SessionGate
+    AIChatCoaching - contains -> ProposedActionMode
+    AIChatCoaching - contains -> ProposalChipDispatch
     FunctionCalling - contains -> ToolGetRecentWorkouts
     FunctionCalling - contains -> ToolGetByExercise
     FunctionCalling - contains -> ToolGetByDate
@@ -227,6 +256,10 @@ requirementDiagram
     FunctionCalling - contains -> ToolGetExercises
     FunctionCalling - contains -> ToolAddExercise
     FunctionCalling - contains -> ToolAddExerciseToSession
+    FunctionCalling - contains -> ToolProposeAction
+    ProposedActionMode - deriveReqt -> ToolProposeAction
+    ProposalChipDispatch - deriveReqt -> ToolAddExerciseToSession
+    ProposalChipDispatch - deriveReqt -> ToolGetByExercise
 ```
 
 ---
@@ -267,8 +300,9 @@ AI が会話の文脈を解析し、必要に応じて以下のツールを自�
 | 種目追加 | 種目マスターに追加（記録は始めない、純粋な登録のみ） | 書き込み（要確認） |
 | セッションへの種目追加 | アクティブセッションに種目（任意でセット群付き）を追加 | 書き込み（draft カード + sets 付きは編集フォーム） |
 | 種目追加 + 記録開始 | 未登録種目をマスター追加し、セッション（無ければ自動開始）に最初のセット記録までを 1 回の確認で完結 | 書き込み（draft カード + 編集フォーム） |
+| 提案アクション | 副作用なしの提案チップ群を返す（FR_037 / FR_038） | 提案（副作用なし、ユーザータップで初めて write/read 発火） |
 
-セッション非アクティブ時、`saveWorkout` と `addExerciseToSession` は `SESSION_NOT_ACTIVE` を返す（FR_036）。`addExercise` は対象外。
+セッション非アクティブ時、`saveWorkout` と `addExerciseToSession` は `SESSION_NOT_ACTIVE` を返す（FR_036）。`addExercise` と `proposeAction` は対象外。
 
 **検証方法:** テストによる検証
 
@@ -419,7 +453,12 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 ### FR_015: 種目名のみ入力時の placeholder 提案フロー
 
-ユーザーが具体値（kg/回数）を伴わずに種目名・運動意図を述べた場合（例:「胸の日でダンベルプレスやる」「ベンチプレス追加して」）、AI は **必ず** 書き込みツールを呼び出して draft カード（編集フォーム内蔵）を提示する。テキストのみで聞き返してフォームを出さない振る舞いは禁止。
+ユーザーが具体値（kg/回数）を伴わずに **種目を 1 つに断定して** 述べた場合（例:「胸の日でダンベルプレスやる」「ベンチプレス追加して」）、AI は **必ず** 書き込みツールを呼び出して draft カード（編集フォーム内蔵）を提示する。テキストのみで聞き返してフォームを出さない振る舞いは禁止。
+
+**「断定」と「未決定」の境界:**
+
+- 断定（本 FR の対象）: 種目名 1 個を明示的に挙げ、「やる／追加して／始める」と発話している
+- 未決定（FR_037 の Proposed フローへ振り分け）: 「何やろう」「胸の日」（部位名のみ）「メニュー提案して」「おすすめは?」のように選択肢を求めている発話。これらに対しては書き込みツールを呼ばず `proposeAction` を呼ぶ
 
 **フロー:**
 
@@ -441,6 +480,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 - 種目名が決まったのにテキストのみで応答すること（フォームが出ないと UX が壊れる）
 - placeholder の値を 0 以外（例: 50kg/10 等の架空値）で埋めること（事実誤認の元）
 - 既にアクティブセッションの `draftExercises` に同じ種目がある状態で「何キロがいいかな」「重さ提案して」などの **値の助言** に対して `addExerciseToSession` を再呼び出しすること（重複 draft カードが生成される。代わりにテキスト応答で前セットからの増減を提案する）
+- **未決定発話**（「何やろう」「メニュー」「○○の日」など）に対して書き込みツールを呼び出すこと（FR_037 の Proposed フローへ振り分ける）
 
 **検証方法:** テストによる検証
 
@@ -460,6 +500,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 - 種目追加・セット完了・AI メッセージ・draft カード提案などの出来事が時系列順に並ぶ
 - `recording` 状態の ExerciseCard は画面上部に **sticky 固定** され、スクロール中も入力 UI が常時可視
 - 同時に `recording` になれる種目は 1 つ（[workout/index.md](../workout/index.md) FR_030 を継承）
+- **Proposed メッセージ（FR_037）** は draft カードではなく `actions` 付き ChatMessage として時系列に並び、ChatBubble の通常スタイル内に提案チップ群を描画する。タイムラインの時系列順序や sticky 挙動には影響しない
 
 **検証方法:** テストによる検証
 
@@ -484,6 +525,63 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 - **対象外ツール**:
   - `addExercise`（種目マスター登録）はセッションと無関係なため対象外
 - **過去日付保存（将来要件）**: 「日付指定で過去のワークアウトを補完保存する」UX は将来要件として残す。本 PRD では現状 `saveWorkout` も `isActive=false` で一律 `SESSION_NOT_ACTIVE` を返す。詳細は [ai-chat ADR](../../adr/ai-chat.md)「セッション外 write tool」項
+
+**検証方法:** テストによる検証
+
+### FR_037: Proposed メッセージモード（未決定発話への提案チップ）
+
+ユーザーが種目を未決定のまま選択肢を求めた場合、AI は `proposeAction` ツールを呼び、テキスト本文 + 提案チップ群（1〜5 個、推奨は 2〜4 個）を含む **Proposed メッセージ** を返す。draft カードは作らず、副作用ゼロ。
+
+**トリガーする発話例:**
+
+- 「何やろう」「次の種目どうしよ」
+- 「胸の日」「背中の日」（部位名のみで種目未指定）
+- 「メニュー提案して」「おすすめは?」「候補ほしい」
+- 「軽めの日のメニュー提案して」「フォーム重視で何かない?」
+
+**Proposed メッセージの仕様:**
+
+- ChatBubble の通常スタイル（assistant 左寄せ、白背景）の本文として AI の rationale テキストを表示
+- 本文下に提案チップ群を `flex flex-wrap gap-2` で配置
+- チップは raw `<button>` + gym-* トークン、`min-h-[44px]` でタップターゲットを確保
+- 同一 Proposed メッセージ内のチップは **1 個タップで他もすべて disabled**（誤連打防止）。消費済みチップは `disabled` + Phosphor `Check` アイコン
+- リロード後も未消費チップは機能する（chatStore の永続化対象）
+
+**Conversational / Committed との境界:**
+
+- Conversational（テキストのみ）: 質問・雑談・読み取り要求（「最近どう?」「胸の日いつだっけ?」）
+- Proposed（本 FR）: 上記トリガー例
+- Committed（FR_015）: 種目名 1 個の断定発話、または具体値（kg/回数/セット数）を含む発話
+
+判定優先ルール:
+
+1. 具体的な重量/回数/セット数が入力に含まれる → **無条件で Committed**（上級者の即記録体験を守る）
+2. 種目名 1 個のみの断定発話 → Committed（FR_015）
+3. 上記の未決定発話パターン → Proposed
+4. それ以外 → Conversational
+
+**検証方法:** テストによる検証
+
+### FR_038: 提案チップのアクション実行（kind 別ハイブリッド導線）
+
+提案チップは 3 種類の kind を持ち、それぞれ異なる経路で実行される。
+
+| kind | 経路 | 振る舞い |
+|------|------|----------|
+| `start-exercise` | クライアントで直接 `executeWriteTool('addExerciseToSession', { exerciseName, sets: [{ weight: 0, reps: 0 }] })` を実行 | AI を介さず即座に draft カードを生成。既存の FR_013 / FR_015 編集フォームフローに合流 |
+| `show-history` | クライアントで直接 `executeReadTool('getWorkoutsByExercise', { exerciseName })` を実行 | 結果テキストを assistant メッセージとして追加。AI を介さない |
+| `ask-followup` | `payload.prompt`（無ければ `label`）を擬似発話として再投入 | user メッセージとして表示後、AI に再判断させる |
+
+**設計の根拠:**
+
+- `start-exercise` / `show-history` は chip タップ時点でユーザーの「決定」が確定済みのため、AI 再判断は遅延・揺らぎ・別 tool への迷走を招く。決定論的に実行する
+- `ask-followup` は会話継続が本質。AI に再判断させるのが自然
+
+**エラーハンドリング:**
+
+- chip 経由の `executeWriteTool` が `SESSION_NOT_ACTIVE` / `EXERCISE_ALREADY_IN_SESSION` を返した場合、対応するヒント文言を assistant メッセージとして表示
+- chip 経由の `executeReadTool` が失敗した場合、エラー文言を assistant メッセージとして表示
+- いずれの場合も `consumedActionId` は更新され、同一チップの再タップは no-op
 
 **検証方法:** テストによる検証
 
