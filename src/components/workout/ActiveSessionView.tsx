@@ -48,7 +48,14 @@ export function ActiveSessionView() {
     retryLastMessage,
   } = useChatService()
   const hasApiKey = useSettingsStore((s) => s.hasApiKey)
-  const rubberBand = useRubberBandScroll()
+  const {
+    ref: scrollRef,
+    style: rubberBandStyle,
+    onPointerDown: rbOnPointerDown,
+    onPointerMove: rbOnPointerMove,
+    onPointerUp: rbOnPointerUp,
+    onPointerCancel: rbOnPointerCancel,
+  } = useRubberBandScroll()
 
   // ChatInput 内の useMemo([exerciseSearch, trimmed]) を毎レンダ無効化しないよう
   // 同一参照を維持する。中身の関数群は zustand store / useExercises 由来で安定。
@@ -129,12 +136,12 @@ export function ActiveSessionView() {
   return (
     <div
       data-testid="active-session-scroll"
-      ref={rubberBand.ref}
-      style={{ viewTransitionName: 'session-frame', ...rubberBand.style }}
-      onPointerDown={rubberBand.onPointerDown}
-      onPointerMove={rubberBand.onPointerMove}
-      onPointerUp={rubberBand.onPointerUp}
-      onPointerCancel={rubberBand.onPointerCancel}
+      ref={scrollRef}
+      style={{ viewTransitionName: 'session-frame', ...rubberBandStyle }}
+      onPointerDown={rbOnPointerDown}
+      onPointerMove={rbOnPointerMove}
+      onPointerUp={rbOnPointerUp}
+      onPointerCancel={rbOnPointerCancel}
       className="flex-1 pt-content-top bg-gym-paper pb-content-bottom-scroll overflow-y-auto overscroll-contain"
     >
       {!hasApiKey && (

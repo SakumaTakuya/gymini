@@ -4,9 +4,11 @@ import { useRubberBandScroll } from './useRubberBandScroll'
 import { setupHapticMocks } from '@/test/hapticMocks'
 
 function firePointer(el: Element, type: 'pointerdown' | 'pointermove' | 'pointerup', clientY?: number) {
-  const init: MouseEventInit = { bubbles: true, cancelable: true }
-  if (clientY !== undefined) init.clientY = clientY
-  const ev = new MouseEvent(type, init)
+  const ev = new MouseEvent(type, {
+    bubbles: true,
+    cancelable: true,
+    ...(clientY !== undefined ? { clientY } : {}),
+  })
   act(() => { el.dispatchEvent(ev) })
 }
 

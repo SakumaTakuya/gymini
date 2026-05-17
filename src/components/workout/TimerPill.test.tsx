@@ -53,6 +53,9 @@ describe('TimerPill', () => {
       act(() => {
         rerender(<TimerPill elapsedSeconds={60} />)
       })
+      act(() => {
+        vi.advanceTimersByTime(1)
+      })
       const pill = container.firstChild as HTMLElement
       expect(pill.className).toContain('animate-breath')
     })
@@ -63,6 +66,9 @@ describe('TimerPill', () => {
       const { container, rerender } = render(<TimerPill elapsedSeconds={59} />)
       act(() => {
         rerender(<TimerPill elapsedSeconds={60} />)
+      })
+      act(() => {
+        vi.advanceTimersByTime(1)
       })
       act(() => {
         vi.advanceTimersByTime(1500)

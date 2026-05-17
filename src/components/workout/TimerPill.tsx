@@ -19,9 +19,12 @@ export function TimerPill({ elapsedSeconds }: Props) {
     ) {
       return
     }
-    setBreathing(true)
-    const timer = setTimeout(() => setBreathing(false), BREATH_DURATION_MS)
-    return () => clearTimeout(timer)
+    const start = setTimeout(() => setBreathing(true), 0)
+    const stop = setTimeout(() => setBreathing(false), BREATH_DURATION_MS)
+    return () => {
+      clearTimeout(start)
+      clearTimeout(stop)
+    }
   }, [elapsedSeconds])
 
   return (
