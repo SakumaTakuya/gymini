@@ -10,7 +10,7 @@ type CompletedSetRowProps = {
 
 export function CompletedSetRow({ set, onEdit, onDelete }: CompletedSetRowProps) {
   return (
-    <div data-testid="completed-set-row" className="animate-appear flex items-center gap-3 py-2 px-2 bg-gym-zinc-50 rounded-xl">
+    <div data-testid="completed-set-row" className="animate-pop flex items-center gap-3 py-2 px-2 bg-gym-zinc-50 rounded-xl">
       <IconButton
         onClick={onDelete}
         aria-label="削除"

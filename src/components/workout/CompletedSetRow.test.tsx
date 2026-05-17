@@ -58,5 +58,12 @@ describe('CompletedSetRow', () => {
       const reps = screen.getByText('回')
       expect(reps.className).toContain('text-[10px]')
     })
+
+    it('行は animate-pop を持つ (完了直後の scale spring、animate-appear は廃止)', () => {
+      const { container } = render(<CompletedSetRow {...defaultProps} />)
+      const row = container.firstChild as HTMLElement
+      expect(row.className).toContain('animate-pop')
+      expect(row.className).not.toContain('animate-appear')
+    })
   })
 })

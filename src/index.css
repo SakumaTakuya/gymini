@@ -56,6 +56,19 @@
   animation: slide-up-fade 220ms ease-out both;
 }
 
+@keyframes pop {
+  from {
+    transform: scale(0.98);
+  }
+  to {
+    transform: scale(1);
+  }
+}
+
+@utility animate-pop {
+  animation: pop var(--duration-normal) var(--ease-spring-soft) both;
+}
+
 @utility chat-markdown {
   & p {
     @apply my-1 leading-relaxed;

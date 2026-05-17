@@ -1,4 +1,4 @@
-import { describe, it, expect, vi } from 'vitest'
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { PendingSetRow } from './PendingSetRow'
 
@@ -158,6 +158,56 @@ describe('PendingSetRow', () => {
       fireEvent.blur(repsInput)
       fireEvent.click(checkButton)
       expect(onComplete).toHaveBeenCalledOnce()
+    })
+  })
+
+  describe('Cox / Badeen ハプティック', () => {
+    const originalMatchMedia = window.matchMedia
+    const originalVibrate = (navigator as Navigator & { vibrate?: (p: number | number[]) => boolean }).vibrate
+
+    beforeEach(() => {
+      window.matchMedia = vi.fn().mockReturnValue({
+        matches: false,
+        media: '',
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      })
+      Object.defineProperty(navigator, 'vibrate', { value: vi.fn().mockReturnValue(true), writable: true, configurable: true })
+    })
+
+    afterEach(() => {
+      window.matchMedia = originalMatchMedia
+      if (originalVibrate === undefined) {
+        Reflect.deleteProperty(navigator, 'vibrate')
+      } else {
+        Object.defineProperty(navigator, 'vibrate', { value: originalVibrate, writable: true, configurable: true })
+      }
+    })
+
+    it('完了ボタン押下で navigator.vibrate(10) を呼ぶ', () => {
+      render(<PendingSetRow {...defaultProps} />)
+      fireEvent.click(screen.getByRole('button', { name: /完了/ }))
+      expect(navigator.vibrate).toHaveBeenCalledWith(10)
+    })
+
+    it('prefers-reduced-motion: reduce の時は完了ボタン押下で vibrate を呼ばない', () => {
+      window.matchMedia = vi.fn().mockImplementation((q: string) => ({
+        matches: q === '(prefers-reduced-motion: reduce)',
+        media: q,
+        onchange: null,
+        addEventListener: vi.fn(),
+        removeEventListener: vi.fn(),
+        addListener: vi.fn(),
+        removeListener: vi.fn(),
+        dispatchEvent: vi.fn(),
+      }))
+      render(<PendingSetRow {...defaultProps} />)
+      fireEvent.click(screen.getByRole('button', { name: /完了/ }))
+      expect(navigator.vibrate).not.toHaveBeenCalled()
     })
   })
 })

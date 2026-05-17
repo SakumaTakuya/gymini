@@ -2,6 +2,7 @@ import { Check, Plus } from '@phosphor-icons/react'
 import { type FocusEvent, type KeyboardEvent, useRef } from 'react'
 import { IconButton } from '../ui/icon-button'
 import { Input } from '../ui/input'
+import { tactileVibrate } from '@/lib/haptic'
 
 type PendingSetRowProps = {
   setNumber: number
@@ -26,6 +27,11 @@ export function PendingSetRow({
   // that would otherwise fire simultaneously with the button click.
   const buttonPressedRef = useRef(false)
 
+  const completeWithHaptic = () => {
+    tactileVibrate(10)
+    onComplete()
+  }
+
   const handleWeightBlur = () => {
     repsRef.current?.focus()
   }
@@ -43,13 +49,13 @@ export function PendingSetRow({
       buttonPressedRef.current = false
       return
     }
-    if (pendingSet.reps > 0) onComplete()
+    if (pendingSet.reps > 0) completeWithHaptic()
   }
 
   const handleRepsKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     if (e.key === 'Enter') {
       e.preventDefault()
-      if (pendingSet.reps > 0) onComplete()
+      if (pendingSet.reps > 0) completeWithHaptic()
     }
   }
 
@@ -87,7 +93,7 @@ export function PendingSetRow({
       <IconButton
         ref={completeButtonRef}
         onPointerDown={() => { buttonPressedRef.current = true }}
-        onClick={onComplete}
+        onClick={completeWithHaptic}
         aria-label="完了"
         className="rounded bg-gym-black text-gym-white shadow-soft hover:bg-gym-black/90"
       >
