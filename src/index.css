@@ -18,6 +18,7 @@
   --color-gym-zinc-800: #27272a;
   --color-gym-zinc-900: #18181b;
   --color-gym-accent: #DE3A2B;
+  --color-gym-paper: #FAF8F4; /* Active Session 限定の暖色背景。tokens.md 参照 */
   --font-outfit: "Outfit", sans-serif;
   --font-sora: "Sora", sans-serif;
   --font-jp: "Noto Sans JP", sans-serif;

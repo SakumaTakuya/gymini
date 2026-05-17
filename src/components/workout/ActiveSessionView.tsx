@@ -127,7 +127,7 @@ export function ActiveSessionView() {
   return (
     <div
       data-testid="active-session-scroll"
-      className="flex-1 pt-content-top bg-gym-zinc-50 pb-content-bottom-scroll overflow-y-auto overscroll-contain"
+      className="flex-1 pt-content-top bg-gym-paper pb-content-bottom-scroll overflow-y-auto overscroll-contain"
     >
       {!hasApiKey && (
         <div className="mx-4 my-4 rounded-2xl bg-gym-white border border-gym-zinc-200 shadow-soft p-4 text-sm">

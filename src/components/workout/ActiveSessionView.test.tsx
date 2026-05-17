@@ -68,6 +68,14 @@ describe('ActiveSessionView', () => {
     expect(scrollContainer.className).toContain('overscroll-contain')
   })
 
+  it('縦スクロールコンテナの背景は gym-paper (Active Session 限定の暖色化)', () => {
+    useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
+    render(<ActiveSessionView />)
+    const scrollContainer = screen.getByTestId('active-session-scroll')
+    expect(scrollContainer.className).toContain('bg-gym-paper')
+    expect(scrollContainer.className).not.toContain('bg-gym-zinc-50')
+  })
+
   it('ChatInput 経由で種目を選ぶと ExerciseCard が表示される', async () => {
     const user = userEvent.setup()
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
