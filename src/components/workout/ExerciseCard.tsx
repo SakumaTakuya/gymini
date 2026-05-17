@@ -63,14 +63,14 @@ export function ExerciseCard({
 
   return (
     <div
-      className={`animate-appear relative mx-4 mb-3 bg-gym-white rounded-[24px] p-5 shadow-soft border border-gym-zinc-100 ${
+      className={`animate-appear relative mx-4 mb-3 bg-gym-white rounded-[24px] p-5 shadow-soft ${
         isCollapsed ? 'opacity-70' : ''
       } ${menuOpen ? 'z-10' : ''}`}
     >
       {/* Header */}
       <div
         className={`flex items-center gap-3 ${
-          !isCollapsed ? 'mb-4 border-b border-gym-zinc-50 pb-3' : ''
+          !isCollapsed ? 'mb-4' : ''
         }`}
       >
         <div className="relative flex-shrink-0">

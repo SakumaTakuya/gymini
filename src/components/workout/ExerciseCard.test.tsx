@@ -213,4 +213,25 @@ describe('ExerciseCard', () => {
       expect(screen.queryByText(/AI 提案/)).not.toBeInTheDocument()
     })
   })
+
+  describe('Matas 紙化（境界線緩和）', () => {
+    it('通常種目カードのアウター div に border border-gym-zinc-100 を含まない', () => {
+      const { container } = render(<ExerciseCard {...defaultProps} />)
+      const outer = container.firstChild as HTMLElement
+      expect(outer.className).not.toContain('border border-gym-zinc-100')
+    })
+
+    it('展開時のヘッダ div に border-b border-gym-zinc-50 を含まない', () => {
+      const draft: DraftExercise = { ...baseDraft, cardState: 'idle' }
+      const { container } = render(<ExerciseCard {...defaultProps} draftExercise={draft} />)
+      const headerWithBorder = container.querySelector('.border-b')
+      expect(headerWithBorder).toBeNull()
+    })
+
+    it('shadow-soft は維持する（浮かす表現の唯一の手段）', () => {
+      const { container } = render(<ExerciseCard {...defaultProps} />)
+      const outer = container.firstChild as HTMLElement
+      expect(outer.className).toContain('shadow-soft')
+    })
+  })
 })
