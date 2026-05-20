@@ -12,8 +12,13 @@ describe('AddSetButton', () => {
   })
 
   it('label を渡すと可視テキストを表示する', () => {
-    render(<AddSetButton onClick={vi.fn()} aria-label="セットを追加" label="セットを追加" />)
+    render(<AddSetButton onClick={vi.fn()} label="セットを追加" />)
     expect(screen.getByText('セットを追加')).toBeInTheDocument()
+  })
+
+  it('aria-label 省略時は label からアクセシブル名を導出する', () => {
+    render(<AddSetButton onClick={vi.fn()} label="セットを追加" />)
+    expect(screen.getByRole('button', { name: 'セットを追加' })).toBeInTheDocument()
   })
 
   it('label 未指定ならアイコンのみ (可視テキストなし)', () => {

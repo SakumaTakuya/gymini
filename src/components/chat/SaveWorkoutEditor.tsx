@@ -96,7 +96,7 @@ export function SaveWorkoutEditor({
                 />
               ))}
             </div>
-            <AddSetButton disabled={isSettled} onClick={() => addSet(exIdx)} label="セットを追加" aria-label="セットを追加" />
+            <AddSetButton disabled={isSettled} onClick={() => addSet(exIdx)} label="セットを追加" />
           </div>
         ))}
       </div>

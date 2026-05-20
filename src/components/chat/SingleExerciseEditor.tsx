@@ -71,7 +71,7 @@ export function SingleExerciseEditor({
             />
           ))}
         </div>
-        <AddSetButton disabled={isSettled} onClick={addSet} label="セットを追加" aria-label="セットを追加" />
+        <AddSetButton disabled={isSettled} onClick={addSet} label="セットを追加" />
       </div>
       <ConfirmationActions
         label={label}
