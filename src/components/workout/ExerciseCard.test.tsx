@@ -214,6 +214,25 @@ describe('ExerciseCard', () => {
       expect(screen.queryByText(/AI 提案/)).not.toBeInTheDocument()
     })
 
+    describe('swipe handle 拡張 (Phase 9b)', () => {
+      it('handle は min-h-[44px] でモバイルタップ領域を確保する', () => {
+        render(<ExerciseCard {...defaultProps} draftExercise={aiDraft} />)
+        const handle = screen.getByTestId('ai-card-handle')
+        expect(handle.className).toContain('min-h-[44px]')
+      })
+
+      it('handle に種目名を含む (見出しごと掴める)', () => {
+        render(<ExerciseCard {...defaultProps} draftExercise={aiDraft} />)
+        const handle = screen.getByTestId('ai-card-handle')
+        expect(handle.textContent).toContain('ベンチプレス')
+      })
+
+      it('種目名は handle 内で 1 度だけ表示される (SingleExerciseEditor 側は非表示)', () => {
+        render(<ExerciseCard {...defaultProps} draftExercise={aiDraft} />)
+        expect(screen.getAllByText('ベンチプレス')).toHaveLength(1)
+      })
+    })
+
     describe('Badeen swipe accept/reject (Phase 8b)', () => {
       it('handle を右 swipe すると onAcceptSuggested に initialSets が渡る (編集なしクイック承認)', () => {
         const onAcceptSuggested = vi.fn()

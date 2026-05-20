@@ -1,6 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
-import { AddSetButton, EditableSetRow } from './EditableSetRow'
+import { EditableSetRow } from './EditableSetRow'
 
 describe('EditableSetRow', () => {
   beforeEach(() => {
@@ -60,19 +60,5 @@ describe('EditableSetRow', () => {
       expect(input).toBeDisabled()
     }
     expect(screen.getByRole('button', { name: 'セットを削除' })).toBeDisabled()
-  })
-})
-
-describe('AddSetButton', () => {
-  it('クリックで onClick を呼ぶ', () => {
-    const onClick = vi.fn()
-    render(<AddSetButton isSettled={false} onClick={onClick} />)
-    fireEvent.click(screen.getByRole('button', { name: /セットを追加/ }))
-    expect(onClick).toHaveBeenCalledOnce()
-  })
-
-  it('isSettled=true のとき disabled', () => {
-    render(<AddSetButton isSettled={true} onClick={vi.fn()} />)
-    expect(screen.getByRole('button', { name: /セットを追加/ })).toBeDisabled()
   })
 })

@@ -1,8 +1,8 @@
 import { Check, Plus } from '@phosphor-icons/react'
 import { type FocusEvent, type KeyboardEvent, useRef } from 'react'
 import { IconButton } from '../ui/icon-button'
-import { Input } from '../ui/input'
 import { tactileVibrate, HAPTIC_SET_COMPLETE_MS } from '@/lib/haptic'
+import { SetEditRow } from './SetEditRow'
 
 type PendingSetRowProps = {
   setNumber: number
@@ -60,45 +60,29 @@ export function PendingSetRow({
   }
 
   return (
-    <div className="animate-appear group flex items-center gap-3 py-2 px-2 rounded-xl border border-gym-zinc-200 bg-gym-white shadow-soft relative overflow-hidden">
-      <div className="absolute left-0 top-0 bottom-0 w-1 bg-gym-black transition-colors duration-quick group-focus-within:bg-gym-accent" />
-      <div className="w-6 h-6 rounded bg-gym-zinc-100 flex items-center justify-center text-gym-black ml-1">
-        <span className="font-outfit font-bold text-xs">{setNumber}</span>
-      </div>
-      <div className="flex-1 flex gap-6">
-        <Input
-          type="number"
-          value={pendingSet.weight}
-          onChange={(e) => onWeightChange(Number(e.target.value))}
-          onBlur={handleWeightBlur}
-          onKeyDown={handleWeightKeyDown}
-          inputMode="decimal"
-          suffix={<span className="text-[10px] font-medium text-gym-zinc-400">kg</span>}
-          containerClassName="items-baseline gap-1 h-auto pb-0.5"
-          className="w-16 text-3xl font-outfit font-bold tabular-nums"
-        />
-        <Input
-          ref={repsRef}
-          type="number"
-          value={pendingSet.reps}
-          onChange={(e) => onRepsChange(Number(e.target.value))}
-          onBlur={handleRepsBlur}
-          onKeyDown={handleRepsKeyDown}
-          inputMode="numeric"
-          suffix={<span className="text-[10px] font-medium text-gym-zinc-400">回</span>}
-          containerClassName="items-baseline gap-1 h-auto pb-0.5"
-          className="w-12 text-3xl font-outfit font-bold tabular-nums"
-        />
-      </div>
-      <IconButton
-        ref={completeButtonRef}
-        onPointerDown={() => { buttonPressedRef.current = true }}
-        onClick={completeWithHaptic}
-        aria-label="完了"
-        className="rounded bg-gym-black text-gym-white shadow-soft hover:bg-gym-black/90"
-      >
-        {isEditing ? <Check size={12} weight="bold" /> : <Plus size={12} weight="bold" />}
-      </IconButton>
-    </div>
+    <SetEditRow
+      className="animate-appear"
+      setNumber={setNumber}
+      weight={pendingSet.weight}
+      reps={pendingSet.reps}
+      onWeightChange={onWeightChange}
+      onRepsChange={onRepsChange}
+      repsInputRef={repsRef}
+      onWeightBlur={handleWeightBlur}
+      onWeightKeyDown={handleWeightKeyDown}
+      onRepsBlur={handleRepsBlur}
+      onRepsKeyDown={handleRepsKeyDown}
+      trailing={
+        <IconButton
+          ref={completeButtonRef}
+          onPointerDown={() => { buttonPressedRef.current = true }}
+          onClick={completeWithHaptic}
+          aria-label="完了"
+          className="rounded bg-gym-black text-gym-white shadow-soft hover:bg-gym-black/90"
+        >
+          {isEditing ? <Check size={12} weight="bold" /> : <Plus size={12} weight="bold" />}
+        </IconButton>
+      }
+    />
   )
 }

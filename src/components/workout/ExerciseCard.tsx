@@ -1,9 +1,10 @@
-import { ArrowDown, ArrowUp, CaretDown, CaretUp, Check, DotsThree, Plus, Sparkle, Trash, X } from '@phosphor-icons/react'
+import { ArrowDown, ArrowUp, CaretDown, CaretUp, Check, DotsThree, Sparkle, Trash, X } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import type { DraftExercise, WorkoutSet } from '../../schemas/workout'
 import { IconButton } from '../ui/icon-button'
 import { SingleExerciseEditor } from '../chat/SingleExerciseEditor'
 import { useSwipeGesture } from '@/hooks/useSwipeGesture'
+import { AddSetButton } from './AddSetButton'
 import { CompletedSetRow } from './CompletedSetRow'
 import { PendingSetRow } from './PendingSetRow'
 
@@ -174,13 +175,7 @@ export function ExerciseCard({
           {/* Add button (idle state or editing a previous set) */}
           {(!isRecording || editingSetIndex !== null) && (
             <div className="flex justify-center py-1">
-              <IconButton
-                onClick={onActivate}
-                aria-label="追加"
-                className="rounded-full bg-gym-zinc-100 text-gym-zinc-500"
-              >
-                <Plus size={14} weight="bold" />
-              </IconButton>
+              <AddSetButton onClick={onActivate} aria-label="セットを追加" />
             </div>
           )}
         </>
@@ -253,16 +248,20 @@ function AiSuggestedCard({
           onPointerMove={swipeMove}
           onPointerUp={swipeUp}
           onPointerCancel={swipeCancel}
-          className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-gym-black px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gym-white cursor-grab active:cursor-grabbing select-none"
+          className="mb-3 flex min-h-[44px] flex-col justify-center gap-1.5 cursor-grab active:cursor-grabbing select-none touch-pan-y"
         >
-          <Sparkle size={10} weight="fill" />
-          AI 提案
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-gym-black px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gym-white">
+            <Sparkle size={10} weight="fill" />
+            AI 提案
+          </span>
+          <span className="font-semibold text-gym-black">{exerciseName}</span>
         </div>
         <SingleExerciseEditor
           exerciseLabel={exerciseName}
           initialSets={sets}
           isSettled={false}
           label="保存"
+          showLabel={false}
           onApprove={(editedSets) => onAcceptSuggested?.(editedSets)}
           onReject={() => onRejectSuggested?.()}
         />

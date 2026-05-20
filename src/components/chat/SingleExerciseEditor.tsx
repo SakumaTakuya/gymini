@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { AddSetButton, EditableSetRow } from './EditableSetRow'
+import { EditableSetRow } from './EditableSetRow'
+import { AddSetButton } from '../workout/AddSetButton'
 import { ConfirmationActions } from './ConfirmationActions'
 
 type SetEdit = { weight: number; reps: number }
@@ -11,6 +12,7 @@ export type SingleExerciseEditorProps = {
   label: string
   onApprove: (sets: SetEdit[]) => void
   onReject: () => void
+  showLabel?: boolean
 }
 
 export function SingleExerciseEditor({
@@ -20,6 +22,7 @@ export function SingleExerciseEditor({
   label,
   onApprove,
   onReject,
+  showLabel = true,
 }: SingleExerciseEditorProps) {
   const [sets, setSets] = useState<SetEdit[]>(() =>
     initialSets.map((s) => ({ weight: s.weight, reps: s.reps })),
@@ -53,7 +56,7 @@ export function SingleExerciseEditor({
   return (
     <>
       <div className="mb-3 flex flex-col gap-2">
-        <div className="font-semibold text-gym-black">{exerciseLabel}</div>
+        {showLabel && <div className="font-semibold text-gym-black">{exerciseLabel}</div>}
         <div className="flex flex-col gap-2">
           {sets.map((s, setIdx) => (
             <EditableSetRow
@@ -68,7 +71,7 @@ export function SingleExerciseEditor({
             />
           ))}
         </div>
-        <AddSetButton isSettled={isSettled} onClick={addSet} />
+        <AddSetButton disabled={isSettled} onClick={addSet} label="セットを追加" />
       </div>
       <ConfirmationActions
         label={label}
