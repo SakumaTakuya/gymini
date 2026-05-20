@@ -1,6 +1,7 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { CompletedSetRow } from './CompletedSetRow'
+import { firePointer } from '@/test/pointerEvents'
 
 describe('CompletedSetRow', () => {
   const defaultProps = {
@@ -32,11 +33,11 @@ describe('CompletedSetRow', () => {
     expect(onEdit).toHaveBeenCalledOnce()
   })
 
-  it('bg-gym-zinc-50とrounded-xlのスタイルを持つ', () => {
-    const { container } = render(<CompletedSetRow {...defaultProps} />)
-    const row = container.firstChild as HTMLElement
-    expect(row.className).toContain('bg-gym-zinc-50')
-    expect(row.className).toContain('rounded-xl')
+  it('foreground は bg-gym-zinc-50 rounded-xl', () => {
+    render(<CompletedSetRow {...defaultProps} />)
+    const fg = screen.getByTestId('completed-set-foreground')
+    expect(fg.className).toContain('bg-gym-zinc-50')
+    expect(fg.className).toContain('rounded-xl')
   })
 
   describe('Matas 数字拡大', () => {
@@ -60,11 +61,17 @@ describe('CompletedSetRow', () => {
       expect(reps.className).toContain('text-[10px]')
     })
 
-    it('行は animate-pop を持つ (完了直後の scale spring、animate-appear は廃止)', () => {
-      const { container } = render(<CompletedSetRow {...defaultProps} />)
-      const row = container.firstChild as HTMLElement
+    it('container は animate-pop を持つ (完了直後の scale spring、animate-appear は廃止)', () => {
+      render(<CompletedSetRow {...defaultProps} />)
+      const row = screen.getByTestId('completed-set-row')
       expect(row.className).toContain('animate-pop')
       expect(row.className).not.toContain('animate-appear')
+    })
+
+    it('foreground は animate-pop を持たない (swipe の transform と競合するため)', () => {
+      render(<CompletedSetRow {...defaultProps} />)
+      const fg = screen.getByTestId('completed-set-foreground')
+      expect(fg.className).not.toContain('animate-pop')
     })
   })
 
@@ -85,11 +92,58 @@ describe('CompletedSetRow', () => {
       expect(watermark!.className).toContain('pointer-events-none')
     })
 
-    it('行 div は relative overflow-hidden を持ち、透かしをクリップする', () => {
-      const { container } = render(<CompletedSetRow {...defaultProps} />)
-      const row = container.firstChild as HTMLElement
+    it('container (row) は relative overflow-hidden を持ち、swipe で外れた foreground をクリップする', () => {
+      render(<CompletedSetRow {...defaultProps} />)
+      const row = screen.getByTestId('completed-set-row')
       expect(row.className).toContain('relative')
       expect(row.className).toContain('overflow-hidden')
+    })
+  })
+
+  describe('Badeen swipe 統合', () => {
+    it('a11y: 削除ボタンは sr-only で残り、role=button で取得可能 (screen reader 互換)', () => {
+      render(<CompletedSetRow {...defaultProps} />)
+      const btn = screen.getByRole('button', { name: /削除/ })
+      expect(btn.className).toContain('sr-only')
+    })
+
+    it('a11y: 編集ボタンは sr-only で残り、role=button で取得可能', () => {
+      render(<CompletedSetRow {...defaultProps} />)
+      const btn = screen.getByRole('button', { name: /編集/ })
+      expect(btn.className).toContain('sr-only')
+    })
+
+    it('foreground を touch swipe-left すると onDelete が呼ばれる (大きく引いてリリース)', () => {
+      const onDelete = vi.fn()
+      render(<CompletedSetRow {...defaultProps} onDelete={onDelete} setNumber={1} />)
+      const fg = screen.getByTestId('completed-set-foreground')
+      // fallback rowWidth = 320, threshold = 320 * 0.4 = 128
+      firePointer(fg, 'pointerdown', { clientX: 300 })
+      firePointer(fg, 'pointermove', { clientX: 100 }) // dx = -200, |200| >= 128
+      firePointer(fg, 'pointerup', { clientX: 100 })
+      expect(onDelete).toHaveBeenCalledOnce()
+    })
+
+    it('foreground を touch swipe-right すると onEdit が呼ばれる', () => {
+      const onEdit = vi.fn()
+      render(<CompletedSetRow {...defaultProps} onEdit={onEdit} setNumber={1} />)
+      const fg = screen.getByTestId('completed-set-foreground')
+      firePointer(fg, 'pointerdown', { clientX: 0 })
+      firePointer(fg, 'pointermove', { clientX: 200 })
+      firePointer(fg, 'pointerup', { clientX: 200 })
+      expect(onEdit).toHaveBeenCalledOnce()
+    })
+
+    it('小さな swipe (デッドゾーン内) では onDelete/onEdit を呼ばない', () => {
+      const onDelete = vi.fn()
+      const onEdit = vi.fn()
+      render(<CompletedSetRow {...defaultProps} onDelete={onDelete} onEdit={onEdit} />)
+      const fg = screen.getByTestId('completed-set-foreground')
+      firePointer(fg, 'pointerdown', { clientX: 100 })
+      firePointer(fg, 'pointermove', { clientX: 105 }) // dx=5
+      firePointer(fg, 'pointerup', { clientX: 105 })
+      expect(onDelete).not.toHaveBeenCalled()
+      expect(onEdit).not.toHaveBeenCalled()
     })
   })
 })
