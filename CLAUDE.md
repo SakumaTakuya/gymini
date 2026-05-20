@@ -40,7 +40,7 @@ src/
 - **localStorage ハイドレーション**: `useHydrated()` が `false` の間は `AppLayout` がブランク表示。ストアデータを参照するコンポーネントは必ずこのフックを通す
 - **Playwright**: `playwright.config.ts` が `npm run dev` を自動起動。dev サーバー起動中に実行すると二重起動になるため注意。主環境は `Mobile Chrome (Pixel 5)`（モバイルファースト）、副に `chromium` デスクトップ
 - **Vitest カバレッジ閾値**: lines/branches/functions/statements すべて 90%。除外対象は `vite.config.ts` の `coverage.exclude` を参照（`routeTree.gen.ts` / `main.tsx` / `routes/**` / `components/ui/**` / `types/**` / `useHydrated.ts` など）。テスト追加でカバレッジを上げようとする前に除外リストを確認する
-- **Gemini モデル**: `gemini-flash-latest`（`src/lib/geminiClient.ts`）。API キーは localStorage に保存し、環境変数は使わない
+- **Gemini モデル**: `gemini-3-flash-preview`（`src/lib/geminiClient.ts`）。API キーは localStorage に保存し、環境変数は使わない
 
 ## テストが仕様
 
