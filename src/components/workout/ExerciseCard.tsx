@@ -253,16 +253,20 @@ function AiSuggestedCard({
           onPointerMove={swipeMove}
           onPointerUp={swipeUp}
           onPointerCancel={swipeCancel}
-          className="mb-3 inline-flex items-center gap-1.5 rounded-full bg-gym-black px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gym-white cursor-grab active:cursor-grabbing select-none"
+          className="mb-3 flex min-h-[44px] flex-col justify-center gap-1.5 cursor-grab active:cursor-grabbing select-none touch-pan-y"
         >
-          <Sparkle size={10} weight="fill" />
-          AI 提案
+          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-gym-black px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gym-white">
+            <Sparkle size={10} weight="fill" />
+            AI 提案
+          </span>
+          <span className="font-semibold text-gym-black">{exerciseName}</span>
         </div>
         <SingleExerciseEditor
           exerciseLabel={exerciseName}
           initialSets={sets}
           isSettled={false}
           label="保存"
+          showLabel={false}
           onApprove={(editedSets) => onAcceptSuggested?.(editedSets)}
           onReject={() => onRejectSuggested?.()}
         />
