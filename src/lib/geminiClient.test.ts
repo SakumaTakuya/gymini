@@ -48,7 +48,7 @@ describe('createGeminiClient', () => {
     vi.clearAllMocks()
   })
 
-  test('gemini-flash-latest モデルを使用する', () => {
+  test('gemini-3-flash-preview モデルを使用する', () => {
     createGeminiClient({ apiKey: 'key' })
     expect(getGenerativeModelMock).toHaveBeenCalledWith(
       expect.objectContaining({ model: GEMINI_MODEL }),

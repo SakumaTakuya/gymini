@@ -7,7 +7,7 @@ import { TOOL_DECLARATIONS } from './toolDefinitions'
 import type { TrainingGoal, UserProfile } from '../stores/userProfileStore'
 import { todayDateString } from '../schemas/date'
 
-export const GEMINI_MODEL = 'gemini-flash-latest'
+export const GEMINI_MODEL = 'gemini-3-flash-preview'
 export const MAX_HISTORY_MESSAGES = 50
 
 const TRAINING_GOAL_LABELS: Record<TrainingGoal, string> = {
