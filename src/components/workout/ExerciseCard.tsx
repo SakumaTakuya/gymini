@@ -1,9 +1,10 @@
-import { ArrowDown, ArrowUp, CaretDown, CaretUp, Check, DotsThree, Plus, Sparkle, Trash, X } from '@phosphor-icons/react'
+import { ArrowDown, ArrowUp, CaretDown, CaretUp, Check, DotsThree, Sparkle, Trash, X } from '@phosphor-icons/react'
 import { useEffect, useRef, useState } from 'react'
 import type { DraftExercise, WorkoutSet } from '../../schemas/workout'
 import { IconButton } from '../ui/icon-button'
 import { SingleExerciseEditor } from '../chat/SingleExerciseEditor'
 import { useSwipeGesture } from '@/hooks/useSwipeGesture'
+import { AddSetButton } from './AddSetButton'
 import { CompletedSetRow } from './CompletedSetRow'
 import { PendingSetRow } from './PendingSetRow'
 
@@ -174,13 +175,7 @@ export function ExerciseCard({
           {/* Add button (idle state or editing a previous set) */}
           {(!isRecording || editingSetIndex !== null) && (
             <div className="flex justify-center py-1">
-              <IconButton
-                onClick={onActivate}
-                aria-label="追加"
-                className="rounded-full bg-gym-zinc-100 text-gym-zinc-500"
-              >
-                <Plus size={14} weight="bold" />
-              </IconButton>
+              <AddSetButton onClick={onActivate} aria-label="セットを追加" />
             </div>
           )}
         </>

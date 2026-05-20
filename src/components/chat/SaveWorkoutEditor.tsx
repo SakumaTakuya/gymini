@@ -1,5 +1,6 @@
 import { useState } from 'react'
-import { AddSetButton, EditableSetRow } from './EditableSetRow'
+import { EditableSetRow } from './EditableSetRow'
+import { AddSetButton } from '../workout/AddSetButton'
 import { ConfirmationActions } from './ConfirmationActions'
 
 export type ExerciseEdit = {
@@ -95,7 +96,7 @@ export function SaveWorkoutEditor({
                 />
               ))}
             </div>
-            <AddSetButton isSettled={isSettled} onClick={() => addSet(exIdx)} />
+            <AddSetButton disabled={isSettled} onClick={() => addSet(exIdx)} label="セットを追加" aria-label="セットを追加" />
           </div>
         ))}
       </div>

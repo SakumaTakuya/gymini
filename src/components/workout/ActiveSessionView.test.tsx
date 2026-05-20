@@ -159,7 +159,7 @@ describe('ActiveSessionView', () => {
     expect(useWorkoutSessionStore.getState().draftExercises[0].cardState).toBe('idle')
 
     // onActivate → activate recording
-    await user.click(screen.getByRole('button', { name: '追加' }))
+    await user.click(screen.getByRole('button', { name: 'セットを追加' }))
     expect(useWorkoutSessionStore.getState().draftExercises[0].cardState).toBe('recording')
   })
 
