@@ -3,6 +3,7 @@ import { render, screen, fireEvent } from '@testing-library/react'
 import { ExerciseCard } from './ExerciseCard'
 import type { DraftExercise } from '../../schemas/workout'
 import { makeDraftExercise } from '../../test/fixtures/draftExercise'
+import { firePointer } from '../../test/pointerEvents'
 
 const baseDraft = makeDraftExercise({ exerciseId: 'bench' })
 
@@ -211,6 +212,72 @@ describe('ExerciseCard', () => {
     it('origin: manual のときは AI 提案バッジを表示しない', () => {
       render(<ExerciseCard {...defaultProps} />)
       expect(screen.queryByText(/AI 提案/)).not.toBeInTheDocument()
+    })
+
+    describe('Badeen swipe accept/reject (Phase 8b)', () => {
+      it('handle を右 swipe すると onAcceptSuggested に initialSets が渡る (編集なしクイック承認)', () => {
+        const onAcceptSuggested = vi.fn()
+        render(
+          <ExerciseCard
+            {...defaultProps}
+            draftExercise={aiDraft}
+            onAcceptSuggested={onAcceptSuggested}
+          />,
+        )
+        const handle = screen.getByTestId('ai-card-handle')
+        firePointer(handle, 'pointerdown', { clientX: 0 })
+        firePointer(handle, 'pointermove', { clientX: 200 })
+        firePointer(handle, 'pointerup', { clientX: 200 })
+        expect(onAcceptSuggested).toHaveBeenCalledWith([{ weight: 60, reps: 10 }])
+      })
+
+      it('handle を左 swipe すると onRejectSuggested が呼ばれる', () => {
+        const onRejectSuggested = vi.fn()
+        render(
+          <ExerciseCard
+            {...defaultProps}
+            draftExercise={aiDraft}
+            onRejectSuggested={onRejectSuggested}
+          />,
+        )
+        const handle = screen.getByTestId('ai-card-handle')
+        firePointer(handle, 'pointerdown', { clientX: 300 })
+        firePointer(handle, 'pointermove', { clientX: 100 })
+        firePointer(handle, 'pointerup', { clientX: 100 })
+        expect(onRejectSuggested).toHaveBeenCalledOnce()
+      })
+
+      it('フォーム内の input を touch しても swipe は起動しない (handle 外なので)', () => {
+        const onAcceptSuggested = vi.fn()
+        const onRejectSuggested = vi.fn()
+        render(
+          <ExerciseCard
+            {...defaultProps}
+            draftExercise={aiDraft}
+            onAcceptSuggested={onAcceptSuggested}
+            onRejectSuggested={onRejectSuggested}
+          />,
+        )
+        const input = screen.getAllByRole('spinbutton')[0]
+        firePointer(input, 'pointerdown', { clientX: 100 })
+        firePointer(input, 'pointermove', { clientX: 300 })
+        firePointer(input, 'pointerup', { clientX: 300 })
+        expect(onAcceptSuggested).not.toHaveBeenCalled()
+        expect(onRejectSuggested).not.toHaveBeenCalled()
+      })
+
+      it('既存の「保存」ボタン経路も維持される (キーボードユーザー向け)', () => {
+        const onAcceptSuggested = vi.fn()
+        render(
+          <ExerciseCard
+            {...defaultProps}
+            draftExercise={aiDraft}
+            onAcceptSuggested={onAcceptSuggested}
+          />,
+        )
+        fireEvent.click(screen.getByRole('button', { name: /保存/ }))
+        expect(onAcceptSuggested).toHaveBeenCalledOnce()
+      })
     })
   })
 
