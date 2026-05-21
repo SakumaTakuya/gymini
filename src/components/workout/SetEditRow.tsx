@@ -61,6 +61,7 @@ export function SetEditRow({
           onBlur={onWeightBlur}
           onKeyDown={onWeightKeyDown}
           inputMode="decimal"
+          enterKeyHint="next"
           disabled={disabled}
           suffix={<span className="text-[10px] font-medium text-gym-zinc-400">kg</span>}
           containerClassName="items-baseline gap-1 h-auto pb-0.5"
@@ -75,6 +76,7 @@ export function SetEditRow({
           onBlur={onRepsBlur}
           onKeyDown={onRepsKeyDown}
           inputMode="numeric"
+          enterKeyHint="done"
           disabled={disabled}
           suffix={<span className="text-[10px] font-medium text-gym-zinc-400">回</span>}
           containerClassName="items-baseline gap-1 h-auto pb-0.5"

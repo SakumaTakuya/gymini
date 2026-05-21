@@ -163,4 +163,32 @@ describe('ExerciseMasterSection', () => {
     await user.click(screen.getByRole('button', { name: '編集をキャンセル' }))
     expect(screen.queryByRole('alert')).not.toBeInTheDocument()
   })
+
+  it('検索 input に enterKeyHint="search" を設定する', () => {
+    render(<ExerciseMasterSection />)
+    expect(screen.getByPlaceholderText('種目を検索...')).toHaveAttribute(
+      'enterkeyhint',
+      'search',
+    )
+  })
+
+  it('種目追加 input に enterKeyHint="done" を設定する', async () => {
+    const user = userEvent.setup()
+    render(<ExerciseMasterSection />)
+    await user.click(screen.getByRole('button', { name: '種目を追加' }))
+    expect(screen.getByLabelText('新しい種目名')).toHaveAttribute(
+      'enterkeyhint',
+      'done',
+    )
+  })
+
+  it('種目編集 input に enterKeyHint="done" を設定する', async () => {
+    const user = userEvent.setup()
+    render(<ExerciseMasterSection />)
+    await user.click(screen.getByRole('button', { name: 'ベンチプレスを編集' }))
+    expect(screen.getByLabelText('種目名を編集')).toHaveAttribute(
+      'enterkeyhint',
+      'done',
+    )
+  })
 })

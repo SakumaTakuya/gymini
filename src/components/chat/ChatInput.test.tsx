@@ -71,6 +71,16 @@ describe('ChatInput', () => {
     expect(onSend).not.toHaveBeenCalled()
   })
 
+  test('textarea に enterKeyHint="send" を設定する', () => {
+    render(
+      <ChatInput isLoading={false} onSend={vi.fn()} onStop={vi.fn()} />,
+    )
+    expect(screen.getByPlaceholderText('メッセージを入力')).toHaveAttribute(
+      'enterkeyhint',
+      'send',
+    )
+  })
+
   describe('種目検索 popover (P8)', () => {
     const exercises = [
       { id: 'ex-1', name: 'ベンチプレス' },

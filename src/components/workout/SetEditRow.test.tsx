@@ -89,4 +89,11 @@ describe('SetEditRow', () => {
     const row = container.firstChild as HTMLElement
     expect(row.className).toContain('animate-appear')
   })
+
+  it('weight に next / reps に done の enterKeyHint を設定する', () => {
+    render(<SetEditRow {...defaultProps} />)
+    const [weightInput, repsInput] = screen.getAllByRole('spinbutton')
+    expect(weightInput).toHaveAttribute('enterkeyhint', 'next')
+    expect(repsInput).toHaveAttribute('enterkeyhint', 'done')
+  })
 })

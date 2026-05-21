@@ -25,6 +25,14 @@ describe('APIKeySection', () => {
     expect(input).toHaveAttribute('type', 'password')
   })
 
+  it('APIキー入力に enterKeyHint="done" を設定する', () => {
+    render(<APIKeySection />)
+    expect(screen.getByLabelText('Gemini APIキー')).toHaveAttribute(
+      'enterkeyhint',
+      'done',
+    )
+  })
+
   it('目アイコンボタンクリックで表示・非表示を切り替える', async () => {
     const user = userEvent.setup()
     render(<APIKeySection />)
