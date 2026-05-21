@@ -138,6 +138,7 @@ export function ChatInput({
             onKeyDown={handleKeyDown}
             placeholder={placeholder}
             disabled={disabled}
+            enterKeyHint="send"
             rows={1}
             className={cn(
               'flex-1 resize-none bg-transparent outline-none',

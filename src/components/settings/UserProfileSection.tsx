@@ -123,6 +123,7 @@ export function UserProfileSection() {
             value={localBirthYear}
             onChange={handleBirthYearChange}
             placeholder="1990"
+            enterKeyHint="next"
             suffix={<span className="text-xs text-gym-zinc-400">年</span>}
           />
         </div>
@@ -143,6 +144,7 @@ export function UserProfileSection() {
             value={localWeightKg}
             onChange={handleWeightChange}
             placeholder="70"
+            enterKeyHint="next"
             suffix={<span className="text-xs text-gym-zinc-400">kg</span>}
           />
         </div>
@@ -163,6 +165,7 @@ export function UserProfileSection() {
             value={localHeightCm}
             onChange={handleHeightChange}
             placeholder="175"
+            enterKeyHint="next"
             suffix={<span className="text-xs text-gym-zinc-400">cm</span>}
           />
         </div>

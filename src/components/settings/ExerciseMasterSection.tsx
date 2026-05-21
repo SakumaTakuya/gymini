@@ -118,6 +118,7 @@ export function ExerciseMasterSection() {
           onChange={handleQueryChange}
           placeholder="種目を検索..."
           aria-label="種目を検索"
+          enterKeyHint="search"
           prefix={<MagnifyingGlass size={16} weight="bold" className="text-gym-zinc-400 flex-shrink-0" aria-hidden />}
           variant="filled"
         />
@@ -136,6 +137,7 @@ export function ExerciseMasterSection() {
                   aria-label="種目名を編集"
                   aria-invalid={editError !== null || undefined}
                   aria-describedby={editError !== null ? 'edit-error' : undefined}
+                  enterKeyHint="done"
                   autoFocus
                 />
                 <IconButton
@@ -194,6 +196,7 @@ export function ExerciseMasterSection() {
                 aria-invalid={addError !== null || undefined}
                 aria-describedby={addError !== null ? 'add-error' : undefined}
                 placeholder="種目名"
+                enterKeyHint="done"
                 autoFocus
               />
               <IconButton

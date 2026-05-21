@@ -35,6 +35,13 @@ describe('UserProfileSection', () => {
       expect(screen.getByLabelText('トレーニング目的')).toBeInTheDocument()
     })
 
+    it('数値入力に enterKeyHint="next" を設定する', () => {
+      render(<UserProfileSection />)
+      expect(screen.getByLabelText('生まれ年')).toHaveAttribute('enterkeyhint', 'next')
+      expect(screen.getByLabelText('体重')).toHaveAttribute('enterkeyhint', 'next')
+      expect(screen.getByLabelText('身長')).toHaveAttribute('enterkeyhint', 'next')
+    })
+
     it('ストアに値がある場合にフォームに反映する', () => {
       // render() 前にストアをセット（lazy initializer で読み込まれるため）
       useUserProfileStore.setState({

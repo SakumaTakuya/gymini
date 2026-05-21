@@ -95,6 +95,7 @@ export function APIKeySection() {
           value={localValue}
           onChange={handleChange}
           placeholder="APIキーを入力"
+          enterKeyHint="done"
           className="font-mono tracking-wider"
           suffix={
             <button
