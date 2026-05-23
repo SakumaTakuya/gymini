@@ -60,7 +60,6 @@ export function SetEditRow({
           onChange={(e) => onWeightChange(Number(e.target.value))}
           onBlur={onWeightBlur}
           onKeyDown={onWeightKeyDown}
-          inputMode="decimal"
           enterKeyHint="next"
           disabled={disabled}
           suffix={<span className="text-[10px] font-medium text-gym-zinc-400">kg</span>}
@@ -75,7 +74,6 @@ export function SetEditRow({
           onChange={(e) => onRepsChange(Number(e.target.value))}
           onBlur={onRepsBlur}
           onKeyDown={onRepsKeyDown}
-          inputMode="numeric"
           enterKeyHint="done"
           disabled={disabled}
           suffix={<span className="text-[10px] font-medium text-gym-zinc-400">回</span>}
