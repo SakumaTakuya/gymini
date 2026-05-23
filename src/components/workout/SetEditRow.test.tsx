@@ -96,4 +96,11 @@ describe('SetEditRow', () => {
     expect(weightInput).toHaveAttribute('enterkeyhint', 'next')
     expect(repsInput).toHaveAttribute('enterkeyhint', 'done')
   })
+
+  it('数値 input に inputMode を付けない（モバイルで Enter キーを残し enterKeyHint を効かせるため）', () => {
+    render(<SetEditRow {...defaultProps} />)
+    const [weightInput, repsInput] = screen.getAllByRole('spinbutton')
+    expect(weightInput).not.toHaveAttribute('inputmode')
+    expect(repsInput).not.toHaveAttribute('inputmode')
+  })
 })
