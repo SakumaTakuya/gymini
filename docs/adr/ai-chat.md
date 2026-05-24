@@ -18,7 +18,7 @@
 
 ## 書き込み確認 UI: 手入力と同様の通常カードを即時挿入（per-write 確認カードの廃止）
 
-- **決定（2026-05-24 改訂）**: AI が書き込みツール（`saveWorkout` / `addExerciseToSession`）を呼び出した場合、対応する内容を **手入力と同じ通常 ExerciseCard** としてセッションへ即時挿入する。承認/破棄カード（旧 `origin: 'ai-suggested'` バリアント + `SingleExerciseEditor`）は廃止する。実値セットは完了セット入りの idle カード、値 0 のみ（プレースホルダ）は recording 状態の空カードとして挿入する。`addExercise`（マスター登録のみ）はカードを作らずチャット応答のみ
+- **決定（2026-05-24 改訂）**: AI が書き込みツール（`saveWorkout` / `addExerciseToSession`）を呼び出した場合、対応する内容を **手入力と同じ通常 ExerciseCard** としてセッションへ即時挿入する。承認/破棄カード（旧 `origin: 'ai-suggested'` バリアント + `SingleExerciseEditor`）は廃止する。実施済みセット（reps>0、自重は weight=0 可）は完了セット入りの idle カード、reps=0 のセット（プレースホルダ等）は recording 状態の空カードとして挿入する。`addExercise`（マスター登録のみ）はカードを作らずチャット応答のみ
 - **理由**:
   - AI 書き込みはセッション draft（メモリ + localStorage）への追加にすぎず、永続化（`WorkoutRepository.save`）は `endSession` 時のみ。per-write の「保存/破棄」カードは実質「確認画面」で、手入力より速くも安全でもなかった（CONSTITUTION B-002 を v5.0.0 で改定し、確認ゲートを「セッション全体のレビュー + 終了」へ移した）
   - 手入力と AI 追加の挙動を統一することで「セット詳細の表示・編集は通常 ExerciseCard が単一の責任を持つ」Single Source of UI を保てる
@@ -122,7 +122,7 @@
 
 ## 種目名のみ言及時の placeholder 提案（FR_015）
 
-- **決定**: 種目名・運動意図のみが述べられた場合、AI は **必ず** `sets:[{0,0}]` の placeholder で書き込みツールを呼び出す。挿入側は値 0 のみのセットを完了セットにせず、手入力と同じ recording 状態の空カード（最初のセット入力待ち）として即時挿入する
+- **決定**: 種目名・運動意図のみが述べられた場合、AI は **必ず** `sets:[{0,0}]` の placeholder で書き込みツールを呼び出す。挿入側は reps=0 のセットを完了セットにせず、手入力と同じ recording 状態の空カード（最初のセット入力待ち）として即時挿入する
 - **理由**:
   - テキストで聞き返す UX は「フォームが出ない」状態を生み、ユーザーが値入力場所を探す摩擦を生む
   - placeholder 経由なら、ユーザーは「フォームが出ている」事実から自然に値入力に進める

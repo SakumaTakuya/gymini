@@ -173,7 +173,7 @@ requirementDiagram
 
     functionalRequirement InlineSetEditing {
         id: FR_013
-        text: "saveWorkout / addExerciseToSession(sets付き) で挿入された通常カードは、トレーニング画面と同一の PendingSetRow / CompletedSetRow による値編集・追加・削除を提供する。実値を伴うセットは完了セットとして表示し、値 0 のみのセットは作らず recording の空カード（最初のセット入力待ち）とする"
+        text: "saveWorkout / addExerciseToSession(sets付き) で挿入された通常カードは、トレーニング画面と同一の PendingSetRow / CompletedSetRow による値編集・追加・削除を提供する。実施済みセット（reps>0。自重は weight=0 可）は完了セットとして表示し、reps=0 のセットは作らず recording の空カード（最初のセット入力待ち）とする"
         risk: high
         verifymethod: test
     }
@@ -187,7 +187,7 @@ requirementDiagram
 
     functionalRequirement ExerciseOnlyPlaceholderProposal {
         id: FR_015
-        text: "ユーザーが具体値（kg/回数）を伴わずに種目名のみを言及した場合も、AI は placeholder sets [{weight:0, reps:0}] 付きで書き込みツールを呼び出す。挿入側は値 0 のみのセットを完了セットにせず、手入力と同じ recording 状態の空カード（最初のセット入力待ち）として即時挿入する。セッションアクティブ時は addExerciseToSession（未登録種目は exerciseId 省略でマスター追加と同時に挿入）、非アクティブ時は saveWorkout(date=今日) を使う"
+        text: "ユーザーが具体値（kg/回数）を伴わずに種目名のみを言及した場合も、AI は placeholder sets [{weight:0, reps:0}] 付きで書き込みツールを呼び出す。挿入側は reps=0 のセットを完了セットにせず、手入力と同じ recording 状態の空カード（最初のセット入力待ち）として即時挿入する。セッションアクティブ時は addExerciseToSession（未登録種目は exerciseId 省略でマスター追加と同時に挿入）、非アクティブ時は saveWorkout(date=今日) を使う"
         risk: medium
         verifymethod: test
     }
@@ -311,8 +311,8 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession`）を呼び
 **挙動仕様:**
 
 - 挿入されるカードは手入力で追加したカードと区別しない（`origin` フィールドや「AI 提案」バッジは持たない）
-- 実値を伴うセット（weight>0 または reps>0）を含むアクションは、それらを **完了セット** とした idle カードとして挿入する
-- 値 0 のみのセット（プレースホルダ）しか無いアクションは、完了セットを作らず **recording 状態の空カード**（最初のセット入力待ち、`pendingSet = {0,0}`）として挿入する
+- 実施済みセット（`reps > 0`。自重種目の `weight = 0` は許容）を含むアクションは、それらを **完了セット** とした idle カードとして挿入する
+- `reps = 0` のセットしか無いアクション（プレースホルダ `{0,0}` や `reps` 未入力）は、完了セットを作らず **recording 状態の空カード**（最初のセット入力待ち、`pendingSet = {0,0}`）として挿入する
 - `addExercise`（種目マスター登録のみ）はカードを作らず、チャット応答のみ返す
 - 種目の値編集・セット追加削除・種目削除・並べ替えは、トレーニング画面の通常カードと同一の UI で行う
 
@@ -375,8 +375,8 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession`）を呼び
 
 アクティブセッションに種目（任意でセット群付き）を追加する。挿入されるカードは手入力と同じ通常 ExerciseCard。
 
-- 実値セットあり: 完了セット入りの idle カードを即時挿入
-- 実値なし（プレースホルダのみ／sets 無し）: recording 状態の空カード（最初のセット入力待ち）を即時挿入
+- 実施済みセット（reps>0）あり: 完了セット入りの idle カードを即時挿入
+- reps>0 のセット無し（プレースホルダのみ／sets 無し）: recording 状態の空カード（最初のセット入力待ち）を即時挿入
 
 **重複ガード:**
 
@@ -393,8 +393,8 @@ AI 書き込みで挿入されたカードは、トレーニング画面の通�
 
 **仕様:**
 
-- 実値セット（weight>0 または reps>0）は `CompletedSetRow` の完了セットとして表示し、`PendingSetRow` で次セットを入力・追加できる
-- 値 0 のみのセット（AI が placeholder で提案した未確定セット）は完了セットにせず、recording 状態の `pendingSet = {0,0}` として描画する（手入力と同一の「最初のセット入力待ち」）
+- 実施済みセット（`reps > 0`。自重種目は `weight = 0` 可）は `CompletedSetRow` の完了セットとして表示し、`PendingSetRow` で次セットを入力・追加できる
+- `reps = 0` のセット（AI が placeholder で提案した未確定セット）は完了セットにせず、recording 状態の `pendingSet = {0,0}` として描画する（手入力と同一の「最初のセット入力待ち」）
 - セットの値編集・追加（+ セットを追加）・削除（−）・種目削除・並べ替えは、トレーニング画面の通常カードと同一の操作で行う
 - 永続化は `endSession` 時のみ。途中で削除すれば履歴に残らない
 

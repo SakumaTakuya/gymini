@@ -359,6 +359,32 @@ describe('executeWriteTool', () => {
       expect(state.draftExercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
     })
 
+    test('自重セット (weight:0, reps>0) は完了セットとして保持する', () => {
+      useWorkoutSessionStore.getState().startSession()
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseId: 'ex-1',
+        exerciseName: '懸垂',
+        sets: [{ weight: 0, reps: 10 }],
+      })
+      expect(result.success).toBe(true)
+      const state = useWorkoutSessionStore.getState()
+      expect(state.draftExercises[0].sets).toEqual([{ weight: 0, reps: 10 }])
+      expect(state.draftExercises[0].cardState).toBe('idle')
+    })
+
+    test('reps が 0 のセット (weight>0, reps:0) は完了セットにせず recording の空カードにする', () => {
+      useWorkoutSessionStore.getState().startSession()
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseId: 'ex-1',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 60, reps: 0 }],
+      })
+      expect(result.success).toBe(true)
+      const state = useWorkoutSessionStore.getState()
+      expect(state.draftExercises[0].sets).toEqual([])
+      expect(state.draftExercises[0].cardState).toBe('recording')
+    })
+
     test('sets が空配列の場合は addExercise を呼ぶ（空 sets 付き種目は作らない）', () => {
       useWorkoutSessionStore.getState().startSession()
       const addSpy = vi.spyOn(useWorkoutSessionStore.getState(), 'addExercise')

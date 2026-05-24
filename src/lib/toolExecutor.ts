@@ -189,12 +189,14 @@ function executeAddExercise(
   }
 }
 
-// Sets where both weight and reps are 0 are AI placeholders (FR_015). They are not
-// recorded as completed sets; instead the card opens in recording state for manual entry.
+// A set counts as performed only when reps > 0 (weight may be 0 for bodyweight
+// exercises). Sets with reps 0 — including the AI placeholder {0,0} (FR_015) and a
+// half-filled {weight>0, reps:0} — are dropped so the card opens in recording state
+// for manual entry instead of persisting a 0-rep set.
 function meaningfulSets(
   sets: Array<{ weight: number; reps: number }>,
 ): Array<{ weight: number; reps: number }> {
-  return sets.filter((s) => s.weight > 0 || s.reps > 0)
+  return sets.filter((s) => s.reps > 0)
 }
 
 export function parseSetsArg(
