@@ -2,7 +2,7 @@ import { useMemo, useState, type FormEvent, type KeyboardEvent } from 'react'
 import { PaperPlaneRight, Stop } from '@phosphor-icons/react'
 import { cn } from '../../lib/utils'
 import { IconButton } from '../ui/icon-button'
-import type { Exercise } from '@/types'
+import type { Exercise } from '@/schemas/exercise'
 
 export type ExerciseSearchConfig = {
   search: (query: string) => Exercise[]

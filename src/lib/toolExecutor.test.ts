@@ -4,7 +4,7 @@ import * as ExerciseRepository from './exerciseRepository'
 import * as WorkoutRepository from './workoutRepository'
 import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
 import type { Workout } from '../schemas/workout'
-import type { Exercise } from '../types'
+import type { Exercise } from '../schemas/exercise'
 import type { DateString, ISODateTimeString } from '../schemas/date'
 
 vi.mock('./exerciseRepository')

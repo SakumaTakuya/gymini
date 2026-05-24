@@ -1,6 +1,6 @@
 import { useEffect, useMemo } from 'react'
 import { useExerciseStore } from '@/stores/exerciseStore'
-import type { Exercise } from '@/types'
+import type { Exercise } from '@/schemas/exercise'
 
 const STORAGE_KEY = 'gymini:exercises'
 

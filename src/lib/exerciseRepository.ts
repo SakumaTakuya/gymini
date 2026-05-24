@@ -1,4 +1,6 @@
-import type { Exercise } from '../types'
+import { z } from 'zod'
+import { exerciseSchema } from '../schemas/exercise'
+import type { Exercise } from '../schemas/exercise'
 
 const STORAGE_KEY = 'gymini:exercises'
 
@@ -6,7 +8,8 @@ function load(): Exercise[] {
   try {
     const raw = localStorage.getItem(STORAGE_KEY)
     if (!raw) return []
-    return JSON.parse(raw) as Exercise[]
+    const result = z.array(exerciseSchema).safeParse(JSON.parse(raw))
+    return result.success ? result.data : []
   } catch {
     return []
   }

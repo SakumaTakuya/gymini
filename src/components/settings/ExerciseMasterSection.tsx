@@ -1,7 +1,7 @@
 import { useState, type ChangeEvent } from 'react'
 import { MagnifyingGlass, Plus, Check, X, Trash } from '@phosphor-icons/react'
 import { useExercises } from '@/hooks/useExercises'
-import type { Exercise } from '@/types'
+import type { Exercise } from '@/schemas/exercise'
 import { IconButton } from '@/components/ui/icon-button'
 import { Input } from '@/components/ui/input'
 import { ExerciseRow } from './ExerciseRow'
