@@ -1,12 +1,8 @@
-import { useRef, useState, useEffect, type ChangeEvent } from 'react'
+import { useState, type ChangeEvent } from 'react'
 import { useUserProfileStore, TRAINING_GOALS, type TrainingGoal, type UserProfile } from '@/stores/userProfileStore'
+import { useAutoSaveField } from '@/hooks/useAutoSaveField'
 import { Input } from '@/components/ui/input'
 import { SectionCard } from './SectionCard'
-
-const DEBOUNCE_MS = 300
-const SAVED_HOLD_MS = 1500
-
-type SaveStatus = 'idle' | 'saving' | 'saved'
 
 const TRAINING_GOAL_LABELS: Record<TrainingGoal, string> = {
   muscle_gain: '筋肥大（サイズアップ）',
@@ -41,56 +37,34 @@ export function UserProfileSection() {
   const [localTrainingGoal, setLocalTrainingGoal] = useState<TrainingGoal | ''>(() => {
     return useUserProfileStore.getState().profile.trainingGoal ?? ''
   })
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
+  const { saveStatus, scheduleSave } = useAutoSaveField()
 
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current !== null) clearTimeout(debounceTimerRef.current)
-      if (savedTimerRef.current !== null) clearTimeout(savedTimerRef.current)
-    }
-  }, [])
-
-  function scheduleSave(patch: Partial<UserProfile>) {
-    setSaveStatus('saving')
-    if (debounceTimerRef.current !== null) clearTimeout(debounceTimerRef.current)
-    if (savedTimerRef.current !== null) clearTimeout(savedTimerRef.current)
-
-    debounceTimerRef.current = setTimeout(() => {
-      debounceTimerRef.current = null
-      setProfile(patch)
-      setSaveStatus('saved')
-      savedTimerRef.current = setTimeout(() => {
-        savedTimerRef.current = null
-        setSaveStatus('idle')
-      }, SAVED_HOLD_MS)
-    }, DEBOUNCE_MS)
+  function saveProfile(patch: Partial<UserProfile>) {
+    scheduleSave(() => setProfile(patch))
   }
 
   function handleBirthYearChange(e: ChangeEvent<HTMLInputElement>) {
     const value = e.target.value
     setLocalBirthYear(value)
-    scheduleSave({ birthYear: toNumberOrNull(value) })
+    saveProfile({ birthYear: toNumberOrNull(value) })
   }
 
   function handleWeightChange(e: ChangeEvent<HTMLInputElement>) {
     const value = e.target.value
     setLocalWeightKg(value)
-    scheduleSave({ weightKg: toNumberOrNull(value) })
+    saveProfile({ weightKg: toNumberOrNull(value) })
   }
 
   function handleHeightChange(e: ChangeEvent<HTMLInputElement>) {
     const value = e.target.value
     setLocalHeightCm(value)
-    scheduleSave({ heightCm: toNumberOrNull(value) })
+    saveProfile({ heightCm: toNumberOrNull(value) })
   }
 
   function handleGoalChange(e: ChangeEvent<HTMLSelectElement>) {
     const value = e.target.value as TrainingGoal | ''
     setLocalTrainingGoal(value)
-    scheduleSave({ trainingGoal: value === '' ? null : value })
+    saveProfile({ trainingGoal: value === '' ? null : value })
   }
 
   return (

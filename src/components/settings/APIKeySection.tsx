@@ -1,13 +1,9 @@
-import { useEffect, useRef, useState, type ChangeEvent } from 'react'
+import { useEffect, useState, type ChangeEvent } from 'react'
 import { Eye, EyeSlash } from '@phosphor-icons/react'
 import { useSettingsStore } from '@/stores/settingsStore'
+import { useAutoSaveField } from '@/hooks/useAutoSaveField'
 import { Input } from '@/components/ui/input'
 import { SectionCard } from './SectionCard'
-
-const DEBOUNCE_MS = 300
-const SAVED_HOLD_MS = 1500
-
-type SaveStatus = 'idle' | 'saving' | 'saved'
 
 export function APIKeySection() {
   const apiKey = useSettingsStore((s) => s.apiKey)
@@ -16,61 +12,22 @@ export function APIKeySection() {
   const deleteApiKey = useSettingsStore((s) => s.deleteApiKey)
   const [visible, setVisible] = useState(false)
   const [localValue, setLocalValue] = useState(apiKey)
-  const [saveStatus, setSaveStatus] = useState<SaveStatus>('idle')
-  const debounceTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
-  const savedTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null)
+  const { saveStatus, scheduleSave, cancel } = useAutoSaveField()
 
   // 外部（他コンポーネントや loadApiKey）からの変更を入力欄に反映
   useEffect(() => {
     setLocalValue(apiKey)
   }, [apiKey])
 
-  // unmount 時に pending な timer を必ずクリア（副作用漏れ防止）
-  useEffect(() => {
-    return () => {
-      if (debounceTimerRef.current !== null) {
-        clearTimeout(debounceTimerRef.current)
-      }
-      if (savedTimerRef.current !== null) {
-        clearTimeout(savedTimerRef.current)
-      }
-    }
-  }, [])
-
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value
     setLocalValue(value)
-    setSaveStatus('saving')
-
-    if (debounceTimerRef.current !== null) {
-      clearTimeout(debounceTimerRef.current)
-    }
-    if (savedTimerRef.current !== null) {
-      clearTimeout(savedTimerRef.current)
-    }
-
-    debounceTimerRef.current = setTimeout(() => {
-      debounceTimerRef.current = null
-      setApiKey(value)
-      setSaveStatus('saved')
-      savedTimerRef.current = setTimeout(() => {
-        savedTimerRef.current = null
-        setSaveStatus('idle')
-      }, SAVED_HOLD_MS)
-    }, DEBOUNCE_MS)
+    scheduleSave(() => setApiKey(value))
   }
 
   const handleDelete = () => {
-    if (debounceTimerRef.current !== null) {
-      clearTimeout(debounceTimerRef.current)
-      debounceTimerRef.current = null
-    }
-    if (savedTimerRef.current !== null) {
-      clearTimeout(savedTimerRef.current)
-      savedTimerRef.current = null
-    }
+    cancel()
     setLocalValue('')
-    setSaveStatus('idle')
     deleteApiKey()
   }
 
