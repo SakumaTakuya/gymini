@@ -4,7 +4,7 @@ import type { ChatMessage } from '../types/chat'
 import { parseStoredMessages } from '../schemas/chat'
 import { safeStateStorage } from '../lib/storage'
 import { useWorkoutSessionStore } from './workoutSessionStore'
-import { storeBus } from './storeBus'
+import { onSessionReset } from './sessionEvents'
 
 type ChatState = {
   messages: ChatMessage[]
@@ -101,6 +101,6 @@ export const useChatStore = create<ChatState & ChatActions>()(
   ),
 )
 
-storeBus.clearChatMessages = () => {
+onSessionReset(() => {
   useChatStore.getState().clearMessages()
-}
+})

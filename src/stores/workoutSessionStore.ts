@@ -6,7 +6,7 @@ import type { DraftExercise, WorkoutSet } from '../schemas/workout'
 import { persistedSessionSchema } from '../schemas/workout'
 import { safeStateStorage } from '../lib/storage'
 import * as WorkoutRepository from '../lib/workoutRepository'
-import { storeBus } from './storeBus'
+import { emitSessionReset } from './sessionEvents'
 
 type WorkoutSessionState = {
   // State
@@ -76,7 +76,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
           date: date ?? todayDateString(),
           draftExercises: [],
         })
-        storeBus.clearChatMessages?.()
+        emitSessionReset()
       },
 
       endSession: () => {
@@ -103,7 +103,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
           date: null,
           draftExercises: [],
         })
-        storeBus.clearChatMessages?.()
+        emitSessionReset()
       },
 
       deleteExercise: (exerciseIndex) => {

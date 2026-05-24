@@ -68,7 +68,7 @@ describe('チャットストアのセッション同期永続化', () => {
 
   it('rehydrate でセッション中の対話が復元される', async () => {
     // リロード後にセッションがアクティブな状態を直接構築する
-    // （startSession を呼ぶと storeBus.clearChatMessages が走るため使わない）
+    // （startSession を呼ぶと session-reset でチャットがクリアされるため使わない）
     useWorkoutSessionStore.setState({
       isActive: true,
       startedAt: '2026-04-18T12:00:00+09:00' as ISODateTimeString,
