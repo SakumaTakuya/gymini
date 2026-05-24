@@ -609,4 +609,65 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].sets[1]).toEqual({ weight: 65, reps: 8 })
     })
   })
+
+  describe('rehydration の検証', () => {
+    const validDraft = {
+      exerciseId: 'e1',
+      exerciseName: 'ベンチプレス',
+      sets: [{ weight: 60, reps: 10 }],
+      pendingSet: null,
+      pendingSetDirty: false,
+      cardState: 'idle',
+      editingSetIndex: null,
+      timestamp: '2026-04-18T12:00:00+09:00',
+    }
+
+    it('正当な永続セッションは rehydrate で復元される', async () => {
+      localStorage.setItem(
+        'gymini:workout-session',
+        JSON.stringify({
+          state: {
+            isActive: true,
+            startedAt: '2026-04-18T12:00:00+09:00',
+            date: '2026-04-18',
+            draftExercises: [validDraft],
+          },
+        }),
+      )
+      await useWorkoutSessionStore.persist.rehydrate()
+      const s = useWorkoutSessionStore.getState()
+      expect(s.isActive).toBe(true)
+      expect(s.draftExercises).toHaveLength(1)
+      expect(s.draftExercises[0].exerciseName).toBe('ベンチプレス')
+    })
+
+    it('破損した draftExercises は rehydrate で空セッションへフォールバックする', async () => {
+      localStorage.setItem(
+        'gymini:workout-session',
+        JSON.stringify({
+          state: {
+            isActive: true,
+            startedAt: null,
+            date: null,
+            draftExercises: [{ foo: 'bar' }],
+          },
+        }),
+      )
+      await useWorkoutSessionStore.persist.rehydrate()
+      const s = useWorkoutSessionStore.getState()
+      expect(s.draftExercises).toEqual([])
+      expect(s.isActive).toBe(false)
+    })
+
+    it('構造ごと不正な永続データはフォールバックする', async () => {
+      localStorage.setItem(
+        'gymini:workout-session',
+        JSON.stringify({ state: { isActive: 'yes', draftExercises: 42 } }),
+      )
+      await useWorkoutSessionStore.persist.rehydrate()
+      const s = useWorkoutSessionStore.getState()
+      expect(s.draftExercises).toEqual([])
+      expect(s.isActive).toBe(false)
+    })
+  })
 })

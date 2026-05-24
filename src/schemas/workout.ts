@@ -39,7 +39,23 @@ export type Workout = Omit<
 
 export type WorkoutInput = Omit<Workout, 'id' | 'createdAt' | 'updatedAt'>
 
-export type ExerciseCardState = 'collapsed' | 'idle' | 'recording'
+export const exerciseCardStateSchema = z.enum([
+  'collapsed',
+  'idle',
+  'recording',
+])
+export type ExerciseCardState = z.infer<typeof exerciseCardStateSchema>
+
+export const draftExerciseSchema = z.object({
+  exerciseId: z.string(),
+  exerciseName: z.string(),
+  sets: z.array(workoutSetSchema),
+  pendingSet: workoutSetSchema.nullable(),
+  pendingSetDirty: z.boolean(),
+  cardState: exerciseCardStateSchema,
+  editingSetIndex: z.number().int().nullable(),
+  timestamp: z.string(),
+})
 
 export type DraftExercise = {
   exerciseId: string
@@ -51,3 +67,12 @@ export type DraftExercise = {
   editingSetIndex: number | null
   timestamp: ISODateTimeString
 }
+
+// Schema for the persisted workout-session slice. Validates rehydrated data so a
+// corrupt/legacy payload falls back to a safe empty session instead of crashing.
+export const persistedSessionSchema = z.object({
+  isActive: z.boolean(),
+  startedAt: z.string().nullable(),
+  date: z.string().nullable(),
+  draftExercises: z.array(draftExerciseSchema),
+})

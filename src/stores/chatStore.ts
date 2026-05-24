@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import type { ChatMessage } from '../types/chat'
+import { parseStoredMessages } from '../schemas/chat'
 import { useWorkoutSessionStore } from './workoutSessionStore'
 import { storeBus } from './storeBus'
 
@@ -80,6 +81,13 @@ export const useChatStore = create<ChatState & ChatActions>()(
         useWorkoutSessionStore.getState().isActive
           ? { messages: state.messages }
           : { messages: [] },
+      // 永続データを Zod 検証し、破損・非互換な場合は空配列へフォールバックする。
+      merge: (persisted, current) => ({
+        ...current,
+        messages: parseStoredMessages(
+          (persisted as { messages?: unknown } | undefined)?.messages,
+        ),
+      }),
       onRehydrateStorage: () => (_state, error) => {
         if (error) {
           console.warn(

@@ -3,6 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware'
 import { nowISODateTimeString, todayDateString } from '../schemas/date'
 import type { DateString, ISODateTimeString } from '../schemas/date'
 import type { DraftExercise, WorkoutSet } from '../schemas/workout'
+import { persistedSessionSchema } from '../schemas/workout'
 import * as WorkoutRepository from '../lib/workoutRepository'
 import { storeBus } from './storeBus'
 
@@ -296,6 +297,18 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
         date: state.date,
         draftExercises: state.draftExercises,
       }),
+      // 永続データを Zod 検証し、破損・非互換な場合は空セッションへフォールバックする。
+      merge: (persisted, current) => {
+        const result = persistedSessionSchema.safeParse(persisted)
+        if (!result.success) return current
+        return {
+          ...current,
+          isActive: result.data.isActive,
+          startedAt: result.data.startedAt as WorkoutSessionState['startedAt'],
+          date: result.data.date as WorkoutSessionState['date'],
+          draftExercises: result.data.draftExercises as DraftExercise[],
+        }
+      },
       onRehydrateStorage: () => (_state, error) => {
         if (error) {
           console.warn(
