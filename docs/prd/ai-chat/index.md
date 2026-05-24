@@ -22,7 +22,7 @@ risk: "high"
 
 Gemini API を用いた対話インターフェースを、独立したチャット画面ではなく **ワークアウトセッション内のタイムライン UX** として提供する。種目カード（ExerciseCard）と AI メッセージ（ChatMessage）が時系列で同一スクロール領域に並び、ユーザーは単一の入力欄から自然言語コマンド・種目検索・AI への質問をすべて行う。AI は Function Calling で文脈を参照する。書き込み操作は **手入力と同様にセッションへ通常の ExerciseCard を即時挿入** する。承認/破棄カードは設けず、編集・削除は通常カードの既存 UI で行う。永続化は「終了」時のみで、それまでのレビュー + 編集 + 終了が確認ゲートとなる（REQ_008 / B-002）。
 
-セッションへ即時挿入されたカードの編集は、トレーニング画面の通常カードと同一の UI（PendingSetRow / CompletedSetRow による値入力・追加・削除）で行う。値を伴わない種目名のみの追加は、手入力と同じく recording 状態の空カード（最初のセット入力待ち）として挿入される（FR_015）。Active Session Context Injection（FR_014）は従来どおり。未登録種目の 1 アクション統合は `addExerciseToSession` の `exerciseId` 省略呼び出しで実現する。
+挿入後の編集は通常カードと同一 UI（REQ_008 / FR_013）、種目名のみの追加は recording 空カード（FR_015）、Active Session Context Injection（FR_014）は従来どおり。未登録種目の 1 アクション統合は `addExerciseToSession` の `exerciseId` 省略呼び出しで実現する。
 
 チャット履歴はワークアウトセッションのライフサイクルに同期し、セッションがアクティブな間のみリロード復元され、終了で破棄される（B-001 の不要データ残留防止と「セッション中のリロード耐性」を両立）。
 
@@ -236,7 +236,7 @@ requirementDiagram
 
     AIChatCoaching - contains -> ChatConversation
     AIChatCoaching - contains -> FunctionCalling
-    AIChatCoaching - contains -> AIWriteConfirmation
+    AIChatCoaching - contains -> AIWriteReviewable
     AIChatCoaching - contains -> InlineSetEditing
     AIChatCoaching - contains -> ActiveSessionContextInjection
     AIChatCoaching - contains -> ExerciseOnlyPlaceholderProposal
@@ -316,11 +316,9 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession`）を呼び
 - `addExercise`（種目マスター登録のみ）はカードを作らず、チャット応答のみ返す
 - 種目の値編集・セット追加削除・種目削除・並べ替えは、トレーニング画面の通常カードと同一の UI で行う
 
-**例（セッションへの種目追加・sets 付き）:**
+**例（"ベンチ 60kg 10回 3セットで追加" → 手入力と同じ通常カードが即時挿入される）:**
 
 ```
-（ユーザー発話: "ベンチ 60kg 10回 3セットで追加"）
-（タイムライン上に手入力と同じ通常カードが即時挿入される）
 ┌─ Bench Press ────────────────────┐
 │ [1] 60 kg × 10 回                 │
 │ [2] 60 kg × 10 回                 │
@@ -329,25 +327,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession`）を呼び
 └─────────────────────────────────┘
 ```
 
-**例（種目名のみ言及・placeholder 提案、FR_015）:**
-
-```
-（ユーザー発話: "胸の日でダンベルプレスやる"）
-（recording 状態の空カードが即時挿入され、すぐ 1 セット目を入力できる）
-┌─ Dumbbell Press ─────────────────┐
-│ [1] _ kg × _ 回   [完了]          │  ← pendingSet（手入力と同じ）
-└─────────────────────────────────┘
-```
-
-**例（未登録種目を始める・FR_015 / addExerciseToSession exerciseId 省略）:**
-
-```
-（ユーザー発話: "背中の日。ラットプルダウンやる"）
-（種目マスター登録 + recording 空カード挿入を 1 アクションで完結）
-┌─ Lat Pulldown ───────────────────┐
-│ [1] _ kg × _ 回   [完了]          │
-└─────────────────────────────────┘
-```
+種目名のみ（"ダンベルプレスやる"）や未登録種目（"ラットプルダウンやる"、`exerciseId` 省略でマスター登録も同時）の場合は、completedSet を持たない recording 状態の空カード（`pendingSet = {0,0}`）が挿入され、手入力と同じく 1 セット目から入力する。
 
 **理由:**
 
@@ -373,10 +353,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession`）を呼び
 
 ### FR_012_08: ToolAddExerciseToSession
 
-アクティブセッションに種目（任意でセット群付き）を追加する。挿入されるカードは手入力と同じ通常 ExerciseCard。
-
-- 実施済みセット（reps>0）あり: 完了セット入りの idle カードを即時挿入
-- reps>0 のセット無し（プレースホルダのみ／sets 無し）: recording 状態の空カード（最初のセット入力待ち）を即時挿入
+アクティブセッションに種目（任意でセット群付き）を追加する。挿入されるカードは手入力と同じ通常 ExerciseCard で、セットの reps>0/reps=0 によるカード状態は REQ_008 に従う。
 
 **重複ガード:**
 
@@ -389,18 +366,9 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession`）を呼び
 
 ### FR_013: 即時挿入カードのセット編集（通常カード UI）
 
-AI 書き込みで挿入されたカードは、トレーニング画面の通常 ExerciseCard と同一の UI でセットを編集できる。専用の編集フォーム部品は設けない。
+AI 書き込みで挿入されたカードは専用の編集フォームを持たず、トレーニング画面の通常 ExerciseCard と同一の UI でセットを編集する（値編集・追加・削除・種目削除・並べ替え。詳細は [workout/index.md](../workout/index.md)）。reps>0/reps=0 によるカード状態と `endSession` 時のみ永続化される点は REQ_008 に従う。
 
-**仕様:**
-
-- 実施済みセット（`reps > 0`。自重種目は `weight = 0` 可）は `CompletedSetRow` の完了セットとして表示し、`PendingSetRow` で次セットを入力・追加できる
-- `reps = 0` のセット（AI が placeholder で提案した未確定セット）は完了セットにせず、recording 状態の `pendingSet = {0,0}` として描画する（手入力と同一の「最初のセット入力待ち」）
-- セットの値編集・追加（+ セットを追加）・削除（−）・種目削除・並べ替えは、トレーニング画面の通常カードと同一の操作で行う
-- 永続化は `endSession` 時のみ。途中で削除すれば履歴に残らない
-
-**経緯（旧版からの変更）:**
-
-旧版は AI 書き込み内容を承認/破棄カード（`ExerciseCard` の `origin: 'ai-suggested'` バリアント + `SingleExerciseEditor`）として挿入し、「保存」で manual に昇格させていた。B-002 改定によりこの per-write 確認カードを廃止し、手入力と同じ通常カードを即時挿入する方式に統一した。`origin` バリアントと `SingleExerciseEditor` / `SaveWorkoutEditor` は撤去する。
+per-write 確認カード（旧 `origin: 'ai-suggested'` バリアント）を廃止した経緯は [ai-chat.md](../../adr/ai-chat.md) を参照。
 
 **検証方法:** テストによる検証
 
@@ -449,11 +417,7 @@ AI 書き込みで挿入されたカードは、トレーニング画面の通�
    - **非アクティブ** → `saveWorkout({ date: 今日, exercises: [{ exerciseName, sets: [{ weight: 0, reps: 0 }] }] })`
 4. **テキスト応答**: ツール呼び出しと併せて短い励まし＋値入力の促し（例:「ナイス💪 重量と回数を入力してください」）を返す
 
-**挿入後カードの挙動:**
-
-- `sets:[{0,0}]` の placeholder は完了セットを作らず、recording 状態の空カード（`pendingSet = {0,0}`）として挿入する
-- ユーザーは手入力と同じく重量・回数を入力して「完了」でセットを確定する
-- 永続化は `endSession` 時のみ
+挿入後は `sets:[{0,0}]` placeholder が recording 状態の空カードになる（REQ_008）。
 
 **禁止事項:**
 
