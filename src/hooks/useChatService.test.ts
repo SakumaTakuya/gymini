@@ -135,7 +135,7 @@ describe('useChatService', () => {
     })
   })
 
-  test('read ツールのフォローアップが write 呼び出しを返す場合: 直接実行して draft カードを挿入する', async () => {
+  test('read ツールのフォローアップが write 呼び出しを返す場合: 直接実行してカードを挿入する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useWorkoutSessionStore.getState().startSession()
     vi.mocked(ExerciseRepository.getAll).mockReturnValue([
@@ -176,13 +176,12 @@ describe('useChatService', () => {
     expect(client.generate).toHaveBeenCalledTimes(2)
     const session = useWorkoutSessionStore.getState()
     expect(session.draftExercises).toHaveLength(1)
-    expect(session.draftExercises[0].origin).toBe('ai-suggested')
     expect(session.draftExercises[0].sets).toEqual([
       { weight: 60, reps: 10 },
     ])
   })
 
-  test('read ツールのフォローアップがテキスト付き write 呼び出しを返す場合: テキストをコンテンツとして使用し draft カードを挿入する', async () => {
+  test('read ツールのフォローアップがテキスト付き write 呼び出しを返す場合: テキストをコンテンツとして使用しカードを挿入する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useWorkoutSessionStore.getState().startSession()
     vi.mocked(ExerciseRepository.getAll).mockReturnValue([
@@ -274,7 +273,7 @@ describe('useChatService', () => {
     expect(last.toolCalls?.[0]?.toolName).toBe('addExercise')
   })
 
-  test('write ツール (saveWorkout) を直接実行して draft カードを ai-suggested で挿入する', async () => {
+  test('write ツール (saveWorkout) を直接実行して通常カードを即時挿入する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useWorkoutSessionStore.getState().startSession()
     vi.mocked(ExerciseRepository.getAll).mockReturnValue([
@@ -307,10 +306,10 @@ describe('useChatService', () => {
     })
     const session = useWorkoutSessionStore.getState()
     expect(session.draftExercises).toHaveLength(1)
-    expect(session.draftExercises[0].origin).toBe('ai-suggested')
+    expect(session.draftExercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
   })
 
-  test('write ツール (addExerciseToSession) を直接実行して draft カードを ai-suggested で挿入する', async () => {
+  test('write ツール (addExerciseToSession) を直接実行して通常カードを即時挿入する', async () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useWorkoutSessionStore.getState().startSession()
     const client = mockClient([
@@ -336,8 +335,8 @@ describe('useChatService', () => {
     })
     const session = useWorkoutSessionStore.getState()
     expect(session.draftExercises).toHaveLength(1)
-    expect(session.draftExercises[0].origin).toBe('ai-suggested')
     expect(session.draftExercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
+    expect(session.draftExercises[0].cardState).toBe('idle')
   })
 
   test('セッションがアクティブな場合、createClient に渡す systemInstruction にセッション文脈を注入する', async () => {
@@ -625,7 +624,7 @@ describe('useChatService', () => {
   })
 
   describe('placeholder sets による proposal (FR_015)', () => {
-    test('addExerciseToSession に sets:[{0,0}] が来たとき draft の sets として保持される', async () => {
+    test('addExerciseToSession に sets:[{0,0}] が来たとき recording の空カードになる', async () => {
       useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
       useWorkoutSessionStore.getState().startSession()
       const client = mockClient([
@@ -651,11 +650,12 @@ describe('useChatService', () => {
       })
       const session = useWorkoutSessionStore.getState()
       expect(session.draftExercises).toHaveLength(1)
-      expect(session.draftExercises[0].origin).toBe('ai-suggested')
-      expect(session.draftExercises[0].sets).toEqual([{ weight: 0, reps: 0 }])
+      expect(session.draftExercises[0].sets).toEqual([])
+      expect(session.draftExercises[0].cardState).toBe('recording')
+      expect(session.draftExercises[0].pendingSet).toEqual({ weight: 0, reps: 0 })
     })
 
-    test('saveWorkout に sets:[{0,0}] が来たとき draft の sets として保持される', async () => {
+    test('saveWorkout に sets:[{0,0}] が来たとき recording の空カードになる', async () => {
       useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
       useWorkoutSessionStore.getState().startSession()
       vi.mocked(ExerciseRepository.getAll).mockReturnValue([
@@ -688,13 +688,14 @@ describe('useChatService', () => {
       })
       const session = useWorkoutSessionStore.getState()
       expect(session.draftExercises).toHaveLength(1)
-      expect(session.draftExercises[0].origin).toBe('ai-suggested')
-      expect(session.draftExercises[0].sets).toEqual([{ weight: 0, reps: 0 }])
+      expect(session.draftExercises[0].sets).toEqual([])
+      expect(session.draftExercises[0].cardState).toBe('recording')
+      expect(session.draftExercises[0].pendingSet).toEqual({ weight: 0, reps: 0 })
     })
   })
 
   describe('addExerciseToSession の exerciseId 省略（旧 addExerciseAndLog 統合）', () => {
-    test('Gemini が exerciseId 省略で呼ぶと種目作成 + ai-suggested draft 挿入を行う', async () => {
+    test('Gemini が exerciseId 省略で呼ぶと種目作成 + 通常カード即時挿入を行う', async () => {
       useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
       useWorkoutSessionStore.getState().startSession()
       vi.mocked(ExerciseRepository.create).mockReturnValue({
@@ -721,8 +722,8 @@ describe('useChatService', () => {
       expect(ExerciseRepository.create).toHaveBeenCalledWith('ラットプルダウン')
       const session = useWorkoutSessionStore.getState()
       expect(session.draftExercises).toHaveLength(1)
-      expect(session.draftExercises[0].origin).toBe('ai-suggested')
       expect(session.draftExercises[0].exerciseId).toBe('ex-lat')
+      expect(session.draftExercises[0].cardState).toBe('recording')
     })
 
     test('既に登録済みの場合 DUPLICATE_EXERCISE のヒント文言を返し、セッションは変化しない', async () => {
@@ -756,7 +757,6 @@ describe('useChatService', () => {
       useWorkoutSessionStore.getState().addExercise({
         exerciseId: 'ex-bench',
         exerciseName: 'ベンチプレス',
-        origin: 'ai-suggested',
       })
       const beforeCount = useWorkoutSessionStore.getState().draftExercises.length
       const client = mockClient([
@@ -957,8 +957,8 @@ describe('useChatService', () => {
       })
       const session = useWorkoutSessionStore.getState()
       expect(session.draftExercises).toHaveLength(1)
-      expect(session.draftExercises[0].origin).toBe('ai-suggested')
-      expect(session.draftExercises[0].sets).toEqual([{ weight: 0, reps: 0 }])
+      expect(session.draftExercises[0].sets).toEqual([])
+      expect(session.draftExercises[0].cardState).toBe('recording')
       const stored = useChatStore.getState().messages.find((m) => m.id === 'prop-1')
       expect(stored?.consumedActionId).toBe('a1')
       // クライアント Gemini は呼ばれない

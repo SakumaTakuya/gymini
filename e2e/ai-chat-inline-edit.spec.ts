@@ -40,7 +40,7 @@ function buildGeminiAddExerciseToSessionResponse(args: {
   }
 }
 
-test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', () => {
+test.describe('AI 書き込みの即時カード挿入 (REQ_008 / FR_013)', () => {
   test.beforeEach(async ({ page }) => {
     await page.goto('./')
     await page.evaluate(
@@ -58,7 +58,7 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     await page.reload()
   })
 
-  test('AI 提案 → タイムライン上の AI 提案カードで編集 → 保存 → アクティブセッションに manual 反映', async ({
+  test('AI が sets 付きで呼ぶと、承認なしで通常カードが即時挿入される', async ({
     page,
   }) => {
     await page.route(
@@ -88,38 +88,33 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     await input.fill('ベンチ60kg10回3セットで追加')
     await page.keyboard.press('Enter')
 
-    // タイムラインに AI 応答テキストと AI 提案カードが表示される
+    // AI 応答テキストと、手入力と同じ通常カードが即時挿入される
     await expect(
       page.getByText('ベンチプレスを以下の内容で追加しました'),
     ).toBeVisible({ timeout: 10000 })
-    await expect(page.getByText(/AI 提案/)).toBeVisible()
+    await expect(
+      page.getByRole('button', { name: 'ベンチプレス', exact: true }),
+    ).toBeVisible()
 
-    // ai-suggested カード内の SingleExerciseEditor 入力（3 セット × 2 = 6 個）
-    const setInputs = page.getByRole('spinbutton')
-    await expect(setInputs).toHaveCount(6)
+    // 承認/破棄 UI は存在しない（バッジ・保存ボタン無し）
+    await expect(page.getByText(/AI 提案/)).toHaveCount(0)
+    await expect(page.getByRole('button', { name: /保存/ })).toHaveCount(0)
 
-    // 1 セット目の重量を 60 → 65 に編集
-    await setInputs.nth(0).fill('65')
-
-    // 「保存」ボタンを押す
-    await page.getByRole('button', { name: /保存/ }).click()
-
-    // localStorage 上の active session の draftExercises に編集後 sets が
-    // 反映され、origin が manual に昇格していること
+    // active session の draftExercises に sets が即時反映され、idle カードになっている
     const saved = await page.evaluate(() => {
       const raw = localStorage.getItem('gymini:workout-session')
       if (!raw) return null
       const parsed = JSON.parse(raw)
       const draft = parsed.state?.draftExercises?.[0]
-      return draft ? { sets: draft.sets, origin: draft.origin } : null
+      return draft ? { sets: draft.sets, cardState: draft.cardState } : null
     })
     expect(saved).toEqual({
       sets: [
-        { weight: 65, reps: 10 },
+        { weight: 60, reps: 10 },
         { weight: 60, reps: 10 },
         { weight: 60, reps: 10 },
       ],
-      origin: 'manual',
+      cardState: 'idle',
     })
   })
 
@@ -192,7 +187,6 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
           pendingSetDirty: false,
           cardState: 'idle',
           editingSetIndex: null,
-          origin: 'manual',
           timestamp: '2026-05-04T19:00:00+09:00',
         },
       ]
@@ -242,19 +236,19 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
     })
 
     // 順序検証：ベンチプレス（手動, 19:00）が最上部にあり、
-    // AI 応答メッセージと AI 提案カード（スクワット）はそのあとに並ぶ。
-    // useChatService.emitWriteResult は executeWriteTool（draft 挿入）→ addMessage の順で
-    // 呼ぶため draft.timestamp <= message.timestamp となり、AI 提案カードが
+    // AI 応答メッセージと AI が挿入したスクワットカードはそのあとに並ぶ。
+    // useChatService.emitWriteResult は executeWriteTool（カード挿入）→ addMessage の順で
+    // 呼ぶため draft.timestamp <= message.timestamp となり、スクワットカードが
     // 応答メッセージより先（または同位置）になることに注意。
     const benchY = await page
-      .getByRole('button', { name: 'ベンチプレス' })
+      .getByRole('button', { name: 'ベンチプレス', exact: true })
       .first()
       .evaluate((el) => el.getBoundingClientRect().top)
     const aiTextY = await page
       .getByText('スクワットを追加しました')
       .evaluate((el) => el.getBoundingClientRect().top)
     const squatY = await page
-      .getByText(/AI 提案/)
+      .getByRole('button', { name: 'スクワット', exact: true })
       .evaluate((el) => el.getBoundingClientRect().top)
     expect(benchY).toBeLessThan(squatY)
     expect(benchY).toBeLessThan(aiTextY)
@@ -286,7 +280,6 @@ test.describe('AI 提案 draft カードでのインライン編集 (FR_013)', (
         pendingSetDirty: false,
         cardState: 'idle',
         editingSetIndex: null,
-        origin: 'manual',
         timestamp: new Date(base + i * 10 * 60_000).toISOString(),
       }))
       localStorage.setItem('gymini:workout-session', JSON.stringify(parsed))

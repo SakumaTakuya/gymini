@@ -149,9 +149,9 @@ requirementDiagram
         verifymethod: inspection
     }
 
-    requirement AIWriteConfirmation {
+    requirement AIWriteReviewable {
         id: REQ_008
-        text: "AIが書き込み操作（ワークアウト保存・種目追加）を実行する前にユーザー確認を求める"
+        text: "AIの書き込みは永続化前にユーザーがレビュー・編集・取り消しできる（セッションへ即時反映し、終了時のみ永続化）。AIがレビュー機会なく履歴へ直接永続化するパスは作らない"
         risk: high
         verifymethod: test
     }

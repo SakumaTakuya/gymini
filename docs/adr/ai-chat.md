@@ -16,18 +16,17 @@
   - rehydrate 完了前の最初のレンダで一瞬空表示になる可能性がある（許容）
 - **過去の判断との関係**: 旧版「チャット履歴を localStorage に永続化しない」を撤回する
 
-## 書き込み確認 UI: タイムライン上の draft カードに編集フォームを内包
+## 書き込み確認 UI: 手入力と同様の通常カードを即時挿入（per-write 確認カードの廃止）
 
-- **決定**: AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExercise`）を呼び出した場合、対応する内容を **draft 状態の ExerciseCard** としてタイムラインに直接挿入する。draft カード内に「保存」「破棄」アクションを内蔵し、承認まではデータに反映しない。セット情報を含むアクションは draft カード内に PendingSetRow 再利用の編集可能フォームを内包する
+- **決定（2026-05-24 改訂）**: AI が書き込みツール（`saveWorkout` / `addExerciseToSession`）を呼び出した場合、対応する内容を **手入力と同じ通常 ExerciseCard** としてセッションへ即時挿入する。承認/破棄カード（旧 `origin: 'ai-suggested'` バリアント + `SingleExerciseEditor`）は廃止する。実施済みセット（reps>0、自重は weight=0 可）は完了セット入りの idle カード、reps=0 のセット（プレースホルダ等）は recording 状態の空カードとして挿入する。`addExercise`（マスター登録のみ）はカードを作らずチャット応答のみ
 - **理由**:
-  - 旧版（`ConfirmationBubble` 内インラインフォーム）は、確定後に同じセット詳細を ExerciseCard で **二重表示** する DRY 違反を生んでいた
-  - draft カード直挿により「セット詳細の表示は ExerciseCard が単一の責任を持つ」という Single Source of UI を確立できる
+  - AI 書き込みはセッション draft（メモリ + localStorage）への追加にすぎず、永続化（`WorkoutRepository.save`）は `endSession` 時のみ。per-write の「保存/破棄」カードは実質「確認画面」で、手入力より速くも安全でもなかった（CONSTITUTION B-002 を v5.0.0 で改定し、確認ゲートを「セッション全体のレビュー + 終了」へ移した）
+  - 手入力と AI 追加の挙動を統一することで「セット詳細の表示・編集は通常 ExerciseCard が単一の責任を持つ」Single Source of UI を保てる
   - モーダル/シートを使わずタイムラインに置くことで Modeless 操作を維持し、親指リーチ（T-003）を保つ
-  - 既存の編集フォーム部品（`PendingSetRow` / `EditableSetRow` / `SaveWorkoutEditor` / `SingleExerciseEditor` / `ConfirmationActions`）は **コンテナを差し替える** ことで温存できる
 - **トレードオフ**:
-  - `ExerciseCard` に `origin: 'manual' | 'ai-suggested'` バリアントを追加する必要がある
-  - `pendingAction` のセマンティクスは「draft カードの保存/破棄」へ移行させる（型・ロジックの段階的書き換え）
-- **過去の判断との関係**: 旧版「書き込み確認 UI をインラインに表示」（チャットバブル内）を撤回する
+  - AI の誤呼び出しが起きた場合、ユーザーは手動でカードを削除する必要がある（永続化前なので実害はない）
+  - `origin` フィールド・`ExerciseOrigin` 型・`acceptSuggestedExercise` アクション・`SingleExerciseEditor` / `SaveWorkoutEditor` / `ConfirmationActions` / `EditableSetRow` は撤去する
+- **過去の判断との関係**: 旧版「書き込み確認 UI をタイムライン上の draft カード（`origin: 'ai-suggested'`）に内包し、承認まで反映しない」を撤回する。さらに旧々版「書き込み確認 UI をインラインに表示」（チャットバブル内）も既に撤回済み
 
 ## タイムライン統合 UX の採用（ExerciseCard と ChatMessage を時系列で同一スクロール領域）
 
@@ -51,7 +50,7 @@
 
 - **決定**: ゲート対象は `saveWorkout` と `addExerciseToSession` の 2 ツールに限定する。`useWorkoutSessionStore.getState().isActive` が false なら `{ success: false, error: 'SESSION_NOT_ACTIVE' }` を返す。`addExercise` はゲート対象外
 - **理由**:
-  - B-002（AI 安全操作の確認優先）の精神を「UI 撤去後の防御線」として技術的に保証する
+  - B-002（AI 書き込みのレビュー可能性）の精神を「UI 撤去後の防御線」として技術的に保証する（セッションが無いのに書き込むことを防ぐ）
   - タイムライン統合後はセッション外で AI に話せないため通常はここに到達しない。ただし防御的に残す
   - `addExercise` は種目マスター登録のみで、セッションと無関係。ゲートすると「セッション開始しないと種目マスターも編集できない」という UX 阻害になる
   - 旧 `executeSaveWorkout` には「`isActive=false` で暗黙 `startSession`」のロジックがあったが、これは UX 上の意図ではなく実装上の便宜であり、削除して SESSION_NOT_ACTIVE 一律返却に整理した
@@ -95,7 +94,7 @@
 
 ## 「未登録種目を始める」フローは `addExerciseToSession` の `exerciseId` 省略呼び出しに統合
 
-- **決定**: 未登録種目をユーザーが「やる／始める」と発話した場合、`addExercise` → `addExerciseToSession` の 2 段確認は使わず、`addExerciseToSession` を **`exerciseId` 省略**で 1 回呼び出して 1 つの draft カードで完結させる。`executeAddExerciseToSession` は `exerciseId` が無いとき内部で `ExerciseRepository.create(exerciseName)` を呼び、生成した id でセッションに追加する
+- **決定**: 未登録種目をユーザーが「やる／始める」と発話した場合、`addExercise` → `addExerciseToSession` の 2 段確認は使わず、`addExerciseToSession` を **`exerciseId` 省略**で 1 回呼び出して 1 つの通常カードで完結させる。`executeAddExerciseToSession` は `exerciseId` が無いとき内部で `ExerciseRepository.create(exerciseName)` を呼び、生成した id でセッションに追加する
 - **理由**:
   - 2 段確認は「種目マスターに追加しました」で会話が一区切りしてしまい、ユーザーが追加で発話する/別画面に行く必要が生じる（実際の UX フィードバックを反映）
   - 旧版では専用ツール `addExerciseAndLog` を使っていたが、Phase 7-A のタイムライン UX で `isActive` 必須が確定したため、`addExerciseAndLog` の主機能だった「セッション自動開始」が不要になり、`addExerciseToSession` の単純な引数拡張で代替できる
@@ -107,9 +106,9 @@
 
 - **決定**: `executeAddExerciseToSession` は、解決済み `exerciseId` が現在の `useWorkoutSessionStore.getState().draftExercises` に既存の場合、`{ success: false, error: 'EXERCISE_ALREADY_IN_SESSION' }` を返してセッションを変更しない。重複検査は `exerciseId` 解決後に行い、`exerciseId` 省略時のマスター作成失敗（`DUPLICATE_EXERCISE`）よりも後に評価する。AI には system instruction で「既存セッションに同じ種目がある状態で値の助言を求められた場合はツールを呼ばずテキストで答える」と指示し、エラーが返ったらテキスト応答に切り替えるようガイドする
 - **理由**:
-  - AI は `buildActiveSessionContext()` 経由でセッションの `draftExercises` を認識しているが、「ベンチプレス追加して」と「何キロがいいかな」の区別に失敗して `addExerciseToSession` を再呼び出しし、2 枚目の draft カードを生成するバグが観測された
+  - AI は `buildActiveSessionContext()` 経由でセッションの `draftExercises` を認識しているが、「ベンチプレス追加して」と「何キロがいいかな」の区別に失敗して `addExerciseToSession` を再呼び出しし、2 枚目のカードを生成するバグが観測された
   - プロンプトだけに頼ると LLM の指示不遵守で漏れるため、`SESSION_NOT_ACTIVE` と同じく toolExecutor 側にも防御線を置く
-  - `acceptSuggestedExercise` などユーザー操作経由の編集フローと、`workoutSessionStore.addExercise` 自体の挙動は変えず、AI ツール由来の重複追加のみをブロックする
+  - `workoutSessionStore.addExercise` 自体の挙動（手入力経由を含む）は変えず、AI ツール由来の重複追加のみをブロックする
 - **トレードオフ**: 同一種目を意図的に複数セクション設けたいケースはブロックされる（筋トレ的にも通常 1 種目 = 1 セクションのため許容）。重複検出キーは解決後 `exerciseId` で、`exerciseName` の表記揺れは検出しない
 
 ## アクティブセッション文脈の AI 注入（FR_014）
@@ -123,7 +122,7 @@
 
 ## 種目名のみ言及時の placeholder 提案（FR_015）
 
-- **決定**: 種目名・運動意図のみが述べられた場合、AI は **必ず** `sets:[{0,0}]` の placeholder で書き込みツールを呼び出す。ConfirmationBubble / draft カードでは空入力 + プレースホルダ表示し、ユーザー編集後に確定する
+- **決定**: 種目名・運動意図のみが述べられた場合、AI は **必ず** `sets:[{0,0}]` の placeholder で書き込みツールを呼び出す。挿入側は reps=0 のセットを完了セットにせず、手入力と同じ recording 状態の空カード（最初のセット入力待ち）として即時挿入する
 - **理由**:
   - テキストで聞き返す UX は「フォームが出ない」状態を生み、ユーザーが値入力場所を探す摩擦を生む
   - placeholder 経由なら、ユーザーは「フォームが出ている」事実から自然に値入力に進める
@@ -136,11 +135,11 @@
 - **決定**: 副作用なしの提案チップ専用ツール `proposeAction` を 1 つ追加し、AI 応答を Conversational / Proposed / Committed の 3 形態に分離する。`proposeAction` は read/write のどちらでもない第三カテゴリ（`isProposeTool` 判定）。`useChatService` 内のアダプタ `toProposalMessage(call)` が「actions 付き assistant メッセージ」を 1 つ生成し、`executeProposeTool` は作らない
 - **理由**:
   - 旧 system prompt の「種目名のみで必ず write tool を呼べ」が、未決定発話（「何やろう」など）まで誤って Committed 化していた。AI が「決定者」になり、ユーザーの「選びたい」意図を踏みにじる UX バグ
-  - Proposer/Decider 分離（AI は提案者・ユーザーは決定者）が AI プロダクト設計の基本原則（Boris Cherny / Sid Bidasaria 系）。chip タップを経由することで B-002 のユーザー確認原則をむしろ強化（chip 選択 + draft 保存の 2 段確認）
+  - Proposer/Decider 分離（AI は提案者・ユーザーは決定者）が AI プロダクト設計の基本原則（Boris Cherny / Sid Bidasaria 系）。chip タップを経由することでユーザーの「選びたい」意図を尊重する（決定者はユーザー）
   - 新メッセージタイプ（`'assistant-proposal'`）を作らず、既存 ChatMessage に `actions?` / `consumedActionId?` の optional フィールドを追加するだけで表現可能。`messagesToContents` の二値ロール変換ロジックに影響を与えない
 - **トレードオフ**:
   - ツール数増加（8 → 9）で Gemini Flash の Function Calling 選択精度がやや低下するリスク。system prompt の 3 モード判定基準を明確に記述し、判定例を 5〜6 個ずつ列挙して緩和する
-  - LLM が境界判定を誤る場合（Committed であるべきが Proposed 化）でも、chip タップ 1 回の追加コストで済む。逆方向（Proposed であるべきが Committed 化）は draft カードを破棄して再入力できる
+  - LLM が境界判定を誤る場合（Committed であるべきが Proposed 化）でも、chip タップ 1 回の追加コストで済む。逆方向（Proposed であるべきが Committed 化）は挿入されたカードを削除して再入力できる
   - 旧 ADR「ツール数最小化」（`addExerciseAndLog` → `addExerciseToSession` 統合）と方針が逆行するが、Proposed UX の表現力には新ツール不可避と判断
 - **過去の判断との関係**: 旧版 system prompt「種目名のみの場合は **必ず** 書き込みツールを呼び出してください」の絶対指令を撤回する
 
@@ -151,7 +150,7 @@
   - `show-history`: クライアントで直接 `executeReadTool('getWorkoutsByExercise', { exerciseName })` を呼ぶ
   - `ask-followup`: `payload.prompt ?? label` を擬似発話として `sendMessage()` で再投入
 - **理由**:
-  - `start-exercise` / `show-history` は chip タップ時点でユーザーの「決定」が確定済み。AI 再呼出は (1) 1〜2 秒の遅延、(2) 別 tool への迷走で「2 枚目の draft」や「失敗テキスト」のブレ、(3) トークン消費の追加を招く
+  - `start-exercise` / `show-history` は chip タップ時点でユーザーの「決定」が確定済み。AI 再呼出は (1) 1〜2 秒の遅延、(2) 別 tool への迷走で「2 枚目のカード」や「失敗テキスト」のブレ、(3) トークン消費の追加を招く
   - chip payload に `exerciseName` が確定しているため AI 再解釈は冗長
   - `ask-followup` は会話継続が本質なので AI 再呼出が自然
 - **トレードオフ**:

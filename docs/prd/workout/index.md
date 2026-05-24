@@ -176,7 +176,7 @@ FRAME1（Idle）で「トレーニングを始める」ボタンを押すとセ�
 1 回のセッション内で複数の種目を連続して追加・記録できる。種目の追加は **タイムライン下端の単一入力欄** から行う（[ai-chat/index.md](../ai-chat/index.md) FR_035）。
 
 - 入力欄に種目名（例: 「ベンチ」）を入力すると候補チップが popover で提示され、タップで種目カードを追加
-- 自然言語コマンド（例: 「ベンチ 60kg×10×3 で記録」）を送ると、AI が draft カードとして提案する（[ai-chat/index.md](../ai-chat/index.md) REQ_008）
+- 自然言語コマンド（例: 「ベンチ 60kg×10×3 で記録」）を送ると、AI が手入力と同じ通常カードをセッションへ即時挿入する（[ai-chat/index.md](../ai-chat/index.md) REQ_008）
 
 旧「種目を追加...」専用検索フィールド（`ExerciseSearchField`）は撤去済み。種目検索は `ChatInput` の popover に統合された。
 
@@ -353,13 +353,12 @@ FRAME2の右上に固定表示される「終了」ボタンを押すとセッ�
 │                                 │
 │  ─ ユーザー: 「ベンチ60kg ×3」  │
 │                                 │
-│  ┌─ Card: 🤖 AI 提案 (draft) ─┐ │  ← origin=ai-suggested
-│  │ Bench Press                │ │
-│  │ [1] 60 kg × 10 回  [−]      │ │  ← PendingSetRow 再利用
-│  │ [2] 60 kg × 10 回  [−]      │ │
-│  │ [3] 60 kg × 10 回  [−]      │ │
-│  │     [+ セットを追加]        │ │
-│  │ [破棄]            [保存]    │ │
+│  ┌─ Card: Bench Press (idle) ┐ │  ← AI 挿入も手入力と同じ通常カード
+│  │ [···] Bench Press     [^]  │ │
+│  │ [🗑] 60kg  10回      [✏️] │ │
+│  │ [🗑] 60kg  10回      [✏️] │ │
+│  │ [🗑] 60kg  10回      [✏️] │ │
+│  │          [ + ]              │ │
 │  └────────────────────────────┘ │
 │                                 │
 │ ╔═ FIXED: 単一入力欄 ════════╗  │
@@ -372,7 +371,7 @@ FRAME2の右上に固定表示される「終了」ボタンを押すとセッ�
 
 - 種目カードと ChatMessage は `timestamp` でマージしてレンダリング
 - **全ての種目カードを `position: sticky` で上部固定**。containing block を「カード + 次の種目までの ChatMessage」のセクション単位にすることで stacking 化し、次の種目カードに到達すると前のカードが押し出される（同時に 1 種目のみ recording に入れるルールは FR_030）
-- draft カード内の編集フォームは `PendingSetRow` を再利用（[ai-chat/index.md](../ai-chat/index.md) FR_013）
+- AI が挿入するカードは手入力と同じ通常 ExerciseCard。セット編集は `PendingSetRow` / `CompletedSetRow` で行う（[ai-chat/index.md](../ai-chat/index.md) FR_013）
 - 旧 BottomNav の「AI」専用ボタンは撤去（[navigation.md](../navigation.md) IR_001 改訂を参照）
 
 ---

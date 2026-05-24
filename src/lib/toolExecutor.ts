@@ -152,7 +152,19 @@ function executeSaveWorkout(
   }
 
   for (const ex of resolved) {
-    session.addExerciseWithSets({ ...ex, origin: 'ai-suggested' })
+    const completedSets = meaningfulSets(ex.sets)
+    if (completedSets.length > 0) {
+      session.addExerciseWithSets({
+        exerciseId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+        sets: completedSets,
+      })
+    } else {
+      session.addExercise({
+        exerciseId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+      })
+    }
   }
 
   return { success: true, data: { addedToSession: true } }
@@ -175,6 +187,16 @@ function executeAddExercise(
     }
     return { success: false, error: message }
   }
+}
+
+// A set counts as performed only when reps > 0 (weight may be 0 for bodyweight
+// exercises). Sets with reps 0 — including the AI placeholder {0,0} (FR_015) and a
+// half-filled {weight>0, reps:0} — are dropped so the card opens in recording state
+// for manual entry instead of persisting a 0-rep set.
+function meaningfulSets(
+  sets: Array<{ weight: number; reps: number }>,
+): Array<{ weight: number; reps: number }> {
+  return sets.filter((s) => s.reps > 0)
 }
 
 export function parseSetsArg(
@@ -240,18 +262,17 @@ function executeAddExerciseToSession(
     return { success: false, error: 'EXERCISE_ALREADY_IN_SESSION' }
   }
 
-  if (parsed.sets && parsed.sets.length > 0) {
+  const completedSets = parsed.sets ? meaningfulSets(parsed.sets) : []
+  if (completedSets.length > 0) {
     session.addExerciseWithSets({
       exerciseId: resolvedExerciseId,
       exerciseName,
-      sets: parsed.sets,
-      origin: 'ai-suggested',
+      sets: completedSets,
     })
   } else {
     session.addExercise({
       exerciseId: resolvedExerciseId,
       exerciseName,
-      origin: 'ai-suggested',
     })
   }
   return {
