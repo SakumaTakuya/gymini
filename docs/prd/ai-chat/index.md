@@ -20,9 +20,9 @@ risk: "high"
 
 ## 概要
 
-Gemini API を用いた対話インターフェースを、独立したチャット画面ではなく **ワークアウトセッション内のタイムライン UX** として提供する。種目カード（ExerciseCard）と AI メッセージ（ChatMessage）が時系列で同一スクロール領域に並び、ユーザーは単一の入力欄から自然言語コマンド・種目検索・AI への質問をすべて行う。AI は Function Calling で文脈を参照する。書き込み操作は **タイムラインに draft カードを直接挿入** する形でユーザー確認を求める（REQ_008）。
+Gemini API を用いた対話インターフェースを、独立したチャット画面ではなく **ワークアウトセッション内のタイムライン UX** として提供する。種目カード（ExerciseCard）と AI メッセージ（ChatMessage）が時系列で同一スクロール領域に並び、ユーザーは単一の入力欄から自然言語コマンド・種目検索・AI への質問をすべて行う。AI は Function Calling で文脈を参照する。書き込み操作は **手入力と同様にセッションへ通常の ExerciseCard を即時挿入** する。承認/破棄カードは設けず、編集・削除は通常カードの既存 UI で行う。永続化は「終了」時のみで、それまでのレビュー + 編集 + 終了が確認ゲートとなる（REQ_008 / B-002）。
 
-draft カード内の編集 UI には、最新 main で確立した PendingSetRow 再利用の編集フォーム（FR_013）と placeholder 提案フロー（FR_015）と Active Session Context Injection（FR_014）をそのまま継承する。未登録種目の 1 アクション統合は `addExerciseToSession` の `exerciseId` 省略呼び出しで実現する。**配置するコンテナがチャットバブル内インラインからタイムライン上 draft カードに移る**だけで、編集 UI 部品自体は温存される。
+セッションへ即時挿入されたカードの編集は、トレーニング画面の通常カードと同一の UI（PendingSetRow / CompletedSetRow による値入力・追加・削除）で行う。値を伴わない種目名のみの追加は、手入力と同じく recording 状態の空カード（最初のセット入力待ち）として挿入される（FR_015）。Active Session Context Injection（FR_014）は従来どおり。未登録種目の 1 アクション統合は `addExerciseToSession` の `exerciseId` 省略呼び出しで実現する。
 
 チャット履歴はワークアウトセッションのライフサイクルに同期し、セッションがアクティブな間のみリロード復元され、終了で破棄される（B-001 の不要データ残留防止と「セッション中のリロード耐性」を両立）。
 
@@ -37,19 +37,18 @@ graph TB
         UnifiedInput[単一入力欄に発話／検索]
         ReceiveAdvice[アドバイス受信]
         SelectProposalChip[提案チップをタップ]
-        ReviewDraftCard[draft カードを確認・編集]
-        ApproveDraft[保存（draft → 確定カード）]
-        RejectDraft[破棄]
+        EditCard[通常カードで編集・削除]
+        EndSession[終了で永続化]
 
         subgraph "Function Calling"
             GetRecent[最新ワークアウト取得]
             GetByExercise[種目別ワークアウト取得]
             GetByDate[日付別ワークアウト取得]
             GetSummary[集計取得]
-            SaveWorkout[会話から記録保存（draft 挿入）]
+            SaveWorkout[会話から記録保存（即時カード挿入）]
             GetExercises[種目一覧取得]
             AddExercise[種目マスター追加]
-            AddExerciseToSession[セッションへ種目追加（draft 挿入）。exerciseId 省略時はマスター新規登録 + セッション追加を 1 アクションで完結]
+            AddExerciseToSession[セッションへ種目追加（即時カード挿入）。exerciseId 省略時はマスター新規登録 + セッション追加を 1 アクションで完結]
             ProposeAction[提案チップ群を返す（副作用なし）]
         end
     end
@@ -57,9 +56,8 @@ graph TB
     User --- UnifiedInput
     User --- ReceiveAdvice
     User --- SelectProposalChip
-    User --- ReviewDraftCard
-    ReviewDraftCard --- ApproveDraft
-    ReviewDraftCard --- RejectDraft
+    User --- EditCard
+    User --- EndSession
     UnifiedInput -.->|"<<包含>>"| GetRecent
     UnifiedInput -.->|"<<包含>>"| GetByExercise
     UnifiedInput -.->|"<<包含>>"| GetByDate
@@ -69,8 +67,8 @@ graph TB
     UnifiedInput -.->|"<<包含>>"| AddExercise
     UnifiedInput -.->|"<<包含>>"| AddExerciseToSession
     UnifiedInput -.->|"<<包含>>"| ProposeAction
-    SaveWorkout -.->|"<<生成>>"| ReviewDraftCard
-    AddExerciseToSession -.->|"<<生成>>"| ReviewDraftCard
+    SaveWorkout -.->|"<<生成>>"| EditCard
+    AddExerciseToSession -.->|"<<生成>>"| EditCard
     SelectProposalChip -.->|"<<包含>>"| AddExerciseToSession
     SelectProposalChip -.->|"<<包含>>"| GetByExercise
 ```
@@ -132,7 +130,7 @@ requirementDiagram
 
     functionalRequirement ToolSaveWorkout {
         id: FR_012_05
-        text: "会話から過去日付のワークアウト記録を保存するツール（draft カードとして挿入し、ユーザー編集と承認で確定）"
+        text: "会話から過去日付のワークアウト記録を保存するツール（セッションへ通常カードとして即時挿入し、ユーザーは通常カードで編集できる）"
         risk: high
         verifymethod: test
     }
@@ -146,14 +144,14 @@ requirementDiagram
 
     functionalRequirement ToolAddExercise {
         id: FR_012_07
-        text: "種目マスターに新規追加するツール（記録は始めない、ユーザー確認必須）"
+        text: "種目マスターに新規追加するツール（記録は始めない。ユーザーが明示的にマスター登録のみを希望した場合に呼ぶ）"
         risk: low
         verifymethod: test
     }
 
     functionalRequirement ToolAddExerciseToSession {
         id: FR_012_08
-        text: "アクティブセッションに種目（任意でセット群付き）を追加するツール（draft カードとして挿入し、sets 付きは編集フォーム）"
+        text: "アクティブセッションに種目（任意でセット群付き）を追加するツール（手入力と同様に通常カードを即時挿入。実値セットありは完了セット入りの idle カード、値なし/プレースホルダのみは recording の空カード）"
         risk: high
         verifymethod: test
     }
@@ -166,16 +164,16 @@ requirementDiagram
     }
 
 
-    requirement AIWriteConfirmation {
+    requirement AIWriteReviewable {
         id: REQ_008
-        text: "AI の書き込み操作はタイムライン上の draft カードをユーザー確認 UI として用い、承認まではデータに反映しない。重量・回数を伴う提案は draft カード内に編集可能フォームを内包し、全セット weight>0 かつ reps>0 でない限り「保存」は disabled となる"
+        text: "AI の書き込みは手入力と同様にセッションへ通常カードを即時挿入する。承認/破棄カードは設けず、ユーザーは通常カードの既存 UI で編集・削除でき、永続化は endSession 時のみ。AI がレビュー機会なく履歴へ直接永続化するパスは作らない"
         risk: high
         verifymethod: test
     }
 
     functionalRequirement InlineSetEditing {
         id: FR_013
-        text: "saveWorkout / addExerciseToSession(sets付き) の確認 UI は draft カード内に PendingSetRow 再利用の編集可能フォームを描画する。値が 0 のセットは空入力＋プレースホルダ（kg/回）で表示し、全セット weight>0 かつ reps>0 でない限り確定不可。種目名・種目並び替え・種目追加削除は draft カード上では編集不可"
+        text: "saveWorkout / addExerciseToSession(sets付き) で挿入された通常カードは、トレーニング画面と同一の PendingSetRow / CompletedSetRow による値編集・追加・削除を提供する。実値を伴うセットは完了セットとして表示し、値 0 のみのセットは作らず recording の空カード（最初のセット入力待ち）とする"
         risk: high
         verifymethod: test
     }
@@ -189,7 +187,7 @@ requirementDiagram
 
     functionalRequirement ExerciseOnlyPlaceholderProposal {
         id: FR_015
-        text: "ユーザーが具体値（kg/回数）を伴わずに種目名のみを言及した場合も、AI は placeholder sets [{weight:0, reps:0}] 付きで書き込みツールを呼び出し、draft カード内に編集可能フォームを提示する。セッションアクティブ時は addExerciseToSession（未登録種目は exerciseId 省略でマスター追加と同時に挿入）、非アクティブ時は saveWorkout(date=今日) を使う"
+        text: "ユーザーが具体値（kg/回数）を伴わずに種目名のみを言及した場合も、AI は placeholder sets [{weight:0, reps:0}] 付きで書き込みツールを呼び出す。挿入側は値 0 のみのセットを完了セットにせず、手入力と同じ recording 状態の空カード（最初のセット入力待ち）として即時挿入する。セッションアクティブ時は addExerciseToSession（未登録種目は exerciseId 省略でマスター追加と同時に挿入）、非アクティブ時は saveWorkout(date=今日) を使う"
         risk: medium
         verifymethod: test
     }
@@ -224,14 +222,14 @@ requirementDiagram
 
     functionalRequirement ProposedActionMode {
         id: FR_037
-        text: "ユーザーが種目を未決定のまま選択肢を求めた場合（例: 「何やろう」「胸の日」「メニュー提案して」）、AI は proposeAction ツールを呼び、テキスト + 提案チップ 1〜5 個を返す。副作用ゼロ（draft カードは作らない）。同一メッセージ内のチップは 1 個タップで他もすべて disabled になる"
+        text: "ユーザーが種目を未決定のまま選択肢を求めた場合（例: 「何やろう」「胸の日」「メニュー提案して」）、AI は proposeAction ツールを呼び、テキスト + 提案チップ 1〜5 個を返す。副作用ゼロ（カードは作らない）。同一メッセージ内のチップは 1 個タップで他もすべて disabled になる"
         risk: medium
         verifymethod: test
     }
 
     functionalRequirement ProposalChipDispatch {
         id: FR_038
-        text: "提案チップの kind 3 種（start-exercise / ask-followup / show-history）ごとに分岐実行する。start-exercise はクライアントで直接 addExerciseToSession を呼び draft カードを生成、show-history は直接 read tool を呼び結果を assistant メッセージ化、ask-followup は payload.prompt を擬似発話として AI に再投入する"
+        text: "提案チップの kind 3 種（start-exercise / ask-followup / show-history）ごとに分岐実行する。start-exercise はクライアントで直接 addExerciseToSession を呼び通常カードを即時生成、show-history は直接 read tool を呼び結果を assistant メッセージ化、ask-followup は payload.prompt を擬似発話として AI に再投入する"
         risk: medium
         verifymethod: test
     }
@@ -278,7 +276,7 @@ Gemini API を用いた対話を、ワークアウトセッション内のタイ
 | AI 応答（読み取り操作後・テキスト報告） | 左寄せ | `bg-gym-white border-gym-zinc-100 shadow-soft` | `rounded-[18px] rounded-bl-[4px]` | 88% |
 
 - AI メッセージにアバターアイコンは表示しない
-- 「AI 確認待ち」種別のチャットバブルは廃止し、書き込み確認は **タイムライン上の draft カード**（REQ_008）に集約する
+- 「AI 確認待ち」種別のチャットバブルは廃止する。AI の書き込みは手入力と同様に **通常カードを即時挿入** し、確認は「セッション全体のレビュー + 終了」に集約する（REQ_008）
 - 入力バーはタイムラインの下端に固定（FR_035）
 
 **検証方法:** テストによる検証
@@ -295,43 +293,39 @@ AI が会話の文脈を解析し、必要に応じて以下のツールを自�
 | 種目別ワークアウト取得 | 種目名で部分一致絞り込み | 読み取り |
 | 日付別ワークアウト取得 | 日付指定で取得 | 読み取り |
 | ワークアウト集計 | 週・月単位の集計 | 読み取り |
-| ワークアウト保存 | 過去日付の記録を会話から保存 | 書き込み（draft カード + 編集フォーム） |
+| ワークアウト保存 | 過去日付の記録を会話から保存 | 書き込み（通常カードを即時挿入） |
 | 種目一覧取得 | 登録済み種目一覧を取得 | 読み取り |
-| 種目追加 | 種目マスターに追加（記録は始めない、純粋な登録のみ） | 書き込み（要確認） |
-| セッションへの種目追加 | アクティブセッションに種目（任意でセット群付き）を追加 | 書き込み（draft カード + sets 付きは編集フォーム） |
-| 種目追加 + 記録開始 | 未登録種目をマスター追加し、セッション（無ければ自動開始）に最初のセット記録までを 1 回の確認で完結 | 書き込み（draft カード + 編集フォーム） |
+| 種目追加 | 種目マスターに追加（記録は始めない、純粋な登録のみ） | 書き込み（カードは作らずチャット応答のみ） |
+| セッションへの種目追加 | アクティブセッションに種目（任意でセット群付き）を追加 | 書き込み（通常カードを即時挿入） |
+| 種目追加 + 記録開始 | 未登録種目をマスター追加し、セッションに最初のセット記録待ちの空カードを即時挿入 | 書き込み（通常カードを即時挿入） |
 | 提案アクション | 副作用なしの提案チップ群を返す（FR_037 / FR_038） | 提案（副作用なし、ユーザータップで初めて write/read 発火） |
 
 セッション非アクティブ時、`saveWorkout` と `addExerciseToSession` は `SESSION_NOT_ACTIVE` を返す（FR_036）。`addExercise` と `proposeAction` は対象外。
 
 **検証方法:** テストによる検証
 
-### REQ_008: AI 書き込み操作のユーザー確認（タイムライン上 draft カード）
+### REQ_008: AI 書き込みのレビュー可能性（即時カード挿入）
 
-AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExercise`）を呼び出した場合、対応する内容を **draft 状態の ExerciseCard** としてタイムラインに直接挿入し、ユーザーの承認まではデータに反映しない。
+AI が書き込みツール（`saveWorkout` / `addExerciseToSession`）を呼び出した場合、対応する内容を **手入力と同様の通常 ExerciseCard** としてセッションへ即時挿入する。承認/破棄カードは設けない。ユーザーは通常カードの既存 UI でいつでも編集・削除でき、永続化（`WorkoutRepository.save`）は `endSession` 時のみ行われる。
 
-**draft カード仕様:**
+**挙動仕様:**
 
-- ExerciseCard の `origin: 'ai-suggested'` バリアントとして表示（薄色背景 + 「AI 提案」バッジ）
-- セット情報を含むアクション（`saveWorkout` / `addExerciseToSession`(sets 付き)）は draft カード内に **編集可能フォーム**（FR_013）を内包する
-- セット情報を伴わないアクション（`addExercise` / `addExerciseToSession`(sets 無し)）は draft カード内に確認テキスト＋ボタンのみ
-- カード内に「保存」「破棄」のアクションを内蔵する
-- 確定時はユーザーが編集後の値で `executeWriteTool` を呼び出す
-- 全セット weight>0 かつ reps>0 を満たさない限り「保存」は disabled となり、不足セルがあるときはヒント文言「重量と回数を入力してください」を表示する
-- 「破棄」で draft が消え、AI へ「破棄しました」相当の文脈情報が渡る
-- 「保存」で manual と同等の確定カードに昇格する
+- 挿入されるカードは手入力で追加したカードと区別しない（`origin` フィールドや「AI 提案」バッジは持たない）
+- 実値を伴うセット（weight>0 または reps>0）を含むアクションは、それらを **完了セット** とした idle カードとして挿入する
+- 値 0 のみのセット（プレースホルダ）しか無いアクションは、完了セットを作らず **recording 状態の空カード**（最初のセット入力待ち、`pendingSet = {0,0}`）として挿入する
+- `addExercise`（種目マスター登録のみ）はカードを作らず、チャット応答のみ返す
+- 種目の値編集・セット追加削除・種目削除・並べ替えは、トレーニング画面の通常カードと同一の UI で行う
 
 **例（セッションへの種目追加・sets 付き）:**
 
 ```
-（タイムライン上の draft カード）
-┌─ 🤖 AI 提案 ─────────────────────┐
-│ Bench Press                      │
-│ [1] 60 kg × 10 回  [−]            │
-│ [2] 60 kg × 10 回  [−]            │
-│ [3] 60 kg × 10 回  [−]            │
+（ユーザー発話: "ベンチ 60kg 10回 3セットで追加"）
+（タイムライン上に手入力と同じ通常カードが即時挿入される）
+┌─ Bench Press ────────────────────┐
+│ [1] 60 kg × 10 回                 │
+│ [2] 60 kg × 10 回                 │
+│ [3] 60 kg × 10 回                 │
 │     [+ セットを追加]              │
-│ [破棄]              [保存]        │
 └─────────────────────────────────┘
 ```
 
@@ -339,13 +333,9 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 ```
 （ユーザー発話: "胸の日でダンベルプレスやる"）
-（タイムライン上の draft カード）
-┌─ 🤖 AI 提案 ─────────────────────┐
-│ Dumbbell Press                   │
-│ [1] _ kg × _ 回  [−]              │  ← 空入力プレースホルダ
-│     [+ セットを追加]              │
-│ [破棄]              [保存] (disabled) │
-│ 重量と回数を入力してください       │  ← ヒント
+（recording 状態の空カードが即時挿入され、すぐ 1 セット目を入力できる）
+┌─ Dumbbell Press ─────────────────┐
+│ [1] _ kg × _ 回   [完了]          │  ← pendingSet（手入力と同じ）
 └─────────────────────────────────┘
 ```
 
@@ -353,28 +343,23 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 ```
 （ユーザー発話: "背中の日。ラットプルダウンやる"）
-（タイムライン上の draft カード）
-┌─ 🤖 AI 提案: 種目登録＋記録開始 ──┐
-│ Lat Pulldown ＋種目マスター登録    │
-│ [1] _ kg × _ 回  [−]              │
-│     [+ セットを追加]              │
-│ [破棄]      [追加して記録する] (disabled) │
-│ 重量と回数を入力してください       │
+（種目マスター登録 + recording 空カード挿入を 1 アクションで完結）
+┌─ Lat Pulldown ───────────────────┐
+│ [1] _ kg × _ 回   [完了]          │
 └─────────────────────────────────┘
 ```
 
 **理由:**
 
-- 旧インラインボタン UI（チャットバブル内 [追加する]/[キャンセル]）は、セット詳細を **チャットバブル本文と確定後の ExerciseCard で二重に表示** する DRY 違反を生んでいた
-- draft カード直挿により「セット詳細の表示は ExerciseCard が単一の責任を持つ」という Single Source of UI を確立する
+- AI 書き込みはセッション draft への追加にすぎず、永続化は `endSession` 時のみ。per-write 確認カードは「確認画面」にすぎず、手入力より速くも安全でもなかった（B-002 改定の経緯）
+- 手入力と挙動を統一することで「セット詳細の表示・編集は通常 ExerciseCard が単一の責任を持つ」という Single Source of UI を保つ
 - モーダル/シートを使わないことで、Modeless かつ親指リーチを維持する（T-003）
-- 既存の編集フォーム部品（`PendingSetRow`, `EditableSetRow`, `SaveWorkoutEditor`, `SingleExerciseEditor` 等）は draft カードのコンテナ内で再利用する
 
 **検証方法:** テストによる検証
 
 ### FR_012_05: ToolSaveWorkout（過去日付）
 
-過去日付の記録（セッションが既に終了している、または今日以外の日付）を会話から作成するツール。draft カードに編集フォームを内包する（FR_013）。
+過去日付の記録（セッションが既に終了している、または今日以外の日付）を会話から作成するツール。セッションへ通常カードを即時挿入し、編集は通常カードの UI で行う（FR_013）。
 
 セッションがアクティブな場合は `addExerciseToSession` を優先する（FR_014）。未登録種目の場合は `exerciseId` を省略して呼び出すことで、マスター追加とセッション追加を 1 アクションで完結させる。
 
@@ -382,16 +367,16 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 ### FR_012_07: ToolAddExercise（種目マスター純粋追加）
 
-種目マスターに種目名を登録する（記録は始めない）。draft カード内で「追加」ボタンを単独表示し、「ユーザーが明示的にマスター登録だけ希望した」場合のみ呼ばれる。FR_015 の placeholder 提案フローでは使わない（未登録種目→記録開始は `addExerciseToSession` の `exerciseId` 省略呼び出しで 1 アクション化）。
+種目マスターに種目名を登録する（記録は始めない）。カードは作らずチャット応答のみを返し、「ユーザーが明示的にマスター登録だけ希望した」場合のみ呼ばれる。FR_015 の placeholder 提案フローでは使わない（未登録種目→記録開始は `addExerciseToSession` の `exerciseId` 省略呼び出しで 1 アクション化）。
 
 **検証方法:** テストによる検証
 
 ### FR_012_08: ToolAddExerciseToSession
 
-アクティブセッションに種目（任意でセット群付き）を追加する。
+アクティブセッションに種目（任意でセット群付き）を追加する。挿入されるカードは手入力と同じ通常 ExerciseCard。
 
-- sets 付き: draft カード内に PendingSetRow 再利用の編集フォーム
-- sets 無し: draft カード内に確認テキスト＋「追加」ボタンのみ
+- 実値セットあり: 完了セット入りの idle カードを即時挿入
+- 実値なし（プレースホルダのみ／sets 無し）: recording 状態の空カード（最初のセット入力待ち）を即時挿入
 
 **重複ガード:**
 
@@ -402,25 +387,20 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 **検証方法:** テストによる検証
 
-### FR_013: draft カード内インライン編集フォーム
+### FR_013: 即時挿入カードのセット編集（通常カード UI）
 
-セット情報を含む書き込みアクションの draft カードは、訓練画面の `PendingSetRow` を再利用した編集可能フォームをカード内に表示する。
+AI 書き込みで挿入されたカードは、トレーニング画面の通常 ExerciseCard と同一の UI でセットを編集できる。専用の編集フォーム部品は設けない。
 
 **仕様:**
 
-- 種目名は読み取り専用（draft カード上で種目変更・追加・削除・並べ替えは行わない）
-- 各セット行で重量（kg）・回数（回）を数値入力可能。`PendingSetRow` のキー操作仕様（重量 → 回数の自動フォーカス、Enter で追加）を踏襲
-- 値が 0 のセット（AI が placeholder で提案した未確定セット）は **空入力 + プレースホルダ表示**（`kg` / `回`）で描画する。内部状態は 0 のまま保持し、ユーザーの入力値で上書きする
-- セット末尾に「+ セットを追加」ボタン、各セット行に削除（−）ボタンを配置
-- 「保存」確定時、AI 提案値ではなくユーザー編集後の `{date, exercises[].sets[]}` を `executeWriteTool` に渡す
-- セット数 0 の種目を含めて確定することはできない（最低 1 セット必要、UI で抑止）
-- **全セットが weight>0 かつ reps>0 でない限り「保存」は disabled** となり、不足セルがあるときはボタン下にヒント文言「重量と回数を入力してください」を表示する
+- 実値セット（weight>0 または reps>0）は `CompletedSetRow` の完了セットとして表示し、`PendingSetRow` で次セットを入力・追加できる
+- 値 0 のみのセット（AI が placeholder で提案した未確定セット）は完了セットにせず、recording 状態の `pendingSet = {0,0}` として描画する（手入力と同一の「最初のセット入力待ち」）
+- セットの値編集・追加（+ セットを追加）・削除（−）・種目削除・並べ替えは、トレーニング画面の通常カードと同一の操作で行う
+- 永続化は `endSession` 時のみ。途中で削除すれば履歴に残らない
 
-**コンテナ移行に伴う変更:**
+**経緯（旧版からの変更）:**
 
-旧版（最新 main までの実装）はこの編集フォームを `ConfirmationBubble`（チャットバブル内）に配置していた。タイムライン統合（FR_034）では同じ部品を **draft カード**（`ExerciseCard` の `origin: 'ai-suggested'` バリアント）内に再配置する。フォーム部品（`PendingSetRow` / `EditableSetRow` / `SaveWorkoutEditor` / `SingleExerciseEditor`）は温存する。
-
-**スコープ外:** 種目の追加・削除・並べ替え・種目名変更はトレーニング画面（`/training` のタイムライン上の確定 ExerciseCard）に集約する。draft カードではセットの値編集と +/− に限定する。
+旧版は AI 書き込み内容を承認/破棄カード（`ExerciseCard` の `origin: 'ai-suggested'` バリアント + `SingleExerciseEditor`）として挿入し、「保存」で manual に昇格させていた。B-002 改定によりこの per-write 確認カードを廃止し、手入力と同じ通常カードを即時挿入する方式に統一した。`origin` バリアントと `SingleExerciseEditor` / `SaveWorkoutEditor` は撤去する。
 
 **検証方法:** テストによる検証
 
@@ -445,7 +425,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 **AI への指示追加:**
 
 - セッションがアクティブな場合は `saveWorkout`（過去日付向け）ではなく `addExerciseToSession`（sets 付き、未登録種目は `exerciseId` 省略）を優先する
-- ユーザーが具体的な重量・回数を伝えたらそのまま提案として返す（ユーザーが draft カード内で編集できる）
+- ユーザーが具体的な重量・回数を伝えたらそのまま記録として返す（ユーザーは挿入後の通常カードで編集できる）
 - ユーザーが具体値を伴わずに種目名のみを述べた場合は FR_015 のフローを適用する
 - 進行中セッション情報があるときは、それを踏まえて「前セットからの増減」を 1 行で提案する
 
@@ -453,7 +433,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 ### FR_015: 種目名のみ入力時の placeholder 提案フロー
 
-ユーザーが具体値（kg/回数）を伴わずに **種目を 1 つに断定して** 述べた場合（例:「胸の日でダンベルプレスやる」「ベンチプレス追加して」）、AI は **必ず** 書き込みツールを呼び出して draft カード（編集フォーム内蔵）を提示する。テキストのみで聞き返してフォームを出さない振る舞いは禁止。
+ユーザーが具体値（kg/回数）を伴わずに **種目を 1 つに断定して** 述べた場合（例:「胸の日でダンベルプレスやる」「ベンチプレス追加して」）、AI は **必ず** 書き込みツールを呼び出して通常カードを即時挿入する。テキストのみで聞き返してカードを出さない振る舞いは禁止。
 
 **「断定」と「未決定」の境界:**
 
@@ -463,23 +443,23 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 **フロー:**
 
 1. **種目マスター確認**: 入力された種目名が登録済みかを判断する。不明な場合は `getExercises` で確認する
-2. **未登録種目を始める** → `addExerciseToSession({ exerciseName, sets: [{ weight: 0, reps: 0 }] })`（`exerciseId` 省略）を 1 回呼び、種目マスター追加とセッション追加を 1 つの draft カードで完結させる
+2. **未登録種目を始める** → `addExerciseToSession({ exerciseName, sets: [{ weight: 0, reps: 0 }] })`（`exerciseId` 省略）を 1 回呼び、種目マスター追加とセッションへの recording 空カード挿入を 1 アクションで完結させる
 3. **登録済み + セッション分岐**:
    - **アクティブ** → `addExerciseToSession({ exerciseId, exerciseName, sets: [{ weight: 0, reps: 0 }] })`
    - **非アクティブ** → `saveWorkout({ date: 今日, exercises: [{ exerciseName, sets: [{ weight: 0, reps: 0 }] }] })`
 4. **テキスト応答**: ツール呼び出しと併せて短い励まし＋値入力の促し（例:「ナイス💪 重量と回数を入力してください」）を返す
 
-**draft カードでの挙動:**
+**挿入後カードの挙動:**
 
-- `sets:[{0,0}]` の placeholder は空入力 + プレースホルダ表示（FR_013）
-- 「保存」は disabled（FR_013 の確定条件を満たさない）
-- ユーザーが kg/回数を入力すると enabled になり、編集後の値で `executeWriteTool` が呼ばれる
+- `sets:[{0,0}]` の placeholder は完了セットを作らず、recording 状態の空カード（`pendingSet = {0,0}`）として挿入する
+- ユーザーは手入力と同じく重量・回数を入力して「完了」でセットを確定する
+- 永続化は `endSession` 時のみ
 
 **禁止事項:**
 
-- 種目名が決まったのにテキストのみで応答すること（フォームが出ないと UX が壊れる）
+- 種目名が決まったのにテキストのみで応答すること（カードが出ないと UX が壊れる）
 - placeholder の値を 0 以外（例: 50kg/10 等の架空値）で埋めること（事実誤認の元）
-- 既にアクティブセッションの `draftExercises` に同じ種目がある状態で「何キロがいいかな」「重さ提案して」などの **値の助言** に対して `addExerciseToSession` を再呼び出しすること（重複 draft カードが生成される。代わりにテキスト応答で前セットからの増減を提案する）
+- 既にアクティブセッションの `draftExercises` に同じ種目がある状態で「何キロがいいかな」「重さ提案して」などの **値の助言** に対して `addExerciseToSession` を再呼び出しすること（重複カードが生成される。代わりにテキスト応答で前セットからの増減を提案する）
 - **未決定発話**（「何やろう」「メニュー」「○○の日」など）に対して書き込みツールを呼び出すこと（FR_037 の Proposed フローへ振り分ける）
 
 **検証方法:** テストによる検証
@@ -497,10 +477,10 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 ワークアウトセッション中、ExerciseCard と ChatMessage を **同一スクロール領域内に時系列で表示** する。
 
-- 種目追加・セット完了・AI メッセージ・draft カード提案などの出来事が時系列順に並ぶ
+- 種目追加・セット完了・AI メッセージ・AI による種目カード挿入などの出来事が時系列順に並ぶ
 - `recording` 状態の ExerciseCard は画面上部に **sticky 固定** され、スクロール中も入力 UI が常時可視
 - 同時に `recording` になれる種目は 1 つ（[workout/index.md](../workout/index.md) FR_030 を継承）
-- **Proposed メッセージ（FR_037）** は draft カードではなく `actions` 付き ChatMessage として時系列に並び、ChatBubble の通常スタイル内に提案チップ群を描画する。タイムラインの時系列順序や sticky 挙動には影響しない
+- **Proposed メッセージ（FR_037）** はカードを作らず `actions` 付き ChatMessage として時系列に並び、ChatBubble の通常スタイル内に提案チップ群を描画する。タイムラインの時系列順序や sticky 挙動には影響しない
 
 **検証方法:** テストによる検証
 
@@ -510,7 +490,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 - 自然言語入力（例: 「今日のスクワットの調子はどう?」）→ AI 応答
 - 種目名の入力（例: 「ベンチ」）→ 候補チップを popover で提示し、タップで種目を追加
-- 数値・記録の指示（例: 「ベンチ 60kg×10×3 で記録」）→ AI が `addExerciseToSession` または `saveWorkout` を呼び出し、draft カードを挿入
+- 数値・記録の指示（例: 「ベンチ 60kg×10×3 で記録」）→ AI が `addExerciseToSession` または `saveWorkout` を呼び出し、通常カードを即時挿入
 
 旧 ExerciseSearchField は廃止し、検索機能をこの入力欄に統合する。
 
@@ -530,7 +510,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 ### FR_037: Proposed メッセージモード（未決定発話への提案チップ）
 
-ユーザーが種目を未決定のまま選択肢を求めた場合、AI は `proposeAction` ツールを呼び、テキスト本文 + 提案チップ群（1〜5 個、推奨は 2〜4 個）を含む **Proposed メッセージ** を返す。draft カードは作らず、副作用ゼロ。
+ユーザーが種目を未決定のまま選択肢を求めた場合、AI は `proposeAction` ツールを呼び、テキスト本文 + 提案チップ群（1〜5 個、推奨は 2〜4 個）を含む **Proposed メッセージ** を返す。カードは作らず、副作用ゼロ。
 
 **トリガーする発話例:**
 
@@ -568,7 +548,7 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 
 | kind | 経路 | 振る舞い |
 |------|------|----------|
-| `start-exercise` | クライアントで直接 `executeWriteTool('addExerciseToSession', { exerciseName, sets: [{ weight: 0, reps: 0 }] })` を実行 | AI を介さず即座に draft カードを生成。既存の FR_013 / FR_015 編集フォームフローに合流 |
+| `start-exercise` | クライアントで直接 `executeWriteTool('addExerciseToSession', { exerciseName, sets: [{ weight: 0, reps: 0 }] })` を実行 | AI を介さず即座に通常カード（recording 空カード）を挿入。FR_013 / FR_015 のフローに合流 |
 | `show-history` | クライアントで直接 `executeReadTool('getWorkoutsByExercise', { exerciseName })` を実行 | 結果テキストを assistant メッセージとして追加。AI を介さない |
 | `ask-followup` | `payload.prompt`（無ければ `label`）を擬似発話として再投入 | user メッセージとして表示後、AI に再判断させる |
 
@@ -600,4 +580,4 @@ AI が書き込みツール（`saveWorkout` / `addExerciseToSession` / `addExerc
 - 過去ワークアウトに紐づくチャット履歴のアーカイブ閲覧（将来要件）
 - 音声入力・読み上げ
 - 複数 AI モデルの切り替え（[ai-chat.md](../../adr/ai-chat.md) で `gemini-flash-latest` 固定の方針）
-- draft カード上での種目名変更・種目追加削除・並べ替え（タイムライン上の確定 ExerciseCard で実施）
+- AI 挿入カード上での種目名変更（種目追加削除・並べ替えは通常カードと同一 UI で実施）

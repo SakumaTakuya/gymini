@@ -13,7 +13,7 @@
 | [tokens.md](tokens.md) の上位指針 | トークン定義そのもの |
 | ライブラリ選定の判断材料 | ライブラリ採用の最終結論 |
 
-**焦点**: Active Session（`src/components/workout/` 配下と `src/components/chat/` の AI 提案カード）に絞る。History / Settings / AI チャット画面そのものは本稿の対象外。
+**焦点**: Active Session（`src/components/workout/` 配下と `src/components/chat/`）に絞る。History / Settings / AI チャット画面そのものは本稿の対象外。
 
 ---
 
@@ -46,7 +46,7 @@
 タップ可能領域は「掴める物」として振る舞う。それぞれが重さと質感を持つ。
 
 - **由来**: Matas（初代 iOS Maps のピン落下 / Paper の tilt）・Badeen（Tinder のカード swipe）
-- **gymini での意味**: セット行・種目カード・AI 提案カードは物体。掴める、引っ張れる、フリックできる
+- **gymini での意味**: セット行・種目カードは物体。掴める、引っ張れる、フリックできる
 - **やらないこと**: 「掴めるように見えるが掴めない」UI は作らない。視覚的に物体っぽさを増やすなら、ジェスチャーまで含めて実装する。半端ならフラットなまま残す
 
 ### 3. 空間の連続性
@@ -96,7 +96,7 @@
 | ExerciseCard（通常種目） | 厚紙 | 高 | 遅め | スクロールで重く動く、リリースで穏やかな spring |
 | PendingSetRow（記録中） | 薄紙・活性 | 中 | 速い | 完了で 0.98→1.00 short spring、accent stripe が走る |
 | CompletedSetRow（完了済セット） | 紙片 | 中 | 速め | swipe で「ちぎれる手前」の rubber-band、リリースで snap |
-| AI 提案カード | 軽い紙 | 低 | 速い | 滑り込んで来る、フリックで飛ばせる |
+| ~~AI 提案カード~~（廃止） | — | — | — | B-002 v5.0.0 改定で廃止。AI 追加は手入力と同じ通常 ExerciseCard を即時挿入する |
 | TimerPill | **ガラス** | — | — | 移動しない・背後のブラーを伝える・毎分の頭で 2% 呼吸 |
 | Session 縦スクロール | 紙のロール | 中 | — | 慣性、上下端で軽いラバーバンド |
 | カレンダー横スクロール（参考、本稿対象外） | 紙の蛇腹 | 中 | — | snap、既に `snap-x snap-mandatory` で物理感あり |
@@ -179,14 +179,13 @@ bg-gym-white rounded-[24px] p-5 shadow-soft border border-gym-zinc-100
 **哲学**: 1, 5
 **やらないこと**: `shadow-float` まで育てない。「静か」を破る
 
-### ExerciseCard（AI 提案）
+### ~~ExerciseCard（AI 提案）~~（廃止）
 
-**現状** (`src/components/workout/ExerciseCard.tsx:46-61`)
+> **廃止（B-002 v5.0.0 改定 / 2026-05-24）**: 承認/破棄の AI 提案カード（`origin: 'ai-suggested'`）は撤去した。AI の書き込みは手入力と同じ通常 ExerciseCard を即時挿入するため、本節の演出（点線・slide-from-right・フリックで飛ばす swipe）は対象がなく無効。以下は歴史的記録として残す。
+
+**旧状態**
 - `bg-gym-zinc-50` + `border-dashed border-gym-zinc-300` + `AI 提案` バッジ
-
-**改善後**
-- 視覚: 点線を残しつつ、左側に紙のカール影（背景の片側だけの `radial-gradient` ないし斜め shadow）を加え、「滑り込んで来た紙」感を出す
-- 動き: 出現時は slide-from-right に変更（外部から滑り込んだ印象、`--duration-normal` `--ease-snap`）。タクソノミー上「軽い紙」なので、ユーザーがフリックすると低摩擦で飛ばせる（P2、Badeen 流 swipe）
+- 出現時 slide-from-right、フリックで accept/reject の swipe（P2 Badeen 流）を検討していた
 - 触覚: 出現時に `navigator.vibrate(15)` で「来たよ」の通知（reduced-motion 設定時は省略）
 
 **由来**: Matas / Badeen
@@ -311,8 +310,8 @@ bg-gym-white rounded-[24px] p-5 shadow-soft border border-gym-zinc-100
 | P1 | TimerPill の「毎分呼吸」スケール | 低 | 小 | CSS + `requestAnimationFrame` | `TimerPill.tsx` | Cox |
 | **P1** | **Session 縦スクロール上下端のラバーバンド視覚化 + haptic** | 中 | 中 | scroll listener + CSS + Vibration | `ActiveSessionView.tsx` | Brichter |
 | P2 | 数字入力のドラムピッカー導入 | 高 | 大 | 新規 UI コンポ | 新規 + `PendingSetRow.tsx` | Matas / Badeen |
-| **P2** | AI 提案カードの swipe accept / reject（velocity ベース） | 中 | 大 | pointer events or `@use-gesture/react` | `chat/SingleExerciseEditor.tsx` + `ExerciseCard.tsx:46-61` | Badeen |
-| P2 | AI 提案カードの slide-from-right 出現 | 中 | 小 | CSS のみ（utility 追加） | `index.css` / `ExerciseCard.tsx:47` | Matas |
+| ~~P2~~ | ~~AI 提案カードの swipe accept / reject~~（廃止: B-002 v5.0.0 で AI 提案カード撤去） | — | — | — | Badeen |
+| ~~P2~~ | ~~AI 提案カードの slide-from-right 出現~~（廃止: 同上） | — | — | — | Matas |
 | P3 | Session 背景の追従 radial gradient | 低 | 中 | scroll listener + CSS variable | `ActiveSessionView.tsx` | Matas |
 | 横断 | `prefers-reduced-motion` 全面対応 | 横断 | 中 | CSS `@media` + JS（haptic 抑止） | 全 motion 系 | 必須 |
 

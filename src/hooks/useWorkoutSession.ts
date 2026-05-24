@@ -36,7 +36,6 @@ export function useWorkoutSession() {
     activateExercise: store.activateExercise,
     deleteExercise: store.deleteExercise,
     reorderExercise: store.reorderExercise,
-    acceptSuggestedExercise: store.acceptSuggestedExercise,
     searchExercises,
     createExercise,
 

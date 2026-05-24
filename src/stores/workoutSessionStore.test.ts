@@ -182,28 +182,6 @@ describe('workoutSessionStore', () => {
       expect(draftExercises[0].pendingSet).toBeNull()
     })
 
-    it('origin 未指定時はデフォルトで manual になる', () => {
-      useWorkoutSessionStore.getState().startSession()
-      useWorkoutSessionStore
-        .getState()
-        .addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
-
-      const { draftExercises } = useWorkoutSessionStore.getState()
-      expect(draftExercises[0].origin).toBe('manual')
-    })
-
-    it('origin: ai-suggested を指定すると ai-suggested で追加される', () => {
-      useWorkoutSessionStore.getState().startSession()
-      useWorkoutSessionStore.getState().addExercise({
-        exerciseId: 'bench',
-        exerciseName: 'ベンチプレス',
-        origin: 'ai-suggested',
-      })
-
-      const { draftExercises } = useWorkoutSessionStore.getState()
-      expect(draftExercises[0].origin).toBe('ai-suggested')
-    })
-
     it('timestamp を nowISODateTimeString() で自動設定する', () => {
       useWorkoutSessionStore.getState().startSession()
       const before = new Date()
@@ -220,31 +198,6 @@ describe('workoutSessionStore', () => {
   })
 
   describe('addExerciseWithSets', () => {
-    it('origin 未指定時はデフォルトで manual になる', () => {
-      useWorkoutSessionStore.getState().startSession()
-      useWorkoutSessionStore.getState().addExerciseWithSets({
-        exerciseId: 'bench',
-        exerciseName: 'ベンチプレス',
-        sets: [{ weight: 60, reps: 10 }],
-      })
-
-      const { draftExercises } = useWorkoutSessionStore.getState()
-      expect(draftExercises[0].origin).toBe('manual')
-    })
-
-    it('origin: ai-suggested を指定すると ai-suggested で追加される', () => {
-      useWorkoutSessionStore.getState().startSession()
-      useWorkoutSessionStore.getState().addExerciseWithSets({
-        exerciseId: 'bench',
-        exerciseName: 'ベンチプレス',
-        sets: [{ weight: 60, reps: 10 }],
-        origin: 'ai-suggested',
-      })
-
-      const { draftExercises } = useWorkoutSessionStore.getState()
-      expect(draftExercises[0].origin).toBe('ai-suggested')
-    })
-
     it('timestamp を nowISODateTimeString() で自動設定する', () => {
       useWorkoutSessionStore.getState().startSession()
       const before = new Date()
@@ -259,89 +212,6 @@ describe('workoutSessionStore', () => {
       const ts = new Date(draftExercises[0].timestamp).getTime()
       expect(ts).toBeGreaterThanOrEqual(before.getTime())
       expect(ts).toBeLessThanOrEqual(after.getTime())
-    })
-  })
-
-  describe('acceptSuggestedExercise', () => {
-    it('ai-suggested の種目を manual に昇格させる', () => {
-      useWorkoutSessionStore.getState().startSession()
-      useWorkoutSessionStore.getState().addExerciseWithSets({
-        exerciseId: 'bench',
-        exerciseName: 'ベンチプレス',
-        sets: [{ weight: 60, reps: 10 }],
-        origin: 'ai-suggested',
-      })
-
-      useWorkoutSessionStore.getState().acceptSuggestedExercise(0)
-
-      const { draftExercises } = useWorkoutSessionStore.getState()
-      expect(draftExercises[0].origin).toBe('manual')
-      expect(draftExercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
-    })
-
-    it('manual の種目には作用しない（no-op）', () => {
-      useWorkoutSessionStore.getState().startSession()
-      useWorkoutSessionStore.getState().addExerciseWithSets({
-        exerciseId: 'bench',
-        exerciseName: 'ベンチプレス',
-        sets: [{ weight: 60, reps: 10 }],
-      })
-      const before = useWorkoutSessionStore.getState().draftExercises
-
-      useWorkoutSessionStore.getState().acceptSuggestedExercise(0)
-
-      expect(useWorkoutSessionStore.getState().draftExercises).toBe(before)
-    })
-
-    it('範囲外の index に対しては作用しない（no-op）', () => {
-      useWorkoutSessionStore.getState().startSession()
-      const before = useWorkoutSessionStore.getState().draftExercises
-
-      useWorkoutSessionStore.getState().acceptSuggestedExercise(99)
-
-      expect(useWorkoutSessionStore.getState().draftExercises).toBe(before)
-    })
-
-    it('sets 引数を渡すと編集後の sets で保存しつつ origin を manual に昇格', () => {
-      useWorkoutSessionStore.getState().startSession()
-      useWorkoutSessionStore.getState().addExerciseWithSets({
-        exerciseId: 'bench',
-        exerciseName: 'ベンチプレス',
-        sets: [{ weight: 60, reps: 10 }],
-        origin: 'ai-suggested',
-      })
-
-      useWorkoutSessionStore
-        .getState()
-        .acceptSuggestedExercise(0, [
-          { weight: 80, reps: 8 },
-          { weight: 75, reps: 6 },
-        ])
-
-      const { draftExercises } = useWorkoutSessionStore.getState()
-      expect(draftExercises[0].origin).toBe('manual')
-      expect(draftExercises[0].sets).toEqual([
-        { weight: 80, reps: 8 },
-        { weight: 75, reps: 6 },
-      ])
-    })
-
-    it('manual 昇格時に timestamp を上書きしない', () => {
-      useWorkoutSessionStore.getState().startSession()
-      useWorkoutSessionStore.getState().addExerciseWithSets({
-        exerciseId: 'bench',
-        exerciseName: 'ベンチプレス',
-        sets: [{ weight: 60, reps: 10 }],
-        origin: 'ai-suggested',
-      })
-      const originalTs =
-        useWorkoutSessionStore.getState().draftExercises[0].timestamp
-
-      useWorkoutSessionStore.getState().acceptSuggestedExercise(0)
-
-      expect(
-        useWorkoutSessionStore.getState().draftExercises[0].timestamp,
-      ).toBe(originalTs)
     })
   })
 

@@ -2,11 +2,7 @@ import { create } from 'zustand'
 import { createJSONStorage, persist } from 'zustand/middleware'
 import { nowISODateTimeString, todayDateString } from '../schemas/date'
 import type { DateString, ISODateTimeString } from '../schemas/date'
-import type {
-  DraftExercise,
-  ExerciseOrigin,
-  WorkoutSet,
-} from '../schemas/workout'
+import type { DraftExercise, WorkoutSet } from '../schemas/workout'
 import * as WorkoutRepository from '../lib/workoutRepository'
 import { storeBus } from './storeBus'
 
@@ -23,15 +19,12 @@ type WorkoutSessionState = {
   addExercise: (exercise: {
     exerciseId: string
     exerciseName: string
-    origin?: ExerciseOrigin
   }) => void
   addExerciseWithSets: (exercise: {
     exerciseId: string
     exerciseName: string
     sets: WorkoutSet[]
-    origin?: ExerciseOrigin
   }) => void
-  acceptSuggestedExercise: (exerciseIndex: number, sets?: WorkoutSet[]) => void
   activateExercise: (exerciseIndex: number) => void
   deleteExercise: (exerciseIndex: number) => void
   reorderExercise: (exerciseIndex: number, direction: 'up' | 'down') => void
@@ -141,7 +134,6 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             pendingSetDirty: false,
             cardState: 'recording',
             editingSetIndex: null,
-            origin: exercise.origin ?? 'manual',
             timestamp: nowISODateTimeString(),
           }
           return { draftExercises: [...deactivated, newExercise] }
@@ -159,24 +151,9 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
             pendingSetDirty: false,
             cardState: 'idle',
             editingSetIndex: null,
-            origin: exercise.origin ?? 'manual',
             timestamp: nowISODateTimeString(),
           }
           return { draftExercises: [...deactivated, newExercise] }
-        })
-      },
-
-      acceptSuggestedExercise: (exerciseIndex, sets) => {
-        set((state) => {
-          const target = state.draftExercises[exerciseIndex]
-          if (!target || target.origin !== 'ai-suggested') return state
-          return {
-            draftExercises: state.draftExercises.map((e, i) =>
-              i === exerciseIndex
-                ? { ...e, sets: sets ?? e.sets, origin: 'manual' }
-                : e,
-            ),
-          }
         })
       },
 

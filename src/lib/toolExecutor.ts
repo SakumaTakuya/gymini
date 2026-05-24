@@ -152,7 +152,19 @@ function executeSaveWorkout(
   }
 
   for (const ex of resolved) {
-    session.addExerciseWithSets({ ...ex, origin: 'ai-suggested' })
+    const completedSets = meaningfulSets(ex.sets)
+    if (completedSets.length > 0) {
+      session.addExerciseWithSets({
+        exerciseId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+        sets: completedSets,
+      })
+    } else {
+      session.addExercise({
+        exerciseId: ex.exerciseId,
+        exerciseName: ex.exerciseName,
+      })
+    }
   }
 
   return { success: true, data: { addedToSession: true } }
@@ -175,6 +187,14 @@ function executeAddExercise(
     }
     return { success: false, error: message }
   }
+}
+
+// Sets where both weight and reps are 0 are AI placeholders (FR_015). They are not
+// recorded as completed sets; instead the card opens in recording state for manual entry.
+function meaningfulSets(
+  sets: Array<{ weight: number; reps: number }>,
+): Array<{ weight: number; reps: number }> {
+  return sets.filter((s) => s.weight > 0 || s.reps > 0)
 }
 
 export function parseSetsArg(
@@ -240,18 +260,17 @@ function executeAddExerciseToSession(
     return { success: false, error: 'EXERCISE_ALREADY_IN_SESSION' }
   }
 
-  if (parsed.sets && parsed.sets.length > 0) {
+  const completedSets = parsed.sets ? meaningfulSets(parsed.sets) : []
+  if (completedSets.length > 0) {
     session.addExerciseWithSets({
       exerciseId: resolvedExerciseId,
       exerciseName,
-      sets: parsed.sets,
-      origin: 'ai-suggested',
+      sets: completedSets,
     })
   } else {
     session.addExercise({
       exerciseId: resolvedExerciseId,
       exerciseName,
-      origin: 'ai-suggested',
     })
   }
   return {

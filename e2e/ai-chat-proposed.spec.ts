@@ -88,7 +88,7 @@ test.describe('AI チャット Proposed メッセージ (FR_037 / FR_038)', () =
     await page.reload()
   })
 
-  test('未決定発話 → Proposed メッセージ + chip 3 個 → 1 個タップで draft 化', async ({
+  test('未決定発話 → Proposed メッセージ + chip 3 個 → 1 個タップで通常カードを即時挿入', async ({
     page,
   }) => {
     await page.route(
@@ -151,24 +151,33 @@ test.describe('AI チャット Proposed メッセージ (FR_037 / FR_038)', () =
     })
     expect(draftCount0).toBe(0)
 
-    // ベンチプレス chip をタップ → draft が作られる
+    // ベンチプレス chip をタップ → 承認なしで通常カードが即時挿入される
     await startBenchChip.click()
 
-    await expect(page.getByText(/AI 提案/)).toBeVisible({ timeout: 5000 })
+    // recording 状態の空カードが現れる（AI 提案バッジは無い）
+    await expect(
+      page.getByRole('button', { name: 'ベンチプレス', exact: true }),
+    ).toBeVisible({ timeout: 5000 })
+    await expect(page.getByText(/AI 提案/)).toHaveCount(0)
 
-    // localStorage 上の draftExercises に ai-suggested として 1 件追加
+    // localStorage 上の draftExercises に手入力と同じ通常カードとして 1 件追加
     const saved = await page.evaluate(() => {
       const raw = localStorage.getItem('gymini:workout-session')
       if (!raw) return null
       const parsed = JSON.parse(raw)
       const draft = parsed.state?.draftExercises?.[0]
       return draft
-        ? { exerciseName: draft.exerciseName, origin: draft.origin }
+        ? {
+            exerciseName: draft.exerciseName,
+            cardState: draft.cardState,
+            sets: draft.sets,
+          }
         : null
     })
     expect(saved).toEqual({
       exerciseName: 'ベンチプレス',
-      origin: 'ai-suggested',
+      cardState: 'recording',
+      sets: [],
     })
 
     // 他の chip も disabled になっている
@@ -213,9 +222,11 @@ test.describe('AI チャット Proposed メッセージ (FR_037 / FR_038)', () =
     const chip = page.getByRole('button', { name: /ベンチプレスを始める/ })
     await expect(chip).toBeVisible({ timeout: 10000 })
 
-    // タップで draft が作られる
+    // タップで通常カードが即時挿入される
     await chip.click()
-    await expect(page.getByText(/AI 提案/)).toBeVisible({ timeout: 5000 })
+    await expect(
+      page.getByRole('button', { name: 'ベンチプレス', exact: true }),
+    ).toBeVisible({ timeout: 5000 })
     const saved = await page.evaluate(() => {
       const raw = localStorage.getItem('gymini:workout-session')
       if (!raw) return null
@@ -279,8 +290,10 @@ test.describe('AI チャット Proposed メッセージ (FR_037 / FR_038)', () =
       timeout: 5000,
     })
 
-    // 2 段目で draft 生成
-    await expect(page.getByText(/AI 提案/)).toBeVisible({ timeout: 10000 })
+    // 2 段目で通常カードが即時挿入される
+    await expect(
+      page.getByRole('button', { name: 'ベンチプレス', exact: true }),
+    ).toBeVisible({ timeout: 10000 })
     expect(callCount).toBe(2)
   })
 })

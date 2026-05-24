@@ -15,7 +15,6 @@ export function makeDraftExercise(
     pendingSetDirty: overrides.pendingSetDirty ?? false,
     cardState: overrides.cardState ?? 'idle',
     editingSetIndex: overrides.editingSetIndex ?? null,
-    origin: overrides.origin ?? 'manual',
     timestamp: overrides.timestamp ?? DEFAULT_TIMESTAMP,
   }
 }

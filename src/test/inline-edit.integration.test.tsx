@@ -1,5 +1,4 @@
 import { act, fireEvent, render, screen } from '@testing-library/react'
-import userEvent from '@testing-library/user-event'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { ActiveSessionView } from '../components/workout/ActiveSessionView'
 import { useChatService } from '../hooks/useChatService'
@@ -42,7 +41,7 @@ function Harness({ client }: { client: GeminiClient }) {
   )
 }
 
-describe('AI 提案 draft カードでのインライン編集 (FR_013)', () => {
+describe('AI 書き込みの即時カード挿入 (REQ_008 / FR_013)', () => {
   beforeEach(() => {
     useChatStore.setState({ messages: [], isLoading: false, error: null })
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
@@ -56,12 +55,12 @@ describe('AI 提案 draft カードでのインライン編集 (FR_013)', () => 
     vi.mocked(ExerciseRepository.search).mockReturnValue([])
   })
 
-  test('AI が addExerciseToSession(sets付き) を提案 → ai-suggested カードで重量編集 → 保存 → 通常 draft に昇格', async () => {
+  test('AI が addExerciseToSession(sets付き) を呼ぶと、承認なしで通常カードが即時挿入される', async () => {
     useWorkoutSessionStore.getState().startSession()
 
     const client = mockClient([
       {
-        text: 'ベンチプレスを追加しますか？',
+        text: 'ベンチプレスを追加しました',
         functionCalls: [
           {
             name: 'addExerciseToSession',
@@ -84,24 +83,53 @@ describe('AI 提案 draft カードでのインライン編集 (FR_013)', () => 
       fireEvent.click(screen.getByTestId('send'))
     })
 
-    expect(screen.getByText(/AI 提案/)).toBeInTheDocument()
-    const inputs = await screen.findAllByRole('spinbutton')
-    expect(inputs).toHaveLength(6)
-
-    // 1 セット目の重量を 60 → 62.5 に編集
-    await userEvent.clear(inputs[0])
-    await userEvent.type(inputs[0], '62.5')
-
-    await userEvent.click(screen.getByRole('button', { name: /保存/ }))
+    // 承認/破棄カードは存在せず、手入力と同じ通常カードが即時反映される
+    expect(screen.queryByText(/AI 提案/)).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /保存/ })).not.toBeInTheDocument()
+    expect(await screen.findByText('ベンチプレス')).toBeInTheDocument()
 
     const state = useWorkoutSessionStore.getState()
     expect(state.draftExercises).toHaveLength(1)
     expect(state.draftExercises[0].exerciseName).toBe('ベンチプレス')
-    expect(state.draftExercises[0].origin).toBe('manual')
+    expect(state.draftExercises[0].cardState).toBe('idle')
     expect(state.draftExercises[0].sets).toEqual([
-      { weight: 62.5, reps: 10 },
+      { weight: 60, reps: 10 },
       { weight: 60, reps: 10 },
       { weight: 60, reps: 10 },
     ])
+  })
+
+  test('種目名のみ (placeholder) のときは recording の空カードが即時挿入される', async () => {
+    useWorkoutSessionStore.getState().startSession()
+
+    const client = mockClient([
+      {
+        text: 'ナイス💪 重量と回数を入力してください',
+        functionCalls: [
+          {
+            name: 'addExerciseToSession',
+            args: {
+              exerciseId: 'ex-1',
+              exerciseName: 'ベンチプレス',
+              sets: [{ weight: 0, reps: 0 }],
+            },
+          },
+        ],
+      },
+    ])
+
+    render(<Harness client={client} />)
+    await act(async () => {
+      fireEvent.click(screen.getByTestId('send'))
+    })
+
+    expect(screen.queryByText(/AI 提案/)).not.toBeInTheDocument()
+    expect(await screen.findByText('ベンチプレス')).toBeInTheDocument()
+
+    const state = useWorkoutSessionStore.getState()
+    expect(state.draftExercises).toHaveLength(1)
+    expect(state.draftExercises[0].sets).toEqual([])
+    expect(state.draftExercises[0].cardState).toBe('recording')
+    expect(state.draftExercises[0].pendingSet).toEqual({ weight: 0, reps: 0 })
   })
 })

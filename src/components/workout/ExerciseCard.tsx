@@ -1,14 +1,10 @@
-import { ArrowDown, ArrowUp, CaretDown, CaretUp, Check, DotsThree, Sparkle, Trash, X } from '@phosphor-icons/react'
-import { useEffect, useRef, useState } from 'react'
+import { ArrowDown, ArrowUp, CaretDown, CaretUp, DotsThree, Trash } from '@phosphor-icons/react'
+import { useState } from 'react'
 import type { DraftExercise, WorkoutSet } from '../../schemas/workout'
 import { IconButton } from '../ui/icon-button'
-import { SingleExerciseEditor } from '../chat/SingleExerciseEditor'
-import { useSwipeGesture } from '@/hooks/useSwipeGesture'
 import { AddSetButton } from './AddSetButton'
 import { CompletedSetRow } from './CompletedSetRow'
 import { PendingSetRow } from './PendingSetRow'
-
-const AI_CARD_FALLBACK_WIDTH = 360
 
 type ExerciseCardProps = {
   draftExercise: DraftExercise
@@ -22,8 +18,6 @@ type ExerciseCardProps = {
   onToggle: () => void
   onWeightChange: (weight: number) => void
   onRepsChange: (reps: number) => void
-  onAcceptSuggested?: (sets: WorkoutSet[]) => void
-  onRejectSuggested?: () => void
 }
 
 export function ExerciseCard({
@@ -38,24 +32,11 @@ export function ExerciseCard({
   onToggle,
   onWeightChange,
   onRepsChange,
-  onAcceptSuggested,
-  onRejectSuggested,
 }: ExerciseCardProps) {
-  const { exerciseName, sets, pendingSet, cardState, editingSetIndex, origin } = draftExercise
+  const { exerciseName, sets, pendingSet, cardState, editingSetIndex } = draftExercise
   const isCollapsed = cardState === 'collapsed'
   const isRecording = cardState === 'recording'
   const [menuOpen, setMenuOpen] = useState(false)
-
-  if (origin === 'ai-suggested') {
-    return (
-      <AiSuggestedCard
-        exerciseName={exerciseName}
-        sets={sets}
-        onAcceptSuggested={onAcceptSuggested}
-        onRejectSuggested={onRejectSuggested}
-      />
-    )
-  }
 
   return (
     <div
@@ -180,92 +161,6 @@ export function ExerciseCard({
           )}
         </>
       )}
-    </div>
-  )
-}
-
-type AiSuggestedCardProps = {
-  exerciseName: string
-  sets: WorkoutSet[]
-  onAcceptSuggested?: (sets: WorkoutSet[]) => void
-  onRejectSuggested?: () => void
-}
-
-function AiSuggestedCard({
-  exerciseName,
-  sets,
-  onAcceptSuggested,
-  onRejectSuggested,
-}: AiSuggestedCardProps) {
-  const cardRef = useRef<HTMLDivElement>(null)
-  const [cardWidth, setCardWidth] = useState(0)
-
-  useEffect(() => {
-    if (cardRef.current) setCardWidth(cardRef.current.offsetWidth)
-  }, [])
-
-  const {
-    ref: swipeRef,
-    style: swipeStyle,
-    onPointerDown: swipeDown,
-    onPointerMove: swipeMove,
-    onPointerUp: swipeUp,
-    onPointerCancel: swipeCancel,
-    displacement,
-  } = useSwipeGesture<HTMLDivElement>({
-    rowWidthPx: cardWidth || AI_CARD_FALLBACK_WIDTH,
-    onCommitLeft: () => onRejectSuggested?.(),
-    onCommitRight: () => onAcceptSuggested?.(sets),
-  })
-
-  return (
-    <div ref={cardRef} className="animate-appear relative mx-4 mb-3 overflow-hidden rounded-[24px]">
-      <div
-        aria-hidden="true"
-        className={`absolute inset-0 bg-gym-zinc-200 flex items-center justify-end pr-8 rounded-[24px] ${
-          displacement < 0 ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        <X size={24} weight="bold" className="text-gym-zinc-600" />
-      </div>
-      <div
-        aria-hidden="true"
-        className={`absolute inset-0 bg-emerald-50 flex items-center justify-start pl-8 rounded-[24px] ${
-          displacement > 0 ? 'opacity-100' : 'opacity-0'
-        }`}
-      >
-        <Check size={24} weight="bold" className="text-emerald-600" />
-      </div>
-      <div
-        data-testid="ai-card-foreground"
-        ref={swipeRef}
-        style={swipeStyle}
-        className="relative bg-gym-white p-5 shadow-soft border border-dashed border-gym-zinc-300 rounded-[24px] touch-pan-y"
-      >
-        <div
-          data-testid="ai-card-handle"
-          onPointerDown={swipeDown}
-          onPointerMove={swipeMove}
-          onPointerUp={swipeUp}
-          onPointerCancel={swipeCancel}
-          className="mb-3 flex min-h-[44px] flex-col justify-center gap-1.5 cursor-grab active:cursor-grabbing select-none touch-pan-y"
-        >
-          <span className="inline-flex w-fit items-center gap-1.5 rounded-full bg-gym-black px-2.5 py-1 text-[10px] font-bold uppercase tracking-wide text-gym-white">
-            <Sparkle size={10} weight="fill" />
-            AI 提案
-          </span>
-          <span className="font-semibold text-gym-black">{exerciseName}</span>
-        </div>
-        <SingleExerciseEditor
-          exerciseLabel={exerciseName}
-          initialSets={sets}
-          isSettled={false}
-          label="保存"
-          showLabel={false}
-          onApprove={(editedSets) => onAcceptSuggested?.(editedSets)}
-          onReject={() => onRejectSuggested?.()}
-        />
-      </div>
     </div>
   )
 }

@@ -209,7 +209,6 @@ describe('executeWriteTool', () => {
       expect(state.draftExercises).toHaveLength(1)
       expect(state.draftExercises[0].exerciseId).toBe('ex-2')
       expect(state.draftExercises[0].sets).toEqual([{ weight: 100, reps: 5 }])
-      expect(state.draftExercises[0].origin).toBe('ai-suggested')
     })
 
     test('種目名が見つからない場合 EXERCISE_NOT_FOUND を返す', () => {
@@ -288,7 +287,6 @@ describe('executeWriteTool', () => {
       expect(addSpy).toHaveBeenCalledWith({
         exerciseId: 'ex-1',
         exerciseName: 'ベンチプレス',
-        origin: 'ai-suggested',
       })
     })
 
@@ -316,12 +314,49 @@ describe('executeWriteTool', () => {
           { weight: 60, reps: 10 },
           { weight: 60, reps: 10 },
         ],
-        origin: 'ai-suggested',
       })
       const state = useWorkoutSessionStore.getState()
       expect(state.draftExercises).toHaveLength(1)
       expect(state.draftExercises[0].sets).toHaveLength(3)
-      expect(state.draftExercises[0].origin).toBe('ai-suggested')
+      expect(state.draftExercises[0].cardState).toBe('idle')
+    })
+
+    test('プレースホルダのみ (sets:[{0,0}]) は完了セットを作らず recording の空カードにする', () => {
+      useWorkoutSessionStore.getState().startSession()
+      const addSpy = vi.spyOn(useWorkoutSessionStore.getState(), 'addExercise')
+      const addWithSetsSpy = vi.spyOn(
+        useWorkoutSessionStore.getState(),
+        'addExerciseWithSets',
+      )
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseId: 'ex-1',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 0, reps: 0 }],
+      })
+      expect(result.success).toBe(true)
+      expect(addSpy).toHaveBeenCalledWith({
+        exerciseId: 'ex-1',
+        exerciseName: 'ベンチプレス',
+      })
+      expect(addWithSetsSpy).not.toHaveBeenCalled()
+      const state = useWorkoutSessionStore.getState()
+      expect(state.draftExercises[0].sets).toEqual([])
+      expect(state.draftExercises[0].cardState).toBe('recording')
+    })
+
+    test('実値セットとプレースホルダ混在時は実値のみを完了セットにする', () => {
+      useWorkoutSessionStore.getState().startSession()
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseId: 'ex-1',
+        exerciseName: 'ベンチプレス',
+        sets: [
+          { weight: 60, reps: 10 },
+          { weight: 0, reps: 0 },
+        ],
+      })
+      expect(result.success).toBe(true)
+      const state = useWorkoutSessionStore.getState()
+      expect(state.draftExercises[0].sets).toEqual([{ weight: 60, reps: 10 }])
     })
 
     test('sets が空配列の場合は addExercise を呼ぶ（空 sets 付き種目は作らない）', () => {
@@ -370,7 +405,6 @@ describe('executeWriteTool', () => {
       expect(state.draftExercises).toHaveLength(1)
       expect(state.draftExercises[0].exerciseId).toBe('ex-lat')
       expect(state.draftExercises[0].sets).toEqual([{ weight: 50, reps: 10 }])
-      expect(state.draftExercises[0].origin).toBe('ai-suggested')
     })
 
     test('exerciseId 省略 + 既存名: DUPLICATE_EXERCISE を返してセッションを変更しない', () => {
@@ -414,7 +448,6 @@ describe('executeWriteTool', () => {
         useWorkoutSessionStore.getState().addExercise({
           exerciseId: 'ex-1',
           exerciseName: 'ベンチプレス',
-          origin: 'manual',
         })
         const result = executeWriteTool('addExerciseToSession', {
           exerciseId: 'ex-1',
@@ -431,7 +464,6 @@ describe('executeWriteTool', () => {
           exerciseId: 'ex-1',
           exerciseName: 'ベンチプレス',
           sets: [{ weight: 60, reps: 10 }],
-          origin: 'ai-suggested',
         })
         const result = executeWriteTool('addExerciseToSession', {
           exerciseId: 'ex-1',
@@ -450,7 +482,6 @@ describe('executeWriteTool', () => {
         useWorkoutSessionStore.getState().addExercise({
           exerciseId: 'ex-1',
           exerciseName: 'ベンチプレス',
-          origin: 'manual',
         })
         const result = executeWriteTool('addExerciseToSession', {
           exerciseId: 'ex-2',
