@@ -1,4 +1,11 @@
+import { z } from 'zod'
 import type { DateString } from '../schemas/date'
+import { workoutSetSchema, type WorkoutSet } from '../schemas/workout'
+import {
+  saveWorkoutArgsSchema,
+  addExerciseArgsSchema,
+  addExerciseToSessionArgsSchema,
+} from '../schemas/tools'
 import type {
   ExerciseBreakdown,
   SummaryPeriod,
@@ -93,9 +100,8 @@ export function executeWriteTool(
 function executeSaveWorkout(
   args: Record<string, unknown>,
 ): ToolExecutionResult {
-  const date = args.date
-  const exercises = args.exercises
-  if (typeof date !== 'string' || !Array.isArray(exercises)) {
+  const parsed = saveWorkoutArgsSchema.safeParse(args)
+  if (!parsed.success) {
     return { success: false, error: 'INVALID_ARGS' }
   }
 
@@ -104,33 +110,15 @@ function executeSaveWorkout(
     return { success: false, error: 'SESSION_NOT_ACTIVE' }
   }
 
-  type SaveExerciseInput = {
-    exerciseName: string
-    sets: Array<{ weight: number; reps: number }>
-  }
-
-  const inputs: SaveExerciseInput[] = []
-  for (const e of exercises) {
-    if (
-      typeof e !== 'object' ||
-      e === null ||
-      typeof (e as { exerciseName?: unknown }).exerciseName !== 'string' ||
-      !Array.isArray((e as { sets?: unknown }).sets)
-    ) {
-      return { success: false, error: 'INVALID_ARGS' }
-    }
-    inputs.push(e as SaveExerciseInput)
-  }
-
   const allExercises = ExerciseRepository.getAll()
   const missingExercises: string[] = []
   const resolved: Array<{
     exerciseId: string
     exerciseName: string
-    sets: Array<{ weight: number; reps: number }>
+    sets: WorkoutSet[]
   }> = []
 
-  for (const ex of inputs) {
+  for (const ex of parsed.data.exercises) {
     const exact = allExercises.find((e) => e.name === ex.exerciseName)
     if (!exact) {
       missingExercises.push(ex.exerciseName)
@@ -173,12 +161,12 @@ function executeSaveWorkout(
 function executeAddExercise(
   args: Record<string, unknown>,
 ): ToolExecutionResult {
-  const name = args.name
-  if (typeof name !== 'string' || name.trim() === '') {
+  const parsed = addExerciseArgsSchema.safeParse(args)
+  if (!parsed.success) {
     return { success: false, error: 'INVALID_ARGS' }
   }
   try {
-    const exercise = ExerciseRepository.create(name)
+    const exercise = ExerciseRepository.create(parsed.data.name)
     return { success: true, data: exercise }
   } catch (e) {
     const message = e instanceof Error ? e.message : 'UNKNOWN_ERROR'
@@ -199,51 +187,32 @@ function meaningfulSets(
   return sets.filter((s) => s.reps > 0)
 }
 
+// Used by pendingAction to build the UI preview; validates with workoutSetSchema
+// so it stays in lockstep with addExerciseToSessionArgsSchema. undefined input is
+// allowed (sets are optional) and yields null.
 export function parseSetsArg(
   rawSets: unknown,
-): { ok: true; sets: Array<{ weight: number; reps: number }> | null } | { ok: false } {
+): { ok: true; sets: WorkoutSet[] | null } | { ok: false } {
   if (rawSets === undefined) return { ok: true, sets: null }
-  if (!Array.isArray(rawSets)) return { ok: false }
-  const out: Array<{ weight: number; reps: number }> = []
-  for (const s of rawSets) {
-    if (
-      typeof s !== 'object' ||
-      s === null ||
-      typeof (s as { weight?: unknown }).weight !== 'number' ||
-      typeof (s as { reps?: unknown }).reps !== 'number'
-    ) {
-      return { ok: false }
-    }
-    out.push(s as { weight: number; reps: number })
-  }
-  return { ok: true, sets: out }
+  const result = z.array(workoutSetSchema).safeParse(rawSets)
+  return result.success ? { ok: true, sets: result.data } : { ok: false }
 }
 
 function executeAddExerciseToSession(
   args: Record<string, unknown>,
 ): ToolExecutionResult {
-  const exerciseName = args.exerciseName
-  if (typeof exerciseName !== 'string' || exerciseName.trim() === '') {
+  const parsed = addExerciseToSessionArgsSchema.safeParse(args)
+  if (!parsed.success) {
     return { success: false, error: 'INVALID_ARGS' }
   }
-  const explicitExerciseId = args.exerciseId
-  if (
-    explicitExerciseId !== undefined &&
-    typeof explicitExerciseId !== 'string'
-  ) {
-    return { success: false, error: 'INVALID_ARGS' }
-  }
-  const parsed = parseSetsArg(args.sets)
-  if (!parsed.ok) {
-    return { success: false, error: 'INVALID_ARGS' }
-  }
+  const { exerciseName, exerciseId: explicitExerciseId, sets } = parsed.data
   const session = useWorkoutSessionStore.getState()
   if (!session.isActive) {
     return { success: false, error: 'SESSION_NOT_ACTIVE' }
   }
 
   let resolvedExerciseId: string
-  if (typeof explicitExerciseId === 'string') {
+  if (explicitExerciseId !== undefined) {
     resolvedExerciseId = explicitExerciseId
   } else {
     try {
@@ -262,7 +231,7 @@ function executeAddExerciseToSession(
     return { success: false, error: 'EXERCISE_ALREADY_IN_SESSION' }
   }
 
-  const completedSets = parsed.sets ? meaningfulSets(parsed.sets) : []
+  const completedSets = sets ? meaningfulSets(sets) : []
   if (completedSets.length > 0) {
     session.addExerciseWithSets({
       exerciseId: resolvedExerciseId,
