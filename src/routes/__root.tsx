@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { createRootRoute, Outlet, Navigate } from '@tanstack/react-router'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useUserProfileStore } from '../stores/userProfileStore'
+import { StorageErrorBanner } from '../components/StorageErrorBanner'
 
 function RootLayout() {
   const loadApiKey = useSettingsStore((s) => s.loadApiKey)
@@ -14,6 +15,7 @@ function RootLayout() {
 
   return (
     <div className="min-h-screen bg-gym-zinc-50">
+      <StorageErrorBanner />
       <Outlet />
     </div>
   )

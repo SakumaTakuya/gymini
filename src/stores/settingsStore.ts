@@ -1,4 +1,5 @@
 import { create } from 'zustand'
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage'
 
 const STORAGE_KEY = 'gymini:api-key'
 
@@ -21,39 +22,23 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
     setApiKey: (key: string) => {
       if (key === '') {
         // 空文字列は「削除」として扱い、localStorage と状態をリセットする
-        try {
-          localStorage.removeItem(STORAGE_KEY)
-        } catch {
-          // T-002: localStorage 削除失敗時も状態はリセットする
-        }
+        safeRemoveItem(STORAGE_KEY)
         set({ apiKey: '', hasApiKey: false })
         return
       }
-      try {
-        localStorage.setItem(STORAGE_KEY, key)
-      } catch {
-        // T-002: localStorage 書き込み失敗時も状態は更新する
-      }
+      // T-002: 書き込み失敗時も状態は更新する（失敗は storage エラー信号で通知される）
+      safeSetItem(STORAGE_KEY, key)
       set({ apiKey: key, hasApiKey: true })
     },
 
     deleteApiKey: () => {
-      try {
-        localStorage.removeItem(STORAGE_KEY)
-      } catch {
-        // T-002: localStorage 削除失敗時も状態はリセットする
-      }
+      safeRemoveItem(STORAGE_KEY)
       set({ apiKey: '', hasApiKey: false })
     },
 
     loadApiKey: () => {
-      try {
-        const key = localStorage.getItem(STORAGE_KEY) ?? ''
-        set({ apiKey: key, hasApiKey: key !== '' })
-      } catch {
-        // T-002: localStorage 読み取り失敗時はデフォルト
-        set({ apiKey: '', hasApiKey: false })
-      }
+      const key = safeGetItem(STORAGE_KEY) ?? ''
+      set({ apiKey: key, hasApiKey: key !== '' })
     },
   }),
 )

@@ -4,6 +4,7 @@ import { nowISODateTimeString, todayDateString } from '../schemas/date'
 import type { DateString, ISODateTimeString } from '../schemas/date'
 import type { DraftExercise, WorkoutSet } from '../schemas/workout'
 import { persistedSessionSchema } from '../schemas/workout'
+import { safeStateStorage } from '../lib/storage'
 import * as WorkoutRepository from '../lib/workoutRepository'
 import { storeBus } from './storeBus'
 
@@ -290,7 +291,7 @@ export const useWorkoutSessionStore = create<WorkoutSessionState>()(
     }),
     {
       name: 'gymini:workout-session',
-      storage: createJSONStorage(() => localStorage),
+      storage: createJSONStorage(() => safeStateStorage),
       partialize: (state) => ({
         isActive: state.isActive,
         startedAt: state.startedAt,
