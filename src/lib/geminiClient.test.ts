@@ -20,6 +20,8 @@ import {
   createGeminiClient,
   getErrorMessage,
   GEMINI_MODEL,
+  GEMINI_TIMEOUT_MS,
+  GeminiTimeoutError,
   MAX_HISTORY_MESSAGES,
 } from './geminiClient'
 
@@ -113,7 +115,7 @@ describe('createGeminiClient', () => {
     expect(call.contents[call.contents.length - 1].parts[0].text).toBe('msg-79')
   })
 
-  test('generate が abort シグナルを渡す', async () => {
+  test('generate が abort シグナルを渡す（タイムアウトと合成され、ユーザーの abort で発火する）', async () => {
     generateContentMock.mockResolvedValueOnce(makeResponse('ok'))
     const client = createGeminiClient({ apiKey: 'key' })
     const ctrl = new AbortController()
@@ -121,8 +123,41 @@ describe('createGeminiClient', () => {
       [{ role: 'user', parts: [{ text: 'x' }] }],
       ctrl.signal,
     )
-    const opts = generateContentMock.mock.calls[0][1]
-    expect(opts).toEqual({ signal: ctrl.signal })
+    const opts = generateContentMock.mock.calls[0][1] as { signal: AbortSignal }
+    expect(opts.signal).toBeInstanceOf(AbortSignal)
+    expect(opts.signal.aborted).toBe(false)
+    ctrl.abort()
+    expect(opts.signal.aborted).toBe(true)
+  })
+
+  test('応答がタイムアウトすると GeminiTimeoutError を投げる', async () => {
+    vi.useFakeTimers()
+    try {
+      generateContentMock.mockImplementation(
+        (_req: unknown, opts: { signal: AbortSignal }) =>
+          new Promise((_resolve, reject) => {
+            opts.signal.addEventListener('abort', () =>
+              reject(new Error('The operation was aborted')),
+            )
+          }),
+      )
+      const client = createGeminiClient({ apiKey: 'key' })
+      const promise = client.generate([{ role: 'user', parts: [{ text: 'x' }] }])
+      const assertion = expect(promise).rejects.toBeInstanceOf(GeminiTimeoutError)
+      await vi.advanceTimersByTimeAsync(GEMINI_TIMEOUT_MS)
+      await assertion
+    } finally {
+      vi.useRealTimers()
+    }
+  })
+
+  test('タイムアウト以外の失敗はそのまま再スローする', async () => {
+    const apiError = new Error('500 internal error')
+    generateContentMock.mockRejectedValueOnce(apiError)
+    const client = createGeminiClient({ apiKey: 'key' })
+    await expect(
+      client.generate([{ role: 'user', parts: [{ text: 'x' }] }]),
+    ).rejects.toBe(apiError)
   })
 
   test('レスポンスがスローしたとき generate が null テキストを返す', async () => {
@@ -287,5 +322,9 @@ describe('getErrorMessage', () => {
     expect(getErrorMessage(new Error('something went wrong'))).toMatch(/予期しない/)
     expect(getErrorMessage('string')).toMatch(/予期しない/)
     expect(getErrorMessage(null)).toMatch(/予期しない/)
+  })
+
+  test('GeminiTimeoutError をタイムアウトメッセージにマップする', () => {
+    expect(getErrorMessage(new GeminiTimeoutError())).toMatch(/タイムアウト/)
   })
 })

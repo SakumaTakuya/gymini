@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import { z } from 'zod'
+import { safeGetItem, safeSetItem, safeRemoveItem } from '../lib/storage'
 
 const STORAGE_KEY = 'gymini:user-profile'
 
@@ -51,36 +52,29 @@ export const useUserProfileStore = create<UserProfileState & UserProfileActions>
         // フィールドごとに catch(null) が働くので parse は常に成功する
         next,
       )
-      try {
-        localStorage.setItem(STORAGE_KEY, JSON.stringify(validated))
-      } catch {
-        // T-002: localStorage 書き込み失敗時も状態は更新する
-      }
+      // T-002: 書き込み失敗時も状態は更新する（失敗は storage エラー信号で通知される）
+      safeSetItem(STORAGE_KEY, JSON.stringify(validated))
       set({ profile: validated })
     },
 
     clearProfile: () => {
-      try {
-        localStorage.removeItem(STORAGE_KEY)
-      } catch {
-        // T-002: localStorage 削除失敗時も状態はリセットする
-      }
+      safeRemoveItem(STORAGE_KEY)
       set({ profile: { ...DEFAULT_PROFILE } })
     },
 
     loadProfile: () => {
+      const raw = safeGetItem(STORAGE_KEY)
+      if (!raw) {
+        set({ profile: { ...DEFAULT_PROFILE } })
+        return
+      }
       try {
-        const raw = localStorage.getItem(STORAGE_KEY)
-        if (!raw) {
-          set({ profile: { ...DEFAULT_PROFILE } })
-          return
-        }
         const json: unknown = JSON.parse(raw)
         // catch(null) により各フィールドが不正でも安全にパースされる
         const parsed = UserProfileSchema.parse(json)
         set({ profile: parsed })
       } catch {
-        // T-002: localStorage 読み取り失敗時はデフォルト
+        // T-002: JSON パース失敗時はデフォルト
         set({ profile: { ...DEFAULT_PROFILE } })
       }
     },

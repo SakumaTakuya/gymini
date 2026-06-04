@@ -1,7 +1,8 @@
 import { useState, type ChangeEvent } from 'react'
 import { MagnifyingGlass, Plus, Check, X, Trash } from '@phosphor-icons/react'
 import { useExercises } from '@/hooks/useExercises'
-import type { Exercise } from '@/types'
+import { useInlineEditField } from '@/hooks/useInlineEditField'
+import type { Exercise } from '@/schemas/exercise'
 import { IconButton } from '@/components/ui/icon-button'
 import { Input } from '@/components/ui/input'
 import { ExerciseRow } from './ExerciseRow'
@@ -9,19 +10,19 @@ import { SectionCard } from './SectionCard'
 
 const DUPLICATE_ERROR_MESSAGE = 'この種目名は既に登録されています'
 
-function isDuplicateNameError(err: unknown): boolean {
+function mapDuplicateError(err: unknown): string | null {
   return err instanceof Error && err.message.startsWith('Duplicate name:')
+    ? DUPLICATE_ERROR_MESSAGE
+    : null
 }
 
 export function ExerciseMasterSection() {
   const { search, create, update, remove } = useExercises()
   const [query, setQuery] = useState('')
   const [adding, setAdding] = useState(false)
-  const [newName, setNewName] = useState('')
   const [editingId, setEditingId] = useState<string | null>(null)
-  const [editName, setEditName] = useState('')
-  const [addError, setAddError] = useState<string | null>(null)
-  const [editError, setEditError] = useState<string | null>(null)
+  const addField = useInlineEditField(mapDuplicateError)
+  const editField = useInlineEditField(mapDuplicateError)
 
   const visibleExercises = search(query)
 
@@ -31,77 +32,44 @@ export function ExerciseMasterSection() {
 
   const startAdd = () => {
     setAdding(true)
-    setNewName('')
-    setAddError(null)
+    addField.reset()
   }
 
   const cancelAdd = () => {
     setAdding(false)
-    setNewName('')
-    setAddError(null)
+    addField.reset()
   }
 
   const confirmAdd = () => {
-    const trimmed = newName.trim()
-    if (trimmed === '') {
-      cancelAdd()
-      return
-    }
-    try {
-      create(trimmed)
-      cancelAdd()
-    } catch (err) {
-      if (isDuplicateNameError(err)) {
-        setAddError(DUPLICATE_ERROR_MESSAGE)
-        return
-      }
+    if (addField.commit((name) => create(name))) {
       cancelAdd()
     }
   }
 
   const handleNewNameChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setNewName(e.target.value)
-    if (addError !== null) {
-      setAddError(null)
-    }
+    addField.setValue(e.target.value)
   }
 
   const startEdit = (exercise: Exercise) => {
     setEditingId(exercise.id)
-    setEditName(exercise.name)
-    setEditError(null)
+    editField.reset(exercise.name)
   }
 
   const cancelEdit = () => {
     setEditingId(null)
-    setEditName('')
-    setEditError(null)
+    editField.reset()
   }
 
   const confirmEdit = () => {
     if (editingId === null) return
-    const trimmed = editName.trim()
-    if (trimmed === '') {
-      cancelEdit()
-      return
-    }
-    try {
-      update(editingId, trimmed)
-      cancelEdit()
-    } catch (err) {
-      if (isDuplicateNameError(err)) {
-        setEditError(DUPLICATE_ERROR_MESSAGE)
-        return
-      }
+    const id = editingId
+    if (editField.commit((name) => update(id, name))) {
       cancelEdit()
     }
   }
 
   const handleEditNameChange = (e: ChangeEvent<HTMLInputElement>) => {
-    setEditName(e.target.value)
-    if (editError !== null) {
-      setEditError(null)
-    }
+    editField.setValue(e.target.value)
   }
 
   const handleDelete = (exercise: Exercise) => {
@@ -132,11 +100,11 @@ export function ExerciseMasterSection() {
               <div className="flex items-center gap-1">
                 <Input
                   type="text"
-                  value={editName}
+                  value={editField.value}
                   onChange={handleEditNameChange}
                   aria-label="種目名を編集"
-                  aria-invalid={editError !== null || undefined}
-                  aria-describedby={editError !== null ? 'edit-error' : undefined}
+                  aria-invalid={editField.error !== null || undefined}
+                  aria-describedby={editField.error !== null ? 'edit-error' : undefined}
                   enterKeyHint="done"
                   autoFocus
                 />
@@ -162,14 +130,14 @@ export function ExerciseMasterSection() {
                   <X size={18} weight="bold" />
                 </IconButton>
               </div>
-              {editError !== null && (
+              {editField.error !== null && (
                 <p
                   id="edit-error"
                   role="alert"
                   aria-live="polite"
                   className="mt-1 text-xs font-medium text-gym-accent"
                 >
-                  {editError}
+                  {editField.error}
                 </p>
               )}
             </div>
@@ -190,11 +158,11 @@ export function ExerciseMasterSection() {
             <div className="flex items-center gap-2">
               <Input
                 type="text"
-                value={newName}
+                value={addField.value}
                 onChange={handleNewNameChange}
                 aria-label="新しい種目名"
-                aria-invalid={addError !== null || undefined}
-                aria-describedby={addError !== null ? 'add-error' : undefined}
+                aria-invalid={addField.error !== null || undefined}
+                aria-describedby={addField.error !== null ? 'add-error' : undefined}
                 placeholder="種目名"
                 enterKeyHint="done"
                 autoFocus
@@ -214,14 +182,14 @@ export function ExerciseMasterSection() {
                 <X size={18} weight="bold" />
               </IconButton>
             </div>
-            {addError !== null && (
+            {addField.error !== null && (
               <p
                 id="add-error"
                 role="alert"
                 aria-live="polite"
                 className="mt-1 text-xs font-medium text-gym-accent"
               >
-                {addError}
+                {addField.error}
               </p>
             )}
           </div>

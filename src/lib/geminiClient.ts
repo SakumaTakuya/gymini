@@ -9,6 +9,16 @@ import { todayDateString } from '../schemas/date'
 
 export const GEMINI_MODEL = 'gemini-3-flash-preview'
 export const MAX_HISTORY_MESSAGES = 50
+export const GEMINI_TIMEOUT_MS = 30_000
+
+// Distinct from a user-initiated abort so it surfaces an error instead of being
+// swallowed by isAbortError. The message intentionally omits "abort" wording.
+export class GeminiTimeoutError extends Error {
+  constructor() {
+    super('Gemini request timed out')
+    this.name = 'GeminiTimeoutError'
+  }
+}
 
 const TRAINING_GOAL_LABELS: Record<TrainingGoal, string> = {
   muscle_gain: '筋肥大（サイズアップ）',
@@ -243,10 +253,25 @@ export function createGeminiClient(config: GeminiClientConfig): GeminiClient {
   return {
     async generate(contents, abortSignal) {
       const trimmed = contents.slice(-MAX_HISTORY_MESSAGES)
-      const result = await model.generateContent(
-        { contents: trimmed },
-        abortSignal ? { signal: abortSignal } : undefined,
+      const timeoutController = new AbortController()
+      const timer = setTimeout(
+        () => timeoutController.abort(),
+        GEMINI_TIMEOUT_MS,
       )
+      const signal = abortSignal
+        ? AbortSignal.any([abortSignal, timeoutController.signal])
+        : timeoutController.signal
+      let result: Awaited<ReturnType<typeof model.generateContent>>
+      try {
+        result = await model.generateContent({ contents: trimmed }, { signal })
+      } catch (err) {
+        if (timeoutController.signal.aborted && !abortSignal?.aborted) {
+          throw new GeminiTimeoutError()
+        }
+        throw err
+      } finally {
+        clearTimeout(timer)
+      }
       const response = result.response
       const functionCalls = (() => {
         try {
@@ -285,6 +310,9 @@ export function createGeminiClient(config: GeminiClientConfig): GeminiClient {
 }
 
 export function getErrorMessage(error: unknown): string {
+  if (error instanceof GeminiTimeoutError) {
+    return '応答がタイムアウトしました。ネットワーク状況を確認して、もう一度お試しください。'
+  }
   if (error instanceof Error) {
     const msg = error.message
 

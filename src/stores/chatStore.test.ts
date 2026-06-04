@@ -183,4 +183,37 @@ describe('chatStore', () => {
     expect(data.state.messages[0].actions).toHaveLength(2)
     expect(data.state.messages[0].consumedActionId).toBe('a1')
   })
+
+  describe('rehydration の検証', () => {
+    test('正当な messages は rehydrate で復元される', async () => {
+      const msg = makeMessage({ id: 'rehydrate-1', content: 'restored' })
+      localStorage.setItem(
+        'gymini:chat',
+        JSON.stringify({ state: { messages: [msg] }, version: 1 }),
+      )
+      await useChatStore.persist.rehydrate()
+      expect(useChatStore.getState().messages).toEqual([msg])
+    })
+
+    test('破損した messages は rehydrate で空配列へフォールバックする', async () => {
+      localStorage.setItem(
+        'gymini:chat',
+        JSON.stringify({
+          state: { messages: [{ id: '', role: 'bogus' }] },
+          version: 1,
+        }),
+      )
+      await useChatStore.persist.rehydrate()
+      expect(useChatStore.getState().messages).toEqual([])
+    })
+
+    test('messages が配列でない場合も空配列へフォールバックする', async () => {
+      localStorage.setItem(
+        'gymini:chat',
+        JSON.stringify({ state: { messages: 'not-an-array' }, version: 1 }),
+      )
+      await useChatStore.persist.rehydrate()
+      expect(useChatStore.getState().messages).toEqual([])
+    })
+  })
 })

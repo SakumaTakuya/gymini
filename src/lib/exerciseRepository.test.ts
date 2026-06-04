@@ -31,6 +31,30 @@ describe('ExerciseRepository', () => {
       localStorage.setItem('gymini:exercises', 'invalid json')
       expect(repo.getAll()).toEqual([])
     })
+
+    it('スキーマに違反する形のデータは空配列を返す（破損データの拒否）', () => {
+      localStorage.setItem(
+        'gymini:exercises',
+        JSON.stringify([{ id: 1, name: 2 }]),
+      )
+      expect(repo.getAll()).toEqual([])
+    })
+
+    it('必須フィールドが欠落したデータは空配列を返す', () => {
+      localStorage.setItem(
+        'gymini:exercises',
+        JSON.stringify([{ id: '1' }, { name: 'スクワット' }]),
+      )
+      expect(repo.getAll()).toEqual([])
+    })
+
+    it('配列でないデータは空配列を返す', () => {
+      localStorage.setItem(
+        'gymini:exercises',
+        JSON.stringify({ id: '1', name: 'ベンチプレス' }),
+      )
+      expect(repo.getAll()).toEqual([])
+    })
   })
 
   // --- search ---

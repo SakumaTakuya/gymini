@@ -1,23 +1,23 @@
-import type { Exercise } from '../types'
+import { z } from 'zod'
+import { exerciseSchema } from '../schemas/exercise'
+import type { Exercise } from '../schemas/exercise'
+import { safeGetItem, safeSetItem } from './storage'
 
 const STORAGE_KEY = 'gymini:exercises'
 
 function load(): Exercise[] {
+  const raw = safeGetItem(STORAGE_KEY)
+  if (!raw) return []
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
-    return JSON.parse(raw) as Exercise[]
+    const result = z.array(exerciseSchema).safeParse(JSON.parse(raw))
+    return result.success ? result.data : []
   } catch {
     return []
   }
 }
 
 function save(exercises: Exercise[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(exercises))
-  } catch {
-    // T-002: localStorage 書き込み失敗時は何もしない
-  }
+  safeSetItem(STORAGE_KEY, JSON.stringify(exercises))
 }
 
 export function getAll(): Exercise[] {

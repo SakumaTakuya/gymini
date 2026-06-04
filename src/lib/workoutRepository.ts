@@ -3,15 +3,15 @@ import { workoutSchema } from '../schemas/workout'
 import type { Workout, WorkoutInput } from '../schemas/workout'
 import { nowISODateTimeString } from '../schemas/date'
 import type { DateString } from '../schemas/date'
+import { safeGetItem, safeSetItem } from './storage'
 
 const STORAGE_KEY = 'gymini:workouts'
 
 function getAll(): Workout[] {
+  const raw = safeGetItem(STORAGE_KEY)
+  if (!raw) return []
   try {
-    const raw = localStorage.getItem(STORAGE_KEY)
-    if (!raw) return []
-    const parsed = JSON.parse(raw)
-    const result = z.array(workoutSchema).safeParse(parsed)
+    const result = z.array(workoutSchema).safeParse(JSON.parse(raw))
     if (!result.success) return []
     return result.data as Workout[]
   } catch {
@@ -20,11 +20,7 @@ function getAll(): Workout[] {
 }
 
 function saveAll(workouts: Workout[]): void {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(workouts))
-  } catch {
-    // T-002: localStorage write failure silently ignored
-  }
+  safeSetItem(STORAGE_KEY, JSON.stringify(workouts))
 }
 
 export function save(input: WorkoutInput): Workout {

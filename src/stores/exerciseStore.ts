@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import * as ExerciseRepository from '@/lib/exerciseRepository'
-import type { Exercise } from '@/types'
+import type { Exercise } from '@/schemas/exercise'
 
 /**
  * ExerciseRepository を薄くラップする Zustand store。
