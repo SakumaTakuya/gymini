@@ -1,23 +1,19 @@
 import { useCallback, useRef } from 'react'
-import type { Content } from '@google/generative-ai'
 import {
   isAbortError,
   messagesToContents,
   nonEmptyOr,
-  toFunctionResponseObject,
   EMPTY_RESPONSE_FALLBACK,
 } from '../lib/chat/conversation'
 import {
   buildWriteResultMessage,
-  partitionFunctionCalls,
   toPendingActionData,
-  toProposalMessage,
 } from '../lib/chat/pendingAction'
+import { runConversationTurn } from '../lib/chat/chatService'
 import {
   createGeminiClient,
   buildSystemInstruction,
   getErrorMessage,
-  type FunctionCallRequest,
   type GeminiClient,
 } from '../lib/geminiClient'
 import { executeReadTool, executeWriteTool } from '../lib/toolExecutor'
@@ -27,7 +23,7 @@ import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useUserProfileStore } from '../stores/userProfileStore'
 import { nowISODateTimeString } from '../schemas/date'
-import type { ProposedAction, ToolCallResult } from '../types/chat'
+import type { ChatMessage, ProposedAction } from '../types/chat'
 
 type CreateClient = (apiKey: string, systemInstruction?: string) => GeminiClient
 
@@ -95,131 +91,73 @@ export function useChatService(options: UseChatServiceOptions = {}) {
 
       try {
         const sessionContext = buildActiveSessionContext()
-        const systemInstruction = buildSystemInstruction(
-          profile,
-          sessionContext,
-        )
+        const systemInstruction = buildSystemInstruction(profile, sessionContext)
         const client = createClient(settings.apiKey, systemInstruction)
         const baseContents = messagesToContents(
           useChatStore.getState().messages,
         )
 
-        const firstResponse = await client.generate(baseContents, ctrl.signal)
+        const outcome = await runConversationTurn({
+          baseContents,
+          client,
+          executeRead: executeReadTool,
+          signal: ctrl.signal,
+        })
 
-        if (
-          !firstResponse.functionCalls ||
-          firstResponse.functionCalls.length === 0
-        ) {
-          useChatStore.getState().addMessage({
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: nonEmptyOr(firstResponse.text, EMPTY_RESPONSE_FALLBACK),
-            timestamp: nowISODateTimeString(),
-          })
-          return
-        }
-
-        const { readCalls, writeCall, proposeCall } = partitionFunctionCalls(
-          firstResponse.functionCalls,
-        )
-        const readResults: ToolCallResult[] = readCalls.map((fc) => ({
-          toolName: fc.name,
-          args: fc.args,
-          result: executeReadTool(fc.name, fc.args),
-        }))
-
-        const emitWriteResult = (
-          call: FunctionCallRequest,
-          assistantText: string | null | undefined,
-          precedingReads: ToolCallResult[],
-        ): void => {
-          const data = toPendingActionData(call)
-          if (!data) {
-            useChatStore
-              .getState()
-              .setError('書き込み操作の内容を解釈できませんでした。')
+        switch (outcome.kind) {
+          case 'text': {
+            const msg: ChatMessage = {
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: nonEmptyOr(outcome.text, EMPTY_RESPONSE_FALLBACK),
+              timestamp: nowISODateTimeString(),
+            }
+            if (outcome.toolCalls) msg.toolCalls = outcome.toolCalls
+            useChatStore.getState().addMessage(msg)
             return
           }
-          const result = executeWriteTool(call.name, call.args)
-          useChatStore.getState().addMessage({
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: nonEmptyOr(
-              assistantText,
-              buildWriteResultMessage(data, result),
-            ),
-            timestamp: nowISODateTimeString(),
-            toolCalls: [
-              ...precedingReads,
-              { toolName: call.name, args: call.args, result },
-            ],
-          })
-        }
-
-        if (writeCall) {
-          emitWriteResult(writeCall, firstResponse.text, readResults)
-          return
-        }
-
-        if (proposeCall) {
-          const proposalMsg = toProposalMessage(proposeCall)
-          if (proposalMsg) {
-            useChatStore.getState().addMessage(proposalMsg)
-            return
-          }
-        }
-
-        if (readCalls.length === 0) return
-
-        // Gemini 2.5 系では functionCall に thought_signature が付与されており、
-        // フォローアップで再構築するとシグネチャが欠落して 400 になる。
-        // SDK が返した modelContent をそのまま送り返す。
-        const modelTurn: Content = firstResponse.modelContent ?? {
-          role: 'model',
-          parts: readCalls.map((fc) => ({
-            functionCall: { name: fc.name, args: fc.args },
-          })),
-        }
-        const followUpContents: Content[] = [
-          ...baseContents,
-          modelTurn,
-          {
-            role: 'user',
-            parts: readResults.map((r) => ({
-              functionResponse: {
-                name: r.toolName,
-                response: toFunctionResponseObject(r.result),
-              },
-            })),
-          },
-        ]
-        const follow = await client.generate(followUpContents, ctrl.signal)
-
-        const followPartition = follow.functionCalls
-          ? partitionFunctionCalls(follow.functionCalls)
-          : null
-        if (followPartition?.writeCall) {
-          emitWriteResult(followPartition.writeCall, follow.text, readResults)
-          return
-        }
-        if (followPartition?.proposeCall) {
-          const proposalMsg = toProposalMessage(followPartition.proposeCall)
-          if (proposalMsg) {
+          case 'write': {
+            const data = toPendingActionData(outcome.call)
+            if (!data) {
+              useChatStore
+                .getState()
+                .setError('書き込み操作の内容を解釈できませんでした。')
+              return
+            }
+            const result = executeWriteTool(
+              outcome.call.name,
+              outcome.call.args,
+            )
             useChatStore.getState().addMessage({
-              ...proposalMsg,
-              toolCalls: readResults,
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: nonEmptyOr(
+                outcome.assistantText,
+                buildWriteResultMessage(data, result),
+              ),
+              timestamp: nowISODateTimeString(),
+              toolCalls: [
+                ...outcome.precedingReads,
+                {
+                  toolName: outcome.call.name,
+                  args: outcome.call.args,
+                  result,
+                },
+              ],
             })
             return
           }
+          case 'proposal': {
+            useChatStore.getState().addMessage(
+              outcome.precedingReads
+                ? { ...outcome.proposalMsg, toolCalls: outcome.precedingReads }
+                : outcome.proposalMsg,
+            )
+            return
+          }
+          case 'silent':
+            return
         }
-
-        useChatStore.getState().addMessage({
-          id: crypto.randomUUID(),
-          role: 'assistant',
-          content: nonEmptyOr(follow.text, EMPTY_RESPONSE_FALLBACK),
-          timestamp: nowISODateTimeString(),
-          toolCalls: readResults,
-        })
       } catch (err) {
         if (isAbortError(err)) return
         console.error('[ai-chat] Gemini API error:', err)

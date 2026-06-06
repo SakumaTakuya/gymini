@@ -1,26 +1,14 @@
 import { useMemo } from 'react'
-import { Link } from '@tanstack/react-router'
-import { SignIn } from '@phosphor-icons/react'
 import { useWorkoutSession } from '@/hooks/useWorkoutSession'
 import { useChatService } from '@/hooks/useChatService'
-import { useSettingsStore } from '@/stores/settingsStore'
 import { useRubberBandScroll } from '@/hooks/useRubberBandScroll'
+import { useSessionTimeline } from '@/hooks/useSessionTimeline'
+import type { TimelineDraft } from '@/hooks/useSessionTimeline'
 import { ChatBubble } from '../chat/ChatBubble'
 import { ChatInput } from '../chat/ChatInput'
-import type { DraftExercise } from '../../schemas/workout'
-import type { ChatMessage } from '../../types/chat'
 import { ExerciseCard } from './ExerciseCard'
-
-type TimelineItem =
-  | { kind: 'message'; data: ChatMessage; timestamp: string }
-  | {
-    kind: 'draft'
-    data: DraftExercise
-    index: number
-    timestamp: string
-  }
-type TimelineMessage = Extract<TimelineItem, { kind: 'message' }>
-type TimelineDraft = Extract<TimelineItem, { kind: 'draft' }>
+import { ApiKeyMissingBanner } from './ApiKeyMissingBanner'
+import { ChatErrorBanner } from './ChatErrorBanner'
 
 export function ActiveSessionView() {
   const {
@@ -47,7 +35,6 @@ export function ActiveSessionView() {
     retryLastMessage,
     triggerAction,
   } = useChatService()
-  const hasApiKey = useSettingsStore((s) => s.hasApiKey)
   const {
     ref: scrollRef,
     style: rubberBandStyle,
@@ -68,48 +55,11 @@ export function ActiveSessionView() {
     [searchExercises, addExercise, createExercise],
   )
 
-  const timelineItems = useMemo<TimelineItem[]>(() => {
-    const items: TimelineItem[] = [
-      ...messages.map((m) => ({
-        kind: 'message' as const,
-        data: m,
-        timestamp: m.timestamp,
-      })),
-      ...draftExercises.map((d, i) => ({
-        kind: 'draft' as const,
-        data: d,
-        index: i,
-        timestamp: d.timestamp,
-      })),
-    ]
-    return items.sort((a, b) =>
-      a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0,
-    )
-  }, [messages, draftExercises])
-
   // 各種目カードを stacking sticky にするため、「カード + 次のカードまでの ChatMessage」を
   // 1 つの <section> にまとめる。<section> が containing block になることで、sticky なカードは
   // そのセクション内だけで上部固定され、次のセクションが到達した瞬間に押し出される。
   // 最初のカードより前にあるメッセージは preamble として section の外に並べる。
-  const { preamble, sections } = useMemo(() => {
-    const preamble: TimelineMessage[] = []
-    const sections: Array<{
-      draft: TimelineDraft
-      messages: TimelineMessage[]
-    }> = []
-    let current: (typeof sections)[number] | null = null
-    for (const item of timelineItems) {
-      if (item.kind === 'draft') {
-        current = { draft: item, messages: [] }
-        sections.push(current)
-      } else if (current) {
-        current.messages.push(item)
-      } else {
-        preamble.push(item)
-      }
-    }
-    return { preamble, sections }
-  }, [timelineItems])
+  const { preamble, sections } = useSessionTimeline(messages, draftExercises)
 
   const renderDraft = (draft: TimelineDraft['data'], i: number) => (
     <ExerciseCard
@@ -143,21 +93,7 @@ export function ActiveSessionView() {
       onPointerCancel={rbOnPointerCancel}
       className="flex-1 pt-content-top bg-gym-paper pb-content-bottom-scroll overflow-y-auto overscroll-contain"
     >
-      {!hasApiKey && (
-        <div className="mx-4 my-4 rounded-2xl bg-gym-white border border-gym-zinc-200 shadow-soft p-4 text-sm">
-          <p className="font-semibold mb-2">APIキーが必要です</p>
-          <p className="text-gym-zinc-600 mb-3">
-            Gemini APIキーを設定するとチャットが利用できます。
-          </p>
-          <Link
-            to="/settings"
-            className="focus-ring inline-flex items-center gap-1.5 h-11 px-4 rounded-xl bg-gym-black text-gym-white font-semibold"
-          >
-            <SignIn size={16} weight="bold" />
-            設定画面へ
-          </Link>
-        </div>
-      )}
+      <ApiKeyMissingBanner />
       {preamble.map((item) => (
         <ChatBubble
           key={item.data.id}
@@ -192,19 +128,12 @@ export function ActiveSessionView() {
       })}
 
       {error && (
-        <div className="mx-4 my-2 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700 flex items-start justify-between gap-3">
-          <span className="flex-1">{error}</span>
-          {lastFailedInput && (
-            <button
-              type="button"
-              onClick={() => void retryLastMessage()}
-              disabled={isLoading}
-              className="focus-ring shrink-0 h-9 px-3 rounded-lg bg-gym-black text-gym-white text-xs font-semibold disabled:opacity-50"
-            >
-              再送
-            </button>
-          )}
-        </div>
+        <ChatErrorBanner
+          error={error}
+          canRetry={lastFailedInput !== null}
+          isLoading={isLoading}
+          onRetry={() => void retryLastMessage()}
+        />
       )}
 
     </div>
