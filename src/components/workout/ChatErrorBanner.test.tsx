@@ -8,7 +8,7 @@ describe('ChatErrorBanner', () => {
     render(
       <ChatErrorBanner
         error="ネットワークエラーです"
-        canRetry={false}
+        lastFailedInput={null}
         isLoading={false}
         onRetry={() => {}}
       />,
@@ -16,11 +16,11 @@ describe('ChatErrorBanner', () => {
     expect(screen.getByText('ネットワークエラーです')).toBeInTheDocument()
   })
 
-  it('canRetry=false のとき 再送ボタンを表示しない', () => {
+  it('lastFailedInput が null のとき 再送ボタンを表示しない', () => {
     render(
       <ChatErrorBanner
         error="エラー"
-        canRetry={false}
+        lastFailedInput={null}
         isLoading={false}
         onRetry={() => {}}
       />,
@@ -28,13 +28,13 @@ describe('ChatErrorBanner', () => {
     expect(screen.queryByRole('button', { name: '再送' })).toBeNull()
   })
 
-  it('canRetry=true のとき再送ボタンを表示し、押下で onRetry を呼ぶ', async () => {
+  it('lastFailedInput がある場合は再送ボタンを表示し、押下で onRetry を呼ぶ', async () => {
     const onRetry = vi.fn()
     const user = userEvent.setup()
     render(
       <ChatErrorBanner
         error="エラー"
-        canRetry={true}
+        lastFailedInput="ベンチプレスやる"
         isLoading={false}
         onRetry={onRetry}
       />,
@@ -47,7 +47,7 @@ describe('ChatErrorBanner', () => {
     render(
       <ChatErrorBanner
         error="エラー"
-        canRetry={true}
+        lastFailedInput="ベンチプレスやる"
         isLoading={true}
         onRetry={() => {}}
       />,

@@ -10,6 +10,7 @@ import {
   toPendingActionData,
 } from '../lib/chat/pendingAction'
 import { runConversationTurn } from '../lib/chat/chatService'
+import { buildAssistantMessage } from '../lib/chat/messages'
 import {
   createGeminiClient,
   buildSystemInstruction,
@@ -106,13 +107,14 @@ export function useChatService(options: UseChatServiceOptions = {}) {
 
         switch (outcome.kind) {
           case 'text': {
-            useChatStore.getState().addMessage({
-              id: crypto.randomUUID(),
-              role: 'assistant',
-              content: nonEmptyOr(outcome.text, EMPTY_RESPONSE_FALLBACK),
-              timestamp: nowISODateTimeString(),
-              ...(outcome.toolCalls ? { toolCalls: outcome.toolCalls } : {}),
-            })
+            useChatStore
+              .getState()
+              .addMessage(
+                buildAssistantMessage(
+                  nonEmptyOr(outcome.text, EMPTY_RESPONSE_FALLBACK),
+                  outcome.toolCalls,
+                ),
+              )
             return
           }
           case 'write': {
@@ -127,23 +129,22 @@ export function useChatService(options: UseChatServiceOptions = {}) {
               outcome.call.name,
               outcome.call.args,
             )
-            useChatStore.getState().addMessage({
-              id: crypto.randomUUID(),
-              role: 'assistant',
-              content: nonEmptyOr(
-                outcome.assistantText,
-                buildWriteResultMessage(data, result),
+            useChatStore.getState().addMessage(
+              buildAssistantMessage(
+                nonEmptyOr(
+                  outcome.assistantText,
+                  buildWriteResultMessage(data, result),
+                ),
+                [
+                  ...outcome.precedingReads,
+                  {
+                    toolName: outcome.call.name,
+                    args: outcome.call.args,
+                    result,
+                  },
+                ],
               ),
-              timestamp: nowISODateTimeString(),
-              toolCalls: [
-                ...outcome.precedingReads,
-                {
-                  toolName: outcome.call.name,
-                  args: outcome.call.args,
-                  result,
-                },
-              ],
-            })
+            )
             return
           }
           case 'proposal': {
@@ -154,8 +155,6 @@ export function useChatService(options: UseChatServiceOptions = {}) {
             )
             return
           }
-          case 'silent':
-            return
           default: {
             // 将来 TurnOutcome に variant を追加したとき TS でハンドラ漏れを検出する
             const _exhaustive: never = outcome
@@ -223,17 +222,14 @@ export function useChatService(options: UseChatServiceOptions = {}) {
             name: 'addExerciseToSession',
             args,
           })
-          useChatStore.getState().addMessage({
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: data
-              ? buildWriteResultMessage(data, result)
-              : '提案を実行できませんでした。',
-            timestamp: nowISODateTimeString(),
-            toolCalls: [
-              { toolName: 'addExerciseToSession', args, result },
-            ],
-          })
+          useChatStore.getState().addMessage(
+            buildAssistantMessage(
+              data
+                ? buildWriteResultMessage(data, result)
+                : '提案を実行できませんでした。',
+              [{ toolName: 'addExerciseToSession', args, result }],
+            ),
+          )
           return
         }
         case 'show-history': {
@@ -242,15 +238,11 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           const args = { exerciseName }
           const result = executeReadTool('getWorkoutsByExercise', args)
           const content = formatHistoryResultMessage(exerciseName, result)
-          useChatStore.getState().addMessage({
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content,
-            timestamp: nowISODateTimeString(),
-            toolCalls: [
+          useChatStore.getState().addMessage(
+            buildAssistantMessage(content, [
               { toolName: 'getWorkoutsByExercise', args, result },
-            ],
-          })
+            ]),
+          )
           return
         }
         case 'ask-followup': {

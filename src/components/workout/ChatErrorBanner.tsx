@@ -1,18 +1,24 @@
 type ChatErrorBannerProps = {
   error: string
-  canRetry: boolean
+  /** When non-null, a retry button is rendered. The caller passes the chat-store
+   *  value directly so the retry-ability invariant lives in one place. */
+  lastFailedInput: string | null
   isLoading: boolean
   onRetry: () => void
 }
 
 export function ChatErrorBanner({
   error,
-  canRetry,
+  lastFailedInput,
   isLoading,
   onRetry,
 }: ChatErrorBannerProps) {
+  const canRetry = lastFailedInput !== null
   return (
-    <div className="mx-4 my-2 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700 flex items-start justify-between gap-3">
+    <div
+      role="alert"
+      className="mx-4 my-2 rounded-xl bg-red-50 border border-red-200 p-3 text-sm text-red-700 flex items-start justify-between gap-3"
+    >
       <span className="flex-1">{error}</span>
       {canRetry && (
         <button

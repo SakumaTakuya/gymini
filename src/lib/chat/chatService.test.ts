@@ -165,19 +165,21 @@ describe('runConversationTurn', () => {
     expect(result.precedingReads).toHaveLength(1)
   })
 
-  it('propose call の msg が null かつ readCalls が空のとき silent を返す', async () => {
+  it('propose call の msg が null かつ readCalls が空のとき first.text にフォールバックする（無音化しない）', async () => {
     const proposeCall: FunctionCallRequest = {
       name: 'proposeAction',
       args: { rationale: '', options: [] },
     }
-    const client = makeClient([makeResponse({ functionCalls: [proposeCall] })])
+    const client = makeClient([
+      makeResponse({ text: '何にする？', functionCalls: [proposeCall] }),
+    ])
     const result = await runConversationTurn({
       baseContents,
       client,
       executeRead: neverRead,
       signal: new AbortController().signal,
     })
-    expect(result).toEqual({ kind: 'silent' })
+    expect(result).toEqual({ kind: 'text', text: '何にする？' })
   })
 
   it('シグナルを Gemini クライアントに渡す', async () => {
