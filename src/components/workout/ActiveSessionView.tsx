@@ -130,7 +130,7 @@ export function ActiveSessionView() {
       {error && (
         <ChatErrorBanner
           error={error}
-          canRetry={lastFailedInput !== null}
+          lastFailedInput={lastFailedInput}
           isLoading={isLoading}
           onRetry={() => void retryLastMessage()}
         />

@@ -22,7 +22,6 @@ export type TurnOutcome =
       proposalMsg: ChatMessage
       precedingReads?: ToolCallResult[]
     }
-  | { kind: 'silent' }
 
 export type RunConversationTurnArgs = {
   baseContents: Content[]
@@ -68,9 +67,13 @@ export async function runConversationTurn(
     if (proposalMsg) {
       return { kind: 'proposal', proposalMsg }
     }
+    // proposeCall was malformed (toProposalMessage returned null) — fall through
+    // so the user still sees first.text instead of an empty UI.
   }
 
-  if (readCalls.length === 0) return { kind: 'silent' }
+  // No write/proposal and no reads: nothing to follow up. Surface first.text
+  // (or the empty-response fallback) instead of silently dropping the turn.
+  if (readCalls.length === 0) return { kind: 'text', text: first.text }
 
   // Gemini 2.5 系では functionCall に thought_signature が付与されており、
   // フォローアップで再構築するとシグネチャが欠落して 400 になる。
