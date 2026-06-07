@@ -1,8 +1,9 @@
-import { useCallback, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
+import { useMemo } from 'react'
 import { DayPicker, type DayButtonProps } from 'react-day-picker'
 import { CaretLeft, CaretRight } from '@phosphor-icons/react'
 import { Card } from '@/components/ui/card'
 import { IconButton } from '@/components/ui/icon-button'
+import { useSnapScroll } from '@/hooks/useSnapScroll'
 import { cn } from '@/lib/utils'
 import type { DateString } from '../schemas/date'
 import { toDateString, todayDateString } from '../schemas/date'
@@ -23,6 +24,7 @@ interface MonthCalendarProps {
 
 const WEEKDAY_LABELS = ['日', '月', '火', '水', '木', '金', '土']
 const SCROLL_DEBOUNCE_MS = 120
+const CENTER_PANEL_IDX = 1
 const PREV_PANEL_IDX = 0
 const NEXT_PANEL_IDX = 2
 
@@ -169,75 +171,21 @@ export function MonthCalendar({
 }: MonthCalendarProps) {
   const today = todayDateString()
 
-  const viewportRef = useRef<HTMLDivElement>(null)
-  const suppressScrollRef = useRef(false)
-  const debounceRef = useRef<number | null>(null)
-
   const prevMonth = useMemo(() => shiftMonth(displayMonth, -1), [displayMonth])
   const nextMonth = useMemo(() => shiftMonth(displayMonth, 1), [displayMonth])
 
-  // Pin scrollLeft to the center panel. The suppress flag prevents the
-  // programmatic scroll from re-triggering the commit listener.
-  const recenter = useCallback(() => {
-    const v = viewportRef.current
-    if (!v) return
-    const w = v.clientWidth
-    if (w === 0) return
-    suppressScrollRef.current = true
-    v.scrollLeft = w
-    requestAnimationFrame(() =>
-      requestAnimationFrame(() => {
-        suppressScrollRef.current = false
-      }),
-    )
-  }, [])
-
-  useLayoutEffect(() => {
-    recenter()
-  }, [displayMonth, recenter])
-
-  useEffect(() => {
-    const v = viewportRef.current
-    if (!v || typeof ResizeObserver === 'undefined') return
-    const ro = new ResizeObserver(recenter)
-    ro.observe(v)
-    return () => ro.disconnect()
-  }, [recenter])
-
-  // Detect snap landing: when scrolling settles on prev (idx=0) or next (idx=2)
-  // panel, commit the month change. Parent updates displayMonth, which triggers
-  // the useLayoutEffect above to silently recenter.
-  useEffect(() => {
-    const v = viewportRef.current
-    if (!v) return
-
-    const commit = () => {
-      if (suppressScrollRef.current) return
-      const w = v.clientWidth
-      if (w === 0) return
-      const idx = Math.round(v.scrollLeft / w)
-      if (idx === PREV_PANEL_IDX) {
-        onPrevMonth()
-      } else if (idx === NEXT_PANEL_IDX) {
-        onNextMonth()
-      }
-    }
-
-    const onScroll = () => {
-      if (debounceRef.current !== null) {
-        clearTimeout(debounceRef.current)
-      }
-      debounceRef.current = window.setTimeout(commit, SCROLL_DEBOUNCE_MS)
-    }
-    v.addEventListener('scroll', onScroll, { passive: true })
-    return () => {
-      v.removeEventListener('scroll', onScroll)
-      if (debounceRef.current !== null) {
-        clearTimeout(debounceRef.current)
-        debounceRef.current = null
-      }
-    }
-  }, [onPrevMonth, onNextMonth])
+  // Re-center on month change. Use a primitive key so the dep is stable —
+  // a fresh displayMonth object each render would re-fire recenter unnecessarily.
+  const recenterKey = displayMonth.year * 12 + displayMonth.month
+  const viewportRef = useSnapScroll<HTMLDivElement>({
+    centerIndex: CENTER_PANEL_IDX,
+    recenterKey,
+    debounceMs: SCROLL_DEBOUNCE_MS,
+    onCommitIndex: (idx) => {
+      if (idx === PREV_PANEL_IDX) onPrevMonth()
+      else if (idx === NEXT_PANEL_IDX) onNextMonth()
+    },
+  })
 
   return (
     <Card className="mx-4 rounded-[24px] p-5 shadow-soft border border-gym-zinc-100 mb-8 ring-0">
