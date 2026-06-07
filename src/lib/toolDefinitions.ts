@@ -1,4 +1,15 @@
-import { SchemaType, type FunctionDeclaration } from '@google/generative-ai'
+import { SchemaType, type FunctionDeclaration, type Schema } from '@google/generative-ai'
+
+// Gemini Function Declaration の {weight, reps} セット定義を共通化。saveWorkout と
+// addExerciseToSession の両方で同じ形状を要求するため、重複定義を避ける。
+const SET_ITEM_SCHEMA: Schema = {
+  type: SchemaType.OBJECT,
+  properties: {
+    weight: { type: SchemaType.NUMBER, description: '重量 (kg)' },
+    reps: { type: SchemaType.NUMBER, description: '回数' },
+  },
+  required: ['weight', 'reps'],
+}
 
 export const READ_TOOL_NAMES = [
   'getRecentWorkouts',
@@ -134,20 +145,7 @@ const saveWorkoutDeclaration: FunctionDeclaration = {
             },
             sets: {
               type: SchemaType.ARRAY,
-              items: {
-                type: SchemaType.OBJECT,
-                properties: {
-                  weight: {
-                    type: SchemaType.NUMBER,
-                    description: '重量 (kg)',
-                  },
-                  reps: {
-                    type: SchemaType.NUMBER,
-                    description: '回数',
-                  },
-                },
-                required: ['weight', 'reps'],
-              },
+              items: SET_ITEM_SCHEMA,
               description: 'セットの配列',
             },
           },
@@ -194,20 +192,7 @@ const addExerciseToSessionDeclaration: FunctionDeclaration = {
         type: SchemaType.ARRAY,
         description:
           'セットの配列（任意）。指定するとアクティブセッションに重量・回数つきで追加され、ユーザーは draft カードで値を編集できる',
-        items: {
-          type: SchemaType.OBJECT,
-          properties: {
-            weight: {
-              type: SchemaType.NUMBER,
-              description: '重量 (kg)',
-            },
-            reps: {
-              type: SchemaType.NUMBER,
-              description: '回数',
-            },
-          },
-          required: ['weight', 'reps'],
-        },
+        items: SET_ITEM_SCHEMA,
       },
     },
     required: ['exerciseName'],
