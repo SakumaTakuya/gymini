@@ -1,10 +1,16 @@
 import { useMemo } from 'react'
 import type { ChatMessage } from '../types/chat'
 import type { DraftExercise } from '../schemas/workout'
+import type { ISODateTimeString } from '../schemas/date'
 
 export type TimelineItem =
-  | { kind: 'message'; data: ChatMessage; timestamp: string }
-  | { kind: 'draft'; data: DraftExercise; index: number; timestamp: string }
+  | { kind: 'message'; data: ChatMessage; timestamp: ISODateTimeString }
+  | {
+      kind: 'draft'
+      data: DraftExercise
+      index: number
+      timestamp: ISODateTimeString
+    }
 export type TimelineMessage = Extract<TimelineItem, { kind: 'message' }>
 export type TimelineDraft = Extract<TimelineItem, { kind: 'draft' }>
 
@@ -21,30 +27,31 @@ export function useSessionTimeline(
   messages: ChatMessage[],
   draftExercises: DraftExercise[],
 ): SessionTimeline {
-  const timelineItems = useMemo<TimelineItem[]>(() => {
+  return useMemo(() => {
     const items: TimelineItem[] = [
-      ...messages.map((m) => ({
-        kind: 'message' as const,
-        data: m,
-        timestamp: m.timestamp,
-      })),
-      ...draftExercises.map((d, i) => ({
-        kind: 'draft' as const,
-        data: d,
-        index: i,
-        timestamp: d.timestamp,
-      })),
-    ]
-    return items.sort((a, b) =>
+      ...messages.map(
+        (m): TimelineMessage => ({
+          kind: 'message',
+          data: m,
+          timestamp: m.timestamp,
+        }),
+      ),
+      ...draftExercises.map(
+        (d, i): TimelineDraft => ({
+          kind: 'draft',
+          data: d,
+          index: i,
+          timestamp: d.timestamp,
+        }),
+      ),
+    ].sort((a, b) =>
       a.timestamp < b.timestamp ? -1 : a.timestamp > b.timestamp ? 1 : 0,
     )
-  }, [messages, draftExercises])
 
-  return useMemo(() => {
     const preamble: TimelineMessage[] = []
     const sections: SessionTimeline['sections'] = []
     let current: SessionTimeline['sections'][number] | null = null
-    for (const item of timelineItems) {
+    for (const item of items) {
       if (item.kind === 'draft') {
         current = { draft: item, messages: [] }
         sections.push(current)
@@ -55,5 +62,5 @@ export function useSessionTimeline(
       }
     }
     return { preamble, sections }
-  }, [timelineItems])
+  }, [messages, draftExercises])
 }

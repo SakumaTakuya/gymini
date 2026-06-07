@@ -23,7 +23,7 @@ import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useUserProfileStore } from '../stores/userProfileStore'
 import { nowISODateTimeString } from '../schemas/date'
-import type { ChatMessage, ProposedAction } from '../types/chat'
+import type { ProposedAction } from '../types/chat'
 
 type CreateClient = (apiKey: string, systemInstruction?: string) => GeminiClient
 
@@ -106,14 +106,13 @@ export function useChatService(options: UseChatServiceOptions = {}) {
 
         switch (outcome.kind) {
           case 'text': {
-            const msg: ChatMessage = {
+            useChatStore.getState().addMessage({
               id: crypto.randomUUID(),
               role: 'assistant',
               content: nonEmptyOr(outcome.text, EMPTY_RESPONSE_FALLBACK),
               timestamp: nowISODateTimeString(),
-            }
-            if (outcome.toolCalls) msg.toolCalls = outcome.toolCalls
-            useChatStore.getState().addMessage(msg)
+              ...(outcome.toolCalls ? { toolCalls: outcome.toolCalls } : {}),
+            })
             return
           }
           case 'write': {
@@ -157,6 +156,13 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           }
           case 'silent':
             return
+          default: {
+            // 将来 TurnOutcome に variant を追加したとき TS でハンドラ漏れを検出する
+            const _exhaustive: never = outcome
+            throw new Error(
+              `Unhandled TurnOutcome kind: ${JSON.stringify(_exhaustive)}`,
+            )
+          }
         }
       } catch (err) {
         if (isAbortError(err)) return
