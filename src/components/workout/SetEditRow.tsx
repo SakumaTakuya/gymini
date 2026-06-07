@@ -1,47 +1,44 @@
 import { type FocusEvent, type KeyboardEvent, type ReactNode, type Ref } from 'react'
 import { Input } from '../ui/input'
 
+// Per-input data + event handlers. Refs stay as top-level props of SetEditRow
+// (weightInputRef / repsInputRef) because the React Compiler-aware lint rule
+// treats any object containing a Ref as ref-tainted and rejects field accesses
+// on it during render — and because refs are imperative handles that React
+// itself special-cases, distinct from the declarative input config bundled here.
+export type SetEditRowInputProps = {
+  value: number
+  placeholder?: string
+  onChange: (n: number) => void
+  onBlur?: (e: FocusEvent<HTMLInputElement>) => void
+  onKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void
+}
+
 type SetEditRowProps = {
   setNumber: number
-  weight: number
-  reps: number
-  onWeightChange: (n: number) => void
-  onRepsChange: (n: number) => void
+  weight: SetEditRowInputProps
+  reps: SetEditRowInputProps
+  weightInputRef?: Ref<HTMLInputElement>
+  repsInputRef?: Ref<HTMLInputElement>
   trailing: ReactNode
   disabled?: boolean
   blankOnZero?: boolean
-  weightPlaceholder?: string
-  repsPlaceholder?: string
   className?: string
-  weightInputRef?: Ref<HTMLInputElement>
-  repsInputRef?: Ref<HTMLInputElement>
-  onWeightBlur?: (e: FocusEvent<HTMLInputElement>) => void
-  onWeightKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void
-  onRepsBlur?: (e: FocusEvent<HTMLInputElement>) => void
-  onRepsKeyDown?: (e: KeyboardEvent<HTMLInputElement>) => void
 }
 
 export function SetEditRow({
   setNumber,
   weight,
   reps,
-  onWeightChange,
-  onRepsChange,
+  weightInputRef,
+  repsInputRef,
   trailing,
   disabled = false,
   blankOnZero = false,
-  weightPlaceholder,
-  repsPlaceholder,
   className = '',
-  weightInputRef,
-  repsInputRef,
-  onWeightBlur,
-  onWeightKeyDown,
-  onRepsBlur,
-  onRepsKeyDown,
 }: SetEditRowProps) {
-  const weightValue = blankOnZero && weight === 0 ? '' : weight
-  const repsValue = blankOnZero && reps === 0 ? '' : reps
+  const weightValue = blankOnZero && weight.value === 0 ? '' : weight.value
+  const repsValue = blankOnZero && reps.value === 0 ? '' : reps.value
 
   return (
     <div
@@ -56,10 +53,10 @@ export function SetEditRow({
           ref={weightInputRef}
           type="number"
           value={weightValue}
-          placeholder={weightPlaceholder}
-          onChange={(e) => onWeightChange(Number(e.target.value))}
-          onBlur={onWeightBlur}
-          onKeyDown={onWeightKeyDown}
+          placeholder={weight.placeholder}
+          onChange={(e) => weight.onChange(Number(e.target.value))}
+          onBlur={weight.onBlur}
+          onKeyDown={weight.onKeyDown}
           enterKeyHint="next"
           disabled={disabled}
           suffix={<span className="text-[10px] font-medium text-gym-zinc-400">kg</span>}
@@ -70,10 +67,10 @@ export function SetEditRow({
           ref={repsInputRef}
           type="number"
           value={repsValue}
-          placeholder={repsPlaceholder}
-          onChange={(e) => onRepsChange(Number(e.target.value))}
-          onBlur={onRepsBlur}
-          onKeyDown={onRepsKeyDown}
+          placeholder={reps.placeholder}
+          onChange={(e) => reps.onChange(Number(e.target.value))}
+          onBlur={reps.onBlur}
+          onKeyDown={reps.onKeyDown}
           enterKeyHint="done"
           disabled={disabled}
           suffix={<span className="text-[10px] font-medium text-gym-zinc-400">回</span>}

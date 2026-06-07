@@ -5,10 +5,8 @@ import { SetEditRow } from './SetEditRow'
 describe('SetEditRow', () => {
   const defaultProps = {
     setNumber: 2,
-    weight: 60,
-    reps: 10,
-    onWeightChange: vi.fn(),
-    onRepsChange: vi.fn(),
+    weight: { value: 60, onChange: vi.fn() },
+    reps: { value: 10, onChange: vi.fn() },
     trailing: <button type="button">trailing</button>,
   }
 
@@ -55,10 +53,16 @@ describe('SetEditRow', () => {
     expect(repsInput).toBeDisabled()
   })
 
-  it('onWeightChange / onRepsChange を発火する', () => {
+  it('weight.onChange / reps.onChange を発火する', () => {
     const onWeightChange = vi.fn()
     const onRepsChange = vi.fn()
-    render(<SetEditRow {...defaultProps} onWeightChange={onWeightChange} onRepsChange={onRepsChange} />)
+    render(
+      <SetEditRow
+        {...defaultProps}
+        weight={{ value: 60, onChange: onWeightChange }}
+        reps={{ value: 10, onChange: onRepsChange }}
+      />,
+    )
     const [weightInput, repsInput] = screen.getAllByRole('spinbutton')
     fireEvent.change(weightInput, { target: { value: '65' } })
     expect(onWeightChange).toHaveBeenCalledWith(65)
@@ -70,11 +74,9 @@ describe('SetEditRow', () => {
     render(
       <SetEditRow
         {...defaultProps}
-        weight={0}
-        reps={0}
+        weight={{ value: 0, onChange: vi.fn(), placeholder: 'kg' }}
+        reps={{ value: 0, onChange: vi.fn(), placeholder: '回' }}
         blankOnZero
-        weightPlaceholder="kg"
-        repsPlaceholder="回"
       />,
     )
     const [weightInput, repsInput] = screen.getAllByRole('spinbutton')

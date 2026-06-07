@@ -6,37 +6,40 @@ import { AddSetButton } from './AddSetButton'
 import { CompletedSetRow } from './CompletedSetRow'
 import { PendingSetRow } from './PendingSetRow'
 
+// All callbacks that act on the set lifecycle (the pending set + completed sets).
+export type ExerciseCardSetHandlers = {
+  activate: () => void
+  complete: (set: WorkoutSet) => void
+  edit: (setIndex: number) => void
+  remove: (setIndex: number) => void
+  changeWeight: (weight: number) => void
+  changeReps: (reps: number) => void
+}
+
+// All callbacks that act on the exercise as a whole.
+export type ExerciseCardExerciseHandlers = {
+  remove: () => void
+  moveUp?: () => void
+  moveDown?: () => void
+  toggle: () => void
+}
+
 type ExerciseCardProps = {
   draftExercise: DraftExercise
-  onActivate: () => void
-  onComplete: (set: WorkoutSet) => void
-  onEdit: (setIndex: number) => void
-  onDelete: (setIndex: number) => void
-  onDeleteExercise: () => void
-  onMoveUp?: () => void
-  onMoveDown?: () => void
-  onToggle: () => void
-  onWeightChange: (weight: number) => void
-  onRepsChange: (reps: number) => void
+  setHandlers: ExerciseCardSetHandlers
+  exerciseHandlers: ExerciseCardExerciseHandlers
 }
 
 export function ExerciseCard({
   draftExercise,
-  onActivate,
-  onComplete,
-  onEdit,
-  onDelete,
-  onDeleteExercise,
-  onMoveUp,
-  onMoveDown,
-  onToggle,
-  onWeightChange,
-  onRepsChange,
+  setHandlers,
+  exerciseHandlers,
 }: ExerciseCardProps) {
   const { exerciseName, sets, pendingSet, cardState, editingSetIndex } = draftExercise
   const isCollapsed = cardState === 'collapsed'
   const isRecording = cardState === 'recording'
   const [menuOpen, setMenuOpen] = useState(false)
+  const { moveUp, moveDown } = exerciseHandlers
 
   return (
     <div
@@ -61,31 +64,31 @@ export function ExerciseCard({
           </IconButton>
           {menuOpen && (
             <div className="absolute top-full left-0 mt-1 bg-gym-white rounded-xl shadow-float border border-gym-zinc-200 z-50 py-1 min-w-[140px]">
-              {onMoveUp && (
+              {moveUp && (
                 <button
                   type="button"
                   className="focus-ring flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gym-zinc-600 hover:bg-gym-zinc-50"
-                  onClick={(e) => { e.stopPropagation(); onMoveUp(); setMenuOpen(false) }}
+                  onClick={(e) => { e.stopPropagation(); moveUp(); setMenuOpen(false) }}
                 >
                   <ArrowUp size={14} weight="bold" />
                   上へ移動
                 </button>
               )}
-              {onMoveDown && (
+              {moveDown && (
                 <button
                   type="button"
                   className="focus-ring flex items-center gap-2 w-full px-4 py-2.5 text-sm text-gym-zinc-600 hover:bg-gym-zinc-50"
-                  onClick={(e) => { e.stopPropagation(); onMoveDown(); setMenuOpen(false) }}
+                  onClick={(e) => { e.stopPropagation(); moveDown(); setMenuOpen(false) }}
                 >
                   <ArrowDown size={14} weight="bold" />
                   下へ移動
                 </button>
               )}
-              {(onMoveUp || onMoveDown) && <div className="my-1 border-t border-gym-zinc-100" />}
+              {(moveUp || moveDown) && <div className="my-1 border-t border-gym-zinc-100" />}
               <button
                 type="button"
                 className="focus-ring flex items-center gap-2 w-full px-4 py-2.5 text-sm text-red-500 hover:bg-red-50"
-                onClick={(e) => { e.stopPropagation(); onDeleteExercise(); setMenuOpen(false) }}
+                onClick={(e) => { e.stopPropagation(); exerciseHandlers.remove(); setMenuOpen(false) }}
               >
                 <Trash size={14} weight="bold" />
                 削除
@@ -96,7 +99,7 @@ export function ExerciseCard({
         <button
           type="button"
           className="focus-ring flex flex-1 items-center gap-3 min-h-[44px] text-left"
-          onClick={onToggle}
+          onClick={exerciseHandlers.toggle}
         >
           <div className="flex-1">
             <h3 className="font-outfit font-bold text-lg text-gym-black">
@@ -127,27 +130,27 @@ export function ExerciseCard({
                 const insertAt = editingSetIndex ?? sets.length
                 return [
                   ...sets.slice(0, insertAt).map((set, i) => (
-                    <CompletedSetRow key={i} setNumber={i + 1} set={set} onEdit={() => onEdit(i)} onDelete={() => onDelete(i)} />
+                    <CompletedSetRow key={i} setNumber={i + 1} set={set} onEdit={() => setHandlers.edit(i)} onDelete={() => setHandlers.remove(i)} />
                   )),
                   <PendingSetRow
                     key="pending"
                     setNumber={insertAt + 1}
                     pendingSet={pendingSet}
                     isEditing={editingSetIndex !== null}
-                    onComplete={() => onComplete(pendingSet)}
-                    onWeightChange={onWeightChange}
-                    onRepsChange={onRepsChange}
+                    onComplete={() => setHandlers.complete(pendingSet)}
+                    onWeightChange={setHandlers.changeWeight}
+                    onRepsChange={setHandlers.changeReps}
                   />,
                   ...sets.slice(insertAt).map((set, sliceI) => {
                     const idx = insertAt + sliceI
                     return (
-                      <CompletedSetRow key={idx + 1} setNumber={idx + 1} set={set} onEdit={() => onEdit(idx)} onDelete={() => onDelete(idx)} />
+                      <CompletedSetRow key={idx + 1} setNumber={idx + 1} set={set} onEdit={() => setHandlers.edit(idx)} onDelete={() => setHandlers.remove(idx)} />
                     )
                   }),
                 ]
               })() : (
                 sets.map((set, i) => (
-                  <CompletedSetRow key={i} setNumber={i + 1} set={set} onEdit={() => onEdit(i)} onDelete={() => onDelete(i)} />
+                  <CompletedSetRow key={i} setNumber={i + 1} set={set} onEdit={() => setHandlers.edit(i)} onDelete={() => setHandlers.remove(i)} />
                 ))
               )}
             </div>
@@ -156,7 +159,7 @@ export function ExerciseCard({
           {/* Add button (idle state or editing a previous set) */}
           {(!isRecording || editingSetIndex !== null) && (
             <div className="flex justify-center py-1">
-              <AddSetButton onClick={onActivate} aria-label="セットを追加" />
+              <AddSetButton onClick={setHandlers.activate} aria-label="セットを追加" />
             </div>
           )}
         </>

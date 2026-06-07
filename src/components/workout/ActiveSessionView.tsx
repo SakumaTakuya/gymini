@@ -64,20 +64,23 @@ export function ActiveSessionView() {
   const renderDraft = (draft: TimelineDraft['data'], i: number) => (
     <ExerciseCard
       draftExercise={draft}
-      onActivate={() => activateExercise(i)}
-      onComplete={(set) => completeSet(i, set)}
-      onEdit={(setIndex) => editCompletedSet(i, setIndex)}
-      onDelete={(setIndex) => deleteCompletedSet(i, setIndex)}
-      onDeleteExercise={() => deleteExercise(i)}
-      onMoveUp={i > 0 ? () => reorderExercise(i, 'up') : undefined}
-      onMoveDown={
-        i < draftExercises.length - 1
-          ? () => reorderExercise(i, 'down')
-          : undefined
-      }
-      onToggle={() => toggleExerciseCard(i)}
-      onWeightChange={(weight) => updatePendingSet(i, { weight })}
-      onRepsChange={(reps) => updatePendingSet(i, { reps })}
+      setHandlers={{
+        activate: () => activateExercise(i),
+        complete: (set) => completeSet(i, set),
+        edit: (setIndex) => editCompletedSet(i, setIndex),
+        remove: (setIndex) => deleteCompletedSet(i, setIndex),
+        changeWeight: (weight) => updatePendingSet(i, { weight }),
+        changeReps: (reps) => updatePendingSet(i, { reps }),
+      }}
+      exerciseHandlers={{
+        remove: () => deleteExercise(i),
+        moveUp: i > 0 ? () => reorderExercise(i, 'up') : undefined,
+        moveDown:
+          i < draftExercises.length - 1
+            ? () => reorderExercise(i, 'down')
+            : undefined,
+        toggle: () => toggleExerciseCard(i),
+      }}
     />
   )
 
