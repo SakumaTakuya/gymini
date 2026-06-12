@@ -135,8 +135,8 @@ test.describe('トレーニング記録フロー', () => {
     await repsInput.fill('10')
     await page.getByRole('button', { name: '完了' }).click()
 
-    // 鉛筆ボタンで編集 (P1: 主操作は swipe-right、sr-only ボタンは a11y 用にキーボードから起動)
-    await page.getByRole('button', { name: '編集' }).press('Enter')
+    // 鉛筆ボタンで編集
+    await page.getByRole('button', { name: '編集' }).click()
 
     // 編集モード: 入力フィールドに値が表示される
     const editWeight = page.locator('input[type="number"]').first()
@@ -161,8 +161,8 @@ test.describe('トレーニング記録フロー', () => {
     let completedRows = page.locator('[data-testid="completed-set-row"]')
     await expect(completedRows).toHaveCount(2)
 
-    // ゴミ箱ボタンで1つ削除 (P1: 主操作は swipe-left、sr-only ボタンは a11y 用にキーボードから起動)
-    await page.getByRole('button', { name: '削除' }).first().press('Enter')
+    // ゴミ箱ボタンで1つ削除
+    await page.getByRole('button', { name: '削除' }).first().click()
 
     completedRows = page.locator('[data-testid="completed-set-row"]')
     await expect(completedRows).toHaveCount(1)
@@ -226,7 +226,7 @@ test.describe('セット編集バグ修正', () => {
     await recordSet(page, '70', '6')  // index 2
 
     // 1番目のセット（60kg）を編集
-    await page.getByRole('button', { name: '編集' }).first().press('Enter')
+    await page.getByRole('button', { name: '編集' }).first().click()
 
     // 編集中: 完了済みは2行（65, 70）、入力欄は60
     await expect(completedRows(page)).toHaveCount(2)
@@ -251,11 +251,11 @@ test.describe('セット編集バグ修正', () => {
     await recordSet(page, '65', '8')  // B
 
     // A（index 0）を編集開始 → sets=[B], pendingSet=A
-    await page.getByRole('button', { name: '編集' }).first().press('Enter')
+    await page.getByRole('button', { name: '編集' }).first().click()
     await expect(completedRows(page)).toHaveCount(1)
 
     // B（現在 index 0）のペンを押す → A が復元され B が編集対象に
-    await page.getByRole('button', { name: '編集' }).first().press('Enter')
+    await page.getByRole('button', { name: '編集' }).first().click()
 
     // A が完了済みに復元されている
     await expect(completedRows(page)).toHaveCount(1)
@@ -270,7 +270,7 @@ test.describe('セット編集バグ修正', () => {
     await recordSet(page, '65', '8')
 
     // 1番目のセットを編集開始（sets=[65], pendingSet=60）
-    await page.getByRole('button', { name: '編集' }).first().press('Enter')
+    await page.getByRole('button', { name: '編集' }).first().click()
     await expect(completedRows(page)).toHaveCount(1)
 
     // 新種目を追加 → deactivateRecording が走り編集中セットが復元されるはず
@@ -289,7 +289,7 @@ test.describe('セット編集バグ修正', () => {
     await recordSet(page, '65', '8')
 
     // 1番目のセットを編集開始
-    await page.getByRole('button', { name: '編集' }).first().press('Enter')
+    await page.getByRole('button', { name: '編集' }).first().click()
     await expect(completedRows(page)).toHaveCount(1)
 
     // ヘッダーをクリックしてカードを折りたたむ
@@ -311,7 +311,7 @@ test.describe('セット編集バグ修正', () => {
     await recordSet(page, '65', '8')
 
     // 1番目のセットを編集開始（完了は押さない）
-    await page.getByRole('button', { name: '編集' }).first().press('Enter')
+    await page.getByRole('button', { name: '編集' }).first().click()
     await expect(completedRows(page)).toHaveCount(1)
 
     // 完了を押さずに終了する

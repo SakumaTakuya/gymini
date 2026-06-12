@@ -1,7 +1,5 @@
 export const HAPTIC_SET_COMPLETE_MS = 10
 export const HAPTIC_SCROLL_EDGE_MS = 5
-export const HAPTIC_SWIPE_PRE_MS = 8
-export const HAPTIC_SWIPE_COMMIT_MS = 12
 
 export function tactileVibrate(ms: number): void {
   if (typeof window === 'undefined') return
