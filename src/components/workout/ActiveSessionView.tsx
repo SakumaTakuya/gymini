@@ -2,8 +2,8 @@ import { useMemo } from 'react'
 import { useWorkoutSession } from '@/hooks/useWorkoutSession'
 import { useChatService } from '@/hooks/useChatService'
 import { useRubberBandScroll } from '@/hooks/useRubberBandScroll'
-import { useSessionTimeline } from '@/hooks/useSessionTimeline'
-import type { TimelineDraft } from '@/hooks/useSessionTimeline'
+import { buildSessionTimeline } from '@/lib/sessionTimeline'
+import type { TimelineDraft } from '@/lib/sessionTimeline'
 import { ChatBubble } from '../chat/ChatBubble'
 import { ChatInput } from '../chat/ChatInput'
 import { ExerciseCard } from './ExerciseCard'
@@ -59,25 +59,31 @@ export function ActiveSessionView() {
   // 1 つの <section> にまとめる。<section> が containing block になることで、sticky なカードは
   // そのセクション内だけで上部固定され、次のセクションが到達した瞬間に押し出される。
   // 最初のカードより前にあるメッセージは preamble として section の外に並べる。
-  const { preamble, sections } = useSessionTimeline(messages, draftExercises)
+  const { preamble, sections } = useMemo(
+    () => buildSessionTimeline(messages, draftExercises),
+    [messages, draftExercises],
+  )
 
   const renderDraft = (draft: TimelineDraft['data'], i: number) => (
     <ExerciseCard
       draftExercise={draft}
-      onActivate={() => activateExercise(i)}
-      onComplete={(set) => completeSet(i, set)}
-      onEdit={(setIndex) => editCompletedSet(i, setIndex)}
-      onDelete={(setIndex) => deleteCompletedSet(i, setIndex)}
-      onDeleteExercise={() => deleteExercise(i)}
-      onMoveUp={i > 0 ? () => reorderExercise(i, 'up') : undefined}
-      onMoveDown={
-        i < draftExercises.length - 1
-          ? () => reorderExercise(i, 'down')
-          : undefined
-      }
-      onToggle={() => toggleExerciseCard(i)}
-      onWeightChange={(weight) => updatePendingSet(i, { weight })}
-      onRepsChange={(reps) => updatePendingSet(i, { reps })}
+      setHandlers={{
+        activate: () => activateExercise(i),
+        complete: (set) => completeSet(i, set),
+        edit: (setIndex) => editCompletedSet(i, setIndex),
+        remove: (setIndex) => deleteCompletedSet(i, setIndex),
+        changeWeight: (weight) => updatePendingSet(i, { weight }),
+        changeReps: (reps) => updatePendingSet(i, { reps }),
+      }}
+      exerciseHandlers={{
+        remove: () => deleteExercise(i),
+        moveUp: i > 0 ? () => reorderExercise(i, 'up') : undefined,
+        moveDown:
+          i < draftExercises.length - 1
+            ? () => reorderExercise(i, 'down')
+            : undefined,
+        toggle: () => toggleExerciseCard(i),
+      }}
     />
   )
 

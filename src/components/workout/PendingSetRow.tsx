@@ -63,15 +63,19 @@ export function PendingSetRow({
     <SetEditRow
       className="animate-appear"
       setNumber={setNumber}
-      weight={pendingSet.weight}
-      reps={pendingSet.reps}
-      onWeightChange={onWeightChange}
-      onRepsChange={onRepsChange}
+      weight={{
+        value: pendingSet.weight,
+        onChange: onWeightChange,
+        onBlur: handleWeightBlur,
+        onKeyDown: handleWeightKeyDown,
+      }}
+      reps={{
+        value: pendingSet.reps,
+        onChange: onRepsChange,
+        onBlur: handleRepsBlur,
+        onKeyDown: handleRepsKeyDown,
+      }}
       repsInputRef={repsRef}
-      onWeightBlur={handleWeightBlur}
-      onWeightKeyDown={handleWeightKeyDown}
-      onRepsBlur={handleRepsBlur}
-      onRepsKeyDown={handleRepsKeyDown}
       trailing={
         <IconButton
           ref={completeButtonRef}
