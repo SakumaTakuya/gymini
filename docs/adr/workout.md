@@ -40,12 +40,16 @@
 - **決定**: `PendingSet` の `weight` と `reps` フィールドの型は `string` ではなく `number`
 - **理由**: `SetRowInput` が `Number()` 変換を適用してからストアに渡している。ストアの型はフォーム入力値ではなく実際の状態を反映すべき。
 
-## CompletedSetRow の削除/編集を swipe で起動する（ボタンは a11y 用に保持）
+## ~~CompletedSetRow の削除/編集を swipe で起動する（ボタンは a11y 用に保持）~~ 【撤回 / Superseded】
+
+> **撤回**: swipe を一次操作とする本決定は撤回し、可視の Trash/Pencil タップボタン（[workout.md](../prd/workout/index.md) FR_029）へ復帰した。理由は、swipe の発見性の低さ・完了ボタン（タップ）との操作系の不一致・編集しようとして削除が暴発する誤操作。詳細は当該 PR の経緯を参照。
 
 - **決定**: 完了済セット行の削除/編集は左右 swipe ジェスチャーを一次操作とし、Trash/Pencil ボタンは visually-hidden な a11y 用要素として残す
 - **理由**: 物理的近道（直接操作）を提供する一方、キーボード / screen reader / スイッチデバイスからの到達性を維持する。タップ式の小さなアイコンボタンは誤タップ率が高いという課題への対策でもある（[tactile-direction.md](../design/tactile-direction.md) の Matas 哲学 2「物体としての直接操作」+ Badeen 流の物体感に整合）
 
-## swipe コミット判定は位置と速度の OR で行う
+## ~~swipe コミット判定は位置と速度の OR で行う~~ 【撤回 / Superseded】
+
+> **撤回**: swipe 自体を廃止したため本決定も失効。
 
 - **決定**: swipe のコミット成立は「位置が行幅の所定割合を超える」または「速度が所定閾値を超える」のいずれかを満たすこと（具体値は [tactile-direction.md](../design/tactile-direction.md) の優先度マトリクス参照）
 - **理由**: 位置のみだと「素早く小さく振った」操作が無視される。速度のみだと「ゆっくり大きく引いた」操作が拾えない。主要な swipe UI（Tinder 等）が両方の OR を採用しており、誤発火と取りこぼしの両方を抑えられる
