@@ -5,4 +5,5 @@ export const queryKeys = {
     ['workoutDates', year, month] as const,
   workoutsForDate: (date: DateString | null) =>
     ['workoutsForDate', date] as const,
+  geminiModels: (apiKey: string) => ['geminiModels', apiKey] as const,
 }

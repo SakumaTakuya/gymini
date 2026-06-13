@@ -1,10 +1,15 @@
 import { describe, it, expect, beforeEach, vi } from 'vitest'
 import { useSettingsStore } from './settingsStore'
+import { DEFAULT_GEMINI_MODEL } from '../lib/geminiModels'
 
 describe('settingsStore', () => {
   beforeEach(() => {
     localStorage.clear()
-    useSettingsStore.setState({ apiKey: '', hasApiKey: false })
+    useSettingsStore.setState({
+      apiKey: '',
+      hasApiKey: false,
+      model: DEFAULT_GEMINI_MODEL,
+    })
     vi.restoreAllMocks()
   })
 
@@ -111,6 +116,53 @@ describe('settingsStore', () => {
 
       expect(useSettingsStore.getState().apiKey).toBe('stable-key')
       expect(useSettingsStore.getState().hasApiKey).toBe(true)
+    })
+  })
+
+  describe('model', () => {
+    it('初期値は DEFAULT_GEMINI_MODEL である', () => {
+      expect(useSettingsStore.getState().model).toBe(DEFAULT_GEMINI_MODEL)
+    })
+
+    it('setModel がモデルを localStorage に保存してストア状態を更新する', () => {
+      useSettingsStore.getState().setModel('gemini-2.5-pro')
+
+      expect(useSettingsStore.getState().model).toBe('gemini-2.5-pro')
+      expect(localStorage.getItem('gymini:gemini-model')).toBe('gemini-2.5-pro')
+    })
+
+    it('setModel は localStorage 書き込みが失敗してもストア状態を更新する', () => {
+      vi.spyOn(Storage.prototype, 'setItem').mockImplementation(() => {
+        throw new Error('QuotaExceeded')
+      })
+
+      useSettingsStore.getState().setModel('gemini-2.5-pro')
+
+      expect(useSettingsStore.getState().model).toBe('gemini-2.5-pro')
+    })
+
+    it('loadModel が localStorage から既存モデルを読み込む', () => {
+      localStorage.setItem('gymini:gemini-model', 'gemini-2.5-flash')
+
+      useSettingsStore.getState().loadModel()
+
+      expect(useSettingsStore.getState().model).toBe('gemini-2.5-flash')
+    })
+
+    it('loadModel はモデル未保存のとき DEFAULT_GEMINI_MODEL にフォールバックする', () => {
+      useSettingsStore.getState().loadModel()
+
+      expect(useSettingsStore.getState().model).toBe(DEFAULT_GEMINI_MODEL)
+    })
+
+    it('loadModel は読み込み失敗時に DEFAULT_GEMINI_MODEL にフォールバックする', () => {
+      vi.spyOn(Storage.prototype, 'getItem').mockImplementation(() => {
+        throw new Error('SecurityError')
+      })
+
+      useSettingsStore.getState().loadModel()
+
+      expect(useSettingsStore.getState().model).toBe(DEFAULT_GEMINI_MODEL)
     })
   })
 

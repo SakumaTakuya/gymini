@@ -44,7 +44,11 @@ export function useChatService(options: UseChatServiceOptions = {}) {
     (apiKey, systemInstruction) =>
       options.createClient
         ? options.createClient(apiKey, systemInstruction)
-        : createGeminiClient({ apiKey, systemInstruction }),
+        : createGeminiClient({
+            apiKey,
+            systemInstruction,
+            model: useSettingsStore.getState().model,
+          }),
     [options],
   )
 

@@ -19,3 +19,13 @@
 
 - **決定**: 保存成功時は「localStorage に書き込み → ストア状態を更新」の順序で実行する。localStorage 失敗時はストア状態のみ更新する（楽観的更新）。
 - **理由**: 成功時にストア状態が永続ストレージの内容を正確に反映する。失敗時はストア更新を優先して UX を維持する。
+
+## モデル一覧は決め打ちせず ListModels API から動的取得（FR_011）
+
+- **決定**: 選択可能な Gemini モデルをコード内のリストで固定せず、Gemini ListModels エンドポイント（`/v1beta/models`）を APIキーで叩いて取得する。`generateContent` をサポートするモデルのみ一覧化する。取得は TanStack Query（`useGeminiModels`）でキャッシュし、APIキーが設定されている間のみ有効化する。
+- **理由**: Gemini のモデルは頻繁に更新されるため、固定リストは陳腐化する。動的取得により最新のサポートモデルを常に提示できる。`generateContent` フィルタで埋め込み専用モデル等を除外する。
+
+## 選択モデルは settingsStore に持ち、APIキーと同じ直接 localStorage 方式で永続化
+
+- **決定**: 選択中のモデル id を `settingsStore` の `model` として保持し、`gymini:gemini-model` キーで localStorage に直接保存する（persist ミドルウェア不使用）。既定値・読み込み失敗時は `gemini-3-flash-preview`。
+- **理由**: APIキーと同じ設定ドメイン・同じ永続化方針に揃える。単一文字列のため persist のオーバーヘッドは不要。
