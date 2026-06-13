@@ -131,7 +131,7 @@ export function ExerciseCard({
           {(sets.length > 0 || isRecording) && (
             <div
               data-testid="sets-scroll"
-              className={`space-y-1 max-h-[45vh] overflow-y-auto ${
+              className={`space-y-1 max-h-[22vh] overflow-y-auto ${
                 !isRecording ? 'mb-3' : isRecordingNew ? 'mb-1' : ''
               }`}
             >
