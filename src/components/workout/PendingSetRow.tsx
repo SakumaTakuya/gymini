@@ -63,14 +63,17 @@ export function PendingSetRow({
     <SetEditRow
       className="animate-appear"
       setNumber={setNumber}
+      blankOnZero
       weight={{
         value: pendingSet.weight,
+        placeholder: '0',
         onChange: onWeightChange,
         onBlur: handleWeightBlur,
         onKeyDown: handleWeightKeyDown,
       }}
       reps={{
         value: pendingSet.reps,
+        placeholder: '0',
         onChange: onRepsChange,
         onBlur: handleRepsBlur,
         onKeyDown: handleRepsKeyDown,

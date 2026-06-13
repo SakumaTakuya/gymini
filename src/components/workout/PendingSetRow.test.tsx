@@ -48,6 +48,33 @@ describe('PendingSetRow', () => {
     expect(onRepsChange).toHaveBeenCalledWith(8)
   })
 
+  describe('値が0のとき空表示（全消し可能）', () => {
+    it('weight=0 / reps=0 のとき input は空表示になる', () => {
+      render(
+        <PendingSetRow {...defaultProps} pendingSet={{ weight: 0, reps: 0 }} />,
+      )
+      const [weightInput, repsInput] = screen.getAllByRole('spinbutton')
+      expect(weightInput).toHaveValue(null)
+      expect(repsInput).toHaveValue(null)
+    })
+
+    it('weight=0 / reps=0 のとき placeholder="0" を持つ', () => {
+      render(
+        <PendingSetRow {...defaultProps} pendingSet={{ weight: 0, reps: 0 }} />,
+      )
+      const [weightInput, repsInput] = screen.getAllByRole('spinbutton')
+      expect(weightInput).toHaveAttribute('placeholder', '0')
+      expect(repsInput).toHaveAttribute('placeholder', '0')
+    })
+
+    it('値が非0なら通常通り数値を表示する', () => {
+      render(<PendingSetRow {...defaultProps} pendingSet={{ weight: 60, reps: 10 }} />)
+      const [weightInput, repsInput] = screen.getAllByRole('spinbutton')
+      expect(weightInput).toHaveValue(60)
+      expect(repsInput).toHaveValue(10)
+    })
+  })
+
   it('左側に黒いバーインジケーターを持つ', () => {
     const { container } = render(<PendingSetRow {...defaultProps} />)
     const bar = container.querySelector('.bg-gym-black')
