@@ -39,13 +39,19 @@ describe('CompletedSetRow', () => {
     expect(row.className).toContain('rounded-xl')
   })
 
-  describe('Matas 数字拡大', () => {
-    it('weight/reps 表示の p タグは text-2xl クラスを持つ', () => {
+  describe('Matas 数字拡大（コンパクト化）', () => {
+    it('weight/reps 表示の p タグは text-xl クラスを持つ', () => {
       const { container } = render(<CompletedSetRow {...defaultProps} />)
       const paras = container.querySelectorAll('p')
       expect(paras).toHaveLength(2)
-      expect(paras[0].className).toContain('text-2xl')
-      expect(paras[1].className).toContain('text-2xl')
+      expect(paras[0].className).toContain('text-xl')
+      expect(paras[1].className).toContain('text-xl')
+    })
+
+    it('行の縦パディングは py-1.5（高さを抑える）', () => {
+      const { container } = render(<CompletedSetRow {...defaultProps} />)
+      const row = container.firstChild as HTMLElement
+      expect(row.className).toContain('py-1.5')
     })
 
     it('kg サフィックスは text-[10px] クラスを持つ', () => {
@@ -76,10 +82,10 @@ describe('CompletedSetRow', () => {
       expect(watermark!.textContent).toBe('3')
     })
 
-    it('透かしは text-5xl text-gym-zinc-200 absolute pointer-events-none を持つ', () => {
+    it('透かしは text-4xl text-gym-zinc-200 absolute pointer-events-none を持つ', () => {
       const { container } = render(<CompletedSetRow {...defaultProps} />)
       const watermark = container.querySelector('[data-testid="completed-set-watermark"]')
-      expect(watermark!.className).toContain('text-5xl')
+      expect(watermark!.className).toContain('text-4xl')
       expect(watermark!.className).toContain('text-gym-zinc-200')
       expect(watermark!.className).toContain('absolute')
       expect(watermark!.className).toContain('pointer-events-none')

@@ -132,6 +132,13 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement CardBodyHeightCap {
+        id: FR_036
+        text: "種目カード本文の高さに上限を設け、セット数が増えても画面を覆い尽くさない"
+        risk: medium
+        verifymethod: test
+    }
+
     WorkoutManagement - contains -> SessionLifecycle
     WorkoutManagement - contains -> SetManagement
     WorkoutManagement - contains -> MultiExerciseSession
@@ -141,6 +148,8 @@ requirementDiagram
     WorkoutManagement - contains -> ExerciseCardStates
     WorkoutManagement - contains -> SessionEndSave
     WorkoutManagement - contains -> SessionTimer
+    WorkoutManagement - contains -> CardBodyHeightCap
+    CardBodyHeightCap - derives -> ExerciseCardStates
     SetCheckAutoAdd - derives -> SetManagement
     CompletedSetActions - derives -> SetManagement
     AutoFillPreviousSet - derives -> SetCheckAutoAdd
@@ -293,6 +302,22 @@ FRAME2の右上に固定表示される「終了」ボタンを押すとセッ�
 - 背景: `bg-white/80 backdrop-blur-sm`
 - テキスト: `Outfit Bold text-xs`（例: 00:14:32）
 - アイコン: `ph-clock`（accent色、`animate-pulse`）
+
+**検証方法:** テストによる検証
+
+### FR_036: カード本文の高さ上限とスクロール
+
+種目カードは画面上部に sticky で固定される（FRAME2 仕様）。セット数が増えると本文が伸び続け、カードが画面を覆い尽くして下部の操作（他カード・入力欄）に届かなくなる問題があるため、本文の高さに上限を設ける。
+
+**完了済みセット一覧:**
+- 展開状態（idle / recording）で完了済みセット一覧は高さ上限（`max-h-[45vh]`）付きのスクロール領域に収める。セットが上限を超えると領域内スクロールになり、カード全体の高さは一定に保たれる。
+
+**記録中（新規）の入力行配置:**
+- `recording`（`editingSetIndex=null`）では、入力中の `PendingSetRow`（完了ボタン）をスクロール領域の **外** に配置し、完了済みセットが何セットあっても入力行と完了ボタンが常に見えるようにする。
+- `recording`（編集中 `editingSetIndex≠null`）では、入力行は編集対象の位置に挿入する（スクロール領域内）。編集は可視の鉛筆アイコンから開始するため、対象は概ね視界内にある。
+
+**完了済みセット行のコンパクト化:**
+- 1 行あたりの占有高さを抑えるため、数値表示を `text-xl`、章番号透かしを `text-4xl`、縦パディングを `py-1.5` に圧縮する（密度向上）。
 
 **検証方法:** テストによる検証
 

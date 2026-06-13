@@ -40,6 +40,9 @@ export function ExerciseCard({
   const isRecording = cardState === 'recording'
   const [menuOpen, setMenuOpen] = useState(false)
   const { moveUp, moveDown } = exerciseHandlers
+  // 記録中（新規セット入力）: 完了済みセットが何セット積まれても入力行が常に
+  // 見えるよう、PendingSetRow をスクロール領域の外に出す（FR_036）。
+  const isRecordingNew = isRecording && pendingSet !== null && editingSetIndex === null
 
   return (
     <div
@@ -123,11 +126,17 @@ export function ExerciseCard({
       {/* Body */}
       {!isCollapsed && (
         <>
-          {/* Sets list */}
+          {/* Sets list — 高さ上限付きのスクロール領域（FR_036）。
+              セットが増えてもカードが画面を覆い尽くさないよう本文を bound する。 */}
           {(sets.length > 0 || isRecording) && (
-            <div className={`space-y-1 ${!isRecording ? 'mb-3' : ''}`}>
-              {isRecording && pendingSet ? (() => {
-                const insertAt = editingSetIndex ?? sets.length
+            <div
+              data-testid="sets-scroll"
+              className={`space-y-1 max-h-[45vh] overflow-y-auto ${
+                !isRecording ? 'mb-3' : isRecordingNew ? 'mb-1' : ''
+              }`}
+            >
+              {isRecording && pendingSet && editingSetIndex !== null ? (() => {
+                const insertAt = editingSetIndex
                 return [
                   ...sets.slice(0, insertAt).map((set, i) => (
                     <CompletedSetRow key={i} setNumber={i + 1} set={set} onEdit={() => setHandlers.edit(i)} onDelete={() => setHandlers.remove(i)} />
@@ -136,7 +145,7 @@ export function ExerciseCard({
                     key="pending"
                     setNumber={insertAt + 1}
                     pendingSet={pendingSet}
-                    isEditing={editingSetIndex !== null}
+                    isEditing
                     onComplete={() => setHandlers.complete(pendingSet)}
                     onWeightChange={setHandlers.changeWeight}
                     onRepsChange={setHandlers.changeReps}
@@ -154,6 +163,17 @@ export function ExerciseCard({
                 ))
               )}
             </div>
+          )}
+
+          {/* 記録中（新規）の入力行はスクロール領域の外に固定し常時可視にする */}
+          {isRecordingNew && pendingSet && (
+            <PendingSetRow
+              setNumber={sets.length + 1}
+              pendingSet={pendingSet}
+              onComplete={() => setHandlers.complete(pendingSet)}
+              onWeightChange={setHandlers.changeWeight}
+              onRepsChange={setHandlers.changeReps}
+            />
           )}
 
           {/* Add button (idle state or editing a previous set) */}
