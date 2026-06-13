@@ -20,9 +20,9 @@ export function WorkoutSummary({ date, workouts }: WorkoutSummaryProps) {
       {workouts.map((workout) => (
         <Card
           key={workout.id}
-          className="mx-4 mb-6 rounded-[24px] p-5 shadow-soft border border-gym-zinc-100 ring-0"
+          className="mx-4 mb-4 rounded-[24px] p-4 shadow-soft border border-gym-zinc-100 ring-0"
         >
-          <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
             {workout.exercises.map((exercise, ei) => (
               <div key={`${workout.id}-${exercise.exerciseId}-${ei}`}>
                 {ei > 0 && <div className="h-px w-full bg-gym-zinc-100 mb-4" />}

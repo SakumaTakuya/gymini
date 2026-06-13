@@ -38,4 +38,11 @@ describe('EmptyDayState', () => {
     const container = screen.getByTestId('empty-day-state')
     expect(container.className).toContain('border-dashed')
   })
+
+  it('コンテナの縦パディングは py-6（旧 py-8 ではない）', () => {
+    render(<EmptyDayState date={date} onAddWorkout={vi.fn()} />)
+    const container = screen.getByTestId('empty-day-state')
+    expect(container.className).toContain('py-6')
+    expect(container.className).not.toContain('py-8')
+  })
 })

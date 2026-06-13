@@ -19,7 +19,7 @@ export function EmptyDayState({ date, onAddWorkout }: EmptyDayStateProps) {
 
       <div
         data-testid="empty-day-state"
-        className="mx-4 bg-transparent rounded-[24px] py-8 px-6 border-2 border-dashed border-gym-zinc-200 flex flex-col items-center justify-center gap-3"
+        className="mx-4 bg-transparent rounded-[24px] py-6 px-6 border-2 border-dashed border-gym-zinc-200 flex flex-col items-center justify-center gap-3"
       >
         <div className="w-12 h-12 bg-gym-white rounded-full flex items-center justify-center shadow-soft text-gym-zinc-300">
           <Ghost size={24} weight="duotone" />

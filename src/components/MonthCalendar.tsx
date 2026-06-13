@@ -188,8 +188,8 @@ export function MonthCalendar({
   })
 
   return (
-    <Card className="mx-4 rounded-[24px] p-5 shadow-soft border border-gym-zinc-100 mb-8 ring-0">
-      <div className="flex justify-between items-center mb-6 px-2">
+    <Card className="mx-4 rounded-[24px] p-4 shadow-soft border border-gym-zinc-100 mb-6 ring-0">
+      <div className="flex justify-between items-center mb-4 px-2">
         <IconButton
           onClick={onPrevMonth}
           className="rounded-full text-gym-zinc-400 hover:bg-gym-zinc-50 transition-colors"
