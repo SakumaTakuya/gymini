@@ -57,6 +57,13 @@ describe('createGeminiClient', () => {
     )
   })
 
+  test('config.model を指定するとそのモデルを使用する', () => {
+    createGeminiClient({ apiKey: 'key', model: 'gemini-2.5-pro' })
+    expect(getGenerativeModelMock).toHaveBeenCalledWith(
+      expect.objectContaining({ model: 'gemini-2.5-pro' }),
+    )
+  })
+
   test('generate がテキストレスポンスを返す', async () => {
     generateContentMock.mockResolvedValueOnce(makeResponse('hello'))
     const client = createGeminiClient({ apiKey: 'key' })

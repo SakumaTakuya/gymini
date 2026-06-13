@@ -5,10 +5,12 @@ import {
 } from '@google/generative-ai'
 import { TOOL_DECLARATIONS } from './toolDefinitions'
 import { SYSTEM_INSTRUCTION } from './prompts/systemInstruction'
+import { DEFAULT_GEMINI_MODEL } from './geminiModels'
 
 export { buildSystemInstruction } from './prompts/buildSystemInstruction'
 
-export const GEMINI_MODEL = 'gemini-3-flash-preview'
+/** 後方互換のため維持する既定モデル。選択モデルは settingsStore 経由で渡る。 */
+export const GEMINI_MODEL = DEFAULT_GEMINI_MODEL
 export const MAX_HISTORY_MESSAGES = 50
 export const GEMINI_TIMEOUT_MS = 30_000
 
@@ -34,6 +36,7 @@ export type GeminiChatResponse = {
 
 export type GeminiClientConfig = {
   apiKey: string
+  model?: string
   toolDeclarations?: FunctionDeclaration[]
   systemInstruction?: string
 }
@@ -48,7 +51,7 @@ export type GeminiClient = {
 export function createGeminiClient(config: GeminiClientConfig): GeminiClient {
   const genAI = new GoogleGenerativeAI(config.apiKey)
   const model = genAI.getGenerativeModel({
-    model: GEMINI_MODEL,
+    model: config.model ?? GEMINI_MODEL,
     tools: [
       {
         functionDeclarations: config.toolDeclarations ?? TOOL_DECLARATIONS,

@@ -80,9 +80,17 @@ requirementDiagram
         verifymethod: test
     }
 
+    functionalRequirement ModelSelection {
+        id: FR_011
+        text: "サポートされるGeminiモデルを動的に取得して選択"
+        risk: medium
+        verifymethod: test
+    }
+
     APIKeyManagement - contains -> APIKeyInputSave
     APIKeyManagement - contains -> APIKeyVisibilityToggle
     APIKeyManagement - contains -> APIKeyWarning
+    APIKeyManagement - contains -> ModelSelection
 ```
 
 ---
@@ -106,5 +114,13 @@ Gemini APIキーの入力フォームを提供し、ブラウザにローカル�
 APIキーが未設定の場合、全画面の歯車アイコンに赤いバッジ（ドット）を表示して設定画面への導線を示す。
 
 > **変更（2026-04-06）:** 旧仕様の「ヘッダー警告バナー」から「歯車アイコン赤バッジ」に変更。バナーは廃止。バッジの詳細は [settings/index.md](../settings/index.md) FR_022 を参照。
+
+**検証方法:** テストによる検証
+
+### FR_011: Geminiモデルの選択
+
+利用可能なGeminiモデルをハードコードのリストではなく、APIキーを用いてGemini ListModels エンドポイント（`/v1beta/models`）から動的に取得する。`generateContent` をサポートするモデルのみを一覧表示し、ユーザーが対話に使うモデルを選択できる。選択結果はlocalStorageに永続化し、未選択時は既定モデル（`gemini-3-flash-preview`）を使う。
+
+> **B-001準拠:** モデル一覧の取得はGemini APIエンドポイントへの直接通信のみで行い、APIキーを中間サーバーや第三者へ送信しない。
 
 **検証方法:** テストによる検証
