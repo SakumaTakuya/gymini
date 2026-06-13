@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render, screen, fireEvent } from '@testing-library/react'
+import { render, screen, fireEvent, within } from '@testing-library/react'
 import {
   ExerciseCard,
   type ExerciseCardSetHandlers,
@@ -185,6 +185,58 @@ describe('ExerciseCard', () => {
       // Pending set inputs
       const inputs = screen.getAllByRole('spinbutton')
       expect(inputs).toHaveLength(2)
+    })
+  })
+
+  describe('カード本文の高さ制御（FR_036）', () => {
+    it('完了セット一覧は max-h + overflow-y-auto のスクロール領域に入る', () => {
+      const draft: DraftExercise = {
+        ...baseDraft,
+        cardState: 'idle',
+        sets: [
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 9 },
+        ],
+      }
+      render(<ExerciseCard {...makeProps({ draftExercise: draft })} />)
+      const scroll = screen.getByTestId('sets-scroll')
+      expect(scroll.className).toContain('overflow-y-auto')
+      expect(scroll.className).toMatch(/max-h-/)
+      expect(within(scroll).getAllByTestId('completed-set-row')).toHaveLength(2)
+    })
+
+    it('記録中（新規）は pending 行をスクロール領域の外に出し常時可視にする', () => {
+      const draft: DraftExercise = {
+        ...baseDraft,
+        cardState: 'recording',
+        sets: [{ weight: 60, reps: 10 }],
+        pendingSet: { weight: 60, reps: 10 },
+        editingSetIndex: null,
+      }
+      render(<ExerciseCard {...makeProps({ draftExercise: draft })} />)
+      const scroll = screen.getByTestId('sets-scroll')
+      // 完了行はスクロール領域内
+      expect(within(scroll).getAllByTestId('completed-set-row')).toHaveLength(1)
+      // pending 入力（spinbutton）はスクロール領域の外に出ている
+      expect(within(scroll).queryAllByRole('spinbutton')).toHaveLength(0)
+      expect(screen.getAllByRole('spinbutton')).toHaveLength(2)
+    })
+
+    it('記録中（編集）は pending 行を編集位置（スクロール領域内）に挿入する', () => {
+      const draft: DraftExercise = {
+        ...baseDraft,
+        cardState: 'recording',
+        sets: [
+          { weight: 60, reps: 10 },
+          { weight: 65, reps: 8 },
+        ],
+        pendingSet: { weight: 60, reps: 10 },
+        editingSetIndex: 0,
+      }
+      render(<ExerciseCard {...makeProps({ draftExercise: draft })} />)
+      const scroll = screen.getByTestId('sets-scroll')
+      // 編集中は入力行がスクロール領域の中に挿入される
+      expect(within(scroll).getAllByRole('spinbutton')).toHaveLength(2)
     })
   })
 

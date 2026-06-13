@@ -13,12 +13,12 @@ export function CompletedSetRow({ setNumber, set, onEdit, onDelete }: CompletedS
   return (
     <div
       data-testid="completed-set-row"
-      className="animate-pop relative overflow-hidden flex items-center gap-3 py-2 px-2 bg-gym-zinc-50 rounded-xl"
+      className="animate-pop relative overflow-hidden flex items-center gap-3 py-1.5 px-2 bg-gym-zinc-50 rounded-xl"
     >
       <span
         data-testid="completed-set-watermark"
         aria-hidden="true"
-        className="absolute right-0 top-0 bottom-0 flex items-center pr-4 font-outfit font-bold text-5xl text-gym-zinc-200 pointer-events-none select-none tabular-nums"
+        className="absolute right-0 top-0 bottom-0 flex items-center pr-4 font-outfit font-bold text-4xl text-gym-zinc-200 pointer-events-none select-none tabular-nums"
       >
         {setNumber}
       </span>
@@ -30,11 +30,11 @@ export function CompletedSetRow({ setNumber, set, onEdit, onDelete }: CompletedS
         <Trash size={14} weight="bold" />
       </IconButton>
       <div className="relative z-10 flex-1 flex gap-6">
-        <p className="font-outfit font-semibold text-2xl text-gym-black tabular-nums">
+        <p className="font-outfit font-semibold text-xl text-gym-black tabular-nums">
           {set.weight}{' '}
           <span className="text-[10px] font-normal text-gym-zinc-400">kg</span>
         </p>
-        <p className="font-outfit font-semibold text-2xl text-gym-black tabular-nums">
+        <p className="font-outfit font-semibold text-xl text-gym-black tabular-nums">
           {set.reps}{' '}
           <span className="text-[10px] font-normal text-gym-zinc-400">回</span>
         </p>
