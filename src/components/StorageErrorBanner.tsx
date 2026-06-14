@@ -16,7 +16,7 @@ export function StorageErrorBanner() {
   return (
     <div
       role="alert"
-      className="fixed inset-x-0 top-0 z-50 flex items-start gap-3 border-b border-gym-accent/30 bg-gym-accent/10 px-4 py-3"
+      className="fixed inset-x-0 top-0 z-50 flex items-start gap-3 border-b border-gym-accent/30 bg-gym-accent/10 backdrop-blur-xl px-4 py-3"
     >
       <p className="flex-1 text-sm leading-snug text-gym-black">
         {MESSAGES[error]}
