@@ -42,4 +42,11 @@ describe('AddSetButton', () => {
     expect(btn.className).toContain('border-dashed')
     expect(btn.className).toContain('min-h-[44px]')
   })
+
+  it('アイコンのみでも 44px 角の最小タップターゲットを確保する', () => {
+    render(<AddSetButton onClick={vi.fn()} aria-label="追加" />)
+    const btn = screen.getByRole('button', { name: '追加' })
+    expect(btn.className).toContain('min-h-[44px]')
+    expect(btn.className).toContain('min-w-[44px]')
+  })
 })
