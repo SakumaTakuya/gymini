@@ -32,7 +32,7 @@ src/
 └── test/            # Vitest グローバルセットアップ + integration テスト
 ```
 
-**ルーティング構造**: `/__root → /_app → /training | /ai | /history`, `/settings` は `/_app` 外
+**ルーティング構造**: `/__root → /_app → /training | /history`, `/settings` は `/_app` 外。`/ai` 独立ルートは撤去済み（AI 対話は FRAME2 タイムラインに統合）。未定義パスは `notFoundComponent` で `/training` にフォールバック
 
 ## Gotchas
 
