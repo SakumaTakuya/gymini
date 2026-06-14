@@ -6,7 +6,7 @@ status: "draft"
 created: "2026-03-08"
 updated: "2026-05-17"
 depends-on: ["prd-gymini", "prd-api-key", "prd-workout", "prd-exercise-master", "prd-navigation"]
-tags: ["ai", "chat", "function-calling", "gemini", "timeline", "phase-3"]
+tags: ["ai", "chat", "function-calling", "gemini", "timeline", "phase-4"]
 category: "ai"
 priority: "high"
 risk: "high"

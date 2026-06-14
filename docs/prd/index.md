@@ -16,6 +16,8 @@ risk: "medium"
 
 > **PRD の役割**: `docs/prd/` は「プロダクトとして何を・なぜ作るか」の唯一の真実。機能追加・変更時に更新必須。
 
+> **要求 ID の規約**: `FR_xxx` / `IR_xxx` / `DC_xxx` は **PRD ごとのローカル名前空間**であり、グローバル一意ではない（同じ番号が別 PRD では別要求を指す。例: `FR_013` は [ai-chat](ai-chat/index.md) と [history](history/index.md) で別物）。PRD をまたいで参照するときは PRD 名を併記する。`REQ_xxx` は本ファイル §3 の全体要求図を正とする system レベル ID で、複数 PRD が 1 つの REQ を分担しうる（REQ_007 / REQ_008 / REQ_010）。PRD ↔ 所有 ID の対応は [README.md](../../README.md) を参照。
+
 ## 概要
 
 gyminiは、筋トレ記録とAIコーチングを組み合わせたWebアプリケーションである。ユーザーが自身のGemini APIキーを持ち込み（BYOK: Bring Your Own Key）、日々のワークアウト記録をAIが自律的に参照してパーソナライズされたアドバイスを提供する。
