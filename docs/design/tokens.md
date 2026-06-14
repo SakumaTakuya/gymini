@@ -61,6 +61,8 @@ Opacity 修飾子は許容: `bg-gym-white/80`、`border-gym-zinc-200/60` など�
 
 ## スペーシングトークン
 
+### クロムクリアランス（固定ヘッダー・BottomNav）
+
 固定ヘッダー・BottomNav の高さから導かれる意味的スペーシング。直接 `pt-16`/`pb-24` 等を書かない。
 
 | クラス | 値 | 用途 |
@@ -74,6 +76,45 @@ Opacity 修飾子は許容: `bg-gym-white/80`、`border-gym-zinc-200/60` など�
 - `overflow-y-auto` スクロールコンテナは `pb-content-bottom-scroll` を使って自身の下余白を管理する
 - `SettingsPage`（`_app` 外）は `pt-content-top` を自身で持つ
 - AI 対話はタイムライン統合済み。ChatInput を内包する `ActiveSessionView` も `pb-content-bottom-scroll` を使い、専用の chat クリアランストークンは持たない
+
+### 画面端ガター（横インセット）
+
+画面端からの水平インセットは 1 種類（16px）に統一する。カード端とセクション見出し端が必ず揃う。
+
+| クラス | 値 | 用途 |
+|:---|:---|:---|
+| `mx-page` / `px-page` | `16px` | カードの左右ガター（`mx-page`）、見出し等カード外テキストのインセット（`px-page`）|
+
+**ルール**:
+- 画面端の水平インセットに生の `px-4`/`px-5`/`px-6`・`mx-4` を直書きしない。`px-page`/`mx-page` を使う
+- ヘッダーピル・BottomNav 等の固定クロム内部パディングはこの限りでない（独自の `px-2`/`px-3` を持つ）
+
+### 縦リズム（軽量スケール）
+
+縦方向の余白は以下の少数の意味的ステップに収束させる。`mb-5`/`mb-7`/`mb-10` 等の中間値は新規追加しない。
+
+| 用途 | クラス | 値 |
+|:---|:---|:---|
+| 密なインライン（アイコン+ラベル、セット行内）| `gap-1` / `gap-2` | 4 / 8px |
+| リスト要素間（種目間など）| `gap-3` | 12px |
+| カード内ヘッダ → 本文 | `mb-3` | 12px |
+| カード／セクション間（標準）| `mb-4` | 16px |
+| 大きな区切り（カレンダーブロック等）| `mb-6` | 24px |
+
+## カードコンポーネント
+
+`rounded-[24px]` のコンテンツカードは [GymCard](../../src/components/GymCard.tsx) を使う。角丸・背景・影・内側 padding を内包しているため、呼び出し側で `rounded-[24px]`/`shadow-soft`/`p-4` 等を直書きしない。
+
+| プロップ | 値 | 効果 |
+|:---|:---|:---|
+| `size` | `default`（既定）/ `sm` | 内側 padding `p-4`（16px）/ `p-3`（12px）|
+| `variant` | `solid`（既定）/ `dashed` | 白背景+`shadow-soft` / 透明+破線（プレースホルダ）|
+
+**ルール**:
+- カード内 padding は GymCard が所有する。詰める／緩めるは GymCard 側で一括変更する
+- 配置（`mx-page`・`mb-4` 等）と種別境界線（History の `border border-gym-zinc-100`）は配置責務として呼び出し側で付与する。Active Session のカードは境界線を持たない（[tactile-direction.md](tactile-direction.md) 紙化）
+- 設定画面の `SectionCard`（`rounded-[20px]`・内部セクション構造）は別種のため GymCard 対象外
+
 
 ## ユーティリティ
 

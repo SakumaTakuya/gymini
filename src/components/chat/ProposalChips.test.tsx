@@ -79,6 +79,15 @@ describe('ProposalChips', () => {
     expect(onClick).not.toHaveBeenCalled()
   })
 
+  it('バブル本文との上マージンは mt-2（旧 mt-3 ではない）', () => {
+    const { container } = render(
+      <ProposalChips actions={actions} onClick={() => {}} />,
+    )
+    const root = container.firstChild as HTMLElement
+    expect(root.className).toContain('mt-2')
+    expect(root.className).not.toContain('mt-3')
+  })
+
   it('actions が空のとき何も描画しない（root が null）', () => {
     const { container } = render(
       <ProposalChips actions={[]} onClick={() => {}} />,

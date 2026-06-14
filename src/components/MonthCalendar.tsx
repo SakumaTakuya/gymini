@@ -1,7 +1,7 @@
 import { useMemo } from 'react'
 import { DayPicker, type DayButtonProps } from 'react-day-picker'
 import { CaretLeft, CaretRight } from '@phosphor-icons/react'
-import { Card } from '@/components/ui/card'
+import { GymCard } from '@/components/GymCard'
 import { IconButton } from '@/components/ui/icon-button'
 import { useSnapScroll } from '@/hooks/useSnapScroll'
 import { cn } from '@/lib/utils'
@@ -188,8 +188,8 @@ export function MonthCalendar({
   })
 
   return (
-    <Card className="mx-4 rounded-[24px] p-5 shadow-soft border border-gym-zinc-100 mb-8 ring-0">
-      <div className="flex justify-between items-center mb-6 px-2">
+    <GymCard className="mx-page mb-6 border border-gym-zinc-100">
+      <div className="flex justify-between items-center mb-4 px-2">
         <IconButton
           onClick={onPrevMonth}
           className="rounded-full text-gym-zinc-400 hover:bg-gym-zinc-50 transition-colors"
@@ -242,6 +242,6 @@ export function MonthCalendar({
           interactive={false}
         />
       </div>
-    </Card>
+    </GymCard>
   )
 }

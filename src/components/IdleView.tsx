@@ -13,7 +13,7 @@ export function IdleView({ onStartTraining }: IdleViewProps) {
   })
 
   return (
-    <div className="flex-1 min-h-0 bg-gym-zinc-50 px-6 pt-content-top relative flex flex-col">
+    <div className="flex-1 min-h-0 bg-gym-zinc-50 px-page pt-content-top relative flex flex-col">
       <div className="mb-10">
         <p className="text-xs text-gym-zinc-400 font-medium">{dateStr}</p>
         <p className="font-outfit font-bold mt-0.5 text-gym-black tracking-tight">

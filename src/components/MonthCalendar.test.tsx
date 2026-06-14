@@ -152,6 +152,29 @@ describe('MonthCalendar', () => {
     expect(outsideSpan).toBeDefined()
   })
 
+  describe('余白（密度）', () => {
+    it('カードのパディングは p-4・下マージンは mb-6（旧 p-5 / mb-8 ではない）', () => {
+      const { container } = render(
+        <MonthCalendar
+          displayMonth={{ year: 2026, month: 4 }}
+          selectedDate={'2026-04-12' as DateString}
+          daysWithWorkouts={new Set<DateString>()}
+          onPrevMonth={vi.fn()}
+          onNextMonth={vi.fn()}
+          onSelectDate={vi.fn()}
+        />,
+      )
+      const card = container.firstChild as HTMLElement
+      expect(card.className).toContain('p-4')
+      expect(card.className).not.toContain('p-5')
+      expect(card.className).toContain('mb-6')
+      expect(card.className).not.toContain('mb-8')
+      // 画面端ガターは mx-page に統一
+      expect(card.className).toContain('mx-page')
+      expect(card.className).not.toContain('mx-4')
+    })
+  })
+
   describe('スクロール月遷移', () => {
     const PANEL_WIDTH = 320
 

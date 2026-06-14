@@ -23,7 +23,7 @@ export function ChatBubble({
 
   if (isUser) {
     return (
-      <div className="flex justify-end px-4 py-1">
+      <div className="flex justify-end px-page py-1">
         <div
           className={cn(
             'max-w-[75%] rounded-[18px] rounded-br-[4px]',
@@ -39,7 +39,7 @@ export function ChatBubble({
   const hasActions = Array.isArray(actions) && actions.length > 0
 
   return (
-    <div className="flex justify-start px-4 py-1">
+    <div className="flex justify-start px-page py-1">
       <div
         className={cn(
           'max-w-[88%] rounded-[18px] rounded-bl-[4px]',
