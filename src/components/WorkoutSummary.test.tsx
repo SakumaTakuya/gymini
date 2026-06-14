@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import { WorkoutSummary } from './WorkoutSummary'
+import { STAGGER_STEP_MS } from '@/lib/motion'
 import type { DateString, ISODateTimeString } from '../schemas/date'
 import type { Workout } from '../schemas/workout'
 
@@ -142,6 +143,19 @@ describe('WorkoutSummary', () => {
     expect(inner).not.toBeNull()
     expect(inner.className).toContain('gap-3')
     expect(inner.className).not.toContain('gap-4')
+  })
+
+  it('各ワークアウトカードは共通の出現アニメ(animate-appear)でラップされる', () => {
+    const w1 = makeWorkout({ id: '1' })
+    const w2 = makeWorkout({ id: '2' })
+    const { container } = render(
+      <WorkoutSummary date={'2026-04-12' as DateString} workouts={[w1, w2]} />,
+    )
+    const appeared = container.querySelectorAll('.animate-appear')
+    expect(appeared.length).toBe(2)
+    // 2 枚目は stagger 遅延が付く
+    const second = appeared[1] as HTMLElement
+    expect(second.style.animationDelay).toBe(`${STAGGER_STEP_MS}ms`)
   })
 
   it('複数のワークアウトをそれぞれ別のセクションで描画する', () => {

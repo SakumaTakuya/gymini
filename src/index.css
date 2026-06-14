@@ -197,3 +197,20 @@
     @apply font-sans;
   }
 }
+
+/*
+ * reduced-motion のグローバルネット。
+ * 出現/呼吸/トランジション等は useAppear / useReducedMotion 側でも抑止するが、
+ * プリミティブを経由しない生の animate-*・transition-* も含め、ここで実質ゼロ化して
+ * アクセシビリティを担保する（防御的二重化）。アニメは最終フレームへ即時収束する。
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}

@@ -1,4 +1,5 @@
 import { GymCard } from '@/components/GymCard'
+import { Appear } from '@/components/motion/Appear'
 import { formatDateHeader } from '../lib/dateFormat'
 import type { DateString } from '../schemas/date'
 import type { Workout } from '../schemas/workout'
@@ -17,9 +18,9 @@ export function WorkoutSummary({ date, workouts }: WorkoutSummaryProps) {
         </h3>
       </div>
 
-      {workouts.map((workout) => (
+      {workouts.map((workout, wi) => (
+        <Appear key={workout.id} index={wi}>
         <GymCard
-          key={workout.id}
           className="mx-page mb-4 border border-gym-zinc-100"
         >
           <div className="flex flex-col gap-3">
@@ -55,6 +56,7 @@ export function WorkoutSummary({ date, workouts }: WorkoutSummaryProps) {
             ))}
           </div>
         </GymCard>
+        </Appear>
       ))}
     </>
   )

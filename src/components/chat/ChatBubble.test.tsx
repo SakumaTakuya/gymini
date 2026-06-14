@@ -16,6 +16,11 @@ describe('ChatBubble', () => {
       expect(container.firstChild).toHaveClass('justify-end')
     })
 
+    it('共通の出現アニメ(animate-appear)が付く', () => {
+      const { container } = render(<ChatBubble role="user" content="x" />)
+      expect(container.firstChild).toHaveClass('animate-appear')
+    })
+
     it('Markdown 記法をそのままテキストとして表示する（変換しない）', () => {
       render(<ChatBubble role="user" content="**太字**のテキスト" />)
       expect(screen.getByText('**太字**のテキスト')).toBeInTheDocument()
@@ -32,6 +37,11 @@ describe('ChatBubble', () => {
     it('左寄せで配置される', () => {
       const { container } = render(<ChatBubble role="assistant" content="test" />)
       expect(container.firstChild).toHaveClass('justify-start')
+    })
+
+    it('共通の出現アニメ(animate-appear)が付く', () => {
+      const { container } = render(<ChatBubble role="assistant" content="x" />)
+      expect(container.firstChild).toHaveClass('animate-appear')
     })
 
     it('Markdown をリスト形式でレンダリングする', () => {

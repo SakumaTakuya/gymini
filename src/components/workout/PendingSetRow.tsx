@@ -2,6 +2,7 @@ import { Check, Plus } from '@phosphor-icons/react'
 import { type FocusEvent, type KeyboardEvent, useRef } from 'react'
 import { IconButton } from '../ui/icon-button'
 import { tactileVibrate, HAPTIC_SET_COMPLETE_MS } from '@/lib/haptic'
+import { useAppear } from '@/hooks/useAppear'
 import { SetEditRow } from './SetEditRow'
 
 type PendingSetRowProps = {
@@ -59,9 +60,11 @@ export function PendingSetRow({
     }
   }
 
+  const appear = useAppear()
+
   return (
     <SetEditRow
-      className="animate-appear"
+      className={appear.className}
       setNumber={setNumber}
       blankOnZero
       weight={{
