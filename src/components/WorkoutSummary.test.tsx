@@ -87,6 +87,63 @@ describe('WorkoutSummary', () => {
     expect(screen.getByText('Cable Flyes')).toBeInTheDocument()
   })
 
+  it('カードのパディングは p-4・下マージンは mb-4（旧 p-5 / mb-6 ではない）', () => {
+    const { container } = render(
+      <WorkoutSummary
+        date={'2026-04-12' as DateString}
+        workouts={[makeWorkout()]}
+      />,
+    )
+    const card = container.querySelector('.shadow-soft') as HTMLElement
+    expect(card).not.toBeNull()
+    expect(card.className).toContain('p-4')
+    expect(card.className).not.toContain('p-5')
+    expect(card.className).toContain('mb-4')
+    expect(card.className).not.toContain('mb-6')
+  })
+
+  it('カード・見出しの画面端ガターは px-page/mx-page に統一されている', () => {
+    const { container } = render(
+      <WorkoutSummary
+        date={'2026-04-12' as DateString}
+        workouts={[makeWorkout()]}
+      />,
+    )
+    // 見出しは px-page、カードは mx-page。生の px-6 / mx-4 を残さない
+    const header = container.querySelector('h3')!.parentElement as HTMLElement
+    expect(header.className).toContain('px-page')
+    expect(header.className).not.toContain('px-6')
+    const card = container.querySelector('.shadow-soft') as HTMLElement
+    expect(card.className).toContain('mx-page')
+    expect(card.className).not.toContain('mx-4')
+  })
+
+  it('種目間のギャップは gap-3（旧 gap-4 ではない）', () => {
+    const workout = makeWorkout({
+      exercises: [
+        {
+          exerciseId: 'e1',
+          exerciseName: 'Bench Press',
+          sets: [{ weight: 100, reps: 10 }],
+        },
+        {
+          exerciseId: 'e2',
+          exerciseName: 'Cable Flyes',
+          sets: [{ weight: 30, reps: 12 }],
+        },
+      ],
+    })
+    const { container } = render(
+      <WorkoutSummary date={'2026-04-12' as DateString} workouts={[workout]} />,
+    )
+    // Card ラッパー（.shadow-soft）の直下に種目を並べる flex-col コンテナがある
+    const card = container.querySelector('.shadow-soft') as HTMLElement
+    const inner = card.firstElementChild as HTMLElement
+    expect(inner).not.toBeNull()
+    expect(inner.className).toContain('gap-3')
+    expect(inner.className).not.toContain('gap-4')
+  })
+
   it('複数のワークアウトをそれぞれ別のセクションで描画する', () => {
     const w1 = makeWorkout({ id: '1' })
     const w2 = makeWorkout({

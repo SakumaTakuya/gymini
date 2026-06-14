@@ -18,7 +18,7 @@ export function ProposalChips({
   const disabled = Boolean(consumedActionId)
 
   return (
-    <div className="mt-3 flex flex-wrap gap-2">
+    <div className="mt-2 flex flex-wrap gap-2">
       {actions.map((action) => {
         const consumed = consumedActionId === action.id
         return (

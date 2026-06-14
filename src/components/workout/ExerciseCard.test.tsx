@@ -240,6 +240,34 @@ describe('ExerciseCard', () => {
     })
   })
 
+  describe('余白（密度）', () => {
+    it('アウター div のパディングは p-4（旧 p-5 ではない）', () => {
+      const { container } = render(<ExerciseCard {...makeProps()} />)
+      const outer = container.firstChild as HTMLElement
+      expect(outer.className).toContain('p-4')
+      expect(outer.className).not.toContain('p-5')
+    })
+
+    it('画面端ガターは mx-page に統一されている', () => {
+      const { container } = render(<ExerciseCard {...makeProps()} />)
+      const outer = container.firstChild as HTMLElement
+      expect(outer.className).toContain('mx-page')
+      expect(outer.className).not.toContain('mx-4')
+    })
+
+    it('展開時のヘッダ行の下マージンは mb-3（旧 mb-4 ではない）', () => {
+      const draft: DraftExercise = { ...baseDraft, cardState: 'idle' }
+      const { container } = render(
+        <ExerciseCard {...makeProps({ draftExercise: draft })} />,
+      )
+      // ヘッダ行はアウター直下の最初の div
+      const header = (container.firstChild as HTMLElement)
+        .firstElementChild as HTMLElement
+      expect(header.className).toContain('mb-3')
+      expect(header.className).not.toContain('mb-4')
+    })
+  })
+
   describe('Matas 紙化（境界線緩和）', () => {
     it('通常種目カードのアウター div に border border-gym-zinc-100 を含まない', () => {
       const { container } = render(<ExerciseCard {...makeProps()} />)
