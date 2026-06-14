@@ -102,6 +102,22 @@ describe('WorkoutSummary', () => {
     expect(card.className).not.toContain('mb-6')
   })
 
+  it('カード・見出しの画面端ガターは px-page/mx-page に統一されている', () => {
+    const { container } = render(
+      <WorkoutSummary
+        date={'2026-04-12' as DateString}
+        workouts={[makeWorkout()]}
+      />,
+    )
+    // 見出しは px-page、カードは mx-page。生の px-6 / mx-4 を残さない
+    const header = container.querySelector('h3')!.parentElement as HTMLElement
+    expect(header.className).toContain('px-page')
+    expect(header.className).not.toContain('px-6')
+    const card = container.querySelector('.shadow-soft') as HTMLElement
+    expect(card.className).toContain('mx-page')
+    expect(card.className).not.toContain('mx-4')
+  })
+
   it('種目間のギャップは gap-3（旧 gap-4 ではない）', () => {
     const workout = makeWorkout({
       exercises: [

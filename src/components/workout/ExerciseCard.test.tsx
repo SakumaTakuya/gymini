@@ -248,6 +248,13 @@ describe('ExerciseCard', () => {
       expect(outer.className).not.toContain('p-5')
     })
 
+    it('画面端ガターは mx-page に統一されている', () => {
+      const { container } = render(<ExerciseCard {...makeProps()} />)
+      const outer = container.firstChild as HTMLElement
+      expect(outer.className).toContain('mx-page')
+      expect(outer.className).not.toContain('mx-4')
+    })
+
     it('展開時のヘッダ行の下マージンは mb-3（旧 mb-4 ではない）', () => {
       const draft: DraftExercise = { ...baseDraft, cardState: 'idle' }
       const { container } = render(

@@ -169,6 +169,9 @@ describe('MonthCalendar', () => {
       expect(card.className).not.toContain('p-5')
       expect(card.className).toContain('mb-6')
       expect(card.className).not.toContain('mb-8')
+      // 画面端ガターは mx-page に統一
+      expect(card.className).toContain('mx-page')
+      expect(card.className).not.toContain('mx-4')
     })
   })
 

@@ -1,4 +1,4 @@
-import { Card } from '@/components/ui/card'
+import { GymCard } from '@/components/GymCard'
 import { formatDateHeader } from '../lib/dateFormat'
 import type { DateString } from '../schemas/date'
 import type { Workout } from '../schemas/workout'
@@ -11,16 +11,16 @@ interface WorkoutSummaryProps {
 export function WorkoutSummary({ date, workouts }: WorkoutSummaryProps) {
   return (
     <>
-      <div className="px-6 mb-3">
+      <div className="px-page mb-3">
         <h3 className="font-jp font-bold text-sm text-gym-zinc-500">
           {formatDateHeader(date)}
         </h3>
       </div>
 
       {workouts.map((workout) => (
-        <Card
+        <GymCard
           key={workout.id}
-          className="mx-4 mb-4 rounded-[24px] p-4 shadow-soft border border-gym-zinc-100 ring-0"
+          className="mx-page mb-4 border border-gym-zinc-100"
         >
           <div className="flex flex-col gap-3">
             {workout.exercises.map((exercise, ei) => (
@@ -54,7 +54,7 @@ export function WorkoutSummary({ date, workouts }: WorkoutSummaryProps) {
               </div>
             ))}
           </div>
-        </Card>
+        </GymCard>
       ))}
     </>
   )

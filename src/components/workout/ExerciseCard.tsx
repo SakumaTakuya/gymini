@@ -1,6 +1,7 @@
 import { ArrowDown, ArrowUp, CaretDown, CaretUp, DotsThree, Trash } from '@phosphor-icons/react'
 import { useState } from 'react'
 import type { DraftExercise, WorkoutSet } from '../../schemas/workout'
+import { GymCard } from '../GymCard'
 import { IconButton } from '../ui/icon-button'
 import { AddSetButton } from './AddSetButton'
 import { CompletedSetRow } from './CompletedSetRow'
@@ -45,8 +46,8 @@ export function ExerciseCard({
   const isRecordingNew = isRecording && pendingSet !== null && editingSetIndex === null
 
   return (
-    <div
-      className={`animate-appear relative mx-4 mb-3 bg-gym-white rounded-[24px] p-4 shadow-soft ${
+    <GymCard
+      className={`animate-appear relative mx-page mb-3 ${
         isCollapsed ? 'opacity-70' : ''
       } ${menuOpen ? 'z-10' : ''}`}
     >
@@ -184,6 +185,6 @@ export function ExerciseCard({
           )}
         </>
       )}
-    </div>
+    </GymCard>
   )
 }

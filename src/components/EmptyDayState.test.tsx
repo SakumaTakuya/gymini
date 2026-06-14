@@ -45,4 +45,14 @@ describe('EmptyDayState', () => {
     expect(container.className).toContain('py-6')
     expect(container.className).not.toContain('py-8')
   })
+
+  it('画面端ガターは px-page/mx-page に統一されている', () => {
+    render(<EmptyDayState date={date} onAddWorkout={vi.fn()} />)
+    const container = screen.getByTestId('empty-day-state')
+    expect(container.className).toContain('mx-page')
+    expect(container.className).not.toContain('mx-4')
+    const header = screen.getByText('4月12日の記録').parentElement as HTMLElement
+    expect(header.className).toContain('px-page')
+    expect(header.className).not.toContain('px-6')
+  })
 })
