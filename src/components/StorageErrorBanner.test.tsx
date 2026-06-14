@@ -28,6 +28,14 @@ describe('StorageErrorBanner', () => {
     expect(screen.getByText(/空き容量/)).toBeInTheDocument()
   })
 
+  it('半透明背景にバックドロップブラーを適用する', () => {
+    triggerQuotaError()
+    render(<StorageErrorBanner />)
+    const banner = screen.getByRole('alert')
+    expect(banner.className).toContain('bg-gym-accent/10')
+    expect(banner.className).toContain('backdrop-blur-xl')
+  })
+
   it('閉じるボタンでバナーを消す', async () => {
     triggerQuotaError()
     const user = userEvent.setup()
