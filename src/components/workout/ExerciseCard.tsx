@@ -1,6 +1,8 @@
 import { ArrowDown, ArrowUp, CaretDown, CaretUp, DotsThree, Trash } from '@phosphor-icons/react'
 import { useState } from 'react'
 import type { DraftExercise, WorkoutSet } from '../../schemas/workout'
+import { cn } from '@/lib/utils'
+import { useAppear } from '@/hooks/useAppear'
 import { GymCard } from '../GymCard'
 import { IconButton } from '../ui/icon-button'
 import { AddSetButton } from './AddSetButton'
@@ -44,12 +46,16 @@ export function ExerciseCard({
   // 記録中（新規セット入力）: 完了済みセットが何セット積まれても入力行が常に
   // 見えるよう、PendingSetRow をスクロール領域の外に出す（FR_036）。
   const isRecordingNew = isRecording && pendingSet !== null && editingSetIndex === null
+  const appear = useAppear()
 
   return (
     <GymCard
-      className={`animate-appear relative mx-page mb-3 ${
-        isCollapsed ? 'opacity-70' : ''
-      } ${menuOpen ? 'z-10' : ''}`}
+      className={cn(
+        'relative mx-page mb-3',
+        appear.className,
+        isCollapsed && 'opacity-70',
+        menuOpen && 'z-10',
+      )}
     >
       {/* Header */}
       <div

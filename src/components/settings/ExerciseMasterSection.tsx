@@ -5,6 +5,7 @@ import { useInlineEditField } from '@/hooks/useInlineEditField'
 import type { Exercise } from '@/schemas/exercise'
 import { IconButton } from '@/components/ui/icon-button'
 import { Input } from '@/components/ui/input'
+import { Appear } from '@/components/motion/Appear'
 import { ExerciseRow } from './ExerciseRow'
 import { SectionCard } from './SectionCard'
 
@@ -94,7 +95,7 @@ export function ExerciseMasterSection() {
 
       {/* 中段: 種目一覧（divide-y で区切り） */}
       <div className="divide-y divide-gym-zinc-100">
-        {visibleExercises.map((ex) =>
+        {visibleExercises.map((ex, exIndex) =>
           editingId === ex.id ? (
             <div key={ex.id} className="px-3 py-2">
               <div className="flex items-center gap-1">
@@ -142,11 +143,9 @@ export function ExerciseMasterSection() {
               )}
             </div>
           ) : (
-            <ExerciseRow
-              key={ex.id}
-              exercise={ex}
-              onEdit={startEdit}
-            />
+            <Appear key={ex.id} index={exIndex}>
+              <ExerciseRow exercise={ex} onEdit={startEdit} />
+            </Appear>
           ),
         )}
       </div>

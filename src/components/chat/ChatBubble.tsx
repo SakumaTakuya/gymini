@@ -1,6 +1,7 @@
 import ReactMarkdown from 'react-markdown'
 import remarkGfm from 'remark-gfm'
 import { cn } from '../../lib/utils'
+import { useAppear } from '@/hooks/useAppear'
 import { ProposalChips } from './ProposalChips'
 import type { ProposedAction } from '../../types/chat'
 
@@ -20,10 +21,14 @@ export function ChatBubble({
   onActionClick,
 }: ChatBubbleProps) {
   const isUser = role === 'user'
+  const appear = useAppear()
 
   if (isUser) {
     return (
-      <div className="flex justify-end px-page py-1">
+      <div
+        className={cn('flex justify-end px-page py-1', appear.className)}
+        style={appear.style}
+      >
         <div
           className={cn(
             'max-w-[75%] rounded-[18px] rounded-br-[4px]',
@@ -39,7 +44,10 @@ export function ChatBubble({
   const hasActions = Array.isArray(actions) && actions.length > 0
 
   return (
-    <div className="flex justify-start px-page py-1">
+    <div
+      className={cn('flex justify-start px-page py-1', appear.className)}
+      style={appear.style}
+    >
       <div
         className={cn(
           'max-w-[88%] rounded-[18px] rounded-bl-[4px]',

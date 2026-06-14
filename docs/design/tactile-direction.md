@@ -353,6 +353,18 @@ Brichter のラバーバンドや Badeen のスワイプは本来「読む / 見
 
 ペーパートーンの暖色化（P1）も Active Session 限定であり、グローバルなトークン体系は崩さない。
 
+### 出現アニメだけは全画面で共通機構として許可する
+
+上記の「物理は Active Session 限定」は、**ジェスチャー由来の物理**（ラバーバンド・スワイプ・速度コミット）に対する制約である。一方、**マウント時の穏やかな出現**（`animate-appear` のスライドアップフェード）は物理ジェスチャーではなく、リストやカードが「紙のように差し込まれる」静かなフィードバック（哲学 4）であり、全画面で揃える方が一貫性が高い。
+
+したがって、出現アニメは Active Session に限定せず、History / Settings / AI チャットのリスト・カードにも適用してよい。ただし**唯一の共通機構**を経由すること:
+
+- 出現は `useAppear(index?)` フック（`src/hooks/useAppear.ts`）か、その薄いラッパー `Appear`（`src/components/motion/Appear.tsx`）を通す。生の `animate-appear` を新規に直書きしない
+- stagger（連続出現の遅延）も `useAppear` の責務。遅延は `STAGGER_MAX_STEPS`（`src/lib/motion.ts`）で打ち切る
+- `prefers-reduced-motion: reduce` 時は出現アニメを外す。判定は `prefersReducedMotion()`（`src/lib/motion.ts`）/ `useReducedMotion()`（`src/hooks/useReducedMotion.ts`）に一元化し、各コンポーネントで `matchMedia` を直書きしない
+
+物理ジェスチャー（ラバーバンド・スワイプ）は引き続き Active Session 限定。両者を混同しない。
+
 ---
 
 ## 既存 design docs との関係

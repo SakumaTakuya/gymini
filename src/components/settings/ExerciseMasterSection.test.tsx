@@ -24,6 +24,12 @@ describe('ExerciseMasterSection', () => {
     expect(screen.getByText('デッドリフト')).toBeInTheDocument()
   })
 
+  it('一覧の各行は共通の出現アニメ(animate-appear)でラップされる', () => {
+    const { container } = render(<ExerciseMasterSection />)
+    const appeared = container.querySelectorAll('.animate-appear')
+    expect(appeared.length).toBe(3)
+  })
+
   it('入力に応じてリアルタイムで種目を絞り込む', async () => {
     const user = userEvent.setup()
     render(<ExerciseMasterSection />)
