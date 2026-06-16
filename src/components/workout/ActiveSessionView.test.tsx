@@ -292,6 +292,10 @@ describe('ActiveSessionView', () => {
           (el) => within(el as HTMLElement).queryByRole('button', { name }) !== null,
         )
         expect(sticky).toBeDefined()
+        // sticky 固定位置は固定ヘッダー（フローティングピル）下端をクリアする content-top に揃え、
+        // safe-area だけだとカードがヘッダーにかぶるため使わない
+        expect(sticky?.className).toContain('top-content-top')
+        expect(sticky?.className).not.toContain('top-safe-top')
       }
     })
 
