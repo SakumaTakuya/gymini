@@ -1,5 +1,5 @@
 import { Check, Plus } from '@phosphor-icons/react'
-import { type FocusEvent, type KeyboardEvent, useRef } from 'react'
+import { type FocusEvent, type KeyboardEvent, useCallback, useRef } from 'react'
 import { IconButton } from '../ui/icon-button'
 import { tactileVibrate, HAPTIC_SET_COMPLETE_MS } from '@/lib/haptic'
 import { useAppear } from '@/hooks/useAppear'
@@ -27,11 +27,16 @@ export function PendingSetRow({
   // Set to true on button pointerdown to suppress the reps blur auto-complete
   // that would otherwise fire simultaneously with the button click.
   const buttonPressedRef = useRef(false)
+  // Defensively guard against duplicate executions from rapid events
+  // (e.g. mobile Enter key triggers both keydown and blur).
+  const completingRef = useRef(false)
 
-  const completeWithHaptic = () => {
+  const completeWithHaptic = useCallback(() => {
+    if (completingRef.current) return
+    completingRef.current = true
     tactileVibrate(HAPTIC_SET_COMPLETE_MS)
     onComplete()
-  }
+  }, [onComplete])
 
   const handleWeightBlur = () => {
     repsRef.current?.focus()
