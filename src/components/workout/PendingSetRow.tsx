@@ -36,6 +36,11 @@ export function PendingSetRow({
     completingRef.current = true
     tactileVibrate(HAPTIC_SET_COMPLETE_MS)
     onComplete()
+    // Reset after current tick so the same component instance
+    // can be reused for the next set input.
+    setTimeout(() => {
+      completingRef.current = false
+    }, 0)
   }, [onComplete])
 
   const handleWeightBlur = () => {
