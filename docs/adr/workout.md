@@ -25,6 +25,15 @@
 - **決定**: `completeSet` 後、次の `pendingSet` を直前セットの weight/reps で初期化する
 - **理由**: 同一種目での連続セットで毎回入力し直すコストを削減する。
 
+## セット完了トリガーはボタンタップ＋Enter キーのみとする（blur 完了は不採用）
+
+- **決定**: セット完了は「完了ボタン（ph-plus / ph-check）のクリック」と「reps 欄での Enter キー」の 2 経路のみとする。reps 欄の blur では完了しない。
+- **理由**:
+  1. PRD（workout FR_028 / FR_030 状態遷移図）は完了トリガーをボタンと明記しており、blur 完了は仕様にない
+  2. blur 完了は「weight 欄をタップし直す」「スクロールする」「他カードをタップする」など、発見不可能な暗黙挙動として誤確定を生む
+  3. Enter 確定は利便性として意図的に残す（キーボード操作の高速入力を支援）
+  4. blur 完了を除去することで、buttonPressedRef / completingRef などの重複防止ガードが不要になり、コードが単純化する
+
 ## 3 状態カードモデル（collapsed / idle / recording）
 
 - **決定**: `collapsed` / `idle` / `recording` の 3 状態のみ使用（4 状態にしない）
