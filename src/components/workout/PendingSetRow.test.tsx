@@ -136,15 +136,7 @@ describe('PendingSetRow', () => {
     })
   })
 
-  describe('オートコンプリート動作', () => {
-    it('レップ数inputがフォーカスを失いreps > 0のときonCompleteを呼び出す', () => {
-      const onComplete = vi.fn()
-      render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
-      const repsInput = screen.getAllByRole('spinbutton')[1]
-      fireEvent.blur(repsInput)
-      expect(onComplete).toHaveBeenCalledOnce()
-    })
-
+  describe('セット完了トリガー', () => {
     it('レップ数inputでEnterを押しreps > 0のときonCompleteを呼び出す', () => {
       const onComplete = vi.fn()
       render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
@@ -153,7 +145,7 @@ describe('PendingSetRow', () => {
       expect(onComplete).toHaveBeenCalledOnce()
     })
 
-    it('レップ数inputがフォーカスを失いrepsが0のときonCompleteを呼ばない', () => {
+    it('レップ数inputでEnterを押しrepsが0のときonCompleteを呼ばない', () => {
       const onComplete = vi.fn()
       render(
         <PendingSetRow
@@ -163,29 +155,16 @@ describe('PendingSetRow', () => {
         />,
       )
       const repsInput = screen.getAllByRole('spinbutton')[1]
-      fireEvent.blur(repsInput)
+      fireEvent.keyDown(repsInput, { key: 'Enter' })
       expect(onComplete).not.toHaveBeenCalled()
     })
 
-    it('フォーカスが完了ボタンに移動する場合はレップ数blurでonCompleteを呼ばない', () => {
+    it('レップ数inputのblurではonCompleteを呼ばない', () => {
       const onComplete = vi.fn()
       render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
       const repsInput = screen.getAllByRole('spinbutton')[1]
-      const checkButton = screen.getByRole('button', { name: /完了/ })
-      fireEvent.blur(repsInput, { relatedTarget: checkButton })
-      expect(onComplete).not.toHaveBeenCalled()
-    })
-
-    it('ボタンのpointerdownとレップ数blurが同時に発火してもonCompleteを1回だけ呼ぶ', () => {
-      const onComplete = vi.fn()
-      render(<PendingSetRow {...defaultProps} onComplete={onComplete} />)
-      const repsInput = screen.getAllByRole('spinbutton')[1]
-      const checkButton = screen.getByRole('button', { name: /完了/ })
-      // pointerdown fires before blur when tapping the button; blur should be suppressed
-      fireEvent.pointerDown(checkButton)
       fireEvent.blur(repsInput)
-      fireEvent.click(checkButton)
-      expect(onComplete).toHaveBeenCalledOnce()
+      expect(onComplete).not.toHaveBeenCalled()
     })
   })
 
