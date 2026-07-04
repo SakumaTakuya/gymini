@@ -1,6 +1,7 @@
 import { describe, it, expect, beforeEach, vi, afterEach } from 'vitest'
 import { renderHook, act } from '@testing-library/react'
 import { useWorkoutSession } from './useWorkoutSession'
+import { useElapsedSeconds } from './useElapsedSeconds'
 import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
 import { useExerciseStore } from '../stores/exerciseStore'
 
@@ -49,16 +50,22 @@ describe('useWorkoutSession', () => {
     expect(typeof result.current.searchExercises).toBe('function')
   })
 
-  describe('elapsedSeconds', () => {
+  describe('elapsedSeconds（useElapsedSeconds へ分離済み）', () => {
     it('セッションが非アクティブのとき 0 である', () => {
-      const { result } = renderHook(() => useWorkoutSession())
-      expect(result.current.elapsedSeconds).toBe(0)
+      const { result } = renderHook(() =>
+        useElapsedSeconds(useWorkoutSession().startedAt),
+      )
+      expect(result.current).toBe(0)
     })
 
     it('セッションがアクティブのとき毎秒更新される', () => {
       vi.setSystemTime(new Date('2026-03-08T10:00:00.000Z'))
 
-      const { result } = renderHook(() => useWorkoutSession())
+      const { result } = renderHook(() => {
+        const { startedAt, startSession } = useWorkoutSession()
+        const elapsedSeconds = useElapsedSeconds(startedAt)
+        return { elapsedSeconds, startSession }
+      })
 
       act(() => {
         result.current.startSession()
@@ -75,7 +82,11 @@ describe('useWorkoutSession', () => {
     it('セッション終了後に更新を停止する', () => {
       vi.setSystemTime(new Date('2026-03-08T10:00:00.000Z'))
 
-      const { result } = renderHook(() => useWorkoutSession())
+      const { result } = renderHook(() => {
+        const { startedAt, startSession, endSession } = useWorkoutSession()
+        const elapsedSeconds = useElapsedSeconds(startedAt)
+        return { elapsedSeconds, startSession, endSession }
+      })
 
       act(() => {
         result.current.startSession()

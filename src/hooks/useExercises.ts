@@ -1,8 +1,7 @@
 import { useEffect, useMemo } from 'react'
 import { useExerciseStore } from '@/stores/exerciseStore'
 import type { Exercise } from '@/schemas/exercise'
-
-const STORAGE_KEY = 'gymini:exercises'
+import { EXERCISES_STORAGE_KEY } from '@/lib/exerciseRepository'
 
 /**
  * 種目マスターの読み書きを行う公開 hook。
@@ -31,7 +30,7 @@ export function useExercises() {
   // 他タブでの localStorage 変更に追従
   useEffect(() => {
     const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEY) load()
+      if (e.key === EXERCISES_STORAGE_KEY) load()
     }
     window.addEventListener('storage', onStorage)
     return () => window.removeEventListener('storage', onStorage)

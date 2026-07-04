@@ -238,6 +238,29 @@ describe('ExerciseCard', () => {
       // 編集中は入力行がスクロール領域の中に挿入される
       expect(within(scroll).getAllByRole('spinbutton')).toHaveLength(2)
     })
+
+    it('記録中（編集）でも表示上のセット番号が重複しない', () => {
+      // sets: [A, B, C] の B（index 1）を編集 → 表示は 1 / 2(入力行) / 3 になるべき。
+      // 回帰: 編集行の後ろのセットが編集行と同じ番号（2, 2）で表示されていた。
+      const draft: DraftExercise = {
+        ...baseDraft,
+        cardState: 'recording',
+        sets: [
+          { weight: 60, reps: 10 }, // A（元 index 0）
+          { weight: 70, reps: 6 },  // C（元 index 2。B は編集中で配列から除外済み）
+        ],
+        pendingSet: { weight: 65, reps: 8 }, // B（編集中）
+        editingSetIndex: 1,
+      }
+      render(<ExerciseCard {...makeProps({ draftExercise: draft })} />)
+      const scroll = screen.getByTestId('sets-scroll')
+      // 完了行の番号（ウォーターマーク）は 1 と 3、編集中の入力行が 2 を持つ
+      const completedNumbers = within(scroll)
+        .getAllByTestId('completed-set-watermark')
+        .map((el) => el.textContent)
+      expect(completedNumbers).toEqual(['1', '3'])
+      expect(within(scroll).getByText('2')).toBeInTheDocument()
+    })
   })
 
   describe('余白（密度）', () => {

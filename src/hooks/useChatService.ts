@@ -18,7 +18,6 @@ import {
   type GeminiClient,
 } from '../lib/geminiClient'
 import { executeReadTool, executeWriteTool } from '../lib/toolExecutor'
-import * as ExerciseRepository from '../lib/exerciseRepository'
 import { buildActiveSessionContext } from '../lib/sessionContext'
 import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
@@ -40,16 +39,20 @@ export function useChatService(options: UseChatServiceOptions = {}) {
 
   const abortControllerRef = useRef<AbortController | null>(null)
 
+  // options はデフォルト引数 {} により毎レンダー新しい参照になるため、
+  // 依存には options 自体ではなく中身の関数だけを使う。そうしないと
+  // createClient → sendMessage → triggerAction が毎レンダー再生成される。
+  const injectedCreateClient = options.createClient
   const createClient = useCallback<CreateClient>(
     (apiKey, systemInstruction) =>
-      options.createClient
-        ? options.createClient(apiKey, systemInstruction)
+      injectedCreateClient
+        ? injectedCreateClient(apiKey, systemInstruction)
         : createGeminiClient({
             apiKey,
             systemInstruction,
             model: useSettingsStore.getState().model,
           }),
-    [options],
+    [injectedCreateClient],
   )
 
   const clearMessages = useCallback(() => {
@@ -175,10 +178,14 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         store.setLastFailedInput(trimmed)
         store.setError(getErrorMessage(err))
       } finally {
+        // この turn がまだ「現行のリクエスト」である場合のみ loading を畳む。
+        // 新しい sendMessage に置き換えられた turn（abort された旧 turn）が
+        // 無条件に setLoading(false) すると、進行中の新 turn のスピナーを
+        // 消してしまう。stopResponse 経由の中断はそちらで false 済み。
         if (abortControllerRef.current === ctrl) {
           abortControllerRef.current = null
+          useChatStore.getState().setLoading(false)
         }
-        useChatStore.getState().setLoading(false)
       }
     },
     [createClient],
@@ -204,22 +211,14 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         case 'start-exercise': {
           const exerciseName = action.payload?.exerciseName
           if (!exerciseName) return
-          // payload.exerciseId が無いとき、既存種目名と一致すればその id を使う。
-          // AI が proposeAction で未指定の場合でも、既登録種目を「未登録扱い」で
-          // create 重複させないため。
-          let resolvedExerciseId = action.payload?.exerciseId
-          if (!resolvedExerciseId) {
-            const existing = ExerciseRepository.getAll().find(
-              (e) => e.name === exerciseName,
-            )
-            if (existing) resolvedExerciseId = existing.id
-          }
+          // 既存種目名 → id の解決は executeAddExerciseToSession 側で行う
+          // （直接 write 経路と提案経路で同じ解決を共有するため）。
           const args: Record<string, unknown> = {
             exerciseName,
             sets: [{ weight: 0, reps: 0 }],
           }
-          if (resolvedExerciseId) {
-            args.exerciseId = resolvedExerciseId
+          if (action.payload?.exerciseId) {
+            args.exerciseId = action.payload.exerciseId
           }
           const result = executeWriteTool('addExerciseToSession', args)
           const data = toPendingActionData({

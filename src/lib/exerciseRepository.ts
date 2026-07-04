@@ -3,7 +3,9 @@ import { exerciseSchema } from '../schemas/exercise'
 import type { Exercise } from '../schemas/exercise'
 import { safeGetItem, safeSetItem } from './storage'
 
-const STORAGE_KEY = 'gymini:exercises'
+// 他モジュール（useExercises の storage イベント購読）と共有する唯一のキー定義。
+export const EXERCISES_STORAGE_KEY = 'gymini:exercises'
+const STORAGE_KEY = EXERCISES_STORAGE_KEY
 
 function load(): Exercise[] {
   const raw = safeGetItem(STORAGE_KEY)

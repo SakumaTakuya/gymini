@@ -698,6 +698,7 @@ describe('useChatService', () => {
     test('Gemini が exerciseId 省略で呼ぶと種目作成 + 通常カード即時挿入を行う', async () => {
       useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
       useWorkoutSessionStore.getState().startSession()
+      vi.mocked(ExerciseRepository.getAll).mockReturnValue([])
       vi.mocked(ExerciseRepository.create).mockReturnValue({
         id: 'ex-lat',
         name: 'ラットプルダウン',
@@ -726,12 +727,16 @@ describe('useChatService', () => {
       expect(session.draftExercises[0].cardState).toBe('recording')
     })
 
-    test('既に登録済みの場合 DUPLICATE_EXERCISE のヒント文言を返し、セッションは変化しない', async () => {
+    test('既に登録済みの種目名は既存 id を再利用してセッションに追加する（DUPLICATE で弾かない）', async () => {
+      // 仕様変更: 「ベンチプレスやる」→ AI が id 無しで addExerciseToSession を
+      // 呼んだとき、既登録なら失敗ではなく既存 id 再利用で開始できるべき。
+      // 旧仕様（DUPLICATE_EXERCISE で失敗）はユーザー意図に反しており、
+      // 提案経路（triggerAction）だけが手元で id 解決して回避していた。
       useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
       useWorkoutSessionStore.getState().startSession()
-      vi.mocked(ExerciseRepository.create).mockImplementation(() => {
-        throw new Error('Duplicate name: ベンチプレス')
-      })
+      vi.mocked(ExerciseRepository.getAll).mockReturnValue([
+        { id: 'ex-bench', name: 'ベンチプレス' },
+      ])
       const client = mockClient([
         {
           text: null,
@@ -746,9 +751,11 @@ describe('useChatService', () => {
       await act(async () => {
         await result.current.sendMessage('ベンチプレスやる')
       })
-      const last = useChatStore.getState().messages.slice(-1)[0]
-      expect(last.content).toMatch(/その種目は既に登録されています/)
-      expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(0)
+      expect(ExerciseRepository.create).not.toHaveBeenCalled()
+      const session = useWorkoutSessionStore.getState()
+      expect(session.draftExercises).toHaveLength(1)
+      expect(session.draftExercises[0].exerciseId).toBe('ex-bench')
+      expect(session.draftExercises[0].cardState).toBe('recording')
     })
 
     test('既存セッションに同じ種目がある状態で再 addExerciseToSession を呼んでも draft は増えず EXERCISE_ALREADY_IN_SESSION のヒントを返す', async () => {

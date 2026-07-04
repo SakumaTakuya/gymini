@@ -25,7 +25,6 @@ export const workoutSchema = z.object({
 
 // Derived types
 export type WorkoutSet = z.infer<typeof workoutSetSchema>
-export type WorkoutExercise = z.infer<typeof workoutExerciseSchema>
 export type Workout = Omit<
   z.infer<typeof workoutSchema>,
   'date' | 'startedAt' | 'endedAt' | 'createdAt' | 'updatedAt'

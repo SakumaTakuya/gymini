@@ -158,6 +158,9 @@ describe('executeReadTool', () => {
 describe('executeWriteTool', () => {
   beforeEach(() => {
     vi.resetAllMocks()
+    // addExerciseToSession は id 省略時に getAll で既存名を解決するため、
+    // 既定では空マスターとして振る舞わせる（各テストで必要に応じ上書き）。
+    vi.mocked(ExerciseRepository.getAll).mockReturnValue([])
     useWorkoutSessionStore.setState({
       isActive: false,
       startedAt: null,
@@ -344,6 +347,25 @@ describe('executeWriteTool', () => {
       expect(state.draftExercises[0].cardState).toBe('recording')
     })
 
+    test('exerciseId 未指定でも既存種目名と一致すればその id を再利用する（新規作成しない）', () => {
+      // 回帰: 既登録種目を id 無しで指定すると create が DUPLICATE_EXERCISE で失敗していた。
+      // 提案経路（triggerAction）だけが手元で id を解決していたのを executor に一本化。
+      vi.mocked(ExerciseRepository.getAll).mockReturnValue([
+        makeExercise('ベンチプレス', 'existing-1'),
+      ])
+      useWorkoutSessionStore.getState().startSession()
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseName: 'ベンチプレス',
+      })
+      expect(result.success).toBe(true)
+      expect(result.data).toEqual({
+        exerciseId: 'existing-1',
+        exerciseName: 'ベンチプレス',
+      })
+      expect(ExerciseRepository.create).not.toHaveBeenCalled()
+      expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(1)
+    })
+
     test('実値セットとプレースホルダ混在時は実値のみを完了セットにする', () => {
       useWorkoutSessionStore.getState().startSession()
       const result = executeWriteTool('addExerciseToSession', {
@@ -433,8 +455,12 @@ describe('executeWriteTool', () => {
       expect(state.draftExercises[0].sets).toEqual([{ weight: 50, reps: 10 }])
     })
 
-    test('exerciseId 省略 + 既存名: DUPLICATE_EXERCISE を返してセッションを変更しない', () => {
+    test('exerciseId 省略 + 名前解決後の create が重複エラー: DUPLICATE_EXERCISE を返してセッションを変更しない', () => {
+      // 仕様変更: 既存名は id 再利用で成功するようになった（上のテスト参照）。
+      // DUPLICATE_EXERCISE は getAll 時点で不在 → create 時点で重複、という
+      // 競合時のガードとしてのみ残る。
       useWorkoutSessionStore.getState().startSession()
+      vi.mocked(ExerciseRepository.getAll).mockReturnValue([])
       vi.mocked(ExerciseRepository.create).mockImplementation(() => {
         throw new Error('Duplicate name: ベンチプレス')
       })
