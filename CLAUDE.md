@@ -25,7 +25,7 @@ src/
 ├── pages/           # ルートに対応するページコンポーネント
 ├── components/      # 共通 UI（chat/, settings/, workout/, ui/ = shadcn）
 ├── stores/          # Zustand ストア + localStorage 永続化
-├── hooks/           # カスタムフック（useHydrated, useWorkoutSession など）
+├── hooks/           # カスタムフック（useWorkoutSession, useElapsedSeconds など）
 ├── lib/             # ユーティリティ・リポジトリ・Gemini クライアント
 ├── schemas/         # Zod スキーマ（workout, date）
 ├── types/           # 共通型定義
@@ -37,10 +37,9 @@ src/
 ## Gotchas
 
 - **ベースパス**: Vite/Playwright ともに `/gymini/` がベース。ナビゲーションに `/gymini/` を直書きしない（TanStack Router が解決する）
-- **localStorage ハイドレーション**: `useHydrated()` が `false` の間は `AppLayout` がブランク表示。ストアデータを参照するコンポーネントは必ずこのフックを通す
 - **Playwright**: `playwright.config.ts` が `npm run dev` を自動起動。dev サーバー起動中に実行すると二重起動になるため注意。主環境は `Mobile Chrome (Pixel 5)`（モバイルファースト）、副に `chromium` デスクトップ
-- **Vitest カバレッジ閾値**: lines/branches/functions/statements すべて 90%。除外対象は `vite.config.ts` の `coverage.exclude` を参照（`routeTree.gen.ts` / `main.tsx` / `routes/**` / `components/ui/**` / `types/**` / `useHydrated.ts` など）。テスト追加でカバレッジを上げようとする前に除外リストを確認する
-- **Gemini モデル**: `gemini-3-flash-preview`（`src/lib/geminiClient.ts`）。API キーは localStorage に保存し、環境変数は使わない
+- **Vitest カバレッジ閾値**: lines/branches/functions/statements すべて 90%。除外対象は `vite.config.ts` の `coverage.exclude` を参照（`routeTree.gen.ts` / `main.tsx` / `routes/**` / `components/ui/**` / `types/**` など）。テスト追加でカバレッジを上げようとする前に除外リストを確認する
+- **Gemini モデル**: 既定モデルは `gemini-3-flash-preview`（`src/lib/geminiClient.ts` / `src/lib/geminiModels.ts`）。設定画面で ListModels API から動的に取得・選択可能。API キーは localStorage に保存し、環境変数は使わない
 
 ## テストが仕様
 

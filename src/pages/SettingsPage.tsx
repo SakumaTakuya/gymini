@@ -20,7 +20,6 @@ export function SettingsPage() {
     <div className="min-h-screen bg-gym-zinc-50 pt-content-top">
       <AppHeader
         title="設定"
-        variant="modal"
         trailing={
           <IconButton
             onClick={handleClose}

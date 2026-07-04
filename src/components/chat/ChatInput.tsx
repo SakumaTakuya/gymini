@@ -91,8 +91,7 @@ export function ChatInput({
   return (
     <form
       onSubmit={submit}
-      className="fixed left-0 right-0 z-30 px-3 pb-3"
-      style={{ bottom: 96 }}
+      className="fixed left-0 right-0 z-30 px-3 pb-3 bottom-content-bottom"
     >
       <div className="mx-auto max-w-xl relative">
         {showPopover && (

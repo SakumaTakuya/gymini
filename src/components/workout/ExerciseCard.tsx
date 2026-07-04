@@ -158,9 +158,11 @@ export function ExerciseCard({
                     onRepsChange={setHandlers.changeReps}
                   />,
                   ...sets.slice(insertAt).map((set, sliceI) => {
+                    // 編集中は sets 配列から編集対象が抜かれているため、表示上の
+                    // セット番号は pending 行（insertAt + 1 番）の次から始まる。
                     const idx = insertAt + sliceI
                     return (
-                      <CompletedSetRow key={idx + 1} setNumber={idx + 1} set={set} onEdit={() => setHandlers.edit(idx)} onDelete={() => setHandlers.remove(idx)} />
+                      <CompletedSetRow key={idx + 1} setNumber={idx + 2} set={set} onEdit={() => setHandlers.edit(idx)} onDelete={() => setHandlers.remove(idx)} />
                     )
                   }),
                 ]

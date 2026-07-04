@@ -6,19 +6,12 @@ export type AppHeaderProps = {
   title: string
   leading?: ReactNode
   trailing?: ReactNode
-  variant?: AppHeaderVariant
-  sticky?: boolean
   className?: string
 }
 
-// Kept for backward compatibility — no longer used internally
-// eslint-disable-next-line react-refresh/only-export-components
-export const APP_HEADER_VARIANT_HEIGHT: Record<AppHeaderVariant, string> = {
-  default: 'h-14',
-  'session-active': 'min-h-14 py-2',
-  modal: 'h-14',
-}
-
+// Standalone floating-pill header for pages outside the AppHeaderProvider
+// portal system (currently SettingsPage only). Positioning must stay in sync
+// with the provider header: top-header-top = safe-area-inset-top + 12px.
 export function AppHeader({
   title,
   leading,
@@ -28,7 +21,7 @@ export function AppHeader({
   return (
     <header
       role="banner"
-      className={`fixed top-3 left-4 right-4 z-30 rounded-full flex items-center h-11 bg-gym-white/80 backdrop-blur-xl border border-gym-zinc-200/60 shadow-float px-3 justify-between ${className}`.trim()}
+      className={`fixed top-header-top left-4 right-4 z-30 rounded-full flex items-center h-11 bg-gym-white/80 backdrop-blur-xl border border-gym-zinc-200/60 shadow-float px-3 justify-between ${className}`.trim()}
     >
       <div className="flex items-center gap-2 min-w-0">
         {leading}

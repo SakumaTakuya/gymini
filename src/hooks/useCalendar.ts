@@ -48,7 +48,11 @@ export function useCalendar(): UseCalendarReturn {
         : { year: displayMonth.year, month: displayMonth.month - 1 }
     navigate({
       to: '.',
-      search: { month: formatMonth(prev.year, prev.month) },
+      // date など他の search パラメータを保持したまま month のみ更新する。
+      search: (prevSearch: Record<string, unknown>) => ({
+        ...prevSearch,
+        month: formatMonth(prev.year, prev.month),
+      }),
     } as never)
   }, [displayMonth, navigate])
 
@@ -59,7 +63,10 @@ export function useCalendar(): UseCalendarReturn {
         : { year: displayMonth.year, month: displayMonth.month + 1 }
     navigate({
       to: '.',
-      search: { month: formatMonth(next.year, next.month) },
+      search: (prevSearch: Record<string, unknown>) => ({
+        ...prevSearch,
+        month: formatMonth(next.year, next.month),
+      }),
     } as never)
   }, [displayMonth, navigate])
 

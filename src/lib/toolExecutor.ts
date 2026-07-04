@@ -215,15 +215,25 @@ function executeAddExerciseToSession(
   if (explicitExerciseId !== undefined) {
     resolvedExerciseId = explicitExerciseId
   } else {
-    try {
-      const created = ExerciseRepository.create(exerciseName)
-      resolvedExerciseId = created.id
-    } catch (e) {
-      const message = e instanceof Error ? e.message : 'UNKNOWN_ERROR'
-      if (message.startsWith('Duplicate name')) {
-        return { success: false, error: 'DUPLICATE_EXERCISE' }
+    // exerciseId 未指定でも既存種目名と一致すればその id を再利用する。
+    // ここで解決しないと、AI が既登録種目を id 無しで指定したとき
+    // create が DUPLICATE_EXERCISE で失敗してしまう。
+    const existing = ExerciseRepository.getAll().find(
+      (e) => e.name === exerciseName,
+    )
+    if (existing) {
+      resolvedExerciseId = existing.id
+    } else {
+      try {
+        const created = ExerciseRepository.create(exerciseName)
+        resolvedExerciseId = created.id
+      } catch (e) {
+        const message = e instanceof Error ? e.message : 'UNKNOWN_ERROR'
+        if (message.startsWith('Duplicate name')) {
+          return { success: false, error: 'DUPLICATE_EXERCISE' }
+        }
+        return { success: false, error: message }
       }
-      return { success: false, error: message }
     }
   }
 
