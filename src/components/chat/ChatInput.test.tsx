@@ -83,9 +83,9 @@ describe('ChatInput', () => {
 
   describe('種目検索 popover (P8)', () => {
     const exercises = [
-      { id: 'ex-1', name: 'ベンチプレス' },
-      { id: 'ex-2', name: 'ベントオーバーロウ' },
-      { id: 'ex-3', name: 'スクワット' },
+      { id: 'ex-1', name: 'ベンチプレス', category: 'unassigned' as const },
+      { id: 'ex-2', name: 'ベントオーバーロウ', category: 'unassigned' as const },
+      { id: 'ex-3', name: 'スクワット', category: 'unassigned' as const },
     ]
     const searchExercises = (q: string) =>
       exercises.filter((e) =>
@@ -163,7 +163,7 @@ describe('ChatInput', () => {
 
     test('「新規追加」チップタップで create + onSelect + クリアを実行する', async () => {
       const onSelect = vi.fn()
-      const create = vi.fn(() => ({ id: 'ex-new', name: 'ラットプルダウン' }))
+      const create = vi.fn(() => ({ id: 'ex-new', name: 'ラットプルダウン', category: 'unassigned' as const }))
       render(
         <ChatInput
           isLoading={false}

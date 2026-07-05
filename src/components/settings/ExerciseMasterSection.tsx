@@ -2,12 +2,13 @@ import { useState, type ChangeEvent } from 'react'
 import { MagnifyingGlass, Plus, Check, X, Trash } from '@phosphor-icons/react'
 import { useExercises } from '@/hooks/useExercises'
 import { useInlineEditField } from '@/hooks/useInlineEditField'
-import type { Exercise } from '@/schemas/exercise'
+import type { Exercise, ExerciseCategory } from '@/schemas/exercise'
 import { IconButton } from '@/components/ui/icon-button'
 import { Input } from '@/components/ui/input'
 import { Appear } from '@/components/motion/Appear'
 import { ExerciseRow } from './ExerciseRow'
 import { SectionCard } from './SectionCard'
+import { CategoryChips } from './CategoryChips'
 
 const DUPLICATE_ERROR_MESSAGE = 'この種目名は既に登録されています'
 
@@ -22,6 +23,8 @@ export function ExerciseMasterSection() {
   const [query, setQuery] = useState('')
   const [adding, setAdding] = useState(false)
   const [editingId, setEditingId] = useState<string | null>(null)
+  const [addCategory, setAddCategory] = useState<ExerciseCategory>('unassigned')
+  const [editCategory, setEditCategory] = useState<ExerciseCategory>('unassigned')
   const addField = useInlineEditField(mapDuplicateError)
   const editField = useInlineEditField(mapDuplicateError)
 
@@ -33,6 +36,7 @@ export function ExerciseMasterSection() {
 
   const startAdd = () => {
     setAdding(true)
+    setAddCategory('unassigned')
     addField.reset()
   }
 
@@ -42,7 +46,7 @@ export function ExerciseMasterSection() {
   }
 
   const confirmAdd = () => {
-    if (addField.commit((name) => create(name))) {
+    if (addField.commit((name) => create(name, addCategory))) {
       cancelAdd()
     }
   }
@@ -53,6 +57,7 @@ export function ExerciseMasterSection() {
 
   const startEdit = (exercise: Exercise) => {
     setEditingId(exercise.id)
+    setEditCategory(exercise.category)
     editField.reset(exercise.name)
   }
 
@@ -64,7 +69,7 @@ export function ExerciseMasterSection() {
   const confirmEdit = () => {
     if (editingId === null) return
     const id = editingId
-    if (editField.commit((name) => update(id, name))) {
+    if (editField.commit((name) => update(id, name, editCategory))) {
       cancelEdit()
     }
   }
@@ -141,6 +146,9 @@ export function ExerciseMasterSection() {
                   {editField.error}
                 </p>
               )}
+              <div className="mt-2">
+                <CategoryChips value={editCategory} onChange={setEditCategory} />
+              </div>
             </div>
           ) : (
             <Appear key={ex.id} index={exIndex}>
@@ -191,6 +199,9 @@ export function ExerciseMasterSection() {
                 {addField.error}
               </p>
             )}
+            <div className="mt-2">
+              <CategoryChips value={addCategory} onChange={setAddCategory} />
+            </div>
           </div>
         ) : (
           <button

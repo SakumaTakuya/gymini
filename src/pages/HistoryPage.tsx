@@ -17,6 +17,7 @@ export function HistoryPage() {
     goToNextMonth,
     selectDate,
     daysWithWorkouts,
+    dayCategories,
   } = useCalendar()
 
   const workouts = useWorkoutsForDate(selectedDate)
@@ -36,6 +37,7 @@ export function HistoryPage() {
           displayMonth={displayMonth}
           selectedDate={selectedDate}
           daysWithWorkouts={daysWithWorkouts}
+          dayCategories={dayCategories}
           onPrevMonth={goToPrevMonth}
           onNextMonth={goToNextMonth}
           onSelectDate={selectDate}

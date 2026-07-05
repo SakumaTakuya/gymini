@@ -1,14 +1,21 @@
 import { describe, it, expect, vi } from 'vitest'
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import type { Exercise } from '@/schemas/exercise'
 import { ExerciseRow } from './ExerciseRow'
 
-const exercise = { id: 'ex-1', name: 'ベンチプレス' }
+const exercise: Exercise = { id: 'ex-1', name: 'ベンチプレス', category: 'chest' }
 
 describe('ExerciseRow', () => {
   it('種目名を表示する', () => {
     render(<ExerciseRow exercise={exercise} onEdit={vi.fn()} />)
     expect(screen.getByText('ベンチプレス')).toBeInTheDocument()
+  })
+
+  it('部位のラベルと色ドットを表示する', () => {
+    render(<ExerciseRow exercise={exercise} onEdit={vi.fn()} />)
+    expect(screen.getByText('胸')).toBeInTheDocument()
+    expect(screen.getByTestId('exercise-category-dot')).toBeInTheDocument()
   })
 
   it('編集ボタンクリック時にonEditを種目とともに呼び出す', async () => {

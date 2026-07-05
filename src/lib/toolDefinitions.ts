@@ -1,4 +1,5 @@
 import { SchemaType, type FunctionDeclaration, type Schema } from '@google/generative-ai'
+import { SELECTABLE_CATEGORIES, categoryLabel } from './exerciseCategory'
 
 // Gemini Function Declaration の {weight, reps} セット定義を共通化。saveWorkout と
 // addExerciseToSession の両方で同じ形状を要求するため、重複定義を避ける。
@@ -9,6 +10,18 @@ const SET_ITEM_SCHEMA: Schema = {
     reps: { type: SchemaType.NUMBER, description: '回数' },
   },
   required: ['weight', 'reps'],
+}
+
+// 新規種目を作るツール（addExercise / addExerciseToSession）で共通に使う部位パラメータ。
+// enum 値は内部キー、description に日本語ラベルを併記して AI の対応付けを助ける。
+// 迷ったら省略でき、その場合サーバ側で「未分類」になる。
+const CATEGORY_PARAM: Schema = {
+  type: SchemaType.STRING,
+  format: 'enum',
+  enum: [...SELECTABLE_CATEGORIES],
+  description: `対象部位（任意）。新規種目を登録するときは種目名から推定して指定する。${SELECTABLE_CATEGORIES.map(
+    (c) => `${c}=${categoryLabel(c)}`,
+  ).join('、')}。判断できないときは省略する（未分類として登録される）`,
 }
 
 export const READ_TOOL_NAMES = [
@@ -168,6 +181,7 @@ const addExerciseDeclaration: FunctionDeclaration = {
         type: SchemaType.STRING,
         description: '種目名',
       },
+      category: CATEGORY_PARAM,
     },
     required: ['name'],
   },
@@ -187,6 +201,12 @@ const addExerciseToSessionDeclaration: FunctionDeclaration = {
       exerciseName: {
         type: SchemaType.STRING,
         description: '種目名',
+      },
+      category: {
+        ...CATEGORY_PARAM,
+        description: `対象部位（任意）。exerciseId 未指定で新規登録する場合のみ、種目名から推定して指定する。${SELECTABLE_CATEGORIES.map(
+          (c) => `${c}=${categoryLabel(c)}`,
+        ).join('、')}。判断できないときは省略（未分類）。既存種目（exerciseId 指定）のときは不要`,
       },
       sets: {
         type: SchemaType.ARRAY,

@@ -1,6 +1,6 @@
 import { create } from 'zustand'
 import * as ExerciseRepository from '@/lib/exerciseRepository'
-import type { Exercise } from '@/schemas/exercise'
+import type { Exercise, ExerciseCategory } from '@/schemas/exercise'
 
 /**
  * ExerciseRepository を薄くラップする Zustand store。
@@ -16,8 +16,8 @@ type State = {
 
 type Actions = {
   load: () => void
-  create: (name: string) => Exercise
-  update: (id: string, name: string) => Exercise
+  create: (name: string, category?: ExerciseCategory) => Exercise
+  update: (id: string, name: string, category?: ExerciseCategory) => Exercise
   remove: (id: string) => void
 }
 
@@ -30,14 +30,14 @@ export const useExerciseStore = create<State & Actions>()((set) => ({
 
   load: () => set({ exercises: snapshot() }),
 
-  create: (name: string) => {
-    const exercise = ExerciseRepository.create(name)
+  create: (name: string, category?: ExerciseCategory) => {
+    const exercise = ExerciseRepository.create(name, category)
     set({ exercises: snapshot() })
     return exercise
   },
 
-  update: (id: string, name: string) => {
-    const exercise = ExerciseRepository.update(id, name)
+  update: (id: string, name: string, category?: ExerciseCategory) => {
+    const exercise = ExerciseRepository.update(id, name, category)
     set({ exercises: snapshot() })
     return exercise
   },

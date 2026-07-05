@@ -66,6 +66,61 @@ describe('MonthCalendar', () => {
     expect(markers.length).toBe(2)
   })
 
+  it('部位ごとに色ドットを表示する（複数部位＝複数ドット）', () => {
+    setup({
+      daysWithWorkouts: new Set(['2026-04-10' as DateString]),
+      dayCategories: new Map([
+        ['2026-04-10' as DateString, ['chest', 'back']],
+      ]),
+    })
+    const day10 = getDayElement(10)
+    const markers = day10!.querySelectorAll('[data-testid="workout-marker"]')
+    expect(markers.length).toBe(2)
+    // 胸は赤、背中は青
+    expect((markers[0] as HTMLElement).style.backgroundColor).toBe('rgb(222, 58, 43)')
+    expect((markers[1] as HTMLElement).style.backgroundColor).toBe('rgb(37, 99, 235)')
+  })
+
+  it('4部位以上はドットを3個に丸める', () => {
+    setup({
+      daysWithWorkouts: new Set(['2026-04-10' as DateString]),
+      dayCategories: new Map([
+        ['2026-04-10' as DateString, ['chest', 'back', 'legs', 'arms']],
+      ]),
+    })
+    const day10 = getDayElement(10)
+    const markers = day10!.querySelectorAll('[data-testid="workout-marker"]')
+    expect(markers.length).toBe(3)
+  })
+
+  it('部位情報が無い日は単一マーカーにフォールバックする', () => {
+    setup({
+      daysWithWorkouts: new Set(['2026-04-10' as DateString]),
+      dayCategories: new Map(),
+    })
+    const day10 = getDayElement(10)
+    const markers = day10!.querySelectorAll('[data-testid="workout-marker"]')
+    expect(markers.length).toBe(1)
+  })
+
+  it('その月に登場する部位の凡例を表示する', () => {
+    setup({
+      daysWithWorkouts: new Set(['2026-04-10' as DateString]),
+      dayCategories: new Map([
+        ['2026-04-10' as DateString, ['chest', 'legs']],
+      ]),
+    })
+    const legend = screen.getByTestId('calendar-legend')
+    expect(legend).toBeInTheDocument()
+    expect(legend.textContent).toContain('胸')
+    expect(legend.textContent).toContain('脚')
+  })
+
+  it('部位が無ければ凡例を表示しない', () => {
+    setup({ daysWithWorkouts: new Set<DateString>() })
+    expect(screen.queryByTestId('calendar-legend')).not.toBeInTheDocument()
+  })
+
   it('ワークアウトのある日は太字、ない日はミュート色で表示する', () => {
     setup({
       daysWithWorkouts: new Set(['2026-04-05' as DateString]),

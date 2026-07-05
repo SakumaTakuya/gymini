@@ -15,6 +15,7 @@ import {
   addExerciseArgsSchema,
   addExerciseToSessionArgsSchema,
 } from '../schemas/tools'
+import { SELECTABLE_CATEGORIES } from './exerciseCategory'
 
 describe('toolDefinitions', () => {
   test('正確に 9 つのツールを定義する（read 5 + write 3 + propose 1）', () => {
@@ -97,6 +98,16 @@ describe('toolDefinitions', () => {
   test('addExercise が name を必須とする', () => {
     const decl = TOOL_DECLARATIONS.find((d) => d.name === 'addExercise')
     expect(decl?.parameters?.required).toEqual(['name'])
+  })
+
+  test('addExercise の category は選択可能な部位 enum を公開する', () => {
+    const decl = TOOL_DECLARATIONS.find((d) => d.name === 'addExercise')
+    const props = decl?.parameters?.properties as
+      | Record<string, { enum?: string[] }>
+      | undefined
+    expect(props?.category?.enum).toEqual([...SELECTABLE_CATEGORIES])
+    // 未分類は AI に選ばせず、省略時のフォールバックに限定する
+    expect(props?.category?.enum).not.toContain('unassigned')
   })
 
   test('addExerciseToSession が exerciseName のみを必須とする（exerciseId は任意）', () => {
