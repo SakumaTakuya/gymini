@@ -22,7 +22,7 @@ risk: "high"
 
 Gemini API を用いた対話インターフェースを、独立したチャット画面ではなく **ワークアウトセッション内のタイムライン UX** として提供する。種目カード（ExerciseCard）と AI メッセージ（ChatMessage）が時系列で同一スクロール領域に並び、ユーザーは単一の入力欄から自然言語コマンド・種目検索・AI への質問をすべて行う。AI は Function Calling で文脈を参照する。書き込み操作は **手入力と同様にセッションへ通常の ExerciseCard を即時挿入** する。承認/破棄カードは設けず、編集・削除は通常カードの既存 UI で行う。永続化は「終了」時のみで、それまでのレビュー + 編集 + 終了が確認ゲートとなる（REQ_008 / B-002）。
 
-挿入後の編集は通常カードと同一 UI（REQ_008 / FR_013）、種目名のみの追加は recording 空カード（FR_015）、Active Session Context Injection（FR_014）は従来どおり。未登録種目の 1 アクション統合は `addExerciseToSession` の `exerciseId` 省略呼び出しで実現する。
+挿入後の編集は通常カードと同一 UI（REQ_008 / FR_013）、種目名のみの追加は recording 空カード（FR_015）、Active Session Context Injection（FR_014）は従来どおり。未登録種目の 1 アクション統合は `addExerciseToSession` の `exerciseId` 省略呼び出しで実現する。新規種目をマスター登録する際は、AI が種目名から対象部位（category）を推定して付与する（判断できなければ未分類。カレンダーの部位別カラーに反映）。
 
 チャット履歴はワークアウトセッションのライフサイクルに同期し、セッションがアクティブな間のみリロード復元され、終了で破棄される（B-001 の不要データ残留防止と「セッション中のリロード耐性」を両立）。
 
@@ -48,7 +48,7 @@ graph TB
             SaveWorkout[会話から記録保存（即時カード挿入）]
             GetExercises[種目一覧取得]
             AddExercise[種目マスター追加]
-            AddExerciseToSession[セッションへ種目追加（即時カード挿入）。exerciseId 省略時はマスター新規登録 + セッション追加を 1 アクションで完結]
+            AddExerciseToSession[セッションへ種目追加（即時カード挿入）。exerciseId 省略時はマスター新規登録 + セッション追加を 1 アクションで完結。新規登録時は任意で category（部位）を推定して付与]
             ProposeAction[提案チップ群を返す（副作用なし）]
         end
     end

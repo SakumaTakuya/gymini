@@ -1,6 +1,6 @@
 import { z } from 'zod'
 import { exerciseSchema } from '../schemas/exercise'
-import type { Exercise } from '../schemas/exercise'
+import type { Exercise, ExerciseCategory } from '../schemas/exercise'
 import { safeGetItem, safeSetItem } from './storage'
 
 // 他モジュール（useExercises の storage イベント購読）と共有する唯一のキー定義。
@@ -34,7 +34,10 @@ export function search(query: string): Exercise[] {
   return all.filter((e) => e.name.toLowerCase().includes(lower))
 }
 
-export function create(name: string): Exercise {
+export function create(
+  name: string,
+  category: ExerciseCategory = 'unassigned',
+): Exercise {
   const trimmed = name.trim()
   if (trimmed === '') {
     throw new Error('Exercise name is empty')
@@ -43,12 +46,16 @@ export function create(name: string): Exercise {
   if (all.some((e) => e.name === trimmed)) {
     throw new Error(`Duplicate name: ${trimmed}`)
   }
-  const exercise: Exercise = { id: crypto.randomUUID(), name: trimmed }
+  const exercise: Exercise = { id: crypto.randomUUID(), name: trimmed, category }
   save([...all, exercise])
   return exercise
 }
 
-export function update(id: string, name: string): Exercise {
+export function update(
+  id: string,
+  name: string,
+  category?: ExerciseCategory,
+): Exercise {
   const trimmed = name.trim()
   if (trimmed === '') {
     throw new Error('Exercise name is empty')
@@ -61,7 +68,11 @@ export function update(id: string, name: string): Exercise {
   if (all.some((e) => e.id !== id && e.name === trimmed)) {
     throw new Error(`Duplicate name: ${trimmed}`)
   }
-  const updated: Exercise = { ...all[index], name: trimmed }
+  const updated: Exercise = {
+    ...all[index],
+    name: trimmed,
+    category: category ?? all[index].category,
+  }
   all[index] = updated
   save(all)
   return updated

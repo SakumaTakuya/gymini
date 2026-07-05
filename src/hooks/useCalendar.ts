@@ -3,7 +3,10 @@ import { useNavigate, useSearch } from '@tanstack/react-router'
 import { useQuery } from '@tanstack/react-query'
 import { todayDateString } from '../schemas/date'
 import type { DateString } from '../schemas/date'
+import type { ExerciseCategory } from '../schemas/exercise'
 import { queryKeys } from '../lib/queryKeys'
+import { buildDayCategoryMap } from '../lib/calendarCategories'
+import { useExercises } from './useExercises'
 import * as WorkoutRepository from '../lib/workoutRepository'
 
 export interface UseCalendarReturn {
@@ -13,6 +16,8 @@ export interface UseCalendarReturn {
   goToNextMonth: () => void
   selectDate: (date: DateString) => void
   daysWithWorkouts: Set<DateString>
+  /** 日付ごとに、その日に鍛えた部位一覧（安定ソート済み）。 */
+  dayCategories: Map<DateString, ExerciseCategory[]>
 }
 
 function parseMonth(month: string | undefined): { year: number; month: number } {
@@ -83,18 +88,36 @@ export function useCalendar(): UseCalendarReturn {
     [navigate],
   )
 
-  const { data: daysWithWorkouts = new Set<DateString>() } = useQuery({
+  const { data: monthWorkouts = [] } = useQuery({
     queryKey: queryKeys.workoutDates(displayMonth.year, displayMonth.month),
     queryFn: () => {
       const all = WorkoutRepository.listByDateDesc()
-      const filtered = all.filter((w) => {
+      return all.filter((w) => {
         const [y, m] = w.date.split('-').map(Number)
         return y === displayMonth.year && m === displayMonth.month
       })
-      return new Set(filtered.map((w) => w.date as DateString))
     },
     staleTime: 0,
   })
+
+  // 部位色の解決元。種目マスターの編集に追従させるため store を購読する。
+  const { exercises } = useExercises()
+
+  const categoryById = useMemo(() => {
+    const map = new Map<string, ExerciseCategory>()
+    for (const e of exercises) map.set(e.id, e.category)
+    return map
+  }, [exercises])
+
+  const daysWithWorkouts = useMemo(
+    () => new Set(monthWorkouts.map((w) => w.date as DateString)),
+    [monthWorkouts],
+  )
+
+  const dayCategories = useMemo(
+    () => buildDayCategoryMap(monthWorkouts, categoryById),
+    [monthWorkouts, categoryById],
+  )
 
   return {
     selectedDate,
@@ -103,5 +126,6 @@ export function useCalendar(): UseCalendarReturn {
     goToNextMonth,
     selectDate,
     daysWithWorkouts,
+    dayCategories,
   }
 }

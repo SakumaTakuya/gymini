@@ -139,7 +139,7 @@ describe('useChatService', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useWorkoutSessionStore.getState().startSession()
     vi.mocked(ExerciseRepository.getAll).mockReturnValue([
-      { id: 'ex-1', name: 'ベンチプレス' },
+      { id: 'ex-1', name: 'ベンチプレス', category: 'unassigned' },
     ])
     const client = mockClient([
       {
@@ -185,7 +185,7 @@ describe('useChatService', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useWorkoutSessionStore.getState().startSession()
     vi.mocked(ExerciseRepository.getAll).mockReturnValue([
-      { id: 'ex-1', name: 'ベンチプレス' },
+      { id: 'ex-1', name: 'ベンチプレス', category: 'unassigned' },
     ])
     const client = mockClient([
       {
@@ -254,6 +254,7 @@ describe('useChatService', () => {
     vi.mocked(ExerciseRepository.create).mockReturnValue({
       id: 'ex-new',
       name: 'ベンチプレス',
+      category: 'unassigned',
     })
     const client = mockClient([
       {
@@ -269,7 +270,7 @@ describe('useChatService', () => {
     })
     const msgs = useChatStore.getState().messages
     const last = msgs[msgs.length - 1]
-    expect(ExerciseRepository.create).toHaveBeenCalledWith('ベンチプレス')
+    expect(ExerciseRepository.create).toHaveBeenCalledWith('ベンチプレス', undefined)
     expect(last.toolCalls?.[0]?.toolName).toBe('addExercise')
   })
 
@@ -277,7 +278,7 @@ describe('useChatService', () => {
     useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useWorkoutSessionStore.getState().startSession()
     vi.mocked(ExerciseRepository.getAll).mockReturnValue([
-      { id: 'ex-1', name: 'ベンチプレス' },
+      { id: 'ex-1', name: 'ベンチプレス', category: 'unassigned' },
     ])
     const client = mockClient([
       {
@@ -659,7 +660,7 @@ describe('useChatService', () => {
       useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
       useWorkoutSessionStore.getState().startSession()
       vi.mocked(ExerciseRepository.getAll).mockReturnValue([
-        { id: 'ex-dp', name: 'ダンベルプレス' },
+        { id: 'ex-dp', name: 'ダンベルプレス', category: 'unassigned' },
       ])
       const client = mockClient([
         {
@@ -702,6 +703,7 @@ describe('useChatService', () => {
       vi.mocked(ExerciseRepository.create).mockReturnValue({
         id: 'ex-lat',
         name: 'ラットプルダウン',
+        category: 'unassigned',
       })
       const client = mockClient([
         {
@@ -720,7 +722,7 @@ describe('useChatService', () => {
       await act(async () => {
         await result.current.sendMessage('背中の日。ラットプルダウンやる')
       })
-      expect(ExerciseRepository.create).toHaveBeenCalledWith('ラットプルダウン')
+      expect(ExerciseRepository.create).toHaveBeenCalledWith('ラットプルダウン', undefined)
       const session = useWorkoutSessionStore.getState()
       expect(session.draftExercises).toHaveLength(1)
       expect(session.draftExercises[0].exerciseId).toBe('ex-lat')
@@ -735,7 +737,7 @@ describe('useChatService', () => {
       useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
       useWorkoutSessionStore.getState().startSession()
       vi.mocked(ExerciseRepository.getAll).mockReturnValue([
-        { id: 'ex-bench', name: 'ベンチプレス' },
+        { id: 'ex-bench', name: 'ベンチプレス', category: 'unassigned' },
       ])
       const client = mockClient([
         {
@@ -932,6 +934,7 @@ describe('useChatService', () => {
       vi.mocked(ExerciseRepository.create).mockReturnValue({
         id: 'ex-new',
         name: 'インクラインダンベルプレス',
+        category: 'unassigned',
       })
       useChatStore.setState({
         messages: [
@@ -1021,6 +1024,7 @@ describe('useChatService', () => {
       vi.mocked(ExerciseRepository.create).mockReturnValue({
         id: 'ex-new',
         name: 'スクワット',
+        category: 'unassigned',
       })
       useChatStore.setState({
         messages: [

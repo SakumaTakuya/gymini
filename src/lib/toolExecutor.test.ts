@@ -11,7 +11,7 @@ vi.mock('./exerciseRepository')
 vi.mock('./workoutRepository')
 
 function makeExercise(name: string, id?: string): Exercise {
-  return { id: id ?? `ex-${name}`, name }
+  return { id: id ?? `ex-${name}`, name, category: 'unassigned' }
 }
 
 function makeWorkout(overrides: Partial<Workout> = {}): Workout {
@@ -261,6 +261,26 @@ describe('executeWriteTool', () => {
       expect(result.success).toBe(false)
       expect(result.error).toBe('INVALID_ARGS')
     })
+
+    test('category を指定すると create に渡す', () => {
+      vi.mocked(ExerciseRepository.create).mockReturnValue(
+        makeExercise('ベンチプレス', 'ex-b'),
+      )
+      executeWriteTool('addExercise', { name: 'ベンチプレス', category: 'chest' })
+      expect(ExerciseRepository.create).toHaveBeenCalledWith('ベンチプレス', 'chest')
+    })
+
+    test('不正な category は無視して追加は成功する（undefined を渡す）', () => {
+      vi.mocked(ExerciseRepository.create).mockReturnValue(
+        makeExercise('謎種目', 'ex-x'),
+      )
+      const result = executeWriteTool('addExercise', {
+        name: '謎種目',
+        category: 'not-a-part',
+      })
+      expect(result.success).toBe(true)
+      expect(ExerciseRepository.create).toHaveBeenCalledWith('謎種目', undefined)
+    })
   })
 
   describe('addExerciseToSession', () => {
@@ -366,6 +386,34 @@ describe('executeWriteTool', () => {
       expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(1)
     })
 
+    test('新規種目を作るとき category を推定値として create に渡す', () => {
+      // exerciseId 省略・マスター未登録 → create(name, category) で新規登録される
+      vi.mocked(ExerciseRepository.getAll).mockReturnValue([])
+      vi.mocked(ExerciseRepository.create).mockReturnValue(
+        makeExercise('ラットプルダウン', 'ex-lat'),
+      )
+      useWorkoutSessionStore.getState().startSession()
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseName: 'ラットプルダウン',
+        category: 'back',
+      })
+      expect(result.success).toBe(true)
+      expect(ExerciseRepository.create).toHaveBeenCalledWith('ラットプルダウン', 'back')
+    })
+
+    test('既存種目に一致するときは category を無視して create しない', () => {
+      vi.mocked(ExerciseRepository.getAll).mockReturnValue([
+        makeExercise('ベンチプレス', 'existing-1'),
+      ])
+      useWorkoutSessionStore.getState().startSession()
+      const result = executeWriteTool('addExerciseToSession', {
+        exerciseName: 'ベンチプレス',
+        category: 'legs',
+      })
+      expect(result.success).toBe(true)
+      expect(ExerciseRepository.create).not.toHaveBeenCalled()
+    })
+
     test('実値セットとプレースホルダ混在時は実値のみを完了セットにする', () => {
       useWorkoutSessionStore.getState().startSession()
       const result = executeWriteTool('addExerciseToSession', {
@@ -448,7 +496,10 @@ describe('executeWriteTool', () => {
         exerciseId: 'ex-lat',
         exerciseName: 'ラットプルダウン',
       })
-      expect(ExerciseRepository.create).toHaveBeenCalledWith('ラットプルダウン')
+      expect(ExerciseRepository.create).toHaveBeenCalledWith(
+        'ラットプルダウン',
+        undefined,
+      )
       const state = useWorkoutSessionStore.getState()
       expect(state.draftExercises).toHaveLength(1)
       expect(state.draftExercises[0].exerciseId).toBe('ex-lat')

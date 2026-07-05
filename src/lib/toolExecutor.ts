@@ -2,6 +2,10 @@ import { z } from 'zod'
 import type { DateString } from '../schemas/date'
 import { workoutSetSchema, type WorkoutSet } from '../schemas/workout'
 import {
+  exerciseCategorySchema,
+  type ExerciseCategory,
+} from '../schemas/exercise'
+import {
   saveWorkoutArgsSchema,
   addExerciseArgsSchema,
   addExerciseToSessionArgsSchema,
@@ -22,6 +26,15 @@ export type ToolExecutionResult = {
 }
 
 const DEFAULT_RECENT_COUNT = 5
+
+// AI が渡す category を安全に正規化する。未指定・不正値のときは undefined を返し、
+// ExerciseRepository.create 側の既定（'unassigned'）に委ねる。こうすることで、
+// 部位のハルシネーションが種目追加そのものを失敗させないようにする。
+function normalizeCategory(raw: string | undefined): ExerciseCategory | undefined {
+  if (raw === undefined) return undefined
+  const result = exerciseCategorySchema.safeParse(raw)
+  return result.success ? result.data : undefined
+}
 
 export function executeReadTool(
   name: string,
@@ -166,7 +179,10 @@ function executeAddExercise(
     return { success: false, error: 'INVALID_ARGS' }
   }
   try {
-    const exercise = ExerciseRepository.create(parsed.data.name)
+    const exercise = ExerciseRepository.create(
+      parsed.data.name,
+      normalizeCategory(parsed.data.category),
+    )
     return { success: true, data: exercise }
   } catch (e) {
     const message = e instanceof Error ? e.message : 'UNKNOWN_ERROR'
@@ -225,7 +241,10 @@ function executeAddExerciseToSession(
       resolvedExerciseId = existing.id
     } else {
       try {
-        const created = ExerciseRepository.create(exerciseName)
+        const created = ExerciseRepository.create(
+          exerciseName,
+          normalizeCategory(parsed.data.category),
+        )
         resolvedExerciseId = created.id
       } catch (e) {
         const message = e instanceof Error ? e.message : 'UNKNOWN_ERROR'

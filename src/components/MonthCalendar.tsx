@@ -6,7 +6,15 @@ import { IconButton } from '@/components/ui/icon-button'
 import { useSnapScroll } from '@/hooks/useSnapScroll'
 import { cn } from '@/lib/utils'
 import type { DateString } from '../schemas/date'
+import type { ExerciseCategory } from '../schemas/exercise'
 import { toDateString, todayDateString } from '../schemas/date'
+import {
+  categoriesInMonth,
+  pickCalendarDots,
+} from '../lib/calendarCategories'
+import { categoryColor, categoryLabel } from '../lib/exerciseCategory'
+
+const EMPTY_DAY_CATEGORIES: Map<DateString, ExerciseCategory[]> = new Map()
 
 interface MonthValue {
   year: number
@@ -17,6 +25,7 @@ interface MonthCalendarProps {
   displayMonth: MonthValue
   selectedDate: DateString
   daysWithWorkouts: Set<DateString>
+  dayCategories?: Map<DateString, ExerciseCategory[]>
   onPrevMonth: () => void
   onNextMonth: () => void
   onSelectDate: (date: DateString) => void
@@ -45,11 +54,13 @@ function GymDayButton({
   modifiers,
   selectedDate,
   daysWithWorkouts,
+  dayCategories,
   today,
   ...props
 }: DayButtonProps & {
   selectedDate: DateString
   daysWithWorkouts: Set<DateString>
+  dayCategories: Map<DateString, ExerciseCategory[]>
   today: DateString
 }) {
   const dateStr = toDateStr(day.date)
@@ -57,6 +68,8 @@ function GymDayButton({
   const isToday = dateStr === today
   const hasWorkout = daysWithWorkouts.has(dateStr)
   const isOutside = modifiers.outside
+  const categories = dayCategories.get(dateStr) ?? []
+  const dots = pickCalendarDots(categories)
 
   if (isOutside) {
     return (
@@ -80,12 +93,40 @@ function GymDayButton({
       {day.date.getDate()}
       {hasWorkout && (
         <span
-          data-testid="workout-marker"
           className={cn(
-            'absolute w-1 h-1 bg-gym-accent rounded-full',
-            isToday ? 'bottom-[3px] border border-gym-black' : 'bottom-1',
+            'absolute left-1/2 -translate-x-1/2 flex items-center justify-center gap-[2px]',
+            isToday ? 'bottom-[3px]' : 'bottom-1',
           )}
-        />
+          aria-label={
+            categories.length > 0
+              ? categories.map(categoryLabel).join('、')
+              : undefined
+          }
+        >
+          {dots.length > 0 ? (
+            dots.map((dot, i) => (
+              <span
+                key={i}
+                data-testid="workout-marker"
+                title={dot.title}
+                className={cn(
+                  'w-1 h-1 rounded-full',
+                  isToday && 'ring-[0.5px] ring-gym-black',
+                )}
+                style={{ backgroundColor: dot.color }}
+              />
+            ))
+          ) : (
+            // 部位情報が無い日（凡例外・レガシー）は従来どおり単一アクセントドット。
+            <span
+              data-testid="workout-marker"
+              className={cn(
+                'w-1 h-1 bg-gym-accent rounded-full',
+                isToday && 'border border-gym-black',
+              )}
+            />
+          )}
+        </span>
       )}
     </button>
   )
@@ -95,6 +136,7 @@ interface MonthPanelProps {
   month: MonthValue
   selectedDate: DateString
   daysWithWorkouts: Set<DateString>
+  dayCategories: Map<DateString, ExerciseCategory[]>
   today: DateString
   onSelectDate: (date: DateString) => void
   interactive: boolean
@@ -104,6 +146,7 @@ function MonthPanel({
   month,
   selectedDate,
   daysWithWorkouts,
+  dayCategories,
   today,
   onSelectDate,
   interactive,
@@ -152,6 +195,7 @@ function MonthPanel({
               {...props}
               selectedDate={selectedDate}
               daysWithWorkouts={daysWithWorkouts}
+              dayCategories={dayCategories}
               today={today}
             />
           ),
@@ -165,11 +209,17 @@ export function MonthCalendar({
   displayMonth,
   selectedDate,
   daysWithWorkouts,
+  dayCategories = EMPTY_DAY_CATEGORIES,
   onPrevMonth,
   onNextMonth,
   onSelectDate,
 }: MonthCalendarProps) {
   const today = todayDateString()
+
+  const legendCategories = useMemo(
+    () => categoriesInMonth(dayCategories),
+    [dayCategories],
+  )
 
   const prevMonth = useMemo(() => shiftMonth(displayMonth, -1), [displayMonth])
   const nextMonth = useMemo(() => shiftMonth(displayMonth, 1), [displayMonth])
@@ -221,6 +271,7 @@ export function MonthCalendar({
           month={prevMonth}
           selectedDate={selectedDate}
           daysWithWorkouts={daysWithWorkouts}
+          dayCategories={dayCategories}
           today={today}
           onSelectDate={onSelectDate}
           interactive={false}
@@ -229,6 +280,7 @@ export function MonthCalendar({
           month={displayMonth}
           selectedDate={selectedDate}
           daysWithWorkouts={daysWithWorkouts}
+          dayCategories={dayCategories}
           today={today}
           onSelectDate={onSelectDate}
           interactive
@@ -237,11 +289,34 @@ export function MonthCalendar({
           month={nextMonth}
           selectedDate={selectedDate}
           daysWithWorkouts={daysWithWorkouts}
+          dayCategories={dayCategories}
           today={today}
           onSelectDate={onSelectDate}
           interactive={false}
         />
       </div>
+
+      {legendCategories.length > 0 && (
+        <ul
+          data-testid="calendar-legend"
+          aria-label="部位の凡例"
+          className="mt-4 flex flex-wrap justify-center gap-x-3 gap-y-1.5 px-2"
+        >
+          {legendCategories.map((category) => (
+            <li
+              key={category}
+              className="flex items-center gap-1 text-[10px] font-bold text-gym-zinc-500"
+            >
+              <span
+                aria-hidden
+                className="w-1.5 h-1.5 rounded-full"
+                style={{ backgroundColor: categoryColor(category) }}
+              />
+              {categoryLabel(category)}
+            </li>
+          ))}
+        </ul>
+      )}
     </GymCard>
   )
 }

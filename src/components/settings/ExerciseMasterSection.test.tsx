@@ -197,4 +197,29 @@ describe('ExerciseMasterSection', () => {
       'done',
     )
   })
+
+  it('追加時に選択した部位が保存される', async () => {
+    const user = userEvent.setup()
+    render(<ExerciseMasterSection />)
+
+    await user.click(screen.getByRole('button', { name: '種目を追加' }))
+    await user.type(screen.getByLabelText('新しい種目名'), 'チンニング')
+    await user.click(screen.getByRole('radio', { name: '背中' }))
+    await user.click(screen.getByRole('button', { name: '追加を確定' }))
+
+    const created = exerciseRepository.getAll().find((e) => e.name === 'チンニング')
+    expect(created?.category).toBe('back')
+  })
+
+  it('編集で部位を変更できる', async () => {
+    const user = userEvent.setup()
+    render(<ExerciseMasterSection />)
+
+    await user.click(screen.getByRole('button', { name: 'ベンチプレスを編集' }))
+    await user.click(screen.getByRole('radio', { name: '胸' }))
+    await user.click(screen.getByRole('button', { name: '編集を確定' }))
+
+    const edited = exerciseRepository.getAll().find((e) => e.name === 'ベンチプレス')
+    expect(edited?.category).toBe('chest')
+  })
 })

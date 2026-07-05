@@ -239,4 +239,41 @@ describe('ExerciseRepository', () => {
       vi.restoreAllMocks()
     })
   })
+
+  // --- category（部位） ---
+
+  describe('category', () => {
+    it('category を持たない旧データは unassigned に移行される', () => {
+      localStorage.setItem(
+        'gymini:exercises',
+        JSON.stringify([{ id: '1', name: 'ベンチプレス' }]),
+      )
+      expect(repo.getAll()[0].category).toBe('unassigned')
+    })
+
+    it('create の既定 category は unassigned', () => {
+      const ex = repo.create('ベンチプレス')
+      expect(ex.category).toBe('unassigned')
+    })
+
+    it('create で category を指定できる', () => {
+      const ex = repo.create('ベンチプレス', 'chest')
+      expect(ex.category).toBe('chest')
+      expect(repo.getAll()[0].category).toBe('chest')
+    })
+
+    it('update で category を変更できる', () => {
+      const ex = repo.create('ベンチプレス', 'chest')
+      const updated = repo.update(ex.id, 'ベンチプレス', 'back')
+      expect(updated.category).toBe('back')
+      expect(repo.getAll()[0].category).toBe('back')
+    })
+
+    it('update で category 未指定なら既存の category を保持する', () => {
+      const ex = repo.create('ベンチプレス', 'chest')
+      const updated = repo.update(ex.id, 'インクラインベンチプレス')
+      expect(updated.name).toBe('インクラインベンチプレス')
+      expect(updated.category).toBe('chest')
+    })
+  })
 })
