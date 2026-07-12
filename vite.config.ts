@@ -1,6 +1,7 @@
 /// <reference types="vitest" />
 import { fileURLToPath } from 'url'
 import path from 'path'
+import process from 'node:process'
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import tailwindcss from '@tailwindcss/vite'
@@ -18,6 +19,10 @@ export default defineConfig({
     alias: {
       '@': path.resolve(path.dirname(fileURLToPath(import.meta.url)), './src'),
     },
+  },
+  server: {
+    // Codespaces のポートフォワード(HTTPS/443)経由でも HMR WebSocket が繋がるように
+    hmr: process.env.CODESPACES ? { clientPort: 443 } : undefined,
   },
   test: {
     environment: 'jsdom',
@@ -37,6 +42,7 @@ export default defineConfig({
         'src/routes/**',
         'src/hooks/useHydrated.ts',
         'src/test/**',
+        'src/dev/**',
         '**/*.test.{ts,tsx}',
       ],
       thresholds: {
