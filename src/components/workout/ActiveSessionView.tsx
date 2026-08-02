@@ -4,6 +4,9 @@ import { useChatService } from '@/hooks/useChatService'
 import { useRubberBandScroll } from '@/hooks/useRubberBandScroll'
 import { buildSessionTimeline } from '@/lib/sessionTimeline'
 import type { TimelineDraft } from '@/lib/sessionTimeline'
+import { suggestNextSets } from '@/lib/weightSuggestion'
+import * as WorkoutRepository from '@/lib/workoutRepository'
+import type { WorkoutSet } from '@/schemas/workout'
 import { ChatBubble } from '../chat/ChatBubble'
 import { ChatInput } from '../chat/ChatInput'
 import { ExerciseCard } from './ExerciseCard'
@@ -64,9 +67,23 @@ export function ActiveSessionView() {
     [messages, draftExercises],
   )
 
+  // 重量提案: 履歴（永続化済みワークアウト）はセッション中に変化しないため、
+  // 初回レンダーで一度だけ読み、セッション中の種目 ID ごとに算出しておく。
+  const pastWorkouts = useMemo(() => WorkoutRepository.listByDateDesc(), [])
+  const suggestionsByExercise = useMemo(() => {
+    const map = new Map<string, WorkoutSet[]>()
+    for (const d of draftExercises) {
+      if (!map.has(d.exerciseId)) {
+        map.set(d.exerciseId, suggestNextSets(pastWorkouts, d.exerciseId))
+      }
+    }
+    return map
+  }, [draftExercises, pastWorkouts])
+
   const renderDraft = (draft: TimelineDraft['data'], i: number) => (
     <ExerciseCard
       draftExercise={draft}
+      suggestions={suggestionsByExercise.get(draft.exerciseId)}
       setHandlers={{
         activate: () => activateExercise(i),
         complete: (set) => completeSet(i, set),

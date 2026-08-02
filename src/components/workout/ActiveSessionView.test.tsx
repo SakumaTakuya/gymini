@@ -418,3 +418,59 @@ describe('ActiveSessionView', () => {
     })
   })
 })
+
+describe('ActiveSessionView 重量提案', () => {
+  beforeEach(() => {
+    localStorage.clear()
+    resetStore()
+  })
+
+  function seedPastWorkout() {
+    localStorage.setItem(
+      'gymini:workouts',
+      JSON.stringify([
+        {
+          id: 'w-past',
+          date: '2026-07-25',
+          exercises: [
+            {
+              exerciseId: 'bench',
+              exerciseName: 'ベンチプレス',
+              sets: [{ weight: 60, reps: 8 }],
+            },
+          ],
+          startedAt: '2026-07-25T10:00:00+09:00',
+          endedAt: '2026-07-25T11:00:00+09:00',
+          createdAt: '2026-07-25T10:00:00+09:00',
+          updatedAt: '2026-07-25T10:00:00+09:00',
+        },
+      ]),
+    )
+  }
+
+  it('過去記録がある種目の1セット目に推奨チップを表示し、タップで pendingSet に反映する', async () => {
+    const user = userEvent.setup()
+    seedPastWorkout()
+    useWorkoutSessionStore.getState().startSession('2026-08-02' as DateString)
+    useWorkoutSessionStore
+      .getState()
+      .addExercise({ exerciseId: 'bench', exerciseName: 'ベンチプレス' })
+    render(<ActiveSessionView />)
+
+    // 60kg×8 の履歴 → 主候補 60kg × 8
+    expect(screen.getByText('推奨')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '60kg × 8回を入力' }))
+
+    const pending = useWorkoutSessionStore.getState().draftExercises[0].pendingSet
+    expect(pending).toEqual({ weight: 60, reps: 8 })
+  })
+
+  it('過去記録がない種目にはチップを表示しない', () => {
+    useWorkoutSessionStore.getState().startSession('2026-08-02' as DateString)
+    useWorkoutSessionStore
+      .getState()
+      .addExercise({ exerciseId: 'squat', exerciseName: 'スクワット' })
+    render(<ActiveSessionView />)
+    expect(screen.queryByText('推奨')).not.toBeInTheDocument()
+  })
+})

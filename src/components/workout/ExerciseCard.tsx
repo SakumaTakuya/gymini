@@ -8,6 +8,7 @@ import { IconButton } from '../ui/icon-button'
 import { AddSetButton } from './AddSetButton'
 import { CompletedSetRow } from './CompletedSetRow'
 import { PendingSetRow } from './PendingSetRow'
+import { WeightSuggestionChips } from './WeightSuggestionChips'
 
 // All callbacks that act on the set lifecycle (the pending set + completed sets).
 export type ExerciseCardSetHandlers = {
@@ -31,12 +32,15 @@ type ExerciseCardProps = {
   draftExercise: DraftExercise
   setHandlers: ExerciseCardSetHandlers
   exerciseHandlers: ExerciseCardExerciseHandlers
+  /** 過去記録から算出した1セット目の推奨候補。1セット目の記録中のみ表示される */
+  suggestions?: WorkoutSet[]
 }
 
 export function ExerciseCard({
   draftExercise,
   setHandlers,
   exerciseHandlers,
+  suggestions,
 }: ExerciseCardProps) {
   const { exerciseName, sets, pendingSet, cardState, editingSetIndex } = draftExercise
   const isCollapsed = cardState === 'collapsed'
@@ -176,13 +180,25 @@ export function ExerciseCard({
 
           {/* 記録中（新規）の入力行はスクロール領域の外に固定し常時可視にする */}
           {isRecordingNew && pendingSet && (
-            <PendingSetRow
-              setNumber={sets.length + 1}
-              pendingSet={pendingSet}
-              onComplete={() => setHandlers.complete(pendingSet)}
-              onWeightChange={setHandlers.changeWeight}
-              onRepsChange={setHandlers.changeReps}
-            />
+            <>
+              <PendingSetRow
+                setNumber={sets.length + 1}
+                pendingSet={pendingSet}
+                onComplete={() => setHandlers.complete(pendingSet)}
+                onWeightChange={setHandlers.changeWeight}
+                onRepsChange={setHandlers.changeReps}
+              />
+              {/* 1セット目のみ、過去記録からの推奨チップを表示する */}
+              {sets.length === 0 && suggestions && suggestions.length > 0 && (
+                <WeightSuggestionChips
+                  suggestions={suggestions}
+                  onApply={(s) => {
+                    setHandlers.changeWeight(s.weight)
+                    setHandlers.changeReps(s.reps)
+                  }}
+                />
+              )}
+            </>
           )}
 
           {/* Add button (idle state or editing a previous set) */}

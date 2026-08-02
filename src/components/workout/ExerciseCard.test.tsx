@@ -314,3 +314,75 @@ describe('ExerciseCard', () => {
     })
   })
 })
+
+describe('ExerciseCard 重量提案チップ', () => {
+  const recordingDraft: DraftExercise = {
+    ...baseDraft,
+    cardState: 'recording',
+    sets: [],
+    pendingSet: { weight: 0, reps: 0 },
+    editingSetIndex: null,
+  }
+  const suggestions = [
+    { weight: 62.5, reps: 8 },
+    { weight: 60, reps: 10 },
+  ]
+
+  it('1セット目の記録中（新規）に suggestions があればチップを表示する', () => {
+    render(
+      <ExerciseCard
+        {...makeProps({ draftExercise: recordingDraft })}
+        suggestions={suggestions}
+      />,
+    )
+    expect(screen.getByText('推奨')).toBeInTheDocument()
+    expect(screen.getByText('62.5')).toBeInTheDocument()
+  })
+
+  it('suggestions が空ならチップを表示しない', () => {
+    render(
+      <ExerciseCard
+        {...makeProps({ draftExercise: recordingDraft })}
+        suggestions={[]}
+      />,
+    )
+    expect(screen.queryByText('推奨')).not.toBeInTheDocument()
+  })
+
+  it('完了済みセットがある場合（2セット目以降）は表示しない', () => {
+    const draft: DraftExercise = {
+      ...recordingDraft,
+      sets: [{ weight: 60, reps: 8 }],
+    }
+    render(
+      <ExerciseCard
+        {...makeProps({ draftExercise: draft })}
+        suggestions={suggestions}
+      />,
+    )
+    expect(screen.queryByText('推奨')).not.toBeInTheDocument()
+  })
+
+  it('既存セットの編集中は表示しない', () => {
+    const draft: DraftExercise = {
+      ...recordingDraft,
+      sets: [{ weight: 60, reps: 8 }],
+      editingSetIndex: 0,
+    }
+    render(
+      <ExerciseCard
+        {...makeProps({ draftExercise: draft })}
+        suggestions={suggestions}
+      />,
+    )
+    expect(screen.queryByText('推奨')).not.toBeInTheDocument()
+  })
+
+  it('チップをタップすると changeWeight と changeReps が呼ばれる', () => {
+    const props = makeProps({ draftExercise: recordingDraft })
+    render(<ExerciseCard {...props} suggestions={suggestions} />)
+    fireEvent.click(screen.getByRole('button', { name: '62.5kg × 8回を入力' }))
+    expect(props.setHandlers.changeWeight).toHaveBeenCalledWith(62.5)
+    expect(props.setHandlers.changeReps).toHaveBeenCalledWith(8)
+  })
+})
