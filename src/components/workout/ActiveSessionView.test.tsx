@@ -76,6 +76,20 @@ describe('ActiveSessionView', () => {
     expect(scrollContainer.className).not.toContain('bg-gym-zinc-50')
   })
 
+  it('ヘッダクリアランスはスクロールコンテナの padding ではなくスペーサー要素で確保する (WebKit sticky offset バグ回避)', () => {
+    // WebKit (iOS の全ブラウザ) はスクロールコンテナ自身の padding-top を
+    // sticky の top オフセットに加算するため、pt-content-top + sticky
+    // top-content-top の併用ではカードが content-top の 2 倍の位置に固定される。
+    // WebKitGTK 2.50 実測: padding 方式 pin=246px / スペーサー方式 pin=123px（期待 123px）。
+    useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
+    render(<ActiveSessionView />)
+    const scrollContainer = screen.getByTestId('active-session-scroll')
+    expect(scrollContainer.className).not.toContain('pt-content-top')
+    const spacer = scrollContainer.firstElementChild as HTMLElement
+    expect(spacer.getAttribute('aria-hidden')).toBe('true')
+    expect(spacer.className).toContain('h-content-top')
+  })
+
   it('縦スクロールコンテナに view-transition-name: session-frame を持つ (spatial 遷移)', () => {
     useWorkoutSessionStore.getState().startSession('2026-03-08' as DateString)
     render(<ActiveSessionView />)

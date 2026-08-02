@@ -97,8 +97,14 @@ export function ActiveSessionView() {
       onPointerMove={rbOnPointerMove}
       onPointerUp={rbOnPointerUp}
       onPointerCancel={rbOnPointerCancel}
-      className="flex-1 pt-content-top bg-gym-paper pb-content-bottom-scroll overflow-y-auto overscroll-contain"
+      className="flex-1 bg-gym-paper pb-content-bottom-scroll overflow-y-auto overscroll-contain"
     >
+      {/* ヘッダクリアランスは padding ではなくスペーサーで確保する。
+          WebKit (iOS の全ブラウザ) はスクロールコンテナ自身の padding-top を
+          sticky の top オフセットに加算するため、pt-content-top +
+          sticky top-content-top の併用ではカードが content-top の 2 倍の
+          位置に固定されてしまう（docs/adr/workout.md 参照）。 */}
+      <div aria-hidden="true" className="h-content-top shrink-0" />
       <ApiKeyMissingBanner />
       {preamble.map((item) => (
         <ChatBubble
