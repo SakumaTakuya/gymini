@@ -62,3 +62,21 @@
 
 - **決定**: swipe のコミット成立は「位置が行幅の所定割合を超える」または「速度が所定閾値を超える」のいずれかを満たすこと（具体値は [tactile-direction.md](../design/tactile-direction.md) の優先度マトリクス参照）
 - **理由**: 位置のみだと「素早く小さく振った」操作が無視される。速度のみだと「ゆっくり大きく引いた」操作が拾えない。主要な swipe UI（Tinder 等）が両方の OR を採用しており、誤発火と取りこぼしの両方を抑えられる
+
+## ヘッダクリアランスは scroller の padding ではなくスペーサー要素で確保する
+
+**判断**: ActiveSessionView のスクロールコンテナは `pt-content-top` を持たず、先頭に `h-content-top` のスペーサー div を置く。sticky 種目カードの `top-content-top` は維持する。
+
+**理由**: WebKit（iOS では WKWebView 強制のため全ブラウザが該当）は、スクロールコンテナ自身の `padding-top` を sticky 要素の `top` オフセットに加算する。`pt-content-top` + `sticky top-content-top` の併用では pin 位置が `2 × content-top` になり、カードがヘッダ下端よりさらに content-top ぶん下に固定される。一方 Chromium/Firefox は `top` のみで pin するため、開発環境では再現しない。
+
+WebKitGTK 2.50 での実測（viewport 390×844, safe-area 59px 模擬, content-top=123px）:
+
+| 構成 | pin 位置 |
+| --- | --- |
+| scroller に `padding-top:123px` + `top:123px` | 246px（padding が加算される） |
+| スペーサー div 123px + `top:123px` | 123px（期待通り） |
+| `padding-top:123px` + `top:0` | 123px（padding のみで決まる） |
+
+この加算バグは `env(safe-area-inset-top)` の値（0 ↔ 59px）に応じて「最初のバブルは正しいが sticky が下すぎる」「バブルがヘッダに重なるが sticky はほぼ正しい」という相互排他な 2 症状として現れていた（sticky = 2×(env+64), バブル = env+64 の 2 式を env=59 / env=0 で評価した結果に一致）。#137 は sticky 側のトークンを揃えたが、WebKit の加算があるため実機では解決していなかった。
+
+**トレードオフ**: スペーサーは DOM 要素が 1 つ増え、`aria-hidden` の付与が必要。`scroll-padding-top` はレイアウト空間を作らないため代替にならない。sticky の `top: 0`（padding に pin を任せる）は WebKit でのみ正しく、Chromium ではヘッダ裏に潜るため不可。
