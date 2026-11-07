@@ -1,0 +1,186 @@
+---
+id: "prd-intent-router"
+title: "意図ルーティング（ローカル分類）"
+type: "prd"
+status: "draft"
+created: "2026-11-07"
+updated: "2026-11-07"
+depends-on: ["prd-gymini", "prd-api-key"]
+tags: ["intent", "setfit", "on-device", "poc"]
+category: "ai"
+priority: "medium"
+risk: "medium"
+---
+
+# 意図ルーティング（ローカル分類）要求仕様書
+
+**親要求:** [index.md](../index.md) - REQ_005（AI対話）/ REQ_008（AI書き込みのレビュー可能性）
+
+> **位置づけ:** 本 PRD は PoC（概念実証）である。本採用の可否は評価結果を見て判断し、必要なら ADR を起票する。
+
+## 概要
+
+ユーザーの自然言語入力を、LLM を呼ぶ前にブラウザ内のローカル分類器で「記録」「履歴参照」「アドバイス」「修正・削除」「その他」の意図に振り分ける。
+
+狙いは次の3点。
+
+1. **キーなしでも基本機能が動く**: 記録と履歴参照は LLM を使わずに完結させる。
+2. **LLM 呼び出しを減らす**: アドバイスが必要なときだけ LLM を呼ぶ。
+3. **確信度に応じた UI**: 確信度が低いときは推測で処理せず、候補チップでユーザーに選ばせる。
+
+**セキュリティ制約（B-001 準拠）:** 推論はすべてブラウザ内で行い、入力テキストを外部の推論サービスに送らない。モデルファイルは同一オリジンの静的アセットとして配信する（FR_006）。
+
+---
+
+## 1. 意図クラスの定義
+
+| ID | 意図 | 例 | ルーティング先 |
+| --- | --- | --- | --- |
+| `record` | 記録 | 「ベンチ60kgで10回3セット」「スクワット終わった、80kg×5」 | 数値抽出 → 種目照合 → セッション draft へ即時挿入（FR_004） |
+| `history` | 履歴参照 | 「昨日ベンチ何kgだった？」「今月の脚の日いつ？」 | 端末内データ検索 → 表示 |
+| `advice` | アドバイス | 「次は何kgにすべき？」「肩が痛いけどどうする？」 | LLM（キーがある場合のみ） |
+| `edit` | 修正・削除 | 「さっきの記録70kgの間違い」「最後のセット消して」 | 対象記録の特定 → 通常カードへの誘導（FR_005） |
+| `other` | その他 | 雑談、挨拶、無関係な入力 | 定型応答（キーがある場合は LLM も可） |
+
+- **マルチラベル**として扱う。「60kgで10回やった、次どうすればいい？」は `record` + `advice`。この場合、先に記録を処理し、続けてアドバイスを LLM に回す。
+- 意図定義の詳細（境界ケースの判定基準）は Phase 0 で作る意図定義ガイドラインを正とする。
+
+## 2. 要求図（SysML Requirements Diagram）
+
+```mermaid
+requirementDiagram
+    requirement IntentRouting {
+        id: REQ_005
+        text: "入力の意図をローカルで判定し処理を振り分ける"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement LocalClassification {
+        id: FR_001
+        text: "ブラウザ内で意図を較正済み確率付きで分類する（マルチラベル）"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement ConfidenceRouting {
+        id: FR_002
+        text: "確信度に応じて自動処理か候補チップ提示かを切り替える"
+        risk: low
+        verifymethod: test
+    }
+
+    functionalRequirement KeylessOperation {
+        id: FR_003
+        text: "APIキーなしで記録と履歴参照が完結する"
+        risk: low
+        verifymethod: demonstration
+    }
+
+    functionalRequirement RecordImmediateInsert {
+        id: FR_004
+        text: "record は確認カードを介さずセッション draft へ即時挿入する"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement EditGuidance {
+        id: FR_005
+        text: "edit は対象記録を特定し通常カードでの編集へ誘導する"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement ModelDelivery {
+        id: FR_006
+        text: "モデルは同一オリジン静的配信とし読み込み中は従来経路へフォールバックする"
+        risk: medium
+        verifymethod: test
+    }
+
+    functionalRequirement LocalFeedbackLog {
+        id: FR_007
+        text: "分類のフィードバックを端末内にのみ保存する"
+        risk: low
+        verifymethod: test
+    }
+
+    IntentRouting - contains -> LocalClassification
+    IntentRouting - contains -> ConfidenceRouting
+    IntentRouting - contains -> KeylessOperation
+    IntentRouting - contains -> RecordImmediateInsert
+    IntentRouting - contains -> EditGuidance
+    IntentRouting - contains -> ModelDelivery
+    IntentRouting - contains -> LocalFeedbackLog
+```
+
+## 3. 機能要求の詳細
+
+### FR_001: ローカル意図分類
+
+ユーザーの入力テキストをブラウザ内で分類し、意図ごとの較正済み確率を返す。分類器は `IntentClassifier` インターフェースの背後に置き、将来の差し替え（外部分類 API 等）を可能にする。入力テキストを外部の推論サービスへ送信しない（B-001）。
+
+**検証方法:** テストによる検証
+
+### FR_002: 確信度ルーティング
+
+クラスごとに定めた閾値を超えた意図は自動でルーティングする。どの意図も閾値に達しない場合は推測で処理せず、候補チップ（「記録する」「履歴を見る」「アドバイスをもらう」等）を入力欄付近に表示してユーザーに選ばせる。`advice` と判定されても API キーが未設定なら LLM を呼ばず、設定画面への既存導線（api-key FR_010 / settings FR_022 の歯車バッジ、キー未設定バナー）を案内する。
+
+**検証方法:** テストによる検証
+
+### FR_003: キーなしでの完結
+
+API キーが未設定でも、`record` と `history` は端末内で完結する。現行仕様ではキー未設定時にチャット入力が全面停止するが、本 PRD の範囲では分類器が確定した `record` / `history` に限りその停止を迂回する。`other` はキーなしでは定型応答のみとする。
+
+**検証方法:** 実演による検証
+
+### FR_004: record の即時挿入
+
+`record` の処理結果は、per-write の確認カードを介さず、アクティブセッションの draft へ通常の種目カードとして即時挿入する。ユーザーは通常カード上で編集・削除でき、永続化はセッション終了時のみ行われる（REQ_008 / B-002 の現行解釈に整合）。
+
+セッションが非アクティブな場合は記録を実行せず、既存のゲート（ai-chat FR_036 の `SESSION_NOT_ACTIVE` 相当の案内）に従う。
+
+**検証方法:** テストによる検証
+
+### FR_005: edit の対象特定と誘導
+
+`edit` では対象の記録（セッション draft 内の種目・セット）を特定し、該当する通常カードへ誘導する。PoC の範囲では、プログラム経由で draft を書き換える新しい書き込み経路は作らない。対象を特定できない場合は候補チップで確認する。
+
+**検証方法:** テストによる検証
+
+### FR_006: モデルの配信とフォールバック
+
+埋め込みモデルは ONNX（int8 量子化）として同一オリジンで静的配信し、初回のみダウンロードしてブラウザにキャッシュする。外部ホスティング（Hugging Face Hub 等）からの取得は A-002（外部通信は Gemini API のみ）に抵触するため採用しない。モデル読み込みが完了するまでの入力は、従来の入力経路（キーありなら LLM、なしなら現行の案内）で処理する。
+
+**検証方法:** テストによる検証
+
+### FR_007: 端末内フィードバックログ
+
+ユーザーが候補チップで選んだ結果と、ルーティング後に取り消された操作を、端末内にのみ保存する。誤分類の分析と例文の追加に使う。外部へ送信しない（B-001）。
+
+**検証方法:** テストによる検証
+
+## 4. 既存仕様との関係
+
+- **ai-chat FR_037 との役割分担**: ルーティング判定（どの処理に振り分けるか）はローカル分類器が担う。LLM は `advice` の内容生成と、分類器が確定できなかった入力の受け皿に専念する。ai-chat PRD 側の判定優先ルールとの整合は、Phase 4（ブラウザ組み込み）の PR で ai-chat PRD を改訂して確定する。
+- **REQ_008 / B-002**: FR_004 のとおり、確認ゲートはセッション終了時であり、分類器の導入で per-write 確認は復活させない。
+- **A-002**: FR_006 のとおり、モデルの外部配信は採用しない。
+
+## 5. 評価指標と合格基準（仮）
+
+PoC の合否は次の指標で判断する。基準値は Phase 1（ベースライン）の結果を見て見直す。
+
+| 指標 | 内容 | 合格基準（仮） |
+| --- | --- | --- |
+| Macro-F1 | 全意図の平均 F1 | 0.90 以上 |
+| 自動処理の正解率 | 閾値を超えて自動ルーティングした入力のうち正解の割合 | 95% 以上 |
+| カバー率 | 自動ルーティングされた入力の割合（残りはチップ提示） | 80% 以上 |
+| ECE | 確率の較正誤差 | 0.05 以下 |
+| 推論レイテンシ | モデル読み込み後、中位スマホで1入力あたり | 100ms 以下 |
+| ダウンロードサイズ | 量子化後のモデル合計 | 50MB 以下 |
+
+## 6. 未決事項
+
+- モデルファイルの配置場所の詳細（`public/` 配下のパスとキャッシュ戦略）。
+- `history` の結果表示 UI の形（現行の簡易テキスト表示で足りるか、専用表示を設けるか）。
+- 数値抽出（重量・回数・セット数）をルールベースで行う範囲の確定。
