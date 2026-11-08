@@ -180,3 +180,13 @@
 {"text": "カール17.5kgで10回できた、次どうしよう", "labels": ["record", "advice"]}
 {"text": "前回ベンチ何kgだった？次は増やせそう？", "labels": ["history", "advice"]}
 {"text": "先月の脚トレ何回やった？今月のペースどう思う？", "labels": ["history", "advice"]}
+{"text": "デッドリフト120kg5回やった、前回より引けた気がするけど実際どう？", "labels": ["record", "history"]}
+{"text": "ローイング70kg12回、前回は何kgでやってたっけ", "labels": ["record", "history"]}
+{"text": "懸垂10回できた、前回は8回だったっけ？", "labels": ["record", "history"]}
+{"text": "ショルダープレス40kg8回、先週より回数増えた？", "labels": ["record", "history"]}
+{"text": "レッグプレス180kg10回やった、この前はどれくらいだった？", "labels": ["record", "history"]}
+{"text": "ダンベルカール15kg12回、前回より重くできた？", "labels": ["record", "history"]}
+{"text": "ラットプルダウン55kg10回、前回の重量超えたかな", "labels": ["record", "history"]}
+{"text": "インクラインベンチ50kg10回やった、前回何回までいけた？", "labels": ["record", "history"]}
+{"text": "スクワット90kg8回終わった、先週の記録より伸びた？", "labels": ["record", "history"]}
+{"text": "ベンチプレス70kg5回、今月頭はどれくらいだった？", "labels": ["record", "history"]}
