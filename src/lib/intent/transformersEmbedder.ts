@@ -30,6 +30,13 @@ interface TfModule {
   env: {
     allowRemoteModels: boolean
     localModelPath: string
+    backends: {
+      onnx: {
+        wasm: {
+          wasmPaths: string
+        }
+      }
+    }
   }
   AutoTokenizer: { from_pretrained: (id: string) => Promise<TfTokenizer> }
   AutoModel: {
@@ -46,6 +53,11 @@ export function createTransformersEmbedder(options: { baseUrl: string }): TextEm
     const tf = (await import('@huggingface/transformers')) as unknown as TfModule
     tf.env.allowRemoteModels = false
     tf.env.localModelPath = options.baseUrl
+    // ONNX Runtime の WASM 一式も同一オリジン（public/ort/）から読む。
+    // 既定では jsDelivr CDN を参照してしまい、A-002（外部通信は Gemini のみ）
+    // に反する。public/ort/ のファイルは @huggingface/transformers が内包する
+    // onnxruntime-web の dist からコピーしたもので、依存を更新したら再コピーする。
+    tf.env.backends.onnx.wasm.wasmPaths = `${options.baseUrl}ort/`
     tokenizer = await tf.AutoTokenizer.from_pretrained(MODEL_ID)
     model = await tf.AutoModel.from_pretrained(MODEL_ID, { dtype: 'q8' })
   }

@@ -200,3 +200,4 @@ PoC の合否は次の指標で判断する。基準値は Phase 1（ベース�
 
 - 較正は温度スケーリング（クラス別温度を train の交差検証 OOF 確率で推定）。閾値はクラス別に record 0.30 / history 0.89 / advice 0.62 / edit 0.93 / other 0.30。
 - 推論レイテンシは開発 VM の CPU で単文 5ms 程度を確認。中位スマホ実機での計測は本採用判断時に行う。
+- ONNX Runtime の WASM 一式も同一オリジン（`public/ort/`）から配信し、transformers.js 既定の CDN 参照を使わない（A-002）。`@huggingface/transformers` の依存を更新する際は、内包する onnxruntime-web の dist から `public/ort/` へ再コピーする。

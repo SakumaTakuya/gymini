@@ -1,4 +1,6 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest'
+import { existsSync } from 'node:fs'
+import { join } from 'node:path'
 import type { ClassifierConfig, IntentLabel } from './intentClassifier'
 import { INTENT_LABELS } from './intentClassifier'
 
@@ -13,7 +15,9 @@ const fakeState = {
 }
 
 vi.mock('@huggingface/transformers', () => {
-  const env: Record<string, unknown> = {}
+  const env: Record<string, unknown> = {
+    backends: { onnx: { wasm: { wasmPaths: '' } } },
+  }
   const AutoTokenizer = {
     from_pretrained: vi.fn(async (...args: unknown[]) => {
       fakeState.tokenizerCalls.push(args)
@@ -79,9 +83,19 @@ describe('createTransformersEmbedder', () => {
     await emb.load()
     expect(env.allowRemoteModels).toBe(false)
     expect(env.localModelPath).toBe('/gymini/')
+    expect(env.backends.onnx.wasm?.wasmPaths).toBe('/gymini/ort/')
     expect(fakeState.tokenizerCalls).toEqual([['models/intent']])
     expect(fakeState.modelCalls).toEqual([['models/intent', { dtype: 'q8' }]])
     expect(emb.isLoaded()).toBe(true)
+  })
+
+  it('同一オリジン配信用の WASM 資産が public/ort に揃っている', () => {
+    // wasmPaths が指す先の実ファイル。依存更新時に再コピーし忘れると
+    // 実行時に初めて落ちるため、テストで存在を保証する。
+    // eslint-disable-next-line no-undef -- vitest 実行時の作業ディレクトリ（リポジトリルート）
+    const ortDir = join(process.cwd(), 'public/ort')
+    expect(existsSync(join(ortDir, 'ort-wasm-simd-threaded.jsep.wasm'))).toBe(true)
+    expect(existsSync(join(ortDir, 'ort-wasm-simd-threaded.jsep.mjs'))).toBe(true)
   })
 
   it('load は冪等で、2 回呼んでもモデルを再読み込みしない', async () => {
