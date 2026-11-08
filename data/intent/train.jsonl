@@ -1,0 +1,200 @@
+{"text": "ベンチプレス60kgで10回3セット", "labels": ["record"]}
+{"text": "ベンチ60キロ10回できた", "labels": ["record"]}
+{"text": "スクワット終わった、80kg×5", "labels": ["record"]}
+{"text": "スクワット100kgで5回5セットやった", "labels": ["record"]}
+{"text": "デッドリフト120kg×5回", "labels": ["record"]}
+{"text": "デッド140キロ引けた", "labels": ["record"]}
+{"text": "ショルダープレス20kgで12回3セット", "labels": ["record"]}
+{"text": "肩プレス17.5kg 10回", "labels": ["record"]}
+{"text": "ラットプルダウン55kgで10回4セット", "labels": ["record"]}
+{"text": "ラットプル50キロ12回できた", "labels": ["record"]}
+{"text": "レッグプレス180kgで10回3セット", "labels": ["record"]}
+{"text": "懸垂10回3セット", "labels": ["record"]}
+{"text": "チンニング8回できた", "labels": ["record"]}
+{"text": "アームカール15kgで12回", "labels": ["record"]}
+{"text": "カール12.5キロ10回3セット", "labels": ["record"]}
+{"text": "ベンチ７０kgで８回", "labels": ["record"]}
+{"text": "BP65kg 10reps", "labels": ["record"]}
+{"text": "スクワ90kg×6回2セット", "labels": ["record"]}
+{"text": "ベンチプレス 70kg 8回 4セット完了", "labels": ["record"]}
+{"text": "今日のベンチは60kgで10回、9回、8回", "labels": ["record"]}
+{"text": "デッドリフト100キロで8回いけた", "labels": ["record"]}
+{"text": "レッグプレス200kg10回", "labels": ["record"]}
+{"text": "懸垂 自重で12回", "labels": ["record"]}
+{"text": "ダンベルプレス24kgで10回3セット", "labels": ["record"]}
+{"text": "インクラインベンチ50kg8回", "labels": ["record"]}
+{"text": "ディップス15回3セット", "labels": ["record"]}
+{"text": "ベンチ60で10回", "labels": ["record"]}
+{"text": "スクワット60kg10回3セット終わり", "labels": ["record"]}
+{"text": "ローイング60kgで10回", "labels": ["record"]}
+{"text": "ヒップスラスト100kg12回3セット", "labels": ["record"]}
+{"text": "ブルガリアンスクワット20kgで10回ずつ", "labels": ["record"]}
+{"text": "カーフレイズ80kg15回", "labels": ["record"]}
+{"text": "ベンチ55kgで12回、余裕だった", "labels": ["record"]}
+{"text": "スクワット120kg 3回上がった", "labels": ["record"]}
+{"text": "ラットプルダウン60キロで8回3セット", "labels": ["record"]}
+{"text": "プランク3分キープ", "labels": ["record"]}
+{"text": "昨日ベンチ何kgだった？", "labels": ["history"]}
+{"text": "前回のスクワット何kgでやったっけ", "labels": ["history"]}
+{"text": "先週の脚の日いつだっけ？", "labels": ["history"]}
+{"text": "今月のベンチ何回やった？", "labels": ["history"]}
+{"text": "デッドリフトの自己ベスト教えて", "labels": ["history"]}
+{"text": "先月のトレーニング回数は？", "labels": ["history"]}
+{"text": "前回ラットプル何kgだった？", "labels": ["history"]}
+{"text": "昨日の記録見せて", "labels": ["history"]}
+{"text": "3日前何やった？", "labels": ["history"]}
+{"text": "スクワットの前回の重量確認したい", "labels": ["history"]}
+{"text": "先週何回ジム行った？", "labels": ["history"]}
+{"text": "ベンチのMAX更新したのいつ？", "labels": ["history"]}
+{"text": "今週のワークアウト一覧見せて", "labels": ["history"]}
+{"text": "前回懸垂何回できたっけ", "labels": ["history"]}
+{"text": "10月の脚トレの日付教えて", "labels": ["history"]}
+{"text": "この前のデッド何キロだったかな", "labels": ["history"]}
+{"text": "ベンチプレス60kgで記録した日いつ？", "labels": ["history"]}
+{"text": "先月と今月の回数比べたい", "labels": ["history"]}
+{"text": "直近の肩トレの内容見たい", "labels": ["history"]}
+{"text": "レッグプレス前回何kgだった？", "labels": ["history"]}
+{"text": "先週の月曜に何した？", "labels": ["history"]}
+{"text": "昨日のスクワット何セットやった？", "labels": ["history"]}
+{"text": "ベンチの記録、直近5回分見せて", "labels": ["history"]}
+{"text": "今年一番重いデッドはいつ？", "labels": ["history"]}
+{"text": "前々回のベンチの回数教えて", "labels": ["history"]}
+{"text": "カールの前回の重さは？", "labels": ["history"]}
+{"text": "過去1ヶ月のトレ頻度教えて", "labels": ["history"]}
+{"text": "先週末の記録ある？", "labels": ["history"]}
+{"text": "ショルダープレス前回何回上がった？", "labels": ["history"]}
+{"text": "2週間前の胸の日何やったっけ", "labels": ["history"]}
+{"text": "ベンチ今までで一番重かったのは？", "labels": ["history"]}
+{"text": "直近のトレーニング内容確認したい", "labels": ["history"]}
+{"text": "先日のラットプルのセット数教えて", "labels": ["history"]}
+{"text": "先月ベンチ何回記録した？", "labels": ["history"]}
+{"text": "前回の脚トレで何kg扱った？", "labels": ["history"]}
+{"text": "おとといの記録を表示して", "labels": ["history"]}
+{"text": "次は何kgにすべき？", "labels": ["advice"]}
+{"text": "肩が痛いけどどうする？", "labels": ["advice"]}
+{"text": "ベンチの重量の上げ方教えて", "labels": ["advice"]}
+{"text": "スクワットで腰が痛くなるんだけどフォーム大丈夫かな", "labels": ["advice"]}
+{"text": "次の脚トレ何やればいい？", "labels": ["advice"]}
+{"text": "停滞してるんだけどどうすれば伸びる？", "labels": ["advice"]}
+{"text": "プロテインはいつ飲むのがいい？", "labels": ["advice"]}
+{"text": "ベンチ80kgいけるかな", "labels": ["advice"]}
+{"text": "回数を増やすべきか重量を増やすべきか迷ってる", "labels": ["advice"]}
+{"text": "筋肉痛が残ってるけどトレしていい？", "labels": ["advice"]}
+{"text": "デッドリフトのコツ教えて", "labels": ["advice"]}
+{"text": "週何回トレーニングするのが理想？", "labels": ["advice"]}
+{"text": "胸の日と背中の日は分けたほうがいい？", "labels": ["advice"]}
+{"text": "セット間の休憩はどれくらいがいいの？", "labels": ["advice"]}
+{"text": "スクワットのしゃがむ深さはどれくらい？", "labels": ["advice"]}
+{"text": "懸垂ができるようになるにはどうすればいい？", "labels": ["advice"]}
+{"text": "ベンチで胸に効いてる感じがしない", "labels": ["advice"]}
+{"text": "次の目標設定どうしよう", "labels": ["advice"]}
+{"text": "有酸素運動は筋トレ前と後どっちがいい？", "labels": ["advice"]}
+{"text": "クレアチンって飲んだほうがいい？", "labels": ["advice"]}
+{"text": "脚トレのモチベが上がらない、どうすればいい？", "labels": ["advice"]}
+{"text": "60kgで10回が限界なんだけど次どうする？", "labels": ["advice"]}
+{"text": "肩トレの種目おすすめある？", "labels": ["advice"]}
+{"text": "食事はトレ前に食べたほうがいい？", "labels": ["advice"]}
+{"text": "ベンチプレスで手首が痛い", "labels": ["advice"]}
+{"text": "フォームチェックしてほしい、スクワットで膝が出すぎる気がする", "labels": ["advice"]}
+{"text": "増量期の食事の目安教えて", "labels": ["advice"]}
+{"text": "デッドで握力が先に限界になる", "labels": ["advice"]}
+{"text": "トレーニングの順番のおすすめは？", "labels": ["advice"]}
+{"text": "次のベンチ、重量上げるか回数狙うかどっちがいいと思う？", "labels": ["advice"]}
+{"text": "さっきの記録70kgの間違い", "labels": ["edit"]}
+{"text": "最後のセット消して", "labels": ["edit"]}
+{"text": "さっきのベンチ、60kgじゃなくて65kgだった", "labels": ["edit"]}
+{"text": "間違えた、今のは取り消して", "labels": ["edit"]}
+{"text": "さっきのスクワット、回数は8回じゃなくて10回", "labels": ["edit"]}
+{"text": "最後のセット削除して", "labels": ["edit"]}
+{"text": "ベンチの2セット目、重量50kgに直して", "labels": ["edit"]}
+{"text": "さっきの記録間違えた", "labels": ["edit"]}
+{"text": "今の入力ミス、なかったことにして", "labels": ["edit"]}
+{"text": "デッドの記録、120kgじゃなくて110kgだった", "labels": ["edit"]}
+{"text": "さっきのセット数、3じゃなくて4セットだった", "labels": ["edit"]}
+{"text": "最後に追加した種目消したい", "labels": ["edit"]}
+{"text": "懸垂の回数、10回じゃなくて12回に修正して", "labels": ["edit"]}
+{"text": "さっきのラットプル、55kgの間違い、50kgだった", "labels": ["edit"]}
+{"text": "記録を1つ戻して", "labels": ["edit"]}
+{"text": "直前の記録を取り消したい", "labels": ["edit"]}
+{"text": "入力間違えた、さっきのベンチは記録しないで", "labels": ["edit"]}
+{"text": "カールの重量間違えた、15じゃなくて17.5", "labels": ["edit"]}
+{"text": "さっきの3セット目、実際は失敗したから消して", "labels": ["edit"]}
+{"text": "スクワットのセット、1セット多いから削除して", "labels": ["edit"]}
+{"text": "さっきの記録、日付が違う", "labels": ["edit"]}
+{"text": "間違って同じ記録を2回入れちゃった、1つ消して", "labels": ["edit"]}
+{"text": "さっきのデッドリフト、種目が違う、ローイングだった", "labels": ["edit"]}
+{"text": "回数の記録ミス、5回じゃなくて6回", "labels": ["edit"]}
+{"text": "今のやつキャンセル", "labels": ["edit"]}
+{"text": "さっきのベンチ70kg、やっぱり65kgだった", "labels": ["edit"]}
+{"text": "最後の種目まるごと消して", "labels": ["edit"]}
+{"text": "セット記録を全部やり直したい", "labels": ["edit"]}
+{"text": "さっきの重量、単位がポンドだった、kgに直して", "labels": ["edit"]}
+{"text": "追加した懸垂、回数を9回に変更して", "labels": ["edit"]}
+{"text": "さっきの記録、重量だけ直したい", "labels": ["edit"]}
+{"text": "誤って違う種目で記録しちゃった", "labels": ["edit"]}
+{"text": "直前のセット、レップ数を11回に訂正", "labels": ["edit"]}
+{"text": "さっきのレッグプレス、回数は12回じゃなくて10回だった", "labels": ["edit"]}
+{"text": "こんにちは", "labels": ["other"]}
+{"text": "おはよう", "labels": ["other"]}
+{"text": "ありがとう", "labels": ["other"]}
+{"text": "おつかれさま", "labels": ["other"]}
+{"text": "今日はいい天気だね", "labels": ["other"]}
+{"text": "疲れたー", "labels": ["other"]}
+{"text": "筋肉痛やばい", "labels": ["other"]}
+{"text": "明日も頑張るぞ", "labels": ["other"]}
+{"text": "おなかすいた", "labels": ["other"]}
+{"text": "今日はオフにする", "labels": ["other"]}
+{"text": "ジム行くの面倒くさい", "labels": ["other"]}
+{"text": "やる気が出ない日もあるよね", "labels": ["other"]}
+{"text": "このアプリの使い方を教えて", "labels": ["other"]}
+{"text": "記録をエクスポートしたいんだけど、できる？", "labels": ["other"]}
+{"text": "設定はどこから開くの？", "labels": ["other"]}
+{"text": "明日は脚の日だ", "labels": ["other"]}
+{"text": "来週から新しいジムに変える", "labels": ["other"]}
+{"text": "プロテインバー買った", "labels": ["other"]}
+{"text": "今日の夕飯は鶏肉にしよう", "labels": ["other"]}
+{"text": "体重が2キロ減った", "labels": ["other"]}
+{"text": "寝不足で眠い", "labels": ["other"]}
+{"text": "ジムが混んでた", "labels": ["other"]}
+{"text": "新しいシューズ買ったよ", "labels": ["other"]}
+{"text": "トレーニングウェアが乾いてない", "labels": ["other"]}
+{"text": "サウナ入りたい", "labels": ["other"]}
+{"text": "今日は早く寝る", "labels": ["other"]}
+{"text": "仕事が忙しくて今週は行けなさそう", "labels": ["other"]}
+{"text": "雨降ってきた", "labels": ["other"]}
+{"text": "こんばんは", "labels": ["other"]}
+{"text": "よろしくお願いします", "labels": ["other"]}
+{"text": "テスト送信", "labels": ["other"]}
+{"text": "あ", "labels": ["other"]}
+{"text": "んー", "labels": ["other"]}
+{"text": "ジムの月会費値上がりするらしい", "labels": ["other"]}
+{"text": "60kgで10回やった、次どうすればいい？", "labels": ["record", "advice"]}
+{"text": "ベンチ70kg8回できた。次は重量上げるべき？", "labels": ["record", "advice"]}
+{"text": "スクワット100kg5回上がった、次回どうする？", "labels": ["record", "advice"]}
+{"text": "デッド150kg引けた！次は160目指せるかな", "labels": ["record", "advice"]}
+{"text": "今日のベンチ60kgで10回3セット完了。次どう進める？", "labels": ["record", "advice"]}
+{"text": "懸垂12回できた、負荷かけるにはどうすればいい？", "labels": ["record", "advice"]}
+{"text": "ラットプル60kg10回やった。回数増やすか重くするか迷う", "labels": ["record", "advice"]}
+{"text": "レッグプレス200kg10回できた、次回の目安教えて", "labels": ["record", "advice"]}
+{"text": "ショルダープレス22kgで8回。次は回数を伸ばすべき？", "labels": ["record", "advice"]}
+{"text": "カール17.5kgで10回できた、次どうしよう", "labels": ["record", "advice"]}
+{"text": "前回ベンチ何kgだった？次は増やせそう？", "labels": ["history", "advice"]}
+{"text": "先月の脚トレ何回やった？今月のペースどう思う？", "labels": ["history", "advice"]}
+{"text": "デッドリフト120kg5回やった、前回より引けた気がするけど実際どう？", "labels": ["record", "history"]}
+{"text": "ローイング70kg12回、前回は何kgでやってたっけ", "labels": ["record", "history"]}
+{"text": "懸垂10回できた、前回は8回だったっけ？", "labels": ["record", "history"]}
+{"text": "ショルダープレス40kg8回、先週より回数増えた？", "labels": ["record", "history"]}
+{"text": "レッグプレス180kg10回やった、この前はどれくらいだった？", "labels": ["record", "history"]}
+{"text": "ダンベルカール15kg12回、前回より重くできた？", "labels": ["record", "history"]}
+{"text": "ラットプルダウン55kg10回、前回の重量超えたかな", "labels": ["record", "history"]}
+{"text": "インクラインベンチ50kg10回やった、前回何回までいけた？", "labels": ["record", "history"]}
+{"text": "スクワット90kg8回終わった、先週の記録より伸びた？", "labels": ["record", "history"]}
+{"text": "ベンチプレス70kg5回、今月頭はどれくらいだった？", "labels": ["record", "history"]}
+{"text": "ベンチやった", "labels": ["record"]}
+{"text": "スクワット終わった", "labels": ["record"]}
+{"text": "今日のデッドリフトこなした", "labels": ["record"]}
+{"text": "懸垂やれた", "labels": ["record"]}
+{"text": "ローイング終わらせた", "labels": ["record"]}
+{"text": "ダンベルプレスやったよ", "labels": ["record"]}
+{"text": "レッグプレス済ませた", "labels": ["record"]}
+{"text": "腕立て伏せやった", "labels": ["record"]}
