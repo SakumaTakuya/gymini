@@ -190,3 +190,11 @@
 {"text": "インクラインベンチ50kg10回やった、前回何回までいけた？", "labels": ["record", "history"]}
 {"text": "スクワット90kg8回終わった、先週の記録より伸びた？", "labels": ["record", "history"]}
 {"text": "ベンチプレス70kg5回、今月頭はどれくらいだった？", "labels": ["record", "history"]}
+{"text": "ベンチやった", "labels": ["record"]}
+{"text": "スクワット終わった", "labels": ["record"]}
+{"text": "今日のデッドリフトこなした", "labels": ["record"]}
+{"text": "懸垂やれた", "labels": ["record"]}
+{"text": "ローイング終わらせた", "labels": ["record"]}
+{"text": "ダンベルプレスやったよ", "labels": ["record"]}
+{"text": "レッグプレス済ませた", "labels": ["record"]}
+{"text": "腕立て伏せやった", "labels": ["record"]}
