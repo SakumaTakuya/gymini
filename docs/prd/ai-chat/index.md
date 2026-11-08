@@ -504,6 +504,10 @@ per-write 確認カード（旧 `origin: 'ai-suggested'` バリアント）を�
 3. 上記の未決定発話パターン → Proposed
 4. それ以外 → Conversational
 
+**ローカル分類器との役割分担（[intent-router PRD](../intent-router/index.md)）:**
+
+入力のルーティング判定（record / history / advice / edit / other への振り分け）は、ブラウザ内のローカル分類器が主として担う。本 FR の判定優先ルールは、分類器がどの意図も確定できなかった入力と、モデル読み込み完了前に入力が従来経路へフォールバックした場合に、LLM 側の判定として適用される。`advice` と確定した入力については、LLM はその内容生成に専念する。
+
 **検証方法:** テストによる検証
 
 ### FR_038: 提案チップのアクション実行（kind 別ハイブリッド導線）
