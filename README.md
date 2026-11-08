@@ -26,6 +26,7 @@
 | [user-profile.md](docs/prd/settings/user-profile.md) | 2 | REQ_010 | FR_031〜FR_034 |
 | [navigation.md](docs/prd/navigation.md) | 1〜4 | REQ_007 | FR_017〜FR_020, IR_001〜IR_002, DC_005 |
 | [app-header.md](docs/prd/app-header.md) | 2 | REQ_007, REQ_010 | IR_003〜IR_007, DC_006 |
+| [intent-router](docs/prd/intent-router/index.md) | PoC | REQ_005, REQ_008 | FR_001〜FR_007 |
 
 > 注: 旧 FRAME4（独立 AI チャット画面 / `/ai` ルート）は撤去済み。AI 対話は FRAME2（[workout](docs/prd/workout/index.md)）のタイムライン UX に統合され、その振る舞いは [ai-chat](docs/prd/ai-chat/index.md) が所有する。
 
