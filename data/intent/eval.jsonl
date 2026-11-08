@@ -197,3 +197,9 @@
 {"text": "前回ベンチ何回上がった？今日は何kgから始めるべき？", "labels": ["history", "advice"]}
 {"text": "ベンチ60kg10回やった、前回より回数増えた？", "labels": ["record", "history"]}
 {"text": "今日スクワット100kg5回、前回は何kgだった？", "labels": ["record", "history"]}
+{"text": "ベンチプレスやり終えた", "labels": ["record"]}
+{"text": "スクワットやった", "labels": ["record"]}
+{"text": "プランク終わった", "labels": ["record"]}
+{"text": "ラットプルダウンやった", "labels": ["record"]}
+{"text": "今日の背中トレ終わった", "labels": ["record"]}
+{"text": "チェストプレスこなした", "labels": ["record"]}
