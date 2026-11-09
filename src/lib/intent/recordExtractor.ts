@@ -187,6 +187,16 @@ function resolveExerciseName(token: string, knownNames: string[]): string {
   return token
 }
 
+/**
+ * トークンが複数の既存種目への前方一致／末尾一致になる曖昧な省略形か。
+ * 曖昧な場合はどれを指すか決められないため、新規種目としても作成しない
+ * （例: ダンベルプレスとダンベルフライがある状態での「ダンベル」）。
+ */
+function isAmbiguousAbbreviation(token: string, knownNames: string[]): boolean {
+  if (knownNames.filter((n) => n.startsWith(token)).length > 1) return true
+  return knownNames.filter((n) => n.endsWith(token)).length > 1
+}
+
 /** 数値部分文字列から重量・回数・セット数・時間・距離を取り出す（抽出箇所は除去しながら進める）。 */
 function parseNumbers(input: string): ParsedNumbers {
   let s = input
@@ -461,7 +471,9 @@ export function extractRecordExercises(
           token !== '' &&
           !isQuestion &&
           !isPlanClause &&
-          (resolved !== token || isPlausibleNewExerciseName(token))
+          (resolved !== token ||
+            (isPlausibleNewExerciseName(token) &&
+              !isAmbiguousAbbreviation(token, knownNames)))
         ) {
           exerciseName = resolved
           rest = segment.slice(distanceFirst[1].length).replace(distanceFirst[2], ' ')
@@ -477,10 +489,14 @@ export function extractRecordExercises(
           segment.includes(sfx),
         )
         const resolved = resolveExerciseName(token, knownNames)
-        // マスター名（略称含む）に解決できる場合は種目として扱う。
+        // マスター名（略称含む）に一意に解決できる場合は種目として扱う。
         // 未登録名は「種目らしい接頭辞」の場合だけ新規種目として採用する。
+        // 複数の既存種目に一致する曖昧な省略形は、どちらとも決められない
+        // ため新規種目としても作成しない。
         const acceptable =
-          resolved !== token || isPlausibleNewExerciseName(token)
+          resolved !== token ||
+          (isPlausibleNewExerciseName(token) &&
+            !isAmbiguousAbbreviation(token, knownNames))
         if (
           token !== '' &&
           !isQuestion &&

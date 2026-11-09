@@ -50,10 +50,10 @@ describe('extractRecordExercises: 定型パターン', () => {
     ])
   })
 
-  it('略称が複数のマスター名に含まれて曖昧な場合はそのままの名前を使う', () => {
-    expect(extractRecordExercises('カール12.5キロ10回', KNOWN)).toEqual([
-      { exerciseName: 'カール', sets: [{ weight: 12.5, reps: 10 }] },
-    ])
+  it('略称が複数のマスター名に含まれて曖昧な場合は抽出しない', () => {
+    // KNOWN にはアームカールとダンベルカールの両方があるため「カール」は
+    // どちらとも決められず、そのままの名前で新規種目も作らない
+    expect(extractRecordExercises('カール12.5キロ10回', KNOWN)).toEqual([])
   })
 
   it('全角数字を半角として解釈する', () => {
@@ -383,6 +383,15 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     expect(extractRecordExercises('5km走った', KNOWN)).toEqual([])
     expect(extractRecordExercises('5km泳いだ', KNOWN)).toEqual([])
     expect(extractRecordExercises('3km歩いた', KNOWN)).toEqual([])
+  })
+
+  it('複数の既存種目に前方一致する曖昧な省略形は新規種目として作成しない', () => {
+    expect(
+      extractRecordExercises('ダンベル30kg10回', [
+        'ダンベルプレス',
+        'ダンベルフライ',
+      ]),
+    ).toEqual([])
   })
 
   it('距離先行でも長い活用形の動詞（5km走ってきた）は種目として作成しない', () => {
