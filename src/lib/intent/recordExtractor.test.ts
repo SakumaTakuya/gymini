@@ -316,6 +316,19 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('距離先行の計画の節（5kmランニングする予定）は抽出しない', () => {
+    expect(extractRecordExercises('5kmランニングする予定', KNOWN)).toEqual([])
+    // 直前の種目への追加情報としても付けない
+    expect(
+      extractRecordExercises(
+        'ベンチプレス60kg10回やった、5kmランニングする予定',
+        KNOWN,
+      ),
+    ).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+  })
+
   it('疑問符なしの疑問文（ベンチプレス何kgだった）も抽出しない', () => {
     expect(extractRecordExercises('ベンチプレス何kgだった', KNOWN)).toEqual([])
     expect(

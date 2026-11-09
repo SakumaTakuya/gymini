@@ -363,6 +363,9 @@ export function extractRecordExercises(
 
     let exerciseName: string | null = null
     let rest = segment
+    // 距離先行の節で種目名を採用しなかった場合は、直前の種目への
+    // 追加情報としても扱わない（計画・疑問などの独立した節のため）。
+    let skipAsContinuation = false
 
     if (knownHit) {
       exerciseName = knownHit
@@ -379,12 +382,15 @@ export function extractRecordExercises(
         if (
           token !== '' &&
           !isQuestion &&
+          !isPlanClause &&
           (resolved !== token || isPlausibleNewExerciseName(token))
         ) {
           exerciseName = resolved
           rest = segment.slice(distanceFirst[1].length).replace(distanceFirst[2], ' ')
           // 距離そのものは parseNumbers で拾い直すため rest に戻す
           rest = `${distanceFirst[1]} ${rest}`
+        } else {
+          skipAsContinuation = true
         }
       } else if (leadMatch) {
         const token = cleanNameToken(leadMatch[0])
@@ -414,7 +420,11 @@ export function extractRecordExercises(
 
     if (exerciseName !== null) {
       pushExercise(buildExercise(exerciseName, parsed))
-    } else if (results.length > 0 && !/^[^0-9×\s]/.test(segment)) {
+    } else if (
+      results.length > 0 &&
+      !skipAsContinuation &&
+      !/^[^0-9×\s]/.test(segment)
+    ) {
       // 数値から始まる名前なしセグメントは、直前の種目への追加情報として
       // 解釈する（例: 「…60kgで10回、9回、8回」の 9回・8回）。
       // 文字から始まる節は独立した文（計画・感想など）なので、
