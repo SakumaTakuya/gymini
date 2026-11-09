@@ -316,6 +316,17 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('願望の節（5km走りたい）は抽出しない', () => {
+    expect(extractRecordExercises('5km走りたい', KNOWN)).toEqual([])
+    expect(extractRecordExercises('ベンチプレス60kg10回上げたい', KNOWN)).toEqual([])
+    // 「みたいに」は願望ではないので記録として抽出する
+    expect(
+      extractRecordExercises('プロみたいにベンチプレス60kg10回上げた', KNOWN),
+    ).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+  })
+
   it('助詞を含む散文の接頭辞（今朝はジムでプルオーバー）は種目として作成しない', () => {
     expect(
       extractRecordExercises('今朝はジムでプルオーバー30kg12回', KNOWN),

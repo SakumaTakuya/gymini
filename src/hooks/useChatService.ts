@@ -142,6 +142,12 @@ type LlmTurnOptions = {
   appendUserMessage: boolean
   /** systemInstruction 末尾への追加指示 */
   extraInstruction?: string
+  /**
+   * 失敗時に再送対象（lastFailedInput）へ登録するか。再送で副作用が
+   * 重複するターン（記録の挿入が完了した後の advice 委譲など）では
+   * false にして、完了済みのアクションの再適用を防ぐ。
+   */
+  registerRetryOnFailure?: boolean
 }
 
 export function useChatService(options: UseChatServiceOptions = {}) {
@@ -378,7 +384,9 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         console.error('[ai-chat] Gemini API error:', err)
         const store = useChatStore.getState()
         if (userMessageId) store.removeMessage(userMessageId)
-        store.setLastFailedInput(turn.failedInput)
+        if (turn.registerRetryOnFailure !== false) {
+          store.setLastFailedInput(turn.failedInput)
+        }
         store.setError(getErrorMessage(err))
       } finally {
         // この turn がまだ「現行のリクエスト」である場合のみ loading を畳む。
@@ -554,6 +562,9 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           extraInstruction: insertedAnyRecord
             ? RECORD_ALREADY_INSERTED_NOTE
             : undefined,
+          // 記録の挿入が完了しているターンを再送すると、分類から
+          // やり直して同じセットがマージで重複する。再送は登録しない
+          registerRetryOnFailure: !insertedAnyRecord,
         })
       }
     },

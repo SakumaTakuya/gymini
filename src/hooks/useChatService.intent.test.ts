@@ -696,6 +696,35 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     ).toBe(false)
   })
 
+  test('record+advice で advice の LLM が失敗しても、リトライで記録が重複しない', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    useWorkoutSessionStore.getState().startSession()
+    const client = mockClient([new Error('network error')])
+    const { result } = renderHook(() =>
+      useChatService({
+        createClient: () => client,
+        classifier: stubClassifier({ decided: ['record', 'advice'] }),
+      }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス60kg10回')
+    })
+    // 記録は挿入され、advice は失敗する。ただし再送で記録が重複する
+    // ターンはリトライ対象に登録しない
+    expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(1)
+    expect(useWorkoutSessionStore.getState().draftExercises[0].sets).toEqual([
+      { weight: 60, reps: 10 },
+    ])
+    expect(useChatStore.getState().error).not.toBeNull()
+    expect(useChatStore.getState().lastFailedInput).toBeNull()
+    await act(async () => {
+      await result.current.retryLastMessage()
+    })
+    expect(useWorkoutSessionStore.getState().draftExercises[0].sets).toEqual([
+      { weight: 60, reps: 10 },
+    ])
+  })
+
   test('既存カードで新しいセットを入力中の場合はマージせず、入力中の値を保持する', async () => {
     useWorkoutSessionStore.getState().startSession()
     const { result } = renderHook(() =>
