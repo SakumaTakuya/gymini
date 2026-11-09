@@ -59,7 +59,16 @@ export function buildHistoryResponse(
 
   // 種目名が文中にあれば、その種目の直近記録を優先する。
   // 日付ヒントもあれば両方で絞る（「昨日ベンチ何kgだった？」など）。
-  const targetName = findMentionedExerciseName(text, exerciseNames)
+  // 言及の解決は現在のマスター名に加え、保存済みの記録に残る
+  // 名前スナップショットに対しても行う（改名・削除済みの種目でも
+  // 過去の記録は当時の名前で引けるように）。
+  const mentionNames = [
+    ...new Set([
+      ...exerciseNames,
+      ...workouts.flatMap((w) => w.exercises.map((e) => e.exerciseName)),
+    ]),
+  ]
+  const targetName = findMentionedExerciseName(text, mentionNames)
   if (targetName && hint) {
     const dayWorkouts = workouts.filter((w) => w.date === hint.date)
     // 同じ日に同種目のセッションが複数ありうるため、全件を対象にする

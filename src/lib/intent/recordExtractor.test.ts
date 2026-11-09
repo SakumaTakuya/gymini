@@ -316,6 +316,12 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('距離先行でも動詞そのもの（5km走った）は種目として作成しない', () => {
+    expect(extractRecordExercises('5km走った', KNOWN)).toEqual([])
+    expect(extractRecordExercises('5km泳いだ', KNOWN)).toEqual([])
+    expect(extractRecordExercises('3km歩いた', KNOWN)).toEqual([])
+  })
+
   it('感嘆符で区切られた節は独立に扱い、後続の計画に引きずられない', () => {
     expect(
       extractRecordExercises('ベンチプレス70kg8回できた！次は72.5kgでやろう', KNOWN),

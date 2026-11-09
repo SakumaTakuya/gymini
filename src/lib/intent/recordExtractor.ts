@@ -70,10 +70,17 @@ const NON_EXERCISE_TOKENS = new Set([
   'ここ',
 ])
 
+// 短い動詞形（過去形の語尾）。「5km走った」の「走った」のように、
+// 動詞そのものを種目名として自動作成しないための判定。
+const VERB_FORM_PATTERN = /(った|いだ|んだ|した|えた|いた|きた|れた)$/
+
 /** マスター未登録のトークンを新規種目名として採用してよいか。 */
 function isPlausibleNewExerciseName(token: string): boolean {
   if (token.length < 2) return false
   if (NON_EXERCISE_TOKENS.has(token)) return false
+  // 完了語尾そのもの（「やった」「できた」等）は種目名ではない
+  if (COMPLETION_SUFFIXES.includes(token)) return false
+  if (token.length <= 3 && VERB_FORM_PATTERN.test(token)) return false
   return true
 }
 

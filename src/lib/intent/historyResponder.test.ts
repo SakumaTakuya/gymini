@@ -98,6 +98,17 @@ describe('buildHistoryResponse', () => {
     expect(res).not.toContain('55kg')
   })
 
+  it('マスターから消えた種目名でも、保存済みの記録の名前で特定できる', () => {
+    // 種目マスターが空（改名・削除済み）でも、ワークアウトに残る
+    // 名前スナップショットから言及を解決する
+    const res = buildHistoryResponse('昨日ベンチ何kgだった？', WORKOUTS, [], TODAY)
+    expect(res).toContain('昨日のベンチプレスの記録です')
+    expect(res).toContain('60kg×10回、60kg×9回、60kg×8回')
+    expect(res).not.toContain('懸垂')
+    const res2 = buildHistoryResponse('ベンチの記録は？', WORKOUTS, [], TODAY)
+    expect(res2).toContain('ベンチプレスの直近の記録です')
+  })
+
   it('同じ日に同種目のセッションが複数あれば全件返す', () => {
     const sameDay: Workout[] = [
       workout('2026-11-08', [
