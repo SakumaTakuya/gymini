@@ -176,13 +176,16 @@ export function buildHistoryResponse(
     return [`${targetName}の直近の記録です。`, ...lines].join('\n')
   }
 
-  // マスターから削除済みの種目は対応表に無いため、保存済みの
-  // 名前スナップショットから部位を推定して補う（推定できなければ対象外）。
+  // マスターから削除済みの種目は対応表に無く、残っていても未分類
+  // （unassigned）のことがある。その場合は保存済みの名前スナップショット
+  // から部位を推定して補う（推定できなければ対象外）。
   const inGroup = (e: Workout['exercises'][number]): boolean => {
     if (!group) return false
+    const mapped = categoryByExerciseId?.get(e.exerciseId)
     const category =
-      categoryByExerciseId?.get(e.exerciseId) ??
-      inferExerciseCategory(e.exerciseName)
+      mapped !== undefined && mapped !== 'unassigned'
+        ? mapped
+        : inferExerciseCategory(e.exerciseName)
     return category === group.category
   }
 

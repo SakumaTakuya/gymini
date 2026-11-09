@@ -287,6 +287,27 @@ describe('buildHistoryResponse: 期間・部位フィルタ', () => {
     expect(res).toContain('レッグプレス')
   })
 
+  it('マスターで未分類（unassigned）の種目も、名前から部位を推定して部位フィルタに含める', () => {
+    const unassignedById = new Map<string, ExerciseCategory>([
+      ['ex-squat', 'unassigned'],
+    ])
+    const unassignedWorkouts: Workout[] = [
+      workoutWithIds('2026-11-06', [
+        { id: 'ex-squat', exerciseName: 'スクワット', sets: [{ weight: 80, reps: 5 }] },
+      ]),
+    ]
+    const res = buildHistoryResponse(
+      '今月の脚の日いつ？',
+      unassignedWorkouts,
+      PERIOD_NAMES,
+      TODAY,
+      unassignedById,
+    )
+    expect(res).toContain('今月の脚の記録です')
+    expect(res).toContain('11/6')
+    expect(res).toContain('スクワット')
+  })
+
   it('「今週の記録見せて」は今週（月曜始まり）の分だけを返す', () => {
     const res = buildHistoryResponse(
       '今週の記録見せて',
