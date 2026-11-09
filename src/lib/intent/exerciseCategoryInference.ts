@@ -7,7 +7,8 @@ import type { ExerciseCategory } from '../../schemas/exercise'
 // 保守的に判定し、判断できない場合は undefined を返して未分類に委ねる
 // （LLM 側の運用「判断できない種目は category を省略する」と同じ）。
 // 並び順が優先順位: 「レッグレイズ」（体幹）を「レッグ」（脚）より先に、
-// 「プランク」（体幹）や「ランジ」（脚）を「ラン」（有酸素）より先に判定する。
+// 「プランク」（体幹）や「ランジ」（脚）を「ラン」（有酸素）より先に、
+// リア系フライ（肩）を汎用の「フライ」（胸）より先に判定する。
 const CATEGORY_KEYWORDS: Array<{
   category: ExerciseCategory
   keywords: string[]
@@ -41,11 +42,20 @@ const CATEGORY_KEYWORDS: Array<{
       'ロー',
     ],
   },
-  { category: 'chest', keywords: ['ベンチ', 'チェスト', 'ペック', 'フライ'] },
   {
     category: 'shoulders',
-    keywords: ['ショルダー', 'サイドレイズ', 'フロントレイズ', 'リアレイズ', 'オーバーヘッド'],
+    keywords: [
+      'ショルダー',
+      'サイドレイズ',
+      'フロントレイズ',
+      'リアレイズ',
+      'リアデルト',
+      'リアフライ',
+      'リバースフライ',
+      'オーバーヘッド',
+    ],
   },
+  { category: 'chest', keywords: ['ベンチ', 'チェスト', 'ペック', 'フライ'] },
   {
     category: 'arms',
     keywords: ['カール', 'トライセプス', 'キックバック', 'プレスダウン'],

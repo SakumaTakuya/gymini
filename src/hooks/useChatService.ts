@@ -175,11 +175,6 @@ export function useChatService(options: UseChatServiceOptions = {}) {
   // 次のターンが始まっても、旧ターンの finally が新しい所有者の
   // ガードを解除しないようにするための照合用。
   const turnOwnerRef = useRef(0)
-  // 再送中の入力。ローカルルーティングから LLM へ委譲したターンが失敗した
-  // 場合、元のユーザー発話はチャットに残ったまま再送対象になる。再送時に
-  // sendMessage が同じ発話を追加し直すとバブルと Gemini 履歴が二重化する
-  // ため、再送中は発話の追加を省略して既存の発話を再利用する。
-  const retryInputRef = useRef<string | null>(null)
 
   // options はデフォルト引数 {} により毎レンダー新しい参照になるため、
   // 依存には options 自体ではなく中身の関数だけを使う。そうしないと
@@ -611,8 +606,18 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         }
         // 分類の完了待ちの間に Stop されたら、このターンは破棄する
         if (generation !== turnGenerationRef.current) return
-        // 再送時は元のユーザー発話がチャットに残っているため追加しない
-        const reuseUserMessage = retryInputRef.current === trimmed
+        // 前回失敗した入力の再送相当で、失敗したターンのユーザー発話が
+        // チャットに残っている場合は追加し直さない（バブルと Gemini 履歴の
+        // 二重化防止）。発話が残るのはローカルルーティングから LLM へ
+        // 委譲したターンで、通常の LLM ターンは失敗時に発話を取り除く
+        // ため、その場合は従来どおり追加する。
+        const chatBefore = useChatStore.getState()
+        const lastUserMessage = [...chatBefore.messages]
+          .reverse()
+          .find((m) => m.role === 'user')
+        const reuseUserMessage =
+          chatBefore.lastFailedInput === trimmed &&
+          lastUserMessage?.content === trimmed
         if (classification) {
           appendIntentFeedback({
             kind: 'classified',
@@ -668,7 +673,12 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           return
         }
 
-        await runLlmTurn({ failedInput: trimmed, appendUserMessage: true })
+        // 再送時は元のユーザー発話が残っているため、分類に失敗して
+        // この経路へ落ちた場合も発話を追加し直さない
+        await runLlmTurn({
+          failedInput: trimmed,
+          appendUserMessage: !reuseUserMessage,
+        })
       } finally {
         if (turnOwnerRef.current === generation) {
           turnInFlightRef.current = false
@@ -682,12 +692,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
     const { lastFailedInput: input, isLoading: loading } =
       useChatStore.getState()
     if (!input || loading) return
-    retryInputRef.current = input
-    try {
-      await sendMessage(input)
-    } finally {
-      retryInputRef.current = null
-    }
+    await sendMessage(input)
   }, [sendMessage])
 
   const triggerAction = useCallback(

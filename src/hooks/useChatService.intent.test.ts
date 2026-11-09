@@ -416,6 +416,67 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     expect(session.draftExercises[0].sets).toEqual([{ weight: 100, reps: 10 }])
   })
 
+  test('再送時に分類が失敗しても、残っているユーザー発話を再利用して重複させない', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    useWorkoutSessionStore.getState().startSession()
+    let classifyCalls = 0
+    const classifier: IntentClassifier = {
+      ready: vi.fn(async () => true),
+      classify: vi.fn(async (): Promise<ClassificationResult> => {
+        classifyCalls += 1
+        if (classifyCalls === 1) {
+          return {
+            scores: { record: 0.9, history: 0, advice: 0, edit: 0, other: 0 },
+            decided: ['record'],
+            candidates: [],
+          }
+        }
+        throw new Error('classifier unavailable')
+      }),
+    }
+    const seenContents: unknown[] = []
+    let generateCalls = 0
+    const client: GeminiClient = {
+      generate: vi.fn((contents: unknown) => {
+        seenContents.push(contents)
+        generateCalls += 1
+        if (generateCalls === 1) {
+          return Promise.reject(new Error('network error'))
+        }
+        return Promise.resolve({
+          text: '記録しました',
+          functionCalls: null,
+          modelContent: null,
+        })
+      }),
+    }
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => client, classifier }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('よくわからない記録')
+    })
+    // 委譲が失敗して再送対象になり、ユーザー発話はチャットに残る
+    expect(useChatStore.getState().lastFailedInput).toBe('よくわからない記録')
+    await act(async () => {
+      await result.current.retryLastMessage()
+    })
+    expect(lastMessage().content).toBe('記録しました')
+    // 再送で分類が使えず LLM 経路へ落ちても、発話は追加し直されない
+    const userMessages = useChatStore
+      .getState()
+      .messages.filter((m) => m.role === 'user')
+    expect(userMessages).toHaveLength(1)
+    const secondContents = seenContents[1] as Array<{
+      role: string
+      parts: Array<{ text?: string }>
+    }>
+    const occurrences = secondContents
+      .flatMap((c) => c.parts)
+      .filter((p) => p.text === 'よくわからない記録')
+    expect(occurrences).toHaveLength(1)
+  })
+
   test('キーなし + record で抽出できない場合は種目名の案内を返す', async () => {
     const client = mockClient([])
     const { result } = renderHook(() =>

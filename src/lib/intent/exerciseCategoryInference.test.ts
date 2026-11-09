@@ -27,6 +27,12 @@ describe('inferExerciseCategory（種目名からの部位推定）', () => {
     expect(inferExerciseCategory('レッグレイズ')).toBe('core')
   })
 
+  it('リア系のフライは胸ではなく肩と判定する', () => {
+    expect(inferExerciseCategory('リアデルトフライ')).toBe('shoulders')
+    expect(inferExerciseCategory('リアフライ')).toBe('shoulders')
+    expect(inferExerciseCategory('リバースフライ')).toBe('shoulders')
+  })
+
   it('判断できない種目名は undefined（未分類に委ねる）', () => {
     expect(inferExerciseCategory('プルオーバー')).toBeUndefined()
     expect(inferExerciseCategory('ダンベルプレス')).toBeUndefined()
