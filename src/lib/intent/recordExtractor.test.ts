@@ -445,6 +445,15 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('試行の意図（やってみよう／やってみます）は計画として抽出しない', () => {
+    expect(
+      extractRecordExercises('ベンチプレス70kg8回やってみよう', KNOWN),
+    ).toEqual([])
+    expect(
+      extractRecordExercises('ベンチプレス70kg8回やってみます', KNOWN),
+    ).toEqual([])
+  })
+
   it('数値から始まる計画の節は直前の種目への追加セットとして付けない', () => {
     expect(
       extractRecordExercises(
