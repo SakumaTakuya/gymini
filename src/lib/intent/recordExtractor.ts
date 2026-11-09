@@ -348,7 +348,13 @@ export function extractRecordExercises(
     // 疑問の節（「ベンチプレス何kgだった？」）は実施済みの記録ではないため、
     // 種目名が含まれていても抽出しない。
     const isPlanClause = /(やろう|しよう|つもり|予定)/.test(segment)
-    const isQuestion = /[？?]/.test(segment)
+    // 疑問符なしでも、疑問語（何+単位・どれくらい・いくつ・〜っけ）を含む
+    // 節は問いかけとして扱う。疑問語のない過去形（〜だった）は報告なので
+    // 対象に含めない。
+    const isQuestion =
+      /[？?]/.test(segment) ||
+      /何(?:kg|キロ|回|セット|分|秒|km|つ|日|月|年|曜日)/.test(segment) ||
+      /(どれくらい|どのくらい|いくつ|っけ)/.test(segment)
     // マスター名がそのまま含まれる場合はそれを種目名とする
     const knownHit =
       isPlanClause || isQuestion

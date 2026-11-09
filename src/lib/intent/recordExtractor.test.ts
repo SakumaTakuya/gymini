@@ -316,6 +316,22 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('疑問符なしの疑問文（ベンチプレス何kgだった）も抽出しない', () => {
+    expect(extractRecordExercises('ベンチプレス何kgだった', KNOWN)).toEqual([])
+    expect(
+      extractRecordExercises(
+        'ベンチプレス60kg10回やった。ベンチプレス何回できた',
+        KNOWN,
+      ),
+    ).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+    // 疑問語を含まない過去形の報告（〜だった）は記録として抽出する
+    expect(extractRecordExercises('ベンチプレス60kg10回だった', KNOWN)).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+  })
+
   it('種目名を含む疑問の節（ベンチプレス何kgだった？）は抽出しない', () => {
     expect(extractRecordExercises('ベンチプレス何kgだった？', KNOWN)).toEqual([])
     expect(extractRecordExercises('ラン何分だった？', ['ラン'])).toEqual([])
