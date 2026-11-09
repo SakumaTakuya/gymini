@@ -477,6 +477,24 @@ export function useChatService(options: UseChatServiceOptions = {}) {
               continue
             }
             insertedAnyRecord = true
+            if (
+              exercise.sets.length === 0 &&
+              exercise.mentionedWeight !== undefined
+            ) {
+              // 完了セットが無く重量だけが言及された場合（「ベンチプレス
+              // 60kg」）、確認文には重量を出す一方で下書きの入力中セットは
+              // 既定の 0kg のままになり値が落ちてしまうため、言及された
+              // 重量を pendingSet へ引き継ぐ。
+              const session = useWorkoutSessionStore.getState()
+              const draftIndex = session.draftExercises.findIndex(
+                (d) => d.exerciseName === exercise.exerciseName,
+              )
+              if (draftIndex >= 0) {
+                session.updatePendingSet(draftIndex, {
+                  weight: exercise.mentionedWeight,
+                })
+              }
+            }
             const exerciseId = (
               result.data as { exerciseId?: string } | undefined
             )?.exerciseId

@@ -124,6 +124,28 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     expect(useChatStore.getState().error).toBeNull()
   })
 
+  test('重量だけの record では言及された重量が下書きの入力中セットに引き継がれる', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    const client = mockClient([])
+    const { result } = renderHook(() =>
+      useChatService({
+        createClient: () => client,
+        classifier: classifierFor(['record']),
+      }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス60kg')
+    })
+    const session = useWorkoutSessionStore.getState()
+    expect(session.draftExercises).toHaveLength(1)
+    expect(session.draftExercises[0].sets).toEqual([])
+    expect(session.draftExercises[0].pendingSet).toEqual({
+      weight: 60,
+      reps: 0,
+    })
+    expect(lastMessage().content).toContain('記録しました')
+  })
+
   test('キーなし + record + セッション非アクティブでは SESSION_NOT_ACTIVE の案内を返す', async () => {
     const client = mockClient([])
     const { result } = renderHook(() =>
