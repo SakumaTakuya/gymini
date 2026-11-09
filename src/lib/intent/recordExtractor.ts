@@ -55,6 +55,27 @@ const COMPLETION_SUFFIXES = [
 
 const TRAILING_PARTICLES = ['は', 'を', 'が', 'も', 'の']
 
+// 種目名ではありえない語。これらが先行する節（「次は72.5kgでやろう」等）は
+// 記録ではなく計画・感想なので、種目として自動作成しない。
+const NON_EXERCISE_TOKENS = new Set([
+  '次',
+  '次回',
+  '今度',
+  '明日',
+  '昨日',
+  'あと',
+  'それ',
+  'これ',
+  'ここ',
+])
+
+/** マスター未登録のトークンを新規種目名として採用してよいか。 */
+function isPlausibleNewExerciseName(token: string): boolean {
+  if (token.length < 2) return false
+  if (NON_EXERCISE_TOKENS.has(token)) return false
+  return true
+}
+
 function normalizeText(text: string): string {
   return text
     .replace(/[０-９]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0xff10 + 0x30))
@@ -321,8 +342,12 @@ export function extractRecordExercises(
       const leadMatch = segment.match(/^[^0-9×\s]+/)
       if (distanceFirst) {
         const token = cleanNameToken(distanceFirst[2])
-        if (token !== '') {
-          exerciseName = resolveExerciseName(token, knownNames)
+        const resolved = resolveExerciseName(token, knownNames)
+        if (
+          token !== '' &&
+          (resolved !== token || isPlausibleNewExerciseName(token))
+        ) {
+          exerciseName = resolved
           rest = segment.slice(distanceFirst[1].length).replace(distanceFirst[2], ' ')
           // 距離そのものは parseNumbers で拾い直すため rest に戻す
           rest = `${distanceFirst[1]} ${rest}`
@@ -334,8 +359,13 @@ export function extractRecordExercises(
           segment.includes(sfx),
         )
         const isQuestion = /[？?]/.test(segment)
-        if (token !== '' && !isQuestion && (hasDigits || hasCompletion)) {
-          exerciseName = resolveExerciseName(token, knownNames)
+        const resolved = resolveExerciseName(token, knownNames)
+        // マスター名（略称含む）に解決できる場合は種目として扱う。
+        // 未登録名は「種目らしい接頭辞」の場合だけ新規種目として採用する。
+        const acceptable =
+          resolved !== token || isPlausibleNewExerciseName(token)
+        if (token !== '' && !isQuestion && (hasDigits || hasCompletion) && acceptable) {
+          exerciseName = resolved
           rest = segment.slice(leadMatch[0].length)
         }
       }
@@ -345,8 +375,11 @@ export function extractRecordExercises(
 
     if (exerciseName !== null) {
       pushExercise(buildExercise(exerciseName, parsed))
-    } else if (results.length > 0) {
-      // 名前なしセグメントは直前の種目への追加情報として解釈する。
+    } else if (results.length > 0 && !/^[^0-9×\s]/.test(segment)) {
+      // 数値から始まる名前なしセグメントは、直前の種目への追加情報として
+      // 解釈する（例: 「…60kgで10回、9回、8回」の 9回・8回）。
+      // 文字から始まる節は独立した文（計画・感想など）なので、
+      // 種目として採用しなかったものを直前の種目へも付けない。
       // 数値が何もなければ感想・質問などの文として無視する。
       const hasNumbers =
         parsed.weight !== undefined ||

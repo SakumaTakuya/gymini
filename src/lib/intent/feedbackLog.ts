@@ -103,6 +103,25 @@ export function trackRoutedRecord(record: {
 }
 
 /**
+ * 編集バッファを戻した「実効セット列」。セット編集中は対象セットが
+ * draft.sets から pendingSet へ一時的に移るため、そのまま比較すると
+ * 編集を開いただけで「修正」と誤記録してしまう。編集中のセットは
+ * 元の位置に戻して比較する（workoutSessionStore の restoreEditingSet と同じ規則）。
+ */
+function effectiveSetsJson(draft: DraftExercise): string {
+  if (draft.editingSetIndex != null && draft.pendingSet !== null) {
+    const i = draft.editingSetIndex
+    const restored = [
+      ...draft.sets.slice(0, i),
+      draft.pendingSet,
+      ...draft.sets.slice(i),
+    ]
+    return JSON.stringify(restored)
+  }
+  return JSON.stringify(draft.sets)
+}
+
+/**
  * 現在の draft と追跡中の記録を突き合わせ、削除されたものを
  * record-removed、セットが変わったものを record-edited として記録する。
  * セッションの draft が変わるたびに呼び出す想定。
@@ -128,7 +147,7 @@ export function syncRoutedRecordTracking(
       trackedRecords.delete(exerciseId)
       continue
     }
-    const setsJson = JSON.stringify(draft.sets)
+    const setsJson = effectiveSetsJson(draft)
     if (setsJson !== tracked.setsJson) {
       appendIntentFeedback({
         kind: 'record-edited',

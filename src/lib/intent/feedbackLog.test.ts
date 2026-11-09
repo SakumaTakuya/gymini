@@ -140,6 +140,66 @@ describe('routed record tracking (FR_007: 取り消し・修正の記録)', () =
     expect(readIntentFeedback()).toEqual([])
   })
 
+  it('セット編集中の一時的なバッファ移動では record-edited を記録しない', () => {
+    trackRoutedRecord({
+      text: 'ベンチ60kg10回',
+      exerciseId: 'ex-bench',
+      exerciseName: 'ベンチプレス',
+      sets: [{ weight: 60, reps: 10 }],
+    })
+    // editCompletedSet 相当: セットが sets から pendingSet へ移った状態
+    syncRoutedRecordTracking([
+      makeDraftExercise({
+        exerciseId: 'ex-bench',
+        exerciseName: 'ベンチプレス',
+        sets: [],
+        pendingSet: { weight: 60, reps: 10 },
+        editingSetIndex: 0,
+        cardState: 'recording',
+      }),
+    ], true)
+    expect(readIntentFeedback()).toEqual([])
+    // カードを畳んで元に戻した状態でも記録しない
+    syncRoutedRecordTracking([
+      makeDraftExercise({
+        exerciseId: 'ex-bench',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 60, reps: 10 }],
+      }),
+    ], true)
+    expect(readIntentFeedback()).toEqual([])
+  })
+
+  it('編集中に値を変えたら record-edited を1回だけ記録する', () => {
+    trackRoutedRecord({
+      text: 'ベンチ60kg10回',
+      exerciseId: 'ex-bench',
+      exerciseName: 'ベンチプレス',
+      sets: [{ weight: 60, reps: 10 }],
+    })
+    syncRoutedRecordTracking([
+      makeDraftExercise({
+        exerciseId: 'ex-bench',
+        exerciseName: 'ベンチプレス',
+        sets: [],
+        pendingSet: { weight: 65, reps: 10 },
+        editingSetIndex: 0,
+        cardState: 'recording',
+      }),
+    ], true)
+    expect(readIntentFeedback()).toHaveLength(1)
+    expect(readIntentFeedback()[0]).toMatchObject({ kind: 'record-edited' })
+    // 完了して sets に戻った状態では重複記録しない
+    syncRoutedRecordTracking([
+      makeDraftExercise({
+        exerciseId: 'ex-bench',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 65, reps: 10 }],
+      }),
+    ], true)
+    expect(readIntentFeedback()).toHaveLength(1)
+  })
+
   it('セッション非アクティブ時の draft クリアは取り消しとみなさず、追跡だけ解除する', () => {
     trackRoutedRecord({
       text: 'ベンチ60kg10回',
