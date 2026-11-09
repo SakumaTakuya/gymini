@@ -316,6 +316,23 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('マスター名が別の種目名に埋め込まれている場合は拾わない', () => {
+    const knownWithRun = ['ベンチプレス', 'ラン']
+    // 「ラン」がマスターにあっても「プランク」の一部として誤認しない
+    expect(extractRecordExercises('プランク60秒×2', knownWithRun)).toEqual([
+      {
+        exerciseName: 'プランク',
+        sets: [],
+        durationText: '60秒',
+        mentionedSets: 2,
+      },
+    ])
+    // 単独の「ラン」は従来どおり拾う
+    expect(extractRecordExercises('ラン30分', knownWithRun)).toEqual([
+      { exerciseName: 'ラン', sets: [], durationText: '30分' },
+    ])
+  })
+
   it('同一種目の節を繰り返しても累積セット数は上限を超えない', () => {
     const repeated = Array.from({ length: 5 }, () => 'ベンチプレス60kg10回×60').join('、')
     const result = extractRecordExercises(repeated, KNOWN)

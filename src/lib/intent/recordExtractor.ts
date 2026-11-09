@@ -291,6 +291,32 @@ function applyToCurrent(
   }
 }
 
+const KATAKANA_CHAR = /[ァ-ヶー]/
+
+/**
+ * セグメント中のマスター名を探す。カタカナ語の途中に埋め込まれた一致
+ * （前後どちらかの文字がカタカナ）は別の種目名の一部とみなして拾わない。
+ * 例: マスターの「ラン」が「プランク」の一部に一致するケース。
+ */
+function findKnownExerciseName(
+  segment: string,
+  sortedKnown: string[],
+): string | undefined {
+  for (const name of sortedKnown) {
+    let idx = segment.indexOf(name)
+    while (idx !== -1) {
+      const before = idx > 0 ? segment[idx - 1] : ''
+      const after =
+        idx + name.length < segment.length ? segment[idx + name.length] : ''
+      if (!KATAKANA_CHAR.test(before) && !KATAKANA_CHAR.test(after)) {
+        return name
+      }
+      idx = segment.indexOf(name, idx + 1)
+    }
+  }
+  return undefined
+}
+
 export function extractRecordExercises(
   text: string,
   knownNames: string[],
@@ -335,7 +361,7 @@ export function extractRecordExercises(
     // マスター名がそのまま含まれる場合はそれを種目名とする
     const knownHit = isPlanClause
       ? undefined
-      : sortedKnown.find((name) => segment.includes(name))
+      : findKnownExerciseName(segment, sortedKnown)
 
     let exerciseName: string | null = null
     let rest = segment

@@ -222,14 +222,28 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         let baseContents = messagesToContents(useChatStore.getState().messages)
         // Gemini は user/model の交互列を要求する。チップ経由などで
         // 履歴が model で終わる場合は元の入力を user ターンとして補う。
-        if (
-          baseContents.length === 0 ||
-          baseContents[baseContents.length - 1].role === 'model'
-        ) {
+        const lastContent = baseContents[baseContents.length - 1]
+        if (baseContents.length === 0 || lastContent.role === 'model') {
           baseContents = [
             ...baseContents,
             { role: 'user', parts: [{ text: turn.failedInput }] },
           ]
+        } else if (!turn.appendUserMessage) {
+          // 中断された別ターンの user 発話が末尾に残っている場合がある
+          // （応答待ちの間にチップがタップされた等）。交互列を保つため
+          // 追加はできないので、このターンの入力と異なるときは
+          // 末尾の user ターンを置き換える。
+          const lastText = lastContent.parts
+            .map((p) =>
+              'text' in p && typeof p.text === 'string' ? p.text : '',
+            )
+            .join('')
+          if (lastText !== turn.failedInput) {
+            baseContents = [
+              ...baseContents.slice(0, -1),
+              { role: 'user', parts: [{ text: turn.failedInput }] },
+            ]
+          }
         }
 
         const outcome = await runConversationTurn({

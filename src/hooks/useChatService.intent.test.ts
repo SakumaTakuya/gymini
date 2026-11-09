@@ -603,6 +603,70 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     expect(useChatStore.getState().isLoading).toBe(false)
   })
 
+  test('LLM ターン実行中に other チップをタップすると、中断したターンの入力ではなくチップの入力で LLM が応答する', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    const seenContents: unknown[] = []
+    let calls = 0
+    const generateMock = vi.fn((contents: unknown, signal?: AbortSignal) => {
+      seenContents.push(contents)
+      calls += 1
+      if (calls === 1) {
+        return new Promise<GeminiChatResponse>((_res, rej) => {
+          signal?.addEventListener('abort', () => {
+            rej(new DOMException('Aborted', 'AbortError'))
+          })
+        })
+      }
+      return Promise.resolve({
+        text: 'その他の回答です',
+        functionCalls: null,
+        modelContent: null,
+      })
+    })
+    const client: GeminiClient = { generate: generateMock }
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => client, classifier: null }),
+    )
+
+    // 先に候補チップのメッセージがある状態にする
+    const chipAction = {
+      id: 'intent-other',
+      label: 'その他',
+      kind: 'intent-route' as const,
+      payload: { intent: 'other', text: 'あれ見せて' },
+    }
+    useChatStore.setState({
+      messages: [
+        {
+          id: 'chips-1',
+          role: 'assistant',
+          content: 'どの操作か選んでください。',
+          timestamp: '2026-11-09T10:00:00+09:00' as never,
+          actions: [chipAction],
+        },
+      ],
+    })
+
+    // 別の LLM ターンを開始し、応答待ちの間にチップをタップする
+    let sendPromise: Promise<void> = Promise.resolve()
+    act(() => {
+      sendPromise = result.current.sendMessage('フォームを教えて')
+    })
+    await waitFor(() => expect(useChatStore.getState().isLoading).toBe(true))
+    await act(async () => {
+      await result.current.triggerAction('chips-1', chipAction)
+      await sendPromise
+    })
+
+    // 2回目の LLM 呼び出しは、中断されたターンの入力ではなく
+    // チップの元入力を末尾の user ターンとして受け取る
+    expect(seenContents).toHaveLength(2)
+    expect(seenContents[1]).toEqual([
+      { role: 'user', parts: [{ text: 'あれ見せて' }] },
+    ])
+    expect(lastMessage().content).toBe('その他の回答です')
+  })
+
   test('分類の完了を待つ間にタップした候補チップは処理しない', async () => {
     useWorkoutSessionStore.getState().startSession()
     let resolveClassify: ((r: ClassificationResult) => void) | null = null
