@@ -33,6 +33,7 @@ import {
   type IntentLabel,
 } from '../lib/intent/intentClassifier'
 import {
+  ensureIntentClassifierReady,
   getReadyIntentClassifier,
   warmUpIntentClassifier,
 } from '../lib/intent/intentClassifierProvider'
@@ -203,7 +204,13 @@ export function useChatService(options: UseChatServiceOptions = {}) {
 
   const tryClassify = useCallback(
     async (text: string): Promise<ClassificationResult | null> => {
-      const classifier = resolveClassifier()
+      let classifier = resolveClassifier()
+      if (!classifier && injectedClassifier === undefined) {
+        // 初回送信の時点でモデル読み込み中なら、完了を待ってから分類する。
+        // 待ち合わせずに従来経路へ落とすと、キーなしの初回 record/history が
+        // API キーが無い旨の案内になってしまい、再送が必要になるため。
+        classifier = await ensureIntentClassifierReady()
+      }
       if (!classifier) return null
       try {
         return await classifier.classify(text)
@@ -212,8 +219,16 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         return null
       }
     },
-    [resolveClassifier],
+    [resolveClassifier, injectedClassifier],
   )
+
+  // チャットの利用開始時点でモデルの読み込みを始める。初回送信まで
+  // 待ち時間を稼ぐことで、上の待ち合わせが短く済むようにする。
+  useEffect(() => {
+    if (injectedClassifier === undefined) {
+      warmUpIntentClassifier()
+    }
+  }, [injectedClassifier])
 
   // FR_007: ルーティングで挿入した記録の取り消し・修正を検出して記録する
   useEffect(() => {

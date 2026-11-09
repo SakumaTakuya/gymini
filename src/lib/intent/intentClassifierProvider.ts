@@ -32,6 +32,18 @@ export function getReadyIntentClassifier(): IntentClassifier | null {
   return readyClassifier
 }
 
+/**
+ * 分類器の読み込み完了を待ってから返す。未開始なら開始し、進行中なら
+ * その完了を待つ。読み込み失敗時とテスト環境では null を返す。
+ * 初回送信の時点で読み込み中でも、従来経路へ即フォールバックせず
+ * 完了を待ってローカル分類できるようにするための待ち合わせ口。
+ */
+export async function ensureIntentClassifierReady(): Promise<IntentClassifier | null> {
+  warmUpIntentClassifier()
+  if (warmUpPromise) await warmUpPromise
+  return readyClassifier
+}
+
 export function resetIntentClassifierProviderForTests(): void {
   readyClassifier = null
   warmUpPromise = null

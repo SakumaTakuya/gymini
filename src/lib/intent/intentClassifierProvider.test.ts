@@ -8,6 +8,7 @@ vi.mock('./transformersEmbedder', () => ({
 }))
 
 import {
+  ensureIntentClassifierReady,
   getReadyIntentClassifier,
   resetIntentClassifierProviderForTests,
   warmUpIntentClassifier,
@@ -72,6 +73,37 @@ describe('intentClassifierProvider', () => {
     warmUpIntentClassifier()
     await new Promise((r) => setTimeout(r, 10))
     expect(getReadyIntentClassifier()).toBeNull()
+  })
+
+  it('ensureIntentClassifierReady は読み込み完了を待って分類器を返す', async () => {
+    let resolveLoad: (c: IntentClassifier) => void = () => {}
+    createLocalIntentClassifierMock.mockReturnValue(
+      new Promise<IntentClassifier>((r) => {
+        resolveLoad = r
+      }),
+    )
+    const classifier = stubClassifier(true)
+    let settled = false
+    const pending = ensureIntentClassifierReady().then((c) => {
+      settled = true
+      return c
+    })
+    await new Promise((r) => setTimeout(r, 10))
+    expect(settled).toBe(false)
+    resolveLoad(classifier)
+    await expect(pending).resolves.toBe(classifier)
+    expect(getReadyIntentClassifier()).toBe(classifier)
+  })
+
+  it('ensureIntentClassifierReady は読み込み失敗時に null を返す', async () => {
+    createLocalIntentClassifierMock.mockRejectedValue(new Error('fetch failed'))
+    await expect(ensureIntentClassifierReady()).resolves.toBeNull()
+  })
+
+  it('ensureIntentClassifierReady はテスト環境では読み込みを開始せず null を返す', async () => {
+    vi.stubEnv('MODE', 'test')
+    await expect(ensureIntentClassifierReady()).resolves.toBeNull()
+    expect(createLocalIntentClassifierMock).not.toHaveBeenCalled()
   })
 
   it('テスト環境（MODE=test）では warmUp が読み込みを開始しない', async () => {
