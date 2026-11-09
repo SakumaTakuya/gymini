@@ -54,7 +54,11 @@ const COMPLETION_SUFFIXES = [
   'おわり',
 ]
 
-const TRAILING_PARTICLES = ['は', 'を', 'が', 'も', 'の']
+// 種目名の末尾に付く助詞。isPlausibleNewExerciseName の助詞判定
+// （は・が・を・に・で・へ・の）と揃え、末尾の助詞は cleanNameToken で
+// 落とす。2文字以下の名前は語の一部（「よが」の「が」）の可能性がある
+// ため、cleanNameToken 側で落とすのは残りが2文字以上になる場合だけ。
+const TRAILING_PARTICLES = ['は', 'を', 'が', 'も', 'の', 'に', 'で', 'へ']
 
 // 種目名ではありえない語。これらが先行する節（「次は72.5kgでやろう」等）は
 // 記録ではなく計画・感想なので、種目として自動作成しない。

@@ -400,6 +400,21 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('種目名の末尾の助詞「で」は落として未登録種目名を抽出する', () => {
+    // 「ヒップスラストで100kg」の「で」は格助詞で、種目名の一部ではない
+    expect(extractRecordExercises('ヒップスラストで100kg10回', KNOWN)).toEqual([
+      { exerciseName: 'ヒップスラスト', sets: [{ weight: 100, reps: 10 }] },
+    ])
+    // 末尾の助詞「に」も同様に落とす
+    expect(extractRecordExercises('ヒップスラストに100kg10回', KNOWN)).toEqual([
+      { exerciseName: 'ヒップスラスト', sets: [{ weight: 100, reps: 10 }] },
+    ])
+    // 「よが」の末尾「が」は語の一部なので従来どおり残す
+    expect(extractRecordExercises('よが30分', KNOWN)).toEqual([
+      { exerciseName: 'よが', sets: [], durationText: '30分' },
+    ])
+  })
+
   it('カタカナの未登録種目名（ヨガ）は抽出する', () => {
     expect(extractRecordExercises('ヨガ30分', KNOWN)).toEqual([
       { exerciseName: 'ヨガ', sets: [], durationText: '30分' },
