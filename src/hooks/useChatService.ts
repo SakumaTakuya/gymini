@@ -96,7 +96,9 @@ function normalizeDecided(decided: IntentLabel[]): IntentLabel[] {
 
 /**
  * 既に draft にある種目へ、抽出したセットを追加する（FR_004）。
- * 編集中のカードには割り込まない。マージできたら true を返す。
+ * セット編集中・新しいセットの入力中のカードには割り込まない
+ * （completeSet が入力中の pendingSet を上書きしてしまうため）。
+ * マージできたら true を返す。
  * フィードバック追跡は、マージ途中を「ユーザーの修正」と誤記録
  * しないよう一時停止し、最終形でスナップショットを更新する。
  */
@@ -110,7 +112,7 @@ function mergeSetsIntoExistingDraft(
   )
   if (index < 0) return false
   const draft = session.draftExercises[index]
-  if (draft.editingSetIndex != null) return false
+  if (draft.editingSetIndex != null || draft.pendingSetDirty) return false
   const resume = suspendRoutedRecordTracking()
   try {
     for (const set of exercise.sets) {
