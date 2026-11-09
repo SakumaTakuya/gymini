@@ -33,6 +33,11 @@ describe('inferExerciseCategory（種目名からの部位推定）', () => {
     expect(inferExerciseCategory('リバースフライ')).toBe('shoulders')
   })
 
+  it('「ロープ」始まりの腕種目は「ロー」に引っ張られず arms と判定する', () => {
+    expect(inferExerciseCategory('ロープカール')).toBe('arms')
+    expect(inferExerciseCategory('ローププレスダウン')).toBe('arms')
+  })
+
   it('判断できない種目名は undefined（未分類に委ねる）', () => {
     expect(inferExerciseCategory('プルオーバー')).toBeUndefined()
     expect(inferExerciseCategory('ダンベルプレス')).toBeUndefined()

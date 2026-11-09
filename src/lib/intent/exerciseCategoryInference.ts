@@ -66,11 +66,23 @@ const CATEGORY_KEYWORDS: Array<{
   },
 ]
 
+// 「ロー」は「ロープカール」のようにケーブル器具の接頭辞「ロープ」の
+// 先頭にも現れるため、直後が「プ」の場合は背中種目の「ロー」とみなさない。
+function matchesKeyword(exerciseName: string, keyword: string): boolean {
+  if (keyword !== 'ロー') return exerciseName.includes(keyword)
+  let idx = exerciseName.indexOf('ロー')
+  while (idx !== -1) {
+    if (exerciseName[idx + 2] !== 'プ') return true
+    idx = exerciseName.indexOf('ロー', idx + 1)
+  }
+  return false
+}
+
 export function inferExerciseCategory(
   exerciseName: string,
 ): ExerciseCategory | undefined {
   for (const { category, keywords } of CATEGORY_KEYWORDS) {
-    if (keywords.some((k) => exerciseName.includes(k))) return category
+    if (keywords.some((k) => matchesKeyword(exerciseName, k))) return category
   }
   return undefined
 }
