@@ -1,4 +1,5 @@
 import type { WorkoutSet } from '../../schemas/workout'
+import { indexOfStandaloneMention } from './exerciseMention'
 
 // record 意図のルールベース数値抽出（docs/prd/intent-router/index.md §6 の
 // 決定範囲 C のうちルールベース分）。LLM を使わず、定型パターン・×表記・
@@ -291,30 +292,18 @@ function applyToCurrent(
   }
 }
 
-const KATAKANA_CHAR = /[ァ-ヶー]/
-
 /**
- * セグメント中のマスター名を探す。カタカナ語の途中に埋め込まれた一致
- * （前後どちらかの文字がカタカナ）は別の種目名の一部とみなして拾わない。
+ * セグメント中のマスター名を探す。カタカナ語の途中に埋め込まれた一致は
+ * 別の種目名の一部とみなして拾わない（exerciseMention の境界規則を共有）。
  * 例: マスターの「ラン」が「プランク」の一部に一致するケース。
  */
 function findKnownExerciseName(
   segment: string,
   sortedKnown: string[],
 ): string | undefined {
-  for (const name of sortedKnown) {
-    let idx = segment.indexOf(name)
-    while (idx !== -1) {
-      const before = idx > 0 ? segment[idx - 1] : ''
-      const after =
-        idx + name.length < segment.length ? segment[idx + name.length] : ''
-      if (!KATAKANA_CHAR.test(before) && !KATAKANA_CHAR.test(after)) {
-        return name
-      }
-      idx = segment.indexOf(name, idx + 1)
-    }
-  }
-  return undefined
+  return sortedKnown.find(
+    (name) => indexOfStandaloneMention(segment, name) !== -1,
+  )
 }
 
 export function extractRecordExercises(

@@ -667,6 +667,127 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     expect(lastMessage().content).toBe('その他の回答です')
   })
 
+  test('分類中に Stop を押すとそのターンは破棄され、次の送信は通常どおり処理される', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    let resolveClassify: ((r: ClassificationResult) => void) | null = null
+    const pending = new Promise<ClassificationResult>((res) => {
+      resolveClassify = res
+    })
+    const classifyMock = vi
+      .fn()
+      .mockImplementationOnce(() => pending)
+      .mockImplementation(async (): Promise<ClassificationResult> => ({
+        scores: { record: 0.9, history: 0, advice: 0, edit: 0, other: 0 },
+        decided: ['record'],
+        candidates: [],
+      }))
+    const classifier: IntentClassifier = {
+      ready: vi.fn(async () => true),
+      classify: classifyMock,
+    }
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => mockClient([]), classifier }),
+    )
+    let send: Promise<void> | undefined
+    act(() => {
+      send = result.current.sendMessage('ベンチプレス60kg10回')
+    })
+    expect(useChatStore.getState().isLoading).toBe(true)
+    act(() => {
+      result.current.stopResponse()
+    })
+    expect(useChatStore.getState().isLoading).toBe(false)
+    await act(async () => {
+      resolveClassify!({
+        scores: { record: 0.9, history: 0, advice: 0, edit: 0, other: 0 },
+        decided: ['record'],
+        candidates: [],
+      })
+      await send
+    })
+    // Stop されたターンは分類が終わっても処理されない
+    expect(useChatStore.getState().messages).toHaveLength(0)
+    expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(0)
+    // ガードは解除されており、次の送信は通常どおり処理される
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス60kg10回')
+    })
+    expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(1)
+  })
+
+  test('送信処理中に ask-followup チップをタップしても消費されず、完了後に実行できる', async () => {
+    let resolveClassify: ((r: ClassificationResult) => void) | null = null
+    const pending = new Promise<ClassificationResult>((res) => {
+      resolveClassify = res
+    })
+    const classifyMock = vi
+      .fn()
+      .mockImplementationOnce(() => pending)
+      .mockImplementation(async (): Promise<ClassificationResult> => ({
+        scores: { record: 0, history: 0.95, advice: 0, edit: 0, other: 0 },
+        decided: ['history'],
+        candidates: [],
+      }))
+    const classifier: IntentClassifier = {
+      ready: vi.fn(async () => true),
+      classify: classifyMock,
+    }
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => mockClient([]), classifier }),
+    )
+    const followupAction = {
+      id: 'fu-1',
+      label: '先週は？',
+      kind: 'ask-followup' as const,
+      payload: { prompt: '先週は？' },
+    }
+    useChatStore.setState({
+      messages: [
+        {
+          id: 'fu-msg',
+          role: 'assistant',
+          content: '履歴を表示しました。',
+          timestamp: '2026-11-09T10:00:00+09:00' as never,
+          actions: [followupAction],
+        },
+      ],
+    })
+    let send: Promise<void> | undefined
+    act(() => {
+      send = result.current.sendMessage('昨日の記録は？')
+    })
+    await act(async () => {
+      await result.current.triggerAction('fu-msg', followupAction)
+    })
+    // 処理中のためチップは消費されず、フォローアップも送られない
+    const fuMessage = useChatStore
+      .getState()
+      .messages.find((m) => m.id === 'fu-msg')
+    expect(fuMessage?.consumedActionId ?? null).toBeNull()
+    expect(
+      useChatStore
+        .getState()
+        .messages.some((m) => m.role === 'user' && m.content === '先週は？'),
+    ).toBe(false)
+    await act(async () => {
+      resolveClassify!({
+        scores: { record: 0, history: 0.95, advice: 0, edit: 0, other: 0 },
+        decided: ['history'],
+        candidates: [],
+      })
+      await send
+    })
+    // 完了後にタップするとフォローアップが送信される
+    await act(async () => {
+      await result.current.triggerAction('fu-msg', followupAction)
+    })
+    expect(
+      useChatStore
+        .getState()
+        .messages.some((m) => m.role === 'user' && m.content === '先週は？'),
+    ).toBe(true)
+  })
+
   test('分類の完了を待つ間にタップした候補チップは処理しない', async () => {
     useWorkoutSessionStore.getState().startSession()
     let resolveClassify: ((r: ClassificationResult) => void) | null = null

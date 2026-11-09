@@ -115,6 +115,14 @@ export function useChatService(options: UseChatServiceOptions = {}) {
   // 分類の await 中であること。チップ操作の割り込みを禁じるのはこの間だけ
   // （LLM ターン実行中のチップは stopResponse で中断するのが既定の挙動）。
   const classifyingRef = useRef(false)
+  // ターンの世代。Stop で進められ、完了待ちの sendMessage は
+  // 世代が変わっていたら結果を破棄する（分類は AbortController の
+  // 対象外なので、世代でキャンセルを表現する）。
+  const turnGenerationRef = useRef(0)
+  // turnInFlightRef の所有者（世代値）。Stop でガードが先に解除され
+  // 次のターンが始まっても、旧ターンの finally が新しい所有者の
+  // ガードを解除しないようにするための照合用。
+  const turnOwnerRef = useRef(0)
 
   // options はデフォルト引数 {} により毎レンダー新しい参照になるため、
   // 依存には options 自体ではなく中身の関数だけを使う。そうしないと
@@ -175,6 +183,15 @@ export function useChatService(options: UseChatServiceOptions = {}) {
   const stopResponse = useCallback(() => {
     abortControllerRef.current?.abort()
     abortControllerRef.current = null
+    // 分類の完了待ちのターンもキャンセルする: 世代を進めて
+    // sendMessage 側に結果を破棄させる。分類中はガードも即時解除し、
+    // 次の送信を受け付けられるようにする（LLM 実行中のターンは
+    // 所有者の finally が解除する）。
+    turnGenerationRef.current += 1
+    if (classifyingRef.current) {
+      classifyingRef.current = false
+      turnInFlightRef.current = false
+    }
     useChatStore.getState().setLoading(false)
   }, [])
 
@@ -492,6 +509,8 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       if (trimmed === '') return
       // 送信ターンは分類の完了待ちも含めて1つだけに直列化する
       if (turnInFlightRef.current) return
+      const generation = ++turnGenerationRef.current
+      turnOwnerRef.current = generation
       turnInFlightRef.current = true
       // 分類中も busy とマークし、入力側が二重送信を受け付けないようにする
       useChatStore.getState().setLoading(true)
@@ -505,8 +524,12 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         try {
           classification = await tryClassify(trimmed)
         } finally {
-          classifyingRef.current = false
+          if (turnOwnerRef.current === generation) {
+            classifyingRef.current = false
+          }
         }
+        // 分類の完了待ちの間に Stop されたら、このターンは破棄する
+        if (generation !== turnGenerationRef.current) return
         if (classification) {
           appendIntentFeedback({
             kind: 'classified',
@@ -564,7 +587,9 @@ export function useChatService(options: UseChatServiceOptions = {}) {
 
         await runLlmTurn({ failedInput: trimmed, appendUserMessage: true })
       } finally {
-        turnInFlightRef.current = false
+        if (turnOwnerRef.current === generation) {
+          turnInFlightRef.current = false
+        }
       }
     },
     [addUserMessage, routeLocally, runLlmTurn, tryClassify],
@@ -592,6 +617,11 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       ) {
         return
       }
+      // ask-followup は sendMessage 経由のため、ターン処理中は
+      // 消費せずに弾く（消費してから送信が弾かれると黙って消える）。
+      if (action.kind === 'ask-followup' && turnInFlightRef.current) {
+        return
+      }
 
       chatState.consumeAction(messageId, action.id)
 
@@ -606,11 +636,15 @@ export function useChatService(options: UseChatServiceOptions = {}) {
             text: originalText,
             chosenIntent: intent,
           })
+          const owner = ++turnGenerationRef.current
+          turnOwnerRef.current = owner
           turnInFlightRef.current = true
           try {
             await routeLocally(originalText, [intent])
           } finally {
-            turnInFlightRef.current = false
+            if (turnOwnerRef.current === owner) {
+              turnInFlightRef.current = false
+            }
           }
           return
         }
