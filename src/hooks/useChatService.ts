@@ -41,6 +41,7 @@ import {
   type ExtractedRecordExercise,
 } from '../lib/intent/recordExtractor'
 import { buildHistoryResponse } from '../lib/intent/historyResponder'
+import { inferExerciseCategory } from '../lib/intent/exerciseCategoryInference'
 import {
   buildEditGuidanceMessage,
   findEditTargetExercise,
@@ -437,6 +438,13 @@ export function useChatService(options: UseChatServiceOptions = {}) {
             const args: Record<string, unknown> = {
               exerciseName: exercise.exerciseName,
               sets: exercise.sets,
+            }
+            // マスター未登録の新規種目は、部位で絞る履歴検索から漏れない
+            // よう、種目名から推定したカテゴリを付ける（既存種目には
+            // 付けない。LLM 経路の system 指示と同じ運用）。
+            if (!knownNames.includes(exercise.exerciseName)) {
+              const category = inferExerciseCategory(exercise.exerciseName)
+              if (category !== undefined) args.category = category
             }
             const result = executeWriteTool('addExerciseToSession', args)
             toolCalls.push({

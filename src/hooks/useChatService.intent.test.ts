@@ -7,6 +7,7 @@ import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
 import * as ExerciseRepository from '../lib/exerciseRepository'
 import * as WorkoutRepository from '../lib/workoutRepository'
 import type { GeminiChatResponse, GeminiClient } from '../lib/geminiClient'
+import type { ExerciseCategory } from '../schemas/exercise'
 import type {
   ClassificationResult,
   IntentClassifier,
@@ -340,8 +341,7 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     expect(lastMessage().content).toBe('記録しました')
   })
 
-  test('委譲した LLM が失敗して再送してもユーザー発話が重複しない', async () => {
-    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+  test('委譲した LLM が失敗して再送してもユーザー発話が重複しない', async () => {    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
     useWorkoutSessionStore.getState().startSession()
     const seenContents: unknown[] = []
     let calls = 0
@@ -388,6 +388,32 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
       .flatMap((c) => c.parts)
       .filter((p) => p.text === 'よくわからない記録')
     expect(occurrences).toHaveLength(1)
+  })
+
+  test('新規種目を記録すると、種目名から推定した部位でマスターに登録される', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    const createMock = vi.mocked(ExerciseRepository.create)
+    createMock.mockImplementation(
+      (name: string, category: ExerciseCategory = 'unassigned') => ({
+        id: 'ex-new',
+        name,
+        category,
+      }),
+    )
+    const { result } = renderHook(() =>
+      useChatService({
+        createClient: () => mockClient([]),
+        classifier: classifierFor(['record']),
+      }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('レッグプレス100kg10回')
+    })
+    expect(createMock).toHaveBeenCalledWith('レッグプレス', 'legs')
+    const session = useWorkoutSessionStore.getState()
+    expect(session.draftExercises).toHaveLength(1)
+    expect(session.draftExercises[0].exerciseName).toBe('レッグプレス')
+    expect(session.draftExercises[0].sets).toEqual([{ weight: 100, reps: 10 }])
   })
 
   test('キーなし + record で抽出できない場合は種目名の案内を返す', async () => {
