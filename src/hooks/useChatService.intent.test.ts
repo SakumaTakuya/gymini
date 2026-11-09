@@ -340,6 +340,56 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     expect(lastMessage().content).toBe('記録しました')
   })
 
+  test('委譲した LLM が失敗して再送してもユーザー発話が重複しない', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    useWorkoutSessionStore.getState().startSession()
+    const seenContents: unknown[] = []
+    let calls = 0
+    const client: GeminiClient = {
+      generate: vi.fn((contents: unknown) => {
+        seenContents.push(contents)
+        calls += 1
+        if (calls === 1) return Promise.reject(new Error('network error'))
+        return Promise.resolve({
+          text: '記録しました',
+          functionCalls: null,
+          modelContent: null,
+        })
+      }),
+    }
+    const { result } = renderHook(() =>
+      useChatService({
+        createClient: () => client,
+        classifier: classifierFor(['record']),
+      }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('よくわからない記録')
+    })
+    // 委譲が失敗し、再送対象として登録される。ユーザー発話は残っている
+    expect(useChatStore.getState().error).not.toBeNull()
+    expect(useChatStore.getState().lastFailedInput).toBe('よくわからない記録')
+    await act(async () => {
+      await result.current.retryLastMessage()
+    })
+    expect(lastMessage().content).toBe('記録しました')
+    // 再送で同じユーザー発話が二重に追加されない
+    const userMessages = useChatStore
+      .getState()
+      .messages.filter((m) => m.role === 'user')
+    expect(userMessages).toHaveLength(1)
+    expect(userMessages[0].content).toBe('よくわからない記録')
+    // Gemini 履歴でも入力は1回だけ現れる
+    const secondContents = seenContents[1] as Array<{
+      role: string
+      parts: Array<{ text?: string }>
+    }>
+    const occurrences = secondContents
+      .flatMap((c) => c.parts)
+      .filter((p) => p.text === 'よくわからない記録')
+    expect(occurrences).toHaveLength(1)
+  })
+
   test('キーなし + record で抽出できない場合は種目名の案内を返す', async () => {
     const client = mockClient([])
     const { result } = renderHook(() =>

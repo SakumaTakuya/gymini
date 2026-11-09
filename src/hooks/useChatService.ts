@@ -174,6 +174,11 @@ export function useChatService(options: UseChatServiceOptions = {}) {
   // 次のターンが始まっても、旧ターンの finally が新しい所有者の
   // ガードを解除しないようにするための照合用。
   const turnOwnerRef = useRef(0)
+  // 再送中の入力。ローカルルーティングから LLM へ委譲したターンが失敗した
+  // 場合、元のユーザー発話はチャットに残ったまま再送対象になる。再送時に
+  // sendMessage が同じ発話を追加し直すとバブルと Gemini 履歴が二重化する
+  // ため、再送中は発話の追加を省略して既存の発話を再利用する。
+  const retryInputRef = useRef<string | null>(null)
 
   // options はデフォルト引数 {} により毎レンダー新しい参照になるため、
   // 依存には options 自体ではなく中身の関数だけを使う。そうしないと
@@ -598,6 +603,8 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         }
         // 分類の完了待ちの間に Stop されたら、このターンは破棄する
         if (generation !== turnGenerationRef.current) return
+        // 再送時は元のユーザー発話がチャットに残っているため追加しない
+        const reuseUserMessage = retryInputRef.current === trimmed
         if (classification) {
           appendIntentFeedback({
             kind: 'classified',
@@ -612,7 +619,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
             const chat = useChatStore.getState()
             chat.setError(null)
             chat.setLastFailedInput(null)
-            addUserMessage(trimmed)
+            if (!reuseUserMessage) addUserMessage(trimmed)
             chat.addMessage({
               id: crypto.randomUUID(),
               role: 'assistant',
@@ -635,7 +642,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
             const chat = useChatStore.getState()
             chat.setError(null)
             chat.setLastFailedInput(null)
-            addUserMessage(trimmed)
+            if (!reuseUserMessage) addUserMessage(trimmed)
             // ローカル処理の冒頭（stopResponse）で loading は解除される
             await routeLocally(trimmed, intents)
             return
@@ -667,7 +674,12 @@ export function useChatService(options: UseChatServiceOptions = {}) {
     const { lastFailedInput: input, isLoading: loading } =
       useChatStore.getState()
     if (!input || loading) return
-    await sendMessage(input)
+    retryInputRef.current = input
+    try {
+      await sendMessage(input)
+    } finally {
+      retryInputRef.current = null
+    }
   }, [sendMessage])
 
   const triggerAction = useCallback(

@@ -92,6 +92,25 @@ const VERB_STEM_TOKENS = new Set([
   '飛び',
 ])
 
+// 動詞の辞書形（終止形）。連用形と同じ動詞群で、「5km走る」のように
+// 距離の直後に置かれた未完了の動作そのものを種目名として採用しない。
+const VERB_DICTIONARY_TOKENS = new Set([
+  '走る',
+  '泳ぐ',
+  '歩く',
+  '漕ぐ',
+  '登る',
+  '蹴る',
+  '投げる',
+  '打つ',
+  '引く',
+  '押す',
+  '曲げる',
+  '伸ばす',
+  '回す',
+  '飛ぶ',
+])
+
 /** マスター未登録のトークンを新規種目名として採用してよいか。 */
 function isPlausibleNewExerciseName(token: string): boolean {
   if (token.length < 2) return false
@@ -102,6 +121,7 @@ function isPlausibleNewExerciseName(token: string): boolean {
   // 完了語尾そのもの（「やった」「できた」等）は種目名ではない
   if (COMPLETION_SUFFIXES.includes(token)) return false
   if (VERB_STEM_TOKENS.has(token)) return false
+  if (VERB_DICTIONARY_TOKENS.has(token)) return false
   if (token.length <= 3 && VERB_FORM_PATTERN.test(token)) return false
   return true
 }

@@ -188,6 +188,10 @@ describe('extractRecordExercises: 時間・距離', () => {
     ])
   })
 
+  it('「5km走る」は辞書形の動詞を種目として作成しない', () => {
+    expect(extractRecordExercises('5km走る', KNOWN)).toEqual([])
+  })
+
   it('「ランニング5km」は種目名の後の距離を認識する', () => {
     expect(extractRecordExercises('ランニング5km', KNOWN)).toEqual([
       { exerciseName: 'ランニング', sets: [], distanceText: '5km' },
