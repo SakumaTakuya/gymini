@@ -316,6 +316,20 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('種目名を含む疑問の節（ベンチプレス何kgだった？）は抽出しない', () => {
+    expect(extractRecordExercises('ベンチプレス何kgだった？', KNOWN)).toEqual([])
+    expect(extractRecordExercises('ラン何分だった？', ['ラン'])).toEqual([])
+    // 実施済みの節と疑問の節が混在する場合は実施済みだけを抽出する
+    expect(
+      extractRecordExercises(
+        'ベンチプレス60kg10回やった。ベンチプレス何kgだった？',
+        KNOWN,
+      ),
+    ).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+  })
+
   it('マスター名が別の種目名に埋め込まれている場合は拾わない', () => {
     const knownWithRun = ['ベンチプレス', 'ラン']
     // 「ラン」がマスターにあっても「プランク」の一部として誤認しない

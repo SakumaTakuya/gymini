@@ -344,13 +344,16 @@ export function extractRecordExercises(
   }
 
   for (const segment of segments) {
-    // 計画・意図の節（「次はベンチプレス72.5kg8回やろう」「〜する予定」）は
-    // 実施済みの記録ではないため、種目名が含まれていても抽出しない。
+    // 計画・意図の節（「次はベンチプレス72.5kg8回やろう」「〜する予定」）と
+    // 疑問の節（「ベンチプレス何kgだった？」）は実施済みの記録ではないため、
+    // 種目名が含まれていても抽出しない。
     const isPlanClause = /(やろう|しよう|つもり|予定)/.test(segment)
+    const isQuestion = /[？?]/.test(segment)
     // マスター名がそのまま含まれる場合はそれを種目名とする
-    const knownHit = isPlanClause
-      ? undefined
-      : findKnownExerciseName(segment, sortedKnown)
+    const knownHit =
+      isPlanClause || isQuestion
+        ? undefined
+        : findKnownExerciseName(segment, sortedKnown)
 
     let exerciseName: string | null = null
     let rest = segment
@@ -369,6 +372,7 @@ export function extractRecordExercises(
         const resolved = resolveExerciseName(token, knownNames)
         if (
           token !== '' &&
+          !isQuestion &&
           (resolved !== token || isPlausibleNewExerciseName(token))
         ) {
           exerciseName = resolved
@@ -382,7 +386,6 @@ export function extractRecordExercises(
         const hasCompletion = COMPLETION_SUFFIXES.some((sfx) =>
           segment.includes(sfx),
         )
-        const isQuestion = /[？?]/.test(segment)
         const resolved = resolveExerciseName(token, knownNames)
         // マスター名（略称含む）に解決できる場合は種目として扱う。
         // 未登録名は「種目らしい接頭辞」の場合だけ新規種目として採用する。
