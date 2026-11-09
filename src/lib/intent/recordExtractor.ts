@@ -312,7 +312,7 @@ export function extractRecordExercises(
 ): ExtractedRecordExercise[] {
   const normalized = normalizeText(text)
   const segments = normalized
-    .split(/[、。，\n]/)
+    .split(/[、。，！!\n]/)
     .map((seg) => seg.trim())
     .filter((seg) => seg !== '')
 
