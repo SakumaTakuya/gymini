@@ -98,6 +98,27 @@ describe('buildHistoryResponse', () => {
     expect(res).not.toContain('55kg')
   })
 
+  it('同じ日に同種目のセッションが複数あれば全件返す', () => {
+    const sameDay: Workout[] = [
+      workout('2026-11-08', [
+        { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+      ]),
+      workout('2026-11-08', [
+        { exerciseName: 'ベンチプレス', sets: [{ weight: 70, reps: 5 }] },
+      ]),
+      ...WORKOUTS.slice(1),
+    ]
+    const res = buildHistoryResponse(
+      '昨日ベンチ何kgだった？',
+      sameDay,
+      NAMES,
+      TODAY,
+    )
+    expect(res).toContain('昨日のベンチプレスの記録です')
+    expect(res).toContain('60kg×10回')
+    expect(res).toContain('70kg×5回')
+  })
+
   it('種目名だけならその種目の直近記録を返す', () => {
     const res = buildHistoryResponse(
       'ベンチの前回の記録は？',

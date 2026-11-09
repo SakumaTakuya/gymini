@@ -62,16 +62,18 @@ export function buildHistoryResponse(
   const targetName = findMentionedExerciseName(text, exerciseNames)
   if (targetName && hint) {
     const dayWorkouts = workouts.filter((w) => w.date === hint.date)
-    const entry = dayWorkouts
+    // 同じ日に同種目のセッションが複数ありうるため、全件を対象にする
+    const entries = dayWorkouts
       .flatMap((w) => w.exercises)
-      .find((e) => e.exerciseName === targetName)
-    if (!entry) {
+      .filter((e) => e.exerciseName === targetName)
+    if (entries.length === 0) {
       return `${hint.label}の${targetName}の記録はありません。`
     }
-    const summary = formatSetsSummary(entry.sets)
-    return summary === ''
-      ? `${hint.label}の${targetName}の記録です。\n・（セット未入力）`
-      : `${hint.label}の${targetName}の記録です。\n・${summary}`
+    const lines = entries.map((entry) => {
+      const summary = formatSetsSummary(entry.sets)
+      return summary === '' ? '・（セット未入力）' : `・${summary}`
+    })
+    return [`${hint.label}の${targetName}の記録です。`, ...lines].join('\n')
   }
   if (targetName) {
     const matched = workouts.filter((w) =>
