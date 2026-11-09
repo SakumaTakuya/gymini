@@ -55,8 +55,24 @@ export function buildHistoryResponse(
     return 'まだ記録がありません。'
   }
 
-  // 種目名が文中にあれば、その種目の直近記録を優先する
+  const hint = findDateHint(text, today)
+
+  // 種目名が文中にあれば、その種目の直近記録を優先する。
+  // 日付ヒントもあれば両方で絞る（「昨日ベンチ何kgだった？」など）。
   const targetName = findMentionedExerciseName(text, exerciseNames)
+  if (targetName && hint) {
+    const dayWorkouts = workouts.filter((w) => w.date === hint.date)
+    const entry = dayWorkouts
+      .flatMap((w) => w.exercises)
+      .find((e) => e.exerciseName === targetName)
+    if (!entry) {
+      return `${hint.label}の${targetName}の記録はありません。`
+    }
+    const summary = formatSetsSummary(entry.sets)
+    return summary === ''
+      ? `${hint.label}の${targetName}の記録です。\n・（セット未入力）`
+      : `${hint.label}の${targetName}の記録です。\n・${summary}`
+  }
   if (targetName) {
     const matched = workouts.filter((w) =>
       w.exercises.some((e) => e.exerciseName === targetName),
@@ -74,7 +90,6 @@ export function buildHistoryResponse(
     return [`${targetName}の直近の記録です。`, ...lines].join('\n')
   }
 
-  const hint = findDateHint(text, today)
   if (hint) {
     const dayWorkouts = workouts.filter((w) => w.date === hint.date)
     if (dayWorkouts.length === 0) {

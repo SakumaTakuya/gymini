@@ -271,6 +271,24 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('異常に大きいセット数は上限で丸める（配列を際限なく作らない）', () => {
+    const result = extractRecordExercises(
+      'ベンチプレス60kg10回×1000000000',
+      KNOWN,
+    )
+    expect(result).toHaveLength(1)
+    expect(result[0].sets.length).toBeLessThanOrEqual(100)
+    expect(result[0].sets[0]).toEqual({ weight: 60, reps: 10 })
+  })
+
+  it('異常に大きいセット数（セット表記）も上限で丸める', () => {
+    const result = extractRecordExercises(
+      'ベンチプレス60kg10回100000セット',
+      KNOWN,
+    )
+    expect(result[0].sets.length).toBeLessThanOrEqual(100)
+  })
+
   it('記録として解釈できない入力は空配列を返す', () => {
     expect(extractRecordExercises('こんにちは', KNOWN)).toEqual([])
     expect(extractRecordExercises('', KNOWN)).toEqual([])

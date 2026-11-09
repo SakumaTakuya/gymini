@@ -19,6 +19,15 @@ export interface ExtractedRecordExercise {
   mentionedSets?: number
 }
 
+// ユーザー入力のセット数をそのまま配列長にすると、誤入力や貼り付けで
+// 巨大な配列を作ってしまうため、現実的な上限で丸める。
+const MAX_SETS_PER_EXERCISE = 100
+
+function clampSetCount(count: number): number {
+  if (!Number.isFinite(count) || count < 0) return 0
+  return Math.min(Math.floor(count), MAX_SETS_PER_EXERCISE)
+}
+
 interface ParsedNumbers {
   weight?: number
   reps?: number
@@ -203,7 +212,7 @@ function buildExercise(
 ): ExtractedRecordExercise {
   const exercise: ExtractedRecordExercise = { exerciseName, sets: [] }
   if (parsed.reps !== undefined && parsed.reps > 0) {
-    const count = parsed.setCount ?? 1
+    const count = clampSetCount(parsed.setCount ?? 1)
     const weight = parsed.weight ?? 0
     exercise.sets = Array.from({ length: count }, () => ({
       weight,
@@ -223,7 +232,7 @@ function buildExercise(
     parsed.setCount !== undefined &&
     (parsed.durationText !== undefined || parsed.distanceText !== undefined)
   ) {
-    exercise.mentionedSets = parsed.setCount
+    exercise.mentionedSets = clampSetCount(parsed.setCount)
   }
   return exercise
 }
@@ -239,7 +248,7 @@ function applyToCurrent(
         ? current.sets[current.sets.length - 1].weight
         : (current.mentionedWeight ?? 0)
     const weight = parsed.weight ?? lastWeight
-    const count = parsed.setCount ?? 1
+    const count = clampSetCount(parsed.setCount ?? 1)
     for (let i = 0; i < count; i++) {
       current.sets.push({ weight, reps: parsed.reps })
     }

@@ -85,18 +85,41 @@ describe('formatSetsSummary', () => {
 })
 
 describe('buildHistoryResponse', () => {
-  it('種目名があればその種目の直近記録を返す', () => {
+  it('種目名と日付ヒントがあれば両方で絞った記録を返す', () => {
     const res = buildHistoryResponse(
       '昨日ベンチ何kgだった？',
       WORKOUTS,
       NAMES,
       TODAY,
     )
-    expect(res).toContain('ベンチプレス')
+    expect(res).toContain('昨日のベンチプレスの記録です')
+    expect(res).toContain('60kg×10回、60kg×9回、60kg×8回')
+    // 昨日の分だけを返し、11/5 の分は含めない
+    expect(res).not.toContain('55kg')
+  })
+
+  it('種目名だけならその種目の直近記録を返す', () => {
+    const res = buildHistoryResponse(
+      'ベンチの前回の記録は？',
+      WORKOUTS,
+      NAMES,
+      TODAY,
+    )
+    expect(res).toContain('ベンチプレスの直近の記録です')
     expect(res).toContain('11/8')
     expect(res).toContain('60kg×10回、60kg×9回、60kg×8回')
     expect(res).toContain('11/5')
     expect(res).toContain('55kg×12回 ×3セット')
+  })
+
+  it('日付ヒントの日にその種目の記録がなければその旨を返す', () => {
+    const res = buildHistoryResponse(
+      '今日ベンチやった？',
+      WORKOUTS,
+      NAMES,
+      TODAY,
+    )
+    expect(res).toBe('今日のベンチプレスの記録はありません。')
   })
 
   it('種目の記録がなければその旨を返す', () => {
