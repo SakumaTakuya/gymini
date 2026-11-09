@@ -667,6 +667,35 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     expect(lastMessage().content).toBe('その他の回答です')
   })
 
+  test('既に draft にある種目を再度記録すると、セットが既存カードへマージされる', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    const { result } = renderHook(() =>
+      useChatService({
+        createClient: () => mockClient([]),
+        classifier: classifierFor(['record']),
+      }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス60kg10回')
+    })
+    expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(1)
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス60kg8回')
+    })
+    const drafts = useWorkoutSessionStore.getState().draftExercises
+    expect(drafts).toHaveLength(1)
+    expect(drafts[0].sets).toEqual([
+      { weight: 60, reps: 10 },
+      { weight: 60, reps: 8 },
+    ])
+    expect(lastMessage().content).toContain('記録しました')
+    expect(lastMessage().content).toContain('60kg×8回')
+    // マージ自体は「ユーザーの修正」として記録されない
+    expect(
+      readIntentFeedback().some((e) => e.kind === 'record-edited'),
+    ).toBe(false)
+  })
+
   test('分類中に Stop を押すとそのターンは破棄され、次の送信は通常どおり処理される', async () => {
     useWorkoutSessionStore.getState().startSession()
     let resolveClassify: ((r: ClassificationResult) => void) | null = null

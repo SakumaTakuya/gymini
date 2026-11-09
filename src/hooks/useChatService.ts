@@ -36,7 +36,10 @@ import {
   getReadyIntentClassifier,
   warmUpIntentClassifier,
 } from '../lib/intent/intentClassifierProvider'
-import { extractRecordExercises } from '../lib/intent/recordExtractor'
+import {
+  extractRecordExercises,
+  type ExtractedRecordExercise,
+} from '../lib/intent/recordExtractor'
 import { buildHistoryResponse } from '../lib/intent/historyResponder'
 import {
   buildEditGuidanceMessage,
@@ -45,6 +48,7 @@ import {
 import {
   appendIntentFeedback,
   resetRoutedRecordTracking,
+  suspendRoutedRecordTracking,
   syncRoutedRecordTracking,
   trackRoutedRecord,
 } from '../lib/intent/feedbackLog'
@@ -88,6 +92,45 @@ function isIntentLabel(value: string): value is IntentLabel {
 function normalizeDecided(decided: IntentLabel[]): IntentLabel[] {
   if (decided.length <= 1) return decided
   return decided.filter((label) => label !== 'other')
+}
+
+/**
+ * 既に draft にある種目へ、抽出したセットを追加する（FR_004）。
+ * 編集中のカードには割り込まない。マージできたら true を返す。
+ * フィードバック追跡は、マージ途中を「ユーザーの修正」と誤記録
+ * しないよう一時停止し、最終形でスナップショットを更新する。
+ */
+function mergeSetsIntoExistingDraft(
+  exercise: ExtractedRecordExercise,
+  sourceText: string,
+): boolean {
+  const session = useWorkoutSessionStore.getState()
+  const index = session.draftExercises.findIndex(
+    (d) => d.exerciseName === exercise.exerciseName,
+  )
+  if (index < 0) return false
+  const draft = session.draftExercises[index]
+  if (draft.editingSetIndex != null) return false
+  const resume = suspendRoutedRecordTracking()
+  try {
+    for (const set of exercise.sets) {
+      useWorkoutSessionStore.getState().completeSet(index, set)
+    }
+    const updated = useWorkoutSessionStore
+      .getState()
+      .draftExercises.find((d) => d.exerciseId === draft.exerciseId)
+    if (updated) {
+      trackRoutedRecord({
+        text: sourceText,
+        exerciseId: updated.exerciseId,
+        exerciseName: updated.exerciseName,
+        sets: updated.sets,
+      })
+    }
+  } finally {
+    resume()
+  }
+  return true
 }
 
 type LlmTurnOptions = {
@@ -397,6 +440,16 @@ export function useChatService(options: UseChatServiceOptions = {}) {
                   result,
                 )
                 break
+              }
+              if (
+                result.error === 'EXERCISE_ALREADY_IN_SESSION' &&
+                exercise.sets.length > 0 &&
+                mergeSetsIntoExistingDraft(exercise, text)
+              ) {
+                // 既存カードへセットをマージできた場合は記録として扱う
+                insertedAnyRecord = true
+                lines.push(`・${formatExtractedExerciseLine(exercise)}`)
+                continue
               }
               lines.push(
                 result.error === 'EXERCISE_ALREADY_IN_SESSION'

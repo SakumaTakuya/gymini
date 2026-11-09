@@ -37,15 +37,21 @@ export function findMentionedExerciseName(
   if (exact) return exact
 
   let best: { name: string; prefixLength: number } | null = null
+  let tied = false
   for (const name of sorted) {
     for (let len = name.length - 1; len >= 2; len--) {
       if (indexOfStandaloneMention(text, name.slice(0, len)) !== -1) {
         if (!best || len > best.prefixLength) {
           best = { name, prefixLength: len }
+          tied = false
+        } else if (len === best.prefixLength && name !== best.name) {
+          // 前方一致が同点で競合したら推測しない（例: 「ダンベル」だけでは
+          // ダンベルプレスかダンベルフライか決められない）
+          tied = true
         }
         break
       }
     }
   }
-  return best?.name ?? null
+  return tied ? null : (best?.name ?? null)
 }

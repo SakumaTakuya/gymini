@@ -74,12 +74,31 @@ const NON_EXERCISE_TOKENS = new Set([
 // 動詞そのものを種目名として自動作成しないための判定。
 const VERB_FORM_PATTERN = /(った|いだ|んだ|した|えた|いた|きた|れた)$/
 
+// 動詞の連用形そのもの（「走りました」から丁寧語尾を落とした残り等）。
+const VERB_STEM_TOKENS = new Set([
+  '走り',
+  '泳ぎ',
+  '歩き',
+  '漕ぎ',
+  '登り',
+  '蹴り',
+  '投げ',
+  '打ち',
+  '引き',
+  '押し',
+  '曲げ',
+  '伸ばし',
+  '回し',
+  '飛び',
+])
+
 /** マスター未登録のトークンを新規種目名として採用してよいか。 */
 function isPlausibleNewExerciseName(token: string): boolean {
   if (token.length < 2) return false
   if (NON_EXERCISE_TOKENS.has(token)) return false
   // 完了語尾そのもの（「やった」「できた」等）は種目名ではない
   if (COMPLETION_SUFFIXES.includes(token)) return false
+  if (VERB_STEM_TOKENS.has(token)) return false
   if (token.length <= 3 && VERB_FORM_PATTERN.test(token)) return false
   return true
 }
@@ -92,13 +111,23 @@ function normalizeText(text: string): string {
 }
 
 /** 種目名候補トークンの後片付け（日付接頭辞・助詞・完了語尾の除去）。 */
+// 名前トークンから落とす語尾。丁寧体（〜しました／〜ました／〜ます）も
+// 含め、長いものから試す（「した」より先に「しました」を落とすため）。
+const NAME_STRIP_SUFFIXES = [
+  ...COMPLETION_SUFFIXES,
+  'やりました',
+  'しました',
+  'ました',
+  'ます',
+].sort((a, b) => b.length - a.length)
+
 function cleanNameToken(raw: string): string {
   let token = raw.trim()
   token = token.replace(/^(今日の|今日は|今日)/, '')
   let changed = true
   while (changed && token !== '') {
     changed = false
-    for (const suffix of COMPLETION_SUFFIXES) {
+    for (const suffix of NAME_STRIP_SUFFIXES) {
       if (token.length > suffix.length && token.endsWith(suffix)) {
         token = token.slice(0, -suffix.length)
         changed = true
@@ -354,7 +383,9 @@ export function extractRecordExercises(
     // 計画・意図の節（「次はベンチプレス72.5kg8回やろう」「〜する予定」）と
     // 疑問の節（「ベンチプレス何kgだった？」）は実施済みの記録ではないため、
     // 種目名が含まれていても抽出しない。
-    const isPlanClause = /(やろう|しよう|つもり|予定)/.test(segment)
+    const isPlanClause =
+      /(やろう|しよう|つもり|予定)/.test(segment) ||
+      /(やる|やります)$/.test(segment)
     // 疑問符なしでも、疑問語（何+単位・どれくらい・いくつ・〜っけ）を含む
     // 節は問いかけとして扱う。疑問語のない過去形（〜だった）は報告なので
     // 対象に含めない。

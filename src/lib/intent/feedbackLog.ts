@@ -121,6 +121,23 @@ function effectiveSetsJson(draft: DraftExercise): string {
   return JSON.stringify(draft.sets)
 }
 
+let trackingSuspendCount = 0
+
+/**
+ * 追跡の突き合わせを一時的に止める。ルーティング側のマージなど、
+ * 複数回のストア更新を伴う処理の途中状態を「ユーザーの修正」と
+ * 誤記録しないために使う。戻り値の関数で再開する。
+ */
+export function suspendRoutedRecordTracking(): () => void {
+  trackingSuspendCount += 1
+  let resumed = false
+  return () => {
+    if (resumed) return
+    resumed = true
+    trackingSuspendCount = Math.max(0, trackingSuspendCount - 1)
+  }
+}
+
 /**
  * 現在の draft と追跡中の記録を突き合わせ、削除されたものを
  * record-removed、セットが変わったものを record-edited として記録する。
@@ -132,6 +149,7 @@ export function syncRoutedRecordTracking(
   draftExercises: DraftExercise[],
   sessionActive: boolean,
 ): void {
+  if (trackingSuspendCount > 0) return
   if (!sessionActive) {
     resetRoutedRecordTracking()
     return

@@ -316,6 +316,23 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('「やる」で終わる計画の節（次はベンチプレス72.5kg8回やる）は抽出しない', () => {
+    expect(
+      extractRecordExercises('次はベンチプレス72.5kg8回やる', KNOWN),
+    ).toEqual([])
+    expect(
+      extractRecordExercises('明日のベンチプレスは72.5kg8回やります', KNOWN),
+    ).toEqual([])
+  })
+
+  it('丁寧体の動詞（5km走りました）は種目として作成しない', () => {
+    expect(extractRecordExercises('5km走りました', KNOWN)).toEqual([])
+    // 丁寧体の記録（ランニングしました）は種目名を正しく取り出す
+    expect(extractRecordExercises('5kmランニングしました', KNOWN)).toEqual([
+      { exerciseName: 'ランニング', sets: [], distanceText: '5km' },
+    ])
+  })
+
   it('距離先行でも動詞そのもの（5km走った）は種目として作成しない', () => {
     expect(extractRecordExercises('5km走った', KNOWN)).toEqual([])
     expect(extractRecordExercises('5km泳いだ', KNOWN)).toEqual([])

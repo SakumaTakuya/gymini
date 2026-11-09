@@ -29,6 +29,15 @@ describe('findMentionedExerciseName', () => {
     expect(findMentionedExerciseName('ランの履歴は？', ['ラン'])).toBe('ラン')
   })
 
+  it('前方一致が同点で競合する場合は推測せず null を返す', () => {
+    const names = ['ダンベルプレス', 'ダンベルフライ']
+    expect(findMentionedExerciseName('ダンベルの記録は？', names)).toBeNull()
+    // 正式名まで書かれていれば特定できる
+    expect(findMentionedExerciseName('ダンベルプレスの記録は？', names)).toBe(
+      'ダンベルプレス',
+    )
+  })
+
   it('言及がなければ null を返す', () => {
     expect(findMentionedExerciseName('昨日の記録は？', ['ベンチプレス'])).toBeNull()
   })
