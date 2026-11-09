@@ -88,12 +88,16 @@ const TRACKED_STORAGE_KEY = 'gymini:intent-feedback-tracked'
 
 interface TrackedRecord {
   text: string
+  /** このカードにマージされた全ての入力（text はその先頭） */
+  texts: string[]
   exerciseName: string
   setsJson: string
 }
 
 const trackedRecordSchema = z.object({
   text: z.string(),
+  // texts を持たない旧形式の保存データも読み戻せるようにする
+  texts: z.array(z.string()).optional(),
   exerciseName: z.string(),
   setsJson: z.string(),
 })
@@ -112,7 +116,15 @@ function ensureTrackedRecordsLoaded(): void {
     const result = trackedRecordsSchema.safeParse(JSON.parse(raw))
     if (!result.success) return
     for (const [exerciseId, record] of Object.entries(result.data)) {
-      trackedRecords.set(exerciseId, record)
+      trackedRecords.set(exerciseId, {
+        text: record.text,
+        texts:
+          record.texts && record.texts.length > 0
+            ? record.texts
+            : [record.text],
+        exerciseName: record.exerciseName,
+        setsJson: record.setsJson,
+      })
     }
   } catch {
     // 壊れた保存データは追跡なしとして扱う
@@ -133,8 +145,17 @@ export function trackRoutedRecord(record: {
   sets: WorkoutSet[]
 }): void {
   ensureTrackedRecordsLoaded()
+  const existing = trackedRecords.get(record.exerciseId)
+  // 同じ種目への2回目の記録は既存カードへマージされる。その場合も
+  // 先の入力を失わないよう、入力は積み増して保持する（重複は除く）。
+  const texts = existing
+    ? existing.texts.includes(record.text)
+      ? existing.texts
+      : [...existing.texts, record.text]
+    : [record.text]
   trackedRecords.set(record.exerciseId, {
-    text: record.text,
+    text: texts[0],
+    texts,
     exerciseName: record.exerciseName,
     setsJson: JSON.stringify(record.sets),
   })
@@ -146,18 +167,26 @@ export function trackRoutedRecord(record: {
  * draft.sets から pendingSet へ一時的に移るため、そのまま比較すると
  * 編集を開いただけで「修正」と誤記録してしまう。編集中のセットは
  * 元の位置に戻して比較する（workoutSessionStore の restoreEditingSet と同じ規則）。
+ * 編集中でない入力中セットも、ユーザーが値を入れた（pendingSetDirty）場合は
+ * セッション終了時にそのまま保存される確定値なので、末尾に足して比較する。
  */
-function effectiveSetsJson(draft: DraftExercise): string {
+export function resolveEffectiveSets(draft: DraftExercise): WorkoutSet[] {
   if (draft.editingSetIndex != null && draft.pendingSet !== null) {
     const i = draft.editingSetIndex
-    const restored = [
+    return [
       ...draft.sets.slice(0, i),
       draft.pendingSet,
       ...draft.sets.slice(i),
     ]
-    return JSON.stringify(restored)
   }
-  return JSON.stringify(draft.sets)
+  if (draft.pendingSetDirty && draft.pendingSet !== null) {
+    return [...draft.sets, draft.pendingSet]
+  }
+  return draft.sets
+}
+
+function effectiveSetsJson(draft: DraftExercise): string {
+  return JSON.stringify(resolveEffectiveSets(draft))
 }
 
 let trackingSuspendCount = 0
@@ -198,22 +227,27 @@ export function syncRoutedRecordTracking(
   for (const [exerciseId, tracked] of [...trackedRecords]) {
     const draft = draftExercises.find((d) => d.exerciseId === exerciseId)
     if (!draft) {
-      appendIntentFeedback({
-        kind: 'record-removed',
-        text: tracked.text,
-        exerciseName: tracked.exerciseName,
-      })
+      // カードにマージされた入力は全て対象なので、入力ごとに記録する
+      for (const text of tracked.texts) {
+        appendIntentFeedback({
+          kind: 'record-removed',
+          text,
+          exerciseName: tracked.exerciseName,
+        })
+      }
       trackedRecords.delete(exerciseId)
       changed = true
       continue
     }
     const setsJson = effectiveSetsJson(draft)
     if (setsJson !== tracked.setsJson) {
-      appendIntentFeedback({
-        kind: 'record-edited',
-        text: tracked.text,
-        exerciseName: tracked.exerciseName,
-      })
+      for (const text of tracked.texts) {
+        appendIntentFeedback({
+          kind: 'record-edited',
+          text,
+          exerciseName: tracked.exerciseName,
+        })
+      }
       trackedRecords.set(exerciseId, { ...tracked, setsJson })
       changed = true
     }

@@ -49,6 +49,7 @@ import {
 import {
   appendIntentFeedback,
   resetRoutedRecordTracking,
+  resolveEffectiveSets,
   suspendRoutedRecordTracking,
   syncRoutedRecordTracking,
   trackRoutedRecord,
@@ -127,7 +128,7 @@ function mergeSetsIntoExistingDraft(
         text: sourceText,
         exerciseId: updated.exerciseId,
         exerciseName: updated.exerciseName,
-        sets: updated.sets,
+        sets: resolveEffectiveSets(updated),
       })
     }
   } finally {
@@ -499,11 +500,19 @@ export function useChatService(options: UseChatServiceOptions = {}) {
               result.data as { exerciseId?: string } | undefined
             )?.exerciseId
             if (exerciseId) {
+              // 追跡の基準は挿入直後の下書きの実効セット（入力中セットへ
+              // 引き継いだ重量を含む）。抽出結果の sets だけを基準にすると、
+              // 次の同期で引き継ぎ分が「修正」と誤記録されてしまう。
+              const insertedDraft = useWorkoutSessionStore
+                .getState()
+                .draftExercises.find((d) => d.exerciseId === exerciseId)
               trackRoutedRecord({
                 text,
                 exerciseId,
                 exerciseName: exercise.exerciseName,
-                sets: exercise.sets,
+                sets: insertedDraft
+                  ? resolveEffectiveSets(insertedDraft)
+                  : exercise.sets,
               })
             }
             lines.push(`・${formatExtractedExerciseLine(exercise)}`)

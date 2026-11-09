@@ -200,6 +200,120 @@ describe('routed record tracking (FR_007: 取り消し・修正の記録)', () =
     expect(readIntentFeedback()).toHaveLength(1)
   })
 
+  it('同じ種目へ2回目の記録がマージされた場合も、両方の入力が追跡に残り削除時にそれぞれ記録される', () => {
+    trackRoutedRecord({
+      text: 'ベンチ60kg10回',
+      exerciseId: 'ex-bench',
+      exerciseName: 'ベンチプレス',
+      sets: [{ weight: 60, reps: 10 }],
+    })
+    // mergeSetsIntoExistingDraft 相当: マージ後の全セットで同じ種目が再追跡される
+    trackRoutedRecord({
+      text: 'ベンチ60kg8回',
+      exerciseId: 'ex-bench',
+      exerciseName: 'ベンチプレス',
+      sets: [
+        { weight: 60, reps: 10 },
+        { weight: 60, reps: 8 },
+      ],
+    })
+    syncRoutedRecordTracking([
+      makeDraftExercise({
+        exerciseId: 'ex-bench',
+        exerciseName: 'ベンチプレス',
+        sets: [
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 8 },
+        ],
+      }),
+    ], true)
+    expect(readIntentFeedback()).toEqual([])
+
+    syncRoutedRecordTracking([], true)
+    const entries = readIntentFeedback()
+    expect(entries).toHaveLength(2)
+    expect(entries.map((e) => e.text)).toEqual([
+      'ベンチ60kg10回',
+      'ベンチ60kg8回',
+    ])
+    expect(entries.every((e) => e.kind === 'record-removed')).toBe(true)
+  })
+
+  it('マージされた記録が編集されたら、元の入力それぞれに record-edited が記録される', () => {
+    trackRoutedRecord({
+      text: 'ベンチ60kg10回',
+      exerciseId: 'ex-bench',
+      exerciseName: 'ベンチプレス',
+      sets: [{ weight: 60, reps: 10 }],
+    })
+    trackRoutedRecord({
+      text: 'ベンチ60kg8回',
+      exerciseId: 'ex-bench',
+      exerciseName: 'ベンチプレス',
+      sets: [
+        { weight: 60, reps: 10 },
+        { weight: 60, reps: 8 },
+      ],
+    })
+    syncRoutedRecordTracking([
+      makeDraftExercise({
+        exerciseId: 'ex-bench',
+        exerciseName: 'ベンチプレス',
+        sets: [
+          { weight: 65, reps: 10 },
+          { weight: 60, reps: 8 },
+        ],
+      }),
+    ], true)
+    const entries = readIntentFeedback()
+    expect(entries).toHaveLength(2)
+    expect(entries.map((e) => e.text)).toEqual([
+      'ベンチ60kg10回',
+      'ベンチ60kg8回',
+    ])
+    expect(entries.every((e) => e.kind === 'record-edited')).toBe(true)
+  })
+
+  it('完了セットが無い記録は入力中セット（pendingSet）の変更も record-edited として記録する', () => {
+    // 重量のみの記録は、実効セット（pendingSet 分を含む）で追跡される
+    trackRoutedRecord({
+      text: 'ベンチ60kg',
+      exerciseId: 'ex-bench',
+      exerciseName: 'ベンチプレス',
+      sets: [{ weight: 60, reps: 0 }],
+    })
+    // 挿入直後の状態（pendingSet に言及された 60kg が入っている）では記録しない
+    syncRoutedRecordTracking([
+      makeDraftExercise({
+        exerciseId: 'ex-bench',
+        exerciseName: 'ベンチプレス',
+        sets: [],
+        pendingSet: { weight: 60, reps: 0 },
+        pendingSetDirty: true,
+        cardState: 'recording',
+      }),
+    ], true)
+    expect(readIntentFeedback()).toEqual([])
+    // ユーザーが入力中の重量を書き換えたら記録する
+    syncRoutedRecordTracking([
+      makeDraftExercise({
+        exerciseId: 'ex-bench',
+        exerciseName: 'ベンチプレス',
+        sets: [],
+        pendingSet: { weight: 65, reps: 0 },
+        pendingSetDirty: true,
+        cardState: 'recording',
+      }),
+    ], true)
+    const entries = readIntentFeedback()
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toMatchObject({
+      kind: 'record-edited',
+      text: 'ベンチ60kg',
+      exerciseName: 'ベンチプレス',
+    })
+  })
+
   it('セッション非アクティブ時の draft クリアは取り消しとみなさず、追跡だけ解除する', () => {
     trackRoutedRecord({
       text: 'ベンチ60kg10回',

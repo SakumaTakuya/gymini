@@ -146,6 +146,32 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     expect(lastMessage().content).toContain('記録しました')
   })
 
+  test('重量だけの record の後にユーザーが入力中の重量を書き換えると record-edited が残る', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    const client = mockClient([])
+    const { result } = renderHook(() =>
+      useChatService({
+        createClient: () => client,
+        classifier: classifierFor(['record']),
+      }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス60kg')
+    })
+    // 挿入直後は修正として記録されていない
+    expect(
+      readIntentFeedback().some((e) => e.kind === 'record-edited'),
+    ).toBe(false)
+    await act(async () => {
+      useWorkoutSessionStore.getState().updatePendingSet(0, { weight: 65 })
+    })
+    expect(
+      readIntentFeedback().some(
+        (e) => e.kind === 'record-edited' && e.exerciseName === 'ベンチプレス',
+      ),
+    ).toBe(true)
+  })
+
   test('キーなし + record + セッション非アクティブでは SESSION_NOT_ACTIVE の案内を返す', async () => {
     const client = mockClient([])
     const { result } = renderHook(() =>
