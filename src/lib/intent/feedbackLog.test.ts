@@ -1,4 +1,4 @@
-import { describe, it, expect, beforeEach } from 'vitest'
+import { describe, it, expect, beforeEach, vi } from 'vitest'
 import {
   appendIntentFeedback,
   clearIntentFeedback,
@@ -224,6 +224,90 @@ describe('routed record tracking (FR_007: 取り消し・修正の記録)', () =
     })
     resetRoutedRecordTracking()
     syncRoutedRecordTracking([], true)
+    expect(readIntentFeedback()).toEqual([])
+  })
+})
+
+describe('routed record tracking の永続化（リロードを跨いだ追跡）', () => {
+  // ページリロード相当: モジュール状態を破棄し、localStorage だけが残った
+  // 状態で feedbackLog を読み直す
+  async function reloadFeedbackLog() {
+    vi.resetModules()
+    return import('./feedbackLog')
+  }
+
+  it('リロード後も、ルーティングで挿入した種目の編集が record-edited として記録される', async () => {
+    trackRoutedRecord({
+      text: 'ベンチ60kg10回',
+      exerciseId: 'ex-bench',
+      exerciseName: 'ベンチプレス',
+      sets: [{ weight: 60, reps: 10 }],
+    })
+    const reloaded = await reloadFeedbackLog()
+    reloaded.syncRoutedRecordTracking([
+      makeDraftExercise({
+        exerciseId: 'ex-bench',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 65, reps: 10 }],
+      }),
+    ], true)
+    const entries = readIntentFeedback()
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toMatchObject({
+      kind: 'record-edited',
+      text: 'ベンチ60kg10回',
+      exerciseName: 'ベンチプレス',
+    })
+  })
+
+  it('リロード後も、ルーティングで挿入した種目の削除が record-removed として記録される', async () => {
+    trackRoutedRecord({
+      text: 'ベンチ60kg10回',
+      exerciseId: 'ex-bench',
+      exerciseName: 'ベンチプレス',
+      sets: [{ weight: 60, reps: 10 }],
+    })
+    const reloaded = await reloadFeedbackLog()
+    reloaded.syncRoutedRecordTracking([], true)
+    const entries = readIntentFeedback()
+    expect(entries).toHaveLength(1)
+    expect(entries[0]).toMatchObject({
+      kind: 'record-removed',
+      text: 'ベンチ60kg10回',
+      exerciseName: 'ベンチプレス',
+    })
+  })
+
+  it('リロード後に変更がなければ何も記録されない', async () => {
+    trackRoutedRecord({
+      text: 'ベンチ60kg10回',
+      exerciseId: 'ex-bench',
+      exerciseName: 'ベンチプレス',
+      sets: [{ weight: 60, reps: 10 }],
+    })
+    const reloaded = await reloadFeedbackLog()
+    reloaded.syncRoutedRecordTracking([
+      makeDraftExercise({
+        exerciseId: 'ex-bench',
+        exerciseName: 'ベンチプレス',
+        sets: [{ weight: 60, reps: 10 }],
+      }),
+    ], true)
+    expect(readIntentFeedback()).toEqual([])
+  })
+
+  it('永続化された追跡データが壊れていても、同期で例外にならず記録もされない', async () => {
+    localStorage.setItem('gymini:intent-feedback-tracked', '{broken json')
+    const reloaded = await reloadFeedbackLog()
+    expect(() =>
+      reloaded.syncRoutedRecordTracking([
+        makeDraftExercise({
+          exerciseId: 'ex-bench',
+          exerciseName: 'ベンチプレス',
+          sets: [{ weight: 65, reps: 10 }],
+        }),
+      ], true),
+    ).not.toThrow()
     expect(readIntentFeedback()).toEqual([])
   })
 })

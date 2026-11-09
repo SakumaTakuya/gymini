@@ -1,7 +1,7 @@
 import { z } from 'zod'
 import { nowISODateTimeString, type ISODateTimeString } from '../../schemas/date'
 import type { DraftExercise, WorkoutSet } from '../../schemas/workout'
-import { safeGetItem, safeSetItem } from '../storage'
+import { safeGetItem, safeRemoveItem, safeSetItem } from '../storage'
 import { INTENT_LABELS, type IntentLabel, type IntentScores } from './intentClassifier'
 
 // 端末内フィードバックログ（intent-router FR_007）。
@@ -80,6 +80,11 @@ export function clearIntentFeedback(): void {
 }
 
 // --- ルーティングで挿入した記録の追跡（取り消し・修正の検出） ---
+// draft はリロード後も永続化されて残るため、追跡状態も localStorage に
+// 永続化しないと、リロード後の編集・削除を検出できなくなる。
+// 保存先は端末内のみ（B-001）。
+
+const TRACKED_STORAGE_KEY = 'gymini:intent-feedback-tracked'
 
 interface TrackedRecord {
   text: string
@@ -87,7 +92,39 @@ interface TrackedRecord {
   setsJson: string
 }
 
+const trackedRecordSchema = z.object({
+  text: z.string(),
+  exerciseName: z.string(),
+  setsJson: z.string(),
+})
+
+const trackedRecordsSchema = z.record(z.string(), trackedRecordSchema)
+
 const trackedRecords = new Map<string, TrackedRecord>()
+let trackedRecordsLoaded = false
+
+function ensureTrackedRecordsLoaded(): void {
+  if (trackedRecordsLoaded) return
+  trackedRecordsLoaded = true
+  const raw = safeGetItem(TRACKED_STORAGE_KEY)
+  if (!raw) return
+  try {
+    const result = trackedRecordsSchema.safeParse(JSON.parse(raw))
+    if (!result.success) return
+    for (const [exerciseId, record] of Object.entries(result.data)) {
+      trackedRecords.set(exerciseId, record)
+    }
+  } catch {
+    // 壊れた保存データは追跡なしとして扱う
+  }
+}
+
+function persistTrackedRecords(): void {
+  safeSetItem(
+    TRACKED_STORAGE_KEY,
+    JSON.stringify(Object.fromEntries(trackedRecords)),
+  )
+}
 
 export function trackRoutedRecord(record: {
   text: string
@@ -95,11 +132,13 @@ export function trackRoutedRecord(record: {
   exerciseName: string
   sets: WorkoutSet[]
 }): void {
+  ensureTrackedRecordsLoaded()
   trackedRecords.set(record.exerciseId, {
     text: record.text,
     exerciseName: record.exerciseName,
     setsJson: JSON.stringify(record.sets),
   })
+  persistTrackedRecords()
 }
 
 /**
@@ -150,10 +189,12 @@ export function syncRoutedRecordTracking(
   sessionActive: boolean,
 ): void {
   if (trackingSuspendCount > 0) return
+  ensureTrackedRecordsLoaded()
   if (!sessionActive) {
     resetRoutedRecordTracking()
     return
   }
+  let changed = false
   for (const [exerciseId, tracked] of [...trackedRecords]) {
     const draft = draftExercises.find((d) => d.exerciseId === exerciseId)
     if (!draft) {
@@ -163,6 +204,7 @@ export function syncRoutedRecordTracking(
         exerciseName: tracked.exerciseName,
       })
       trackedRecords.delete(exerciseId)
+      changed = true
       continue
     }
     const setsJson = effectiveSetsJson(draft)
@@ -173,10 +215,14 @@ export function syncRoutedRecordTracking(
         exerciseName: tracked.exerciseName,
       })
       trackedRecords.set(exerciseId, { ...tracked, setsJson })
+      changed = true
     }
   }
+  if (changed) persistTrackedRecords()
 }
 
 export function resetRoutedRecordTracking(): void {
   trackedRecords.clear()
+  trackedRecordsLoaded = true
+  safeRemoveItem(TRACKED_STORAGE_KEY)
 }
