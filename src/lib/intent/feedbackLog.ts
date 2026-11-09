@@ -191,6 +191,18 @@ function effectiveSetsJson(draft: DraftExercise): string {
 
 let trackingSuspendCount = 0
 
+// 進行中の編集バースト（1回の訂正）の種目 ID。編集中の数値フィールドの
+// onChange ごとに同期が走るため、バースト内の途中経過では記録せず、
+// バースト開始時の1回だけ record-edited を記録する。バーストは draft が
+// 確定状態（編集中でも入力中でもない）に戻った時点で終わる。エントリ自体に
+// 値は含まれないため、記録タイミングが最初の中間値でも最終的な
+// フィードバックデータは「完了した編集ごとに1行」になる。
+const pendingEditExercises = new Set<string>()
+
+function isEditingDraft(draft: DraftExercise): boolean {
+  return draft.editingSetIndex != null || draft.pendingSetDirty
+}
+
 /**
  * 追跡の突き合わせを一時的に止める。ルーティング側のマージなど、
  * 複数回のストア更新を伴う処理の途中状態を「ユーザーの修正」と
@@ -236,20 +248,32 @@ export function syncRoutedRecordTracking(
         })
       }
       trackedRecords.delete(exerciseId)
+      pendingEditExercises.delete(exerciseId)
       changed = true
       continue
     }
     const setsJson = effectiveSetsJson(draft)
     if (setsJson !== tracked.setsJson) {
-      for (const text of tracked.texts) {
-        appendIntentFeedback({
-          kind: 'record-edited',
-          text,
-          exerciseName: tracked.exerciseName,
-        })
+      if (!pendingEditExercises.has(exerciseId)) {
+        // 新しい編集バーストの開始：1回だけ記録する
+        for (const text of tracked.texts) {
+          appendIntentFeedback({
+            kind: 'record-edited',
+            text,
+            exerciseName: tracked.exerciseName,
+          })
+        }
+        pendingEditExercises.add(exerciseId)
       }
+      // バースト中の途中経過では記録せず、スナップショットだけ進める
       trackedRecords.set(exerciseId, { ...tracked, setsJson })
       changed = true
+    } else if (
+      pendingEditExercises.has(exerciseId) &&
+      !isEditingDraft(draft)
+    ) {
+      // バーストが確定状態で終わった（セット完了・編集の畳み込みなど）
+      pendingEditExercises.delete(exerciseId)
     }
   }
   if (changed) persistTrackedRecords()
@@ -257,6 +281,7 @@ export function syncRoutedRecordTracking(
 
 export function resetRoutedRecordTracking(): void {
   trackedRecords.clear()
+  pendingEditExercises.clear()
   trackedRecordsLoaded = true
   safeRemoveItem(TRACKED_STORAGE_KEY)
 }
