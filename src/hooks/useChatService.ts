@@ -138,6 +138,54 @@ function mergeSetsIntoExistingDraft(
   return true
 }
 
+/**
+ * 既に draft にある種目へ、言及された重量だけを入力中セットへ引き継ぐ
+ * （FR_004）。完了セットが無い重量のみの記録では、新規挿入時の重量
+ * 引き継ぎが走らないため重複カードの経路でここで扱う。
+ * セット編集中・新しいセットの入力中のカードには割り込まない
+ * （ユーザーの入力中の値を保持する）。適用できたら true を返す。
+ * フィードバック追跡は、引き継ぎ途中を「ユーザーの修正」と誤記録
+ * しないよう一時停止し、最終形でスナップショットを更新する。
+ */
+function applyMentionedWeightToExistingDraft(
+  exercise: ExtractedRecordExercise,
+  sourceText: string,
+): boolean {
+  if (exercise.mentionedWeight === undefined) return false
+  const session = useWorkoutSessionStore.getState()
+  const index = session.draftExercises.findIndex(
+    (d) => d.exerciseName === exercise.exerciseName,
+  )
+  if (index < 0) return false
+  const draft = session.draftExercises[index]
+  if (draft.editingSetIndex != null || draft.pendingSetDirty) return false
+  const resume = suspendRoutedRecordTracking()
+  try {
+    if (draft.pendingSet === null) {
+      // 完了セットのみのカードは入力中セットが無いため、直前のセットを
+      // 下敷きにした入力中セットを作ってから重量を入れる。
+      useWorkoutSessionStore.getState().activateExercise(index)
+    }
+    useWorkoutSessionStore.getState().updatePendingSet(index, {
+      weight: exercise.mentionedWeight,
+    })
+    const updated = useWorkoutSessionStore
+      .getState()
+      .draftExercises.find((d) => d.exerciseId === draft.exerciseId)
+    if (updated) {
+      trackRoutedRecord({
+        text: sourceText,
+        exerciseId: updated.exerciseId,
+        exerciseName: updated.exerciseName,
+        sets: resolveEffectiveSets(updated),
+      })
+    }
+  } finally {
+    resume()
+  }
+  return true
+}
+
 type LlmTurnOptions = {
   /** 再送用に lastFailedInput へ保存する元の入力 */
   failedInput: string
@@ -481,6 +529,16 @@ export function useChatService(options: UseChatServiceOptions = {}) {
                 mergeSetsIntoExistingDraft(exercise, text)
               ) {
                 // 既存カードへセットをマージできた場合は記録として扱う
+                insertedAnyRecord = true
+                lines.push(`・${formatExtractedExerciseLine(exercise)}`)
+                continue
+              }
+              if (
+                result.error === 'EXERCISE_ALREADY_IN_SESSION' &&
+                exercise.sets.length === 0 &&
+                applyMentionedWeightToExistingDraft(exercise, text)
+              ) {
+                // 既存カードの入力中セットへ重量を引き継げた場合も記録として扱う
                 insertedAnyRecord = true
                 lines.push(`・${formatExtractedExerciseLine(exercise)}`)
                 continue

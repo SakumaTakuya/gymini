@@ -940,6 +940,61 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     expect(lastMessage().content).toContain('既にセッションに追加されています')
   })
 
+  test('既に draft にある種目を重量だけで再度記録すると、入力中セットへ重量が引き継がれる', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    const { result } = renderHook(() =>
+      useChatService({
+        createClient: () => mockClient([]),
+        classifier: classifierFor(['record']),
+      }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス60kg10回')
+    })
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス80kg')
+    })
+    const drafts = useWorkoutSessionStore.getState().draftExercises
+    expect(drafts).toHaveLength(1)
+    expect(drafts[0].sets).toEqual([{ weight: 60, reps: 10 }])
+    // 直前のセットを下敷きに、言及された重量だけが入力中セットへ入る
+    expect(drafts[0].pendingSet).toEqual({ weight: 80, reps: 10 })
+    expect(lastMessage().content).toContain('記録しました')
+    expect(lastMessage().content).toContain('80kg')
+    // 重量の引き継ぎ自体は「ユーザーの修正」として記録されない
+    expect(
+      readIntentFeedback().some((e) => e.kind === 'record-edited'),
+    ).toBe(false)
+  })
+
+  test('既存カードで新しいセットを入力中の場合は重量だけの記録も適用せず、入力中の値を保持する', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    const { result } = renderHook(() =>
+      useChatService({
+        createClient: () => mockClient([]),
+        classifier: classifierFor(['record']),
+      }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス60kg10回')
+    })
+    // カードを活性化して次のセットを入力し始めた状態にする
+    act(() => {
+      useWorkoutSessionStore.getState().activateExercise(0)
+      useWorkoutSessionStore.getState().updatePendingSet(0, { weight: 65 })
+      useWorkoutSessionStore.getState().updatePendingSet(0, { reps: 3 })
+    })
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス80kg')
+    })
+    const after = useWorkoutSessionStore.getState().draftExercises[0]
+    // 重量は適用されず、入力中の pendingSet もそのまま残る
+    expect(after.sets).toEqual([{ weight: 60, reps: 10 }])
+    expect(after.pendingSet).toEqual({ weight: 65, reps: 3 })
+    expect(after.pendingSetDirty).toBe(true)
+    expect(lastMessage().content).toContain('既にセッションに追加されています')
+  })
+
   test('分類中に Stop を押すとそのターンは破棄され、次の送信は通常どおり処理される', async () => {
     useWorkoutSessionStore.getState().startSession()
     let resolveClassify: ((r: ClassificationResult) => void) | null = null
