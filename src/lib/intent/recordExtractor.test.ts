@@ -119,6 +119,27 @@ describe('extractRecordExercises: ×表記', () => {
       },
     ])
   })
+
+  it('「60kg×3セット」は ×3 を回数ではなくセット数として扱い、セットは空で返す', () => {
+    expect(extractRecordExercises('ベンチプレス60kg×3セット', KNOWN)).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [], mentionedWeight: 60 },
+    ])
+  })
+
+  it('「60kg×10回×3セット」は重量×回数×セット数として抽出する', () => {
+    expect(
+      extractRecordExercises('ベンチプレス60kg×10回×3セット', KNOWN),
+    ).toEqual([
+      {
+        exerciseName: 'ベンチプレス',
+        sets: [
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+        ],
+      },
+    ])
+  })
 })
 
 describe('extractRecordExercises: 自重・回数のみ', () => {

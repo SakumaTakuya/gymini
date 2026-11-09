@@ -180,6 +180,15 @@ function parseNumbers(input: string): ParsedNumbers {
     s = s.replace(distance[0], ' ')
   }
 
+  // 「×3セット」のように × の直後の数値に「セット」が続く場合はセット数。
+  // ×チェーンより先に取り出さないと、チェーン側が回数として消費してしまい
+  // セット数が失われる（例: 60kg×3セット → 60kg 3回1セット と化ける）。
+  const crossSet = s.match(/×\s*(\d+)\s*セット/)
+  if (crossSet) {
+    out.setCount = Number(crossSet[1])
+    s = s.replace(crossSet[0], ' ')
+  }
+
   // ×チェーン: 単位付きの数値が × でつながる列（例: 60kg×10×3 / 10回×3）
   const chain = s.match(
     /(\d+(?:\.\d+)?)\s*(kg|キロ|回|reps)?\s*×\s*(\d+(?:\.\d+)?)\s*(kg|キロ|回|reps)?(?:\s*×\s*(\d+(?:\.\d+)?))?/,
