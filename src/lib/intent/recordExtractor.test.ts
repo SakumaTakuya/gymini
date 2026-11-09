@@ -316,6 +316,16 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('助詞を含む散文の接頭辞（今朝はジムでプルオーバー）は種目として作成しない', () => {
+    expect(
+      extractRecordExercises('今朝はジムでプルオーバー30kg12回', KNOWN),
+    ).toEqual([])
+    // 種目名だけが先行する形は従来どおり新規種目として作成する
+    expect(extractRecordExercises('プルオーバー30kg12回', KNOWN)).toEqual([
+      { exerciseName: 'プルオーバー', sets: [{ weight: 30, reps: 12 }] },
+    ])
+  })
+
   it('「やる」で終わる計画の節（次はベンチプレス72.5kg8回やる）は抽出しない', () => {
     expect(
       extractRecordExercises('次はベンチプレス72.5kg8回やる', KNOWN),

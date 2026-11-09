@@ -96,6 +96,9 @@ const VERB_STEM_TOKENS = new Set([
 function isPlausibleNewExerciseName(token: string): boolean {
   if (token.length < 2) return false
   if (NON_EXERCISE_TOKENS.has(token)) return false
+  // 格助詞を含む語は種目名ではなく文（散文）の一部
+  // （例: 「今朝はジムでプルオーバー」の接頭辞全体）
+  if (/[はがをにでへの]/.test(token)) return false
   // 完了語尾そのもの（「やった」「できた」等）は種目名ではない
   if (COMPLETION_SUFFIXES.includes(token)) return false
   if (VERB_STEM_TOKENS.has(token)) return false
