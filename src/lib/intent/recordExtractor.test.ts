@@ -316,6 +316,21 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('同一種目の節を繰り返しても累積セット数は上限を超えない', () => {
+    const repeated = Array.from({ length: 5 }, () => 'ベンチプレス60kg10回×60').join('、')
+    const result = extractRecordExercises(repeated, KNOWN)
+    expect(result).toHaveLength(1)
+    expect(result[0].sets).toHaveLength(100)
+    // 数値だけの節の繰り返しでも累積上限を守る
+    const numericOnly = [
+      'ベンチプレス60kg10回×60',
+      ...Array.from({ length: 60 }, () => '10回'),
+    ].join('、')
+    const result2 = extractRecordExercises(numericOnly, KNOWN)
+    expect(result2).toHaveLength(1)
+    expect(result2[0].sets).toHaveLength(100)
+  })
+
   it('記録として解釈できない入力は空配列を返す', () => {
     expect(extractRecordExercises('こんにちは', KNOWN)).toEqual([])
     expect(extractRecordExercises('', KNOWN)).toEqual([])

@@ -269,7 +269,9 @@ function applyToCurrent(
         ? current.sets[current.sets.length - 1].weight
         : (current.mentionedWeight ?? 0)
     const weight = parsed.weight ?? lastWeight
-    const count = clampSetCount(parsed.setCount ?? 1)
+    // 1節あたりの上限に加え、種目ごとの累積上限も守る
+    const room = Math.max(0, MAX_SETS_PER_EXERCISE - current.sets.length)
+    const count = Math.min(clampSetCount(parsed.setCount ?? 1), room)
     for (let i = 0; i < count; i++) {
       current.sets.push({ weight, reps: parsed.reps })
     }
@@ -305,7 +307,9 @@ export function extractRecordExercises(
   const pushExercise = (exercise: ExtractedRecordExercise) => {
     const existing = results.find((e) => e.exerciseName === exercise.exerciseName)
     if (existing) {
-      existing.sets.push(...exercise.sets)
+      // 同一種目の節が繰り返されても、累積セット数が上限を超えないようにする
+      const room = Math.max(0, MAX_SETS_PER_EXERCISE - existing.sets.length)
+      existing.sets.push(...exercise.sets.slice(0, room))
       if (existing.mentionedWeight === undefined) {
         existing.mentionedWeight = exercise.mentionedWeight
       }
