@@ -325,8 +325,13 @@ export function extractRecordExercises(
   }
 
   for (const segment of segments) {
+    // 計画・意図の節（「次はベンチプレス72.5kg8回やろう」「〜する予定」）は
+    // 実施済みの記録ではないため、種目名が含まれていても抽出しない。
+    const isPlanClause = /(やろう|しよう|つもり|予定)/.test(segment)
     // マスター名がそのまま含まれる場合はそれを種目名とする
-    const knownHit = sortedKnown.find((name) => segment.includes(name))
+    const knownHit = isPlanClause
+      ? undefined
+      : sortedKnown.find((name) => segment.includes(name))
 
     let exerciseName: string | null = null
     let rest = segment
@@ -364,7 +369,13 @@ export function extractRecordExercises(
         // 未登録名は「種目らしい接頭辞」の場合だけ新規種目として採用する。
         const acceptable =
           resolved !== token || isPlausibleNewExerciseName(token)
-        if (token !== '' && !isQuestion && (hasDigits || hasCompletion) && acceptable) {
+        if (
+          token !== '' &&
+          !isQuestion &&
+          !isPlanClause &&
+          (hasDigits || hasCompletion) &&
+          acceptable
+        ) {
           exerciseName = resolved
           rest = segment.slice(leadMatch[0].length)
         }

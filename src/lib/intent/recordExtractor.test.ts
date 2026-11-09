@@ -298,6 +298,24 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     expect(extractRecordExercises('次は72.5kgでやろう', KNOWN)).toEqual([])
   })
 
+  it('種目名を含む計画の節（次はベンチプレス72.5kg8回やろう）も抽出しない', () => {
+    expect(
+      extractRecordExercises('次はベンチプレス72.5kg8回やろう', KNOWN),
+    ).toEqual([])
+    expect(
+      extractRecordExercises('明日のベンチプレスは72.5kg8回やる予定', KNOWN),
+    ).toEqual([])
+    // 実施済みの節と計画の節が混在する場合は実施済みだけを抽出する
+    expect(
+      extractRecordExercises(
+        'ベンチプレス60kg10回やった。次はベンチプレス72.5kg8回やろう',
+        KNOWN,
+      ),
+    ).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+  })
+
   it('記録として解釈できない入力は空配列を返す', () => {
     expect(extractRecordExercises('こんにちは', KNOWN)).toEqual([])
     expect(extractRecordExercises('', KNOWN)).toEqual([])
