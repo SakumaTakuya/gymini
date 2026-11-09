@@ -1,4 +1,4 @@
-import { act, renderHook } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { useChatService } from './useChatService'
 import { useChatStore } from '../stores/chatStore'
@@ -446,6 +446,65 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     })
     expect(client.generate).toHaveBeenCalledTimes(1)
     expect(lastMessage().content).toBe('こんにちは！')
+  })
+
+  test('LLM ターン実行中に intent-route チップをタップすると進行中ターンを中断しローカル結果だけが残る', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    const generateMock = vi.fn(
+      (_contents: unknown, signal?: AbortSignal) =>
+        new Promise<GeminiChatResponse>((_res, rej) => {
+          signal?.addEventListener('abort', () => {
+            rej(new DOMException('Aborted', 'AbortError'))
+          })
+        }),
+    )
+    const client: GeminiClient = { generate: generateMock }
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => client, classifier: null }),
+    )
+
+    let sendPromise: Promise<void> = Promise.resolve()
+    act(() => {
+      sendPromise = result.current.sendMessage('やあ')
+    })
+    await waitFor(() => expect(useChatStore.getState().isLoading).toBe(true))
+
+    // 分類チップのメッセージがある状態で history チップをタップする
+    useChatStore.setState({
+      messages: [
+        ...useChatStore.getState().messages,
+        {
+          id: 'chips-1',
+          role: 'assistant',
+          content: 'どの操作か選んでください。',
+          timestamp: '2026-11-09T10:00:00+09:00' as never,
+          actions: [
+            {
+              id: 'intent-history',
+              label: '履歴を見る',
+              kind: 'intent-route' as const,
+              payload: { intent: 'history', text: 'あれ見せて' },
+            },
+          ],
+        },
+      ],
+    })
+    const chipMessage = useChatStore
+      .getState()
+      .messages.find((m) => m.id === 'chips-1')!
+    await act(async () => {
+      await result.current.triggerAction('chips-1', chipMessage.actions![0])
+      await sendPromise
+    })
+
+    const msgs = useChatStore.getState().messages
+    // 中断された LLM ターンの応答は混入せず、ローカル履歴の結果が最後になる
+    expect(msgs[msgs.length - 1].content).toBe('まだ記録がありません。')
+    expect(useChatStore.getState().isLoading).toBe(false)
+    expect(useChatStore.getState().error).toBeNull()
+    expect(
+      readIntentFeedback().some((e) => e.kind === 'chip-choice'),
+    ).toBe(true)
   })
 
   test('分類器が未準備（null）ならキーなしでは従来どおり API キーエラーを返す', async () => {

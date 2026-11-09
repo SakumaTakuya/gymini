@@ -313,6 +313,9 @@ export function useChatService(options: UseChatServiceOptions = {}) {
   // ユーザー発話は呼び出し側で追加済みの前提。
   const routeLocally = useCallback(
     async (text: string, intents: IntentLabel[]) => {
+      // 進行中の LLM ターンがある場合は中断してから処理する。放置すると
+      // 後から届いた無関係な応答がローカル処理の結果の後に混入する。
+      stopResponse()
       const hasApiKey = useSettingsStore.getState().hasApiKey
       const parts: string[] = []
       const toolCalls: ToolCallResult[] = []
@@ -457,7 +460,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         })
       }
     },
-    [runLlmTurn],
+    [runLlmTurn, stopResponse],
   )
 
   const sendMessage = useCallback(
@@ -561,6 +564,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           // edit の対象選択チップ: 対象カードへの誘導文を返す（FR_005）
           const exerciseName = action.payload?.exerciseName
           if (!exerciseName) return
+          stopResponse()
           useChatStore
             .getState()
             .addMessage(
@@ -615,7 +619,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         }
       }
     },
-    [routeLocally, sendMessage],
+    [routeLocally, sendMessage, stopResponse],
   )
 
   return {
