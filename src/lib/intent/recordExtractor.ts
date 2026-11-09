@@ -116,9 +116,10 @@ const VERB_DICTIONARY_TOKENS = new Set([
 function isPlausibleNewExerciseName(token: string): boolean {
   if (token.length < 2) return false
   if (NON_EXERCISE_TOKENS.has(token)) return false
-  // 格助詞を含む語は種目名ではなく文（散文）の一部
-  // （例: 「今朝はジムでプルオーバー」の接頭辞全体）
-  if (/[はがをにでへの]/.test(token)) return false
+  // 格助詞は後続の語との境界にある場合だけ数える。語の末尾にある助詞文字
+  // （例: 「よが」の「が」）は語の一部なので、単なる出現では弾かない。
+  // 「今朝はジムでプルオーバー」の「は」「で」は後続の語があるため弾く。
+  if (/[はがをにでへの](?=.)/.test(token)) return false
   // 完了語尾そのもの（「やった」「できた」等）は種目名ではない
   if (COMPLETION_SUFFIXES.includes(token)) return false
   if (VERB_STEM_TOKENS.has(token)) return false
@@ -159,8 +160,11 @@ function cleanNameToken(raw: string): string {
         changed = true
       }
     }
+    // 末尾の助詞は落とすが、落とした結果が1文字になる場合は落とさない
+    // （「よが」の「が」のように語の一部である場合に名前が壊れるため）。
+    // 1文字の名前は isPlausibleNewExerciseName でも採用されない。
     if (
-      token.length > 1 &&
+      token.length > 2 &&
       TRAILING_PARTICLES.some((p) => token.endsWith(p))
     ) {
       token = token.slice(0, -1)

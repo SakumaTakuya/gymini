@@ -362,6 +362,20 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('語の一部に助詞の文字を含む未登録種目名（よが）は抽出する', () => {
+    // 「よが」の「が」は助詞ではなく語の一部。末尾の助詞文字だけで
+    // 弾いてはいけない（助詞は後続の語との境界にある場合のみ数える）
+    expect(extractRecordExercises('よが30分', KNOWN)).toEqual([
+      { exerciseName: 'よが', sets: [], durationText: '30分' },
+    ])
+  })
+
+  it('カタカナの未登録種目名（ヨガ）は抽出する', () => {
+    expect(extractRecordExercises('ヨガ30分', KNOWN)).toEqual([
+      { exerciseName: 'ヨガ', sets: [], durationText: '30分' },
+    ])
+  })
+
   it('「やる」で終わる計画の節（次はベンチプレス72.5kg8回やる）は抽出しない', () => {
     expect(
       extractRecordExercises('次はベンチプレス72.5kg8回やる', KNOWN),
