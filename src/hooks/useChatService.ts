@@ -107,6 +107,15 @@ export function useChatService(options: UseChatServiceOptions = {}) {
 
   const abortControllerRef = useRef<AbortController | null>(null)
 
+  // 送信ターン全体（分類の await を含む）の直列化ガード。分類中は
+  // runLlmTurn の setLoading(true) がまだ実行されておらず、ガードなしだと
+  // 2件目の送信が割り込んで、完了順にメッセージが並んだり
+  // 後発処理が先行ターンを中断したりする。
+  const turnInFlightRef = useRef(false)
+  // 分類の await 中であること。チップ操作の割り込みを禁じるのはこの間だけ
+  // （LLM ターン実行中のチップは stopResponse で中断するのが既定の挙動）。
+  const classifyingRef = useRef(false)
+
   // options はデフォルト引数 {} により毎レンダー新しい参照になるため、
   // 依存には options 自体ではなく中身の関数だけを使う。そうしないと
   // createClient → sendMessage → triggerAction が毎レンダー再生成される。
@@ -467,65 +476,82 @@ export function useChatService(options: UseChatServiceOptions = {}) {
     async (text: string) => {
       const trimmed = text.trim()
       if (trimmed === '') return
+      // 送信ターンは分類の完了待ちも含めて1つだけに直列化する
+      if (turnInFlightRef.current) return
+      turnInFlightRef.current = true
+      // 分類中も busy とマークし、入力側が二重送信を受け付けないようにする
+      useChatStore.getState().setLoading(true)
+      try {
+        const settings = useSettingsStore.getState()
 
-      const settings = useSettingsStore.getState()
-
-      // ローカル分類（FR_001/FR_002）。準備ができていない・失敗した場合は
-      // 従来経路へフォールバックする（FR_006）。
-      const classification = await tryClassify(trimmed)
-      if (classification) {
-        appendIntentFeedback({
-          kind: 'classified',
-          text: trimmed,
-          scores: classification.scores,
-          decided: classification.decided,
-          candidates: classification.candidates,
-        })
-
-        if (classification.decided.length === 0) {
-          // どの意図も閾値に達しない場合は推測で処理せず候補チップで選ばせる
-          const chat = useChatStore.getState()
-          chat.setError(null)
-          chat.setLastFailedInput(null)
-          addUserMessage(trimmed)
-          chat.addMessage({
-            id: crypto.randomUUID(),
-            role: 'assistant',
-            content: INTENT_CHIPS_PROMPT,
-            timestamp: nowISODateTimeString(),
-            actions: buildIntentCandidateActions(
-              classification.candidates,
-              trimmed,
-            ),
+        // ローカル分類（FR_001/FR_002）。準備ができていない・失敗した場合は
+        // 従来経路へフォールバックする（FR_006）。
+        classifyingRef.current = true
+        let classification: ClassificationResult | null
+        try {
+          classification = await tryClassify(trimmed)
+        } finally {
+          classifyingRef.current = false
+        }
+        if (classification) {
+          appendIntentFeedback({
+            kind: 'classified',
+            text: trimmed,
+            scores: classification.scores,
+            decided: classification.decided,
+            candidates: classification.candidates,
           })
+
+          if (classification.decided.length === 0) {
+            // どの意図も閾値に達しない場合は推測で処理せず候補チップで選ばせる
+            const chat = useChatStore.getState()
+            chat.setError(null)
+            chat.setLastFailedInput(null)
+            addUserMessage(trimmed)
+            chat.addMessage({
+              id: crypto.randomUUID(),
+              role: 'assistant',
+              content: INTENT_CHIPS_PROMPT,
+              timestamp: nowISODateTimeString(),
+              actions: buildIntentCandidateActions(
+                classification.candidates,
+                trimmed,
+              ),
+            })
+            chat.setLoading(false)
+            return
+          }
+
+          const intents = normalizeDecided(classification.decided)
+          const llmOnly =
+            intents.length > 0 &&
+            intents.every((label) => label === 'advice' || label === 'other')
+          if (!(llmOnly && settings.hasApiKey)) {
+            const chat = useChatStore.getState()
+            chat.setError(null)
+            chat.setLastFailedInput(null)
+            addUserMessage(trimmed)
+            // ローカル処理の冒頭（stopResponse）で loading は解除される
+            await routeLocally(trimmed, intents)
+            return
+          }
+          // advice / other のみ + キーありは従来の LLM 経路へフォールスルーする
+        }
+
+        if (!settings.hasApiKey) {
+          const store = useChatStore.getState()
+          store.setError(
+            'AIチャットを利用するにはAPIキーの設定が必要です。設定画面からGemini APIキーを入力してください。',
+          )
+          store.setLastFailedInput(trimmed)
+          store.setLoading(false)
           return
         }
 
-        const intents = normalizeDecided(classification.decided)
-        const llmOnly =
-          intents.length > 0 &&
-          intents.every((label) => label === 'advice' || label === 'other')
-        if (!(llmOnly && settings.hasApiKey)) {
-          const chat = useChatStore.getState()
-          chat.setError(null)
-          chat.setLastFailedInput(null)
-          addUserMessage(trimmed)
-          await routeLocally(trimmed, intents)
-          return
-        }
-        // advice / other のみ + キーありは従来の LLM 経路へフォールスルーする
+        await runLlmTurn({ failedInput: trimmed, appendUserMessage: true })
+      } finally {
+        turnInFlightRef.current = false
       }
-
-      if (!settings.hasApiKey) {
-        const store = useChatStore.getState()
-        store.setError(
-          'AIチャットを利用するにはAPIキーの設定が必要です。設定画面からGemini APIキーを入力してください。',
-        )
-        store.setLastFailedInput(trimmed)
-        return
-      }
-
-      await runLlmTurn({ failedInput: trimmed, appendUserMessage: true })
     },
     [addUserMessage, routeLocally, runLlmTurn, tryClassify],
   )
@@ -543,6 +569,15 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       const target = chatState.messages.find((m) => m.id === messageId)
       if (!target) return
       if (target.consumedActionId) return
+      // 分類の完了待ちの間はチップによる割り込みを受け付けない（直列化）。
+      // 消費もしないので、ターン完了後に改めてタップできる。
+      // LLM ターン実行中は対象外（stopResponse で中断する既定の挙動）。
+      if (
+        (action.kind === 'intent-route' || action.kind === 'edit-target') &&
+        classifyingRef.current
+      ) {
+        return
+      }
 
       chatState.consumeAction(messageId, action.id)
 
@@ -557,7 +592,12 @@ export function useChatService(options: UseChatServiceOptions = {}) {
             text: originalText,
             chosenIntent: intent,
           })
-          await routeLocally(originalText, [intent])
+          turnInFlightRef.current = true
+          try {
+            await routeLocally(originalText, [intent])
+          } finally {
+            turnInFlightRef.current = false
+          }
           return
         }
         case 'edit-target': {

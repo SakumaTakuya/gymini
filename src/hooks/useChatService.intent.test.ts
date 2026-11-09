@@ -557,4 +557,103 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     const feedback = readIntentFeedback()
     expect(feedback.some((e) => e.kind === 'record-removed')).toBe(true)
   })
+
+  test('分類の完了を待つ間は busy になり、完了前の2件目の送信は受け付けない', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    let resolveClassify: ((r: ClassificationResult) => void) | null = null
+    const pending = new Promise<ClassificationResult>((res) => {
+      resolveClassify = res
+    })
+    const classifier: IntentClassifier = {
+      ready: vi.fn(async () => true),
+      classify: vi.fn(() => pending),
+    }
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => mockClient([]), classifier }),
+    )
+    let firstSend: Promise<void> | undefined
+    let secondSend: Promise<void> | undefined
+    act(() => {
+      firstSend = result.current.sendMessage('ベンチプレス60kg10回')
+    })
+    // 分類の await 中もターンが busy としてマークされる
+    expect(useChatStore.getState().isLoading).toBe(true)
+    act(() => {
+      secondSend = result.current.sendMessage('スクワット100kg5回')
+    })
+    await act(async () => {
+      resolveClassify!({
+        scores: { record: 0.9, history: 0, advice: 0, edit: 0, other: 0 },
+        decided: ['record'],
+        candidates: [],
+      })
+      await firstSend
+      await secondSend
+    })
+    // 1件目だけが送信順どおりに処理され、2件目は割り込まない
+    const userMessages = useChatStore
+      .getState()
+      .messages.filter((m) => m.role === 'user')
+    expect(userMessages).toHaveLength(1)
+    expect(userMessages[0].content).toBe('ベンチプレス60kg10回')
+    expect(useWorkoutSessionStore.getState().draftExercises).toHaveLength(1)
+    expect(useWorkoutSessionStore.getState().draftExercises[0].exerciseName).toBe(
+      'ベンチプレス',
+    )
+    expect(useChatStore.getState().isLoading).toBe(false)
+  })
+
+  test('分類の完了を待つ間にタップした候補チップは処理しない', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    let resolveClassify: ((r: ClassificationResult) => void) | null = null
+    const pending = new Promise<ClassificationResult>((res) => {
+      resolveClassify = res
+    })
+    const classifier: IntentClassifier = {
+      ready: vi.fn(async () => true),
+      classify: vi.fn(() => pending),
+    }
+    const { result } = renderHook(() =>
+      useChatService({ createClient: () => mockClient([]), classifier }),
+    )
+    const chipAction = {
+      id: 'intent-history',
+      label: '履歴を見る',
+      kind: 'intent-route' as const,
+      payload: { intent: 'history', text: 'ベンチの履歴' },
+    }
+    useChatStore.setState({
+      messages: [
+        {
+          id: 'chips-1',
+          role: 'assistant',
+          content: 'どちらのご用件ですか？',
+          timestamp: '2026-11-09T00:00:00.000Z' as never,
+          actions: [chipAction],
+        },
+      ],
+    })
+    let send: Promise<void> | undefined
+    act(() => {
+      send = result.current.sendMessage('昨日の記録は？')
+    })
+    await act(async () => {
+      await result.current.triggerAction('chips-1', chipAction)
+    })
+    // 分類中のためチップは消費もルーティングもされない
+    expect(
+      readIntentFeedback().some((e) => e.kind === 'chip-choice'),
+    ).toBe(false)
+    expect(useChatStore.getState().messages).toHaveLength(1)
+    await act(async () => {
+      resolveClassify!({
+        scores: { record: 0, history: 0.95, advice: 0, edit: 0, other: 0 },
+        decided: ['history'],
+        candidates: [],
+      })
+      await send
+    })
+    // 元の送信だけが完了する
+    expect(lastMessage().content).toBe('まだ記録がありません。')
+  })
 })
