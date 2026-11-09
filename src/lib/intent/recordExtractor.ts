@@ -498,12 +498,16 @@ export function extractRecordExercises(
     } else if (
       results.length > 0 &&
       !skipAsContinuation &&
+      !isPlanClause &&
+      !isQuestion &&
       !/^[^0-9×\s]/.test(segment)
     ) {
       // 数値から始まる名前なしセグメントは、直前の種目への追加情報として
       // 解釈する（例: 「…60kgで10回、9回、8回」の 9回・8回）。
       // 文字から始まる節は独立した文（計画・感想など）なので、
       // 種目として採用しなかったものを直前の種目へも付けない。
+      // 数値から始まっていても計画・疑問の節（「60kg12回やってみたい」等）は
+      // 実施済みの追加セットではないため付けない。
       // 数値が何もなければ感想・質問などの文として無視する。
       const hasNumbers =
         parsed.weight !== undefined ||

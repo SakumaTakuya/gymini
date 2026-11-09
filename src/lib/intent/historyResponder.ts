@@ -3,6 +3,7 @@ import type { DateString } from '../../schemas/date'
 import type { ExerciseCategory } from '../../schemas/exercise'
 import { formatSetsSummary } from './formatSets'
 import { findMentionedExerciseName } from './exerciseMention'
+import { inferExerciseCategory } from './exerciseCategoryInference'
 
 // history 意図のローカル検索（intent-router FR_003）。
 // 端末内の過去セッションだけを使い、シンプルなテキストで返す（§6 決定）。
@@ -175,9 +176,15 @@ export function buildHistoryResponse(
     return [`${targetName}の直近の記録です。`, ...lines].join('\n')
   }
 
-  const inGroup = (e: Workout['exercises'][number]): boolean =>
-    group !== null &&
-    categoryByExerciseId?.get(e.exerciseId) === group.category
+  // マスターから削除済みの種目は対応表に無いため、保存済みの
+  // 名前スナップショットから部位を推定して補う（推定できなければ対象外）。
+  const inGroup = (e: Workout['exercises'][number]): boolean => {
+    if (!group) return false
+    const category =
+      categoryByExerciseId?.get(e.exerciseId) ??
+      inferExerciseCategory(e.exerciseName)
+    return category === group.category
+  }
 
   if (hint && group) {
     const dayWorkouts = workouts.filter((w) => w.date === hint.date)

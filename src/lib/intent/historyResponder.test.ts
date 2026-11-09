@@ -268,6 +268,25 @@ describe('buildHistoryResponse: 期間・部位フィルタ', () => {
     expect(res).not.toContain('11/5')
   })
 
+  it('マスターから削除済みの種目も、名前スナップショットから部位を推定して部位フィルタに含める', () => {
+    const deletedWorkouts: Workout[] = [
+      workoutWithIds('2026-11-04', [
+        // CATEGORY_BY_ID に無い id = マスター削除済み。スナップショット名だけが残る
+        { id: 'ex-deleted', exerciseName: 'レッグプレス', sets: [{ weight: 90, reps: 10 }] },
+      ]),
+    ]
+    const res = buildHistoryResponse(
+      '今月の脚の日いつ？',
+      deletedWorkouts,
+      PERIOD_NAMES,
+      TODAY,
+      CATEGORY_BY_ID,
+    )
+    expect(res).toContain('今月の脚の記録です')
+    expect(res).toContain('11/4')
+    expect(res).toContain('レッグプレス')
+  })
+
   it('「今週の記録見せて」は今週（月曜始まり）の分だけを返す', () => {
     const res = buildHistoryResponse(
       '今週の記録見せて',

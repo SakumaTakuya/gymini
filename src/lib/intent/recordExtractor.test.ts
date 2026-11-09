@@ -431,6 +431,28 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('数値から始まる計画の節は直前の種目への追加セットとして付けない', () => {
+    expect(
+      extractRecordExercises(
+        'ベンチプレス60kg10回できた、60kg12回やってみたい',
+        KNOWN,
+      ),
+    ).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+  })
+
+  it('数値から始まる疑問の節は直前の種目への追加セットとして付けない', () => {
+    expect(
+      extractRecordExercises(
+        'ベンチプレス60kg10回できた、60kg何回だった？',
+        KNOWN,
+      ),
+    ).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+  })
+
   it('距離先行の計画の節（5kmランニングする予定）は抽出しない', () => {
     expect(extractRecordExercises('5kmランニングする予定', KNOWN)).toEqual([])
     // 直前の種目への追加情報としても付けない
