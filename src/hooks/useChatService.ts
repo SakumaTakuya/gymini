@@ -485,12 +485,14 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       }
 
       if (intents.includes('history')) {
+        const allExercises = ExerciseRepository.getAll()
         parts.push(
           buildHistoryResponse(
             text,
             WorkoutRepository.listByDateDesc(),
-            ExerciseRepository.getAll().map((e) => e.name),
+            allExercises.map((e) => e.name),
             todayDateString(),
+            new Map(allExercises.map((e) => [e.id, e.category])),
           ),
         )
       }

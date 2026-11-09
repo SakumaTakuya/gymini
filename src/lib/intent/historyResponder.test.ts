@@ -3,6 +3,7 @@ import { buildHistoryResponse } from './historyResponder'
 import { formatSetsSummary } from './formatSets'
 import type { Workout } from '../../schemas/workout'
 import type { DateString, ISODateTimeString } from '../../schemas/date'
+import type { ExerciseCategory } from '../../schemas/exercise'
 
 function workout(
   date: string,
@@ -187,5 +188,152 @@ describe('buildHistoryResponse', () => {
     expect(buildHistoryResponse('最近の記録は？', [], NAMES, TODAY)).toBe(
       'まだ記録がありません。',
     )
+  })
+})
+
+describe('buildHistoryResponse: 期間・部位フィルタ', () => {
+  function workoutWithIds(
+    date: string,
+    exercises: Array<{
+      id: string
+      exerciseName: string
+      sets: Array<{ weight: number; reps: number }>
+    }>,
+  ): Workout {
+    return {
+      id: `w-${date}-${exercises.map((e) => e.id).join('-')}`,
+      date: date as DateString,
+      exercises: exercises.map((e) => ({
+        exerciseId: e.id,
+        exerciseName: e.exerciseName,
+        sets: e.sets,
+      })),
+      startedAt: `${date}T10:00:00+09:00` as ISODateTimeString,
+      endedAt: `${date}T11:00:00+09:00` as ISODateTimeString,
+      createdAt: `${date}T11:00:00+09:00` as ISODateTimeString,
+      updatedAt: `${date}T11:00:00+09:00` as ISODateTimeString,
+    }
+  }
+  const CATEGORY_BY_ID = new Map<string, ExerciseCategory>([
+    ['ex-bench', 'chest'],
+    ['ex-squat', 'legs'],
+    ['ex-legpress', 'legs'],
+  ])
+  const PERIOD_WORKOUTS: Workout[] = [
+    workoutWithIds('2026-11-09', [
+      { id: 'ex-bench', exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ]),
+    workoutWithIds('2026-11-05', [
+      { id: 'ex-squat', exerciseName: 'スクワット', sets: [{ weight: 80, reps: 5 }] },
+      { id: 'ex-bench', exerciseName: 'ベンチプレス', sets: [{ weight: 65, reps: 8 }] },
+    ]),
+    workoutWithIds('2026-11-02', [
+      { id: 'ex-legpress', exerciseName: 'レッグプレス', sets: [{ weight: 100, reps: 10 }] },
+    ]),
+    workoutWithIds('2026-10-20', [
+      { id: 'ex-squat', exerciseName: 'スクワット', sets: [{ weight: 70, reps: 5 }] },
+    ]),
+  ]
+  const PERIOD_NAMES = ['ベンチプレス', 'スクワット', 'レッグプレス']
+
+  it('「今月の脚の日いつ？」は今月の脚種目だけを日付付きで返す', () => {
+    const res = buildHistoryResponse(
+      '今月の脚の日いつ？',
+      PERIOD_WORKOUTS,
+      PERIOD_NAMES,
+      TODAY,
+      CATEGORY_BY_ID,
+    )
+    expect(res).toContain('今月の脚の記録です')
+    expect(res).toContain('11/5')
+    expect(res).toContain('スクワット')
+    expect(res).toContain('11/2')
+    expect(res).toContain('レッグプレス')
+    // 胸種目と先月分は含めない
+    expect(res).not.toContain('ベンチプレス')
+    expect(res).not.toContain('10/20')
+  })
+
+  it('「先月の脚の記録は？」は先月の脚種目だけを返す', () => {
+    const res = buildHistoryResponse(
+      '先月の脚の記録は？',
+      PERIOD_WORKOUTS,
+      PERIOD_NAMES,
+      TODAY,
+      CATEGORY_BY_ID,
+    )
+    expect(res).toContain('先月の脚の記録です')
+    expect(res).toContain('10/20')
+    expect(res).toContain('70kg×5回')
+    expect(res).not.toContain('11/5')
+  })
+
+  it('「今週の記録見せて」は今週（月曜始まり）の分だけを返す', () => {
+    const res = buildHistoryResponse(
+      '今週の記録見せて',
+      PERIOD_WORKOUTS,
+      PERIOD_NAMES,
+      TODAY,
+      CATEGORY_BY_ID,
+    )
+    expect(res).toContain('今週の記録です')
+    expect(res).toContain('11/9')
+    expect(res).not.toContain('11/5')
+  })
+
+  it('部位だけの指定（脚の記録は？）は全期間から部位で絞る', () => {
+    const res = buildHistoryResponse(
+      '脚の記録は？',
+      PERIOD_WORKOUTS,
+      PERIOD_NAMES,
+      TODAY,
+      CATEGORY_BY_ID,
+    )
+    expect(res).toContain('脚の記録です')
+    expect(res).toContain('スクワット')
+    expect(res).toContain('レッグプレス')
+    expect(res).not.toContain('ベンチプレス')
+  })
+
+  it('種目名と期間があれば期間内でも絞る', () => {
+    const res = buildHistoryResponse(
+      '今月のスクワットは？',
+      PERIOD_WORKOUTS,
+      PERIOD_NAMES,
+      TODAY,
+      CATEGORY_BY_ID,
+    )
+    expect(res).toContain('スクワットの直近の記録です')
+    expect(res).toContain('11/5')
+    expect(res).not.toContain('10/20')
+  })
+
+  it('期間内に種目の記録がなければその旨を返す', () => {
+    const res = buildHistoryResponse(
+      '先月のベンチプレスは？',
+      PERIOD_WORKOUTS,
+      PERIOD_NAMES,
+      TODAY,
+      CATEGORY_BY_ID,
+    )
+    expect(res).toBe('先月のベンチプレスの記録はありません。')
+  })
+
+  it('日付ヒントと部位があればその日の部位種目だけを返す', () => {
+    const res = buildHistoryResponse(
+      '昨日の脚トレ見せて',
+      [
+        workoutWithIds('2026-11-08', [
+          { id: 'ex-squat', exerciseName: 'スクワット', sets: [{ weight: 80, reps: 5 }] },
+          { id: 'ex-bench', exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+        ]),
+      ],
+      PERIOD_NAMES,
+      TODAY,
+      CATEGORY_BY_ID,
+    )
+    expect(res).toContain('昨日の脚の記録です')
+    expect(res).toContain('スクワット')
+    expect(res).not.toContain('ベンチプレス')
   })
 })

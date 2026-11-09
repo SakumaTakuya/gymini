@@ -1,5 +1,6 @@
 import type { Workout } from '../../schemas/workout'
 import type { DateString } from '../../schemas/date'
+import type { ExerciseCategory } from '../../schemas/exercise'
 import { formatSetsSummary } from './formatSets'
 import { findMentionedExerciseName } from './exerciseMention'
 
@@ -40,6 +41,68 @@ function findDateHint(
   return null
 }
 
+type PeriodHint = { start: DateString; end: DateString; label: string }
+
+function dateParts(date: DateString): { y: number; m: number } {
+  const [y, m] = date.split('-').map(Number)
+  return { y, m }
+}
+
+function monthStart(y: number, m: number): DateString {
+  return `${y}-${String(m).padStart(2, '0')}-01` as DateString
+}
+
+/** 期間ヒント（今週・先週・今月・先月）。週は月曜始まりとする。 */
+function findPeriodHint(text: string, today: DateString): PeriodHint | null {
+  const { y, m } = dateParts(today)
+  if (text.includes('先月')) {
+    const py = m === 1 ? y - 1 : y
+    const pm = m === 1 ? 12 : m - 1
+    // 先月の末日は今月1日の前日
+    return { start: monthStart(py, pm), end: shiftDate(monthStart(y, m), -1), label: '先月' }
+  }
+  if (text.includes('今月')) {
+    return { start: monthStart(y, m), end: today, label: '今月' }
+  }
+  // 月曜始まり: 日曜=0 の getDay を 月曜=0 へ変換する
+  const dow = new Date(`${today}T00:00:00`).getDay()
+  const toMonday = (dow + 6) % 7
+  if (text.includes('先週')) {
+    return {
+      start: shiftDate(today, -toMonday - 7),
+      end: shiftDate(today, -toMonday - 1),
+      label: '先週',
+    }
+  }
+  if (text.includes('今週')) {
+    return { start: shiftDate(today, -toMonday), end: today, label: '今週' }
+  }
+  return null
+}
+
+type GroupHint = { category: ExerciseCategory; label: string }
+
+const GROUP_HINTS: Array<{ keywords: string[]; category: ExerciseCategory; label: string }> = [
+  { keywords: ['脚', '下半身'], category: 'legs', label: '脚' },
+  { keywords: ['胸'], category: 'chest', label: '胸' },
+  { keywords: ['背中'], category: 'back', label: '背中' },
+  { keywords: ['肩'], category: 'shoulders', label: '肩' },
+  { keywords: ['腕'], category: 'arms', label: '腕' },
+  { keywords: ['腹筋', '体幹'], category: 'core', label: '体幹' },
+  { keywords: ['有酸素'], category: 'cardio', label: '有酸素' },
+]
+
+function findGroupHint(text: string): GroupHint | null {
+  for (const g of GROUP_HINTS) {
+    if (g.keywords.some((k) => text.includes(k))) {
+      return { category: g.category, label: g.label }
+    }
+  }
+  return null
+}
+
+const MAX_PERIOD_WORKOUTS = 10
+
 function formatExerciseLine(name: string, sets: Workout['exercises'][number]['sets']): string {
   const summary = formatSetsSummary(sets)
   return summary === '' ? `${name}（セット未入力）` : `${name}: ${summary}`
@@ -50,12 +113,15 @@ export function buildHistoryResponse(
   workouts: Workout[],
   exerciseNames: string[],
   today: DateString,
+  categoryByExerciseId?: ReadonlyMap<string, ExerciseCategory>,
 ): string {
   if (workouts.length === 0) {
     return 'まだ記録がありません。'
   }
 
   const hint = findDateHint(text, today)
+  const period = findPeriodHint(text, today)
+  const group = findGroupHint(text)
 
   // 種目名が文中にあれば、その種目の直近記録を優先する。
   // 日付ヒントもあれば両方で絞る（「昨日ベンチ何kgだった？」など）。
@@ -85,9 +151,17 @@ export function buildHistoryResponse(
     return [`${hint.label}の${targetName}の記録です。`, ...lines].join('\n')
   }
   if (targetName) {
-    const matched = workouts.filter((w) =>
+    let matched = workouts.filter((w) =>
       w.exercises.some((e) => e.exerciseName === targetName),
     )
+    if (period) {
+      matched = matched.filter(
+        (w) => w.date >= period.start && w.date <= period.end,
+      )
+      if (matched.length === 0) {
+        return `${period.label}の${targetName}の記録はありません。`
+      }
+    }
     if (matched.length === 0) {
       return `${targetName}の記録はまだありません。`
     }
@@ -99,6 +173,46 @@ export function buildHistoryResponse(
         : `・${formatDateLabel(w.date)}: ${summary}`
     })
     return [`${targetName}の直近の記録です。`, ...lines].join('\n')
+  }
+
+  const inGroup = (e: Workout['exercises'][number]): boolean =>
+    group !== null &&
+    categoryByExerciseId?.get(e.exerciseId) === group.category
+
+  if (hint && group) {
+    const dayWorkouts = workouts.filter((w) => w.date === hint.date)
+    const lines: string[] = []
+    for (const w of dayWorkouts) {
+      for (const e of w.exercises) {
+        if (inGroup(e)) {
+          lines.push(`・${formatExerciseLine(e.exerciseName, e.sets)}`)
+        }
+      }
+    }
+    if (lines.length === 0) {
+      return `${hint.label}の${group.label}の記録はありません。`
+    }
+    return [`${hint.label}の${group.label}の記録です。`, ...lines].join('\n')
+  }
+
+  if (period || group) {
+    const label = [period?.label, group?.label].filter(Boolean).join('の')
+    const ranged = period
+      ? workouts.filter((w) => w.date >= period.start && w.date <= period.end)
+      : workouts
+    const lines: string[] = []
+    for (const w of ranged) {
+      const exs = group ? w.exercises.filter(inGroup) : w.exercises
+      if (exs.length === 0) continue
+      lines.push(
+        `・${formatDateLabel(w.date)}: ${exs.map((e) => formatExerciseLine(e.exerciseName, e.sets)).join('、')}`,
+      )
+      if (lines.length >= MAX_PERIOD_WORKOUTS) break
+    }
+    if (lines.length === 0) {
+      return `${label}の記録はありません。`
+    }
+    return [`${label}の記録です。`, ...lines].join('\n')
   }
 
   if (hint) {
