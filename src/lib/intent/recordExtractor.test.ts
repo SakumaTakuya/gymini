@@ -398,6 +398,17 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('「けど」で繋がれた計画の節は完了した記録と分離して捨てる', () => {
+    expect(
+      extractRecordExercises(
+        'ベンチプレス60kg10回できたけど次は62.5kgでやろう',
+        KNOWN,
+      ),
+    ).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+  })
+
   it('距離先行の計画の節（5kmランニングする予定）は抽出しない', () => {
     expect(extractRecordExercises('5kmランニングする予定', KNOWN)).toEqual([])
     // 直前の種目への追加情報としても付けない

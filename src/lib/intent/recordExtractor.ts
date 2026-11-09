@@ -379,8 +379,11 @@ export function extractRecordExercises(
   knownNames: string[],
 ): ExtractedRecordExercise[] {
   const normalized = normalizeText(text)
+  // 読点・句点に加え、接続助詞「けど／けれど」でも節を分ける。
+  // 「…できたけど次は〜やろう」のように完了した記録と計画が句読点なしで
+  // 繋がると、計画ガードが記録ごと弾いてしまうため。
   const segments = normalized
-    .split(/[、。，！!\n]/)
+    .split(/[、。，！!\n]|けれども|けれど|けど/)
     .map((seg) => seg.trim())
     .filter((seg) => seg !== '')
 
