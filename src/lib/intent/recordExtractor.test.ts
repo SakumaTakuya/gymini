@@ -352,6 +352,36 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('否定の意図（やりたくない／やらない／できない）は抽出しない', () => {
+    // 否定の意図は未実施の表明なので、数値があっても記録として保存しない
+    expect(
+      extractRecordExercises('ベンチプレス60kg10回やりたくない', KNOWN),
+    ).toEqual([])
+    expect(
+      extractRecordExercises('ベンチプレス60kg10回したくない', KNOWN),
+    ).toEqual([])
+    expect(
+      extractRecordExercises('ベンチプレス60kg10回やりたくありません', KNOWN),
+    ).toEqual([])
+    expect(
+      extractRecordExercises('ベンチプレス60kg10回やらない', KNOWN),
+    ).toEqual([])
+    expect(
+      extractRecordExercises('ベンチプレス60kg10回できない', KNOWN),
+    ).toEqual([])
+    // 完了形の否定（やらなかった／やりませんでした）も未実施のため抽出しない
+    expect(
+      extractRecordExercises('ベンチプレス60kg10回やらなかった', KNOWN),
+    ).toEqual([])
+    expect(
+      extractRecordExercises('ベンチプレス60kg10回やりませんでした', KNOWN),
+    ).toEqual([])
+    // 完了した記録は従来どおり抽出する
+    expect(extractRecordExercises('ベンチプレス60kg10回やった', KNOWN)).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+  })
+
   it('助詞を含む散文の接頭辞（今朝はジムでプルオーバー）は種目として作成しない', () => {
     expect(
       extractRecordExercises('今朝はジムでプルオーバー30kg12回', KNOWN),
