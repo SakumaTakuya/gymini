@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react'
+import { useCallback, useEffect, useRef } from 'react'
 import {
   isAbortError,
   messagesToContents,
@@ -22,13 +22,81 @@ import { buildActiveSessionContext } from '../lib/sessionContext'
 import { useChatStore } from '../stores/chatStore'
 import { useSettingsStore } from '../stores/settingsStore'
 import { useUserProfileStore } from '../stores/userProfileStore'
-import { nowISODateTimeString } from '../schemas/date'
-import type { ProposedAction } from '../types/chat'
+import { useWorkoutSessionStore } from '../stores/workoutSessionStore'
+import { onSessionReset } from '../stores/sessionEvents'
+import { nowISODateTimeString, todayDateString } from '../schemas/date'
+import type { ChatMessage, ProposedAction, ToolCallResult } from '../types/chat'
+import {
+  INTENT_LABELS,
+  type ClassificationResult,
+  type IntentClassifier,
+  type IntentLabel,
+} from '../lib/intent/intentClassifier'
+import {
+  getReadyIntentClassifier,
+  warmUpIntentClassifier,
+} from '../lib/intent/intentClassifierProvider'
+import { extractRecordExercises } from '../lib/intent/recordExtractor'
+import { buildHistoryResponse } from '../lib/intent/historyResponder'
+import {
+  buildEditGuidanceMessage,
+  findEditTargetExercise,
+} from '../lib/intent/editTarget'
+import {
+  appendIntentFeedback,
+  resetRoutedRecordTracking,
+  syncRoutedRecordTracking,
+  trackRoutedRecord,
+} from '../lib/intent/feedbackLog'
+import {
+  ADVICE_KEYLESS_MESSAGE,
+  EDIT_CHIPS_PROMPT,
+  EDIT_NO_DRAFT_MESSAGE,
+  INTENT_CHIPS_PROMPT,
+  OTHER_KEYLESS_MESSAGE,
+  RECORD_NAME_MISSING_MESSAGE,
+  buildEditTargetActions,
+  buildIntentCandidateActions,
+  formatExtractedExerciseLine,
+} from '../lib/intent/intentResponses'
+import * as ExerciseRepository from '../lib/exerciseRepository'
+import * as WorkoutRepository from '../lib/workoutRepository'
 
 type CreateClient = (apiKey: string, systemInstruction?: string) => GeminiClient
 
 export type UseChatServiceOptions = {
   createClient?: CreateClient
+  /**
+   * ローカル分類器の差し替え（テスト用）。
+   * undefined のときは実プロバイダを使い、準備完了時のみ分類する。
+   * null のときは分類を無効化し、常に従来経路で処理する。
+   */
+  classifier?: IntentClassifier | null
+}
+
+// record をローカル処理した後に advice を LLM へ回すときの注記。
+// 同じ内容を LLM が再記録しないよう systemInstruction へ付ける。
+const RECORD_ALREADY_INSERTED_NOTE =
+  '## ローカル処理済みの記録について\n直前のユーザー入力の記録は、ローカル処理で既にセッションへ挿入済みです。同じ内容を再度記録せず、アドバイスのみを返してください。'
+
+function isIntentLabel(value: string): value is IntentLabel {
+  return (INTENT_LABELS as readonly string[]).includes(value)
+}
+
+// other は単独でのみ意味を持つ（意図定義ガイドラインで排他）。
+// 他の意図と同時確定した場合は落とす。
+function normalizeDecided(decided: IntentLabel[]): IntentLabel[] {
+  if (decided.length <= 1) return decided
+  return decided.filter((label) => label !== 'other')
+}
+
+type LlmTurnOptions = {
+  /** 再送用に lastFailedInput へ保存する元の入力 */
+  failedInput: string
+  /** ユーザー発話を新規メッセージとして追加するか（チップ経由では追加済み） */
+  appendUserMessage: boolean
+  /** systemInstruction 末尾への追加指示 */
+  extraInstruction?: string
 }
 
 export function useChatService(options: UseChatServiceOptions = {}) {
@@ -55,6 +123,42 @@ export function useChatService(options: UseChatServiceOptions = {}) {
     [injectedCreateClient],
   )
 
+  const injectedClassifier = options.classifier
+  const resolveClassifier = useCallback((): IntentClassifier | null => {
+    if (injectedClassifier !== undefined) return injectedClassifier
+    // モデルの読み込みはバックグラウンドで進め、完了までは従来経路を使う
+    warmUpIntentClassifier()
+    return getReadyIntentClassifier()
+  }, [injectedClassifier])
+
+  const tryClassify = useCallback(
+    async (text: string): Promise<ClassificationResult | null> => {
+      const classifier = resolveClassifier()
+      if (!classifier) return null
+      try {
+        return await classifier.classify(text)
+      } catch {
+        // 分類に失敗したら従来経路へフォールバックする（FR_006）
+        return null
+      }
+    },
+    [resolveClassifier],
+  )
+
+  // FR_007: ルーティングで挿入した記録の取り消し・修正を検出して記録する
+  useEffect(() => {
+    const unsubscribe = useWorkoutSessionStore.subscribe((state) => {
+      syncRoutedRecordTracking(state.draftExercises, state.isActive)
+    })
+    const offReset = onSessionReset(() => {
+      resetRoutedRecordTracking()
+    })
+    return () => {
+      unsubscribe()
+      offReset()
+    }
+  }, [])
+
   const clearMessages = useCallback(() => {
     useChatStore.getState().clearMessages()
   }, [])
@@ -65,21 +169,20 @@ export function useChatService(options: UseChatServiceOptions = {}) {
     useChatStore.getState().setLoading(false)
   }, [])
 
-  const sendMessage = useCallback(
-    async (text: string) => {
-      const trimmed = text.trim()
-      if (trimmed === '') return
+  const addUserMessage = useCallback((text: string): void => {
+    useChatStore.getState().addMessage({
+      id: crypto.randomUUID(),
+      role: 'user',
+      content: text,
+      timestamp: nowISODateTimeString(),
+    })
+  }, [])
 
+  // 従来の LLM 経路（1 ターン分）。ユーザー発話の追加は appendUserMessage で制御する。
+  const runLlmTurn = useCallback(
+    async (turn: LlmTurnOptions) => {
       const settings = useSettingsStore.getState()
       const { profile } = useUserProfileStore.getState()
-      if (!settings.hasApiKey) {
-        const store = useChatStore.getState()
-        store.setError(
-          'AIチャットを利用するにはAPIキーの設定が必要です。設定画面からGemini APIキーを入力してください。',
-        )
-        store.setLastFailedInput(trimmed)
-        return
-      }
 
       abortControllerRef.current?.abort()
       const ctrl = new AbortController()
@@ -88,22 +191,37 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       const chat = useChatStore.getState()
       chat.setError(null)
       chat.setLastFailedInput(null)
-      const userMessageId = crypto.randomUUID()
-      chat.addMessage({
-        id: userMessageId,
-        role: 'user',
-        content: trimmed,
-        timestamp: nowISODateTimeString(),
-      })
+      let userMessageId: string | null = null
+      if (turn.appendUserMessage) {
+        userMessageId = crypto.randomUUID()
+        chat.addMessage({
+          id: userMessageId,
+          role: 'user',
+          content: turn.failedInput,
+          timestamp: nowISODateTimeString(),
+        })
+      }
       chat.setLoading(true)
 
       try {
         const sessionContext = buildActiveSessionContext()
-        const systemInstruction = buildSystemInstruction(profile, sessionContext)
+        const baseInstruction = buildSystemInstruction(profile, sessionContext)
+        const systemInstruction = turn.extraInstruction
+          ? `${baseInstruction}\n\n${turn.extraInstruction}`
+          : baseInstruction
         const client = createClient(settings.apiKey, systemInstruction)
-        const baseContents = messagesToContents(
-          useChatStore.getState().messages,
-        )
+        let baseContents = messagesToContents(useChatStore.getState().messages)
+        // Gemini は user/model の交互列を要求する。チップ経由などで
+        // 履歴が model で終わる場合は元の入力を user ターンとして補う。
+        if (
+          baseContents.length === 0 ||
+          baseContents[baseContents.length - 1].role === 'model'
+        ) {
+          baseContents = [
+            ...baseContents,
+            { role: 'user', parts: [{ text: turn.failedInput }] },
+          ]
+        }
 
         const outcome = await runConversationTurn({
           baseContents,
@@ -174,8 +292,8 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         if (isAbortError(err)) return
         console.error('[ai-chat] Gemini API error:', err)
         const store = useChatStore.getState()
-        store.removeMessage(userMessageId)
-        store.setLastFailedInput(trimmed)
+        if (userMessageId) store.removeMessage(userMessageId)
+        store.setLastFailedInput(turn.failedInput)
         store.setError(getErrorMessage(err))
       } finally {
         // この turn がまだ「現行のリクエスト」である場合のみ loading を畳む。
@@ -189,6 +307,224 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       }
     },
     [createClient],
+  )
+
+  // ローカル分類で確定した意図を端末内で処理する（FR_003〜FR_005）。
+  // ユーザー発話は呼び出し側で追加済みの前提。
+  const routeLocally = useCallback(
+    async (text: string, intents: IntentLabel[]) => {
+      const hasApiKey = useSettingsStore.getState().hasApiKey
+      const parts: string[] = []
+      const toolCalls: ToolCallResult[] = []
+      let editChipsMessage: ChatMessage | null = null
+      let insertedAnyRecord = false
+
+      if (intents.includes('record')) {
+        const knownNames = ExerciseRepository.getAll().map((e) => e.name)
+        const extracted = extractRecordExercises(text, knownNames)
+        if (extracted.length === 0) {
+          if (hasApiKey) {
+            // ルールで抽出できない場合のみ LLM へ抽出を委譲する（§6 決定 C）
+            await runLlmTurn({ failedInput: text, appendUserMessage: false })
+            return
+          }
+          parts.push(RECORD_NAME_MISSING_MESSAGE)
+        } else {
+          const lines: string[] = []
+          let sessionGateMessage: string | null = null
+          for (const exercise of extracted) {
+            const args: Record<string, unknown> = {
+              exerciseName: exercise.exerciseName,
+              sets: exercise.sets,
+            }
+            const result = executeWriteTool('addExerciseToSession', args)
+            toolCalls.push({
+              toolName: 'addExerciseToSession',
+              args,
+              result,
+            })
+            if (!result.success) {
+              if (result.error === 'SESSION_NOT_ACTIVE') {
+                // 既存のゲート（ai-chat FR_036）の案内文をそのまま使う
+                sessionGateMessage = buildWriteResultMessage(
+                  {
+                    actionType: 'addExerciseToSession',
+                    exerciseName: exercise.exerciseName,
+                  },
+                  result,
+                )
+                break
+              }
+              lines.push(
+                result.error === 'EXERCISE_ALREADY_IN_SESSION'
+                  ? `・${exercise.exerciseName}: 既にセッションに追加されています`
+                  : `・${exercise.exerciseName}: 記録できませんでした`,
+              )
+              continue
+            }
+            insertedAnyRecord = true
+            const exerciseId = (
+              result.data as { exerciseId?: string } | undefined
+            )?.exerciseId
+            if (exerciseId) {
+              trackRoutedRecord({
+                text,
+                exerciseId,
+                exerciseName: exercise.exerciseName,
+                sets: exercise.sets,
+              })
+            }
+            lines.push(`・${formatExtractedExerciseLine(exercise)}`)
+          }
+          if (sessionGateMessage) {
+            parts.push(sessionGateMessage)
+          } else if (insertedAnyRecord) {
+            parts.push(['記録しました！', ...lines].join('\n'))
+          } else {
+            parts.push(lines.join('\n'))
+          }
+        }
+      }
+
+      if (intents.includes('history')) {
+        parts.push(
+          buildHistoryResponse(
+            text,
+            WorkoutRepository.listByDateDesc(),
+            ExerciseRepository.getAll().map((e) => e.name),
+            todayDateString(),
+          ),
+        )
+      }
+
+      if (intents.includes('edit')) {
+        const drafts = useWorkoutSessionStore.getState().draftExercises
+        const target = findEditTargetExercise(text, drafts)
+        if (target) {
+          parts.push(buildEditGuidanceMessage(target.exerciseName))
+        } else if (drafts.length > 0) {
+          // 対象を特定できない場合は候補チップで確認する（FR_005）
+          editChipsMessage = {
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: EDIT_CHIPS_PROMPT,
+            timestamp: nowISODateTimeString(),
+            actions: buildEditTargetActions(drafts),
+          }
+        } else {
+          parts.push(EDIT_NO_DRAFT_MESSAGE)
+        }
+      }
+
+      let needsAdviceTurn = false
+      if (intents.includes('advice')) {
+        if (hasApiKey) {
+          needsAdviceTurn = true
+        } else {
+          parts.push(ADVICE_KEYLESS_MESSAGE)
+        }
+      }
+
+      if (intents.includes('other') && intents.length === 1) {
+        if (hasApiKey) {
+          // チップで「その他」が選ばれた場合などは LLM の受け皿へ回す
+          await runLlmTurn({ failedInput: text, appendUserMessage: false })
+          return
+        }
+        parts.push(OTHER_KEYLESS_MESSAGE)
+      }
+
+      if (parts.length > 0) {
+        useChatStore
+          .getState()
+          .addMessage(
+            buildAssistantMessage(
+              parts.join('\n\n'),
+              toolCalls.length > 0 ? toolCalls : undefined,
+            ),
+          )
+      }
+      if (editChipsMessage) {
+        useChatStore.getState().addMessage(editChipsMessage)
+      }
+      if (needsAdviceTurn) {
+        await runLlmTurn({
+          failedInput: text,
+          appendUserMessage: false,
+          extraInstruction: insertedAnyRecord
+            ? RECORD_ALREADY_INSERTED_NOTE
+            : undefined,
+        })
+      }
+    },
+    [runLlmTurn],
+  )
+
+  const sendMessage = useCallback(
+    async (text: string) => {
+      const trimmed = text.trim()
+      if (trimmed === '') return
+
+      const settings = useSettingsStore.getState()
+
+      // ローカル分類（FR_001/FR_002）。準備ができていない・失敗した場合は
+      // 従来経路へフォールバックする（FR_006）。
+      const classification = await tryClassify(trimmed)
+      if (classification) {
+        appendIntentFeedback({
+          kind: 'classified',
+          text: trimmed,
+          scores: classification.scores,
+          decided: classification.decided,
+          candidates: classification.candidates,
+        })
+
+        if (classification.decided.length === 0) {
+          // どの意図も閾値に達しない場合は推測で処理せず候補チップで選ばせる
+          const chat = useChatStore.getState()
+          chat.setError(null)
+          chat.setLastFailedInput(null)
+          addUserMessage(trimmed)
+          chat.addMessage({
+            id: crypto.randomUUID(),
+            role: 'assistant',
+            content: INTENT_CHIPS_PROMPT,
+            timestamp: nowISODateTimeString(),
+            actions: buildIntentCandidateActions(
+              classification.candidates,
+              trimmed,
+            ),
+          })
+          return
+        }
+
+        const intents = normalizeDecided(classification.decided)
+        const llmOnly =
+          intents.length > 0 &&
+          intents.every((label) => label === 'advice' || label === 'other')
+        if (!(llmOnly && settings.hasApiKey)) {
+          const chat = useChatStore.getState()
+          chat.setError(null)
+          chat.setLastFailedInput(null)
+          addUserMessage(trimmed)
+          await routeLocally(trimmed, intents)
+          return
+        }
+        // advice / other のみ + キーありは従来の LLM 経路へフォールスルーする
+      }
+
+      if (!settings.hasApiKey) {
+        const store = useChatStore.getState()
+        store.setError(
+          'AIチャットを利用するにはAPIキーの設定が必要です。設定画面からGemini APIキーを入力してください。',
+        )
+        store.setLastFailedInput(trimmed)
+        return
+      }
+
+      await runLlmTurn({ failedInput: trimmed, appendUserMessage: true })
+    },
+    [addUserMessage, routeLocally, runLlmTurn, tryClassify],
   )
 
   const retryLastMessage = useCallback(async () => {
@@ -208,6 +544,30 @@ export function useChatService(options: UseChatServiceOptions = {}) {
       chatState.consumeAction(messageId, action.id)
 
       switch (action.kind) {
+        case 'intent-route': {
+          // 候補チップで選ばれた意図で元の入力を再ルーティングする（FR_002）
+          const intent = action.payload?.intent
+          const originalText = action.payload?.text
+          if (!intent || !originalText || !isIntentLabel(intent)) return
+          appendIntentFeedback({
+            kind: 'chip-choice',
+            text: originalText,
+            chosenIntent: intent,
+          })
+          await routeLocally(originalText, [intent])
+          return
+        }
+        case 'edit-target': {
+          // edit の対象選択チップ: 対象カードへの誘導文を返す（FR_005）
+          const exerciseName = action.payload?.exerciseName
+          if (!exerciseName) return
+          useChatStore
+            .getState()
+            .addMessage(
+              buildAssistantMessage(buildEditGuidanceMessage(exerciseName)),
+            )
+          return
+        }
         case 'start-exercise': {
           const exerciseName = action.payload?.exerciseName
           if (!exerciseName) return
@@ -255,7 +615,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         }
       }
     },
-    [sendMessage],
+    [routeLocally, sendMessage],
   )
 
   return {

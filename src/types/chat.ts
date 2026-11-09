@@ -36,11 +36,20 @@ export type ProposedActionKind =
   | 'start-exercise'
   | 'ask-followup'
   | 'show-history'
+  // ローカル分類の候補チップ（intent-router FR_002）。タップで元の入力を
+  // 選んだ意図として再ルーティングする。
+  | 'intent-route'
+  // edit の対象特定チップ（intent-router FR_005）。タップで対象カードへ誘導する。
+  | 'edit-target'
 
 export type ProposedActionPayload = {
   exerciseName?: string
   exerciseId?: string
   prompt?: string
+  /** intent-route: ユーザーが選んだ意図ラベル（IntentLabel の文字列表現） */
+  intent?: string
+  /** intent-route: 分類対象だった元の入力テキスト */
+  text?: string
 }
 
 export type ProposedAction = {
