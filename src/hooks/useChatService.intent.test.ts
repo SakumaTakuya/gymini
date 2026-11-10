@@ -967,6 +967,54 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     ).toBe(false)
   })
 
+  test('既存カードでセット編集を完了した後に重量だけで再度記録すると、カードが活性化されて重量が引き継がれる', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    const { result } = renderHook(() =>
+      useChatService({
+        createClient: () => mockClient([]),
+        classifier: classifierFor(['record']),
+      }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス60kg10回')
+    })
+    // 完了したセットを編集して完了させる（completeSet が入力中セットを
+    // 残したままカードを idle にする状態を作る）
+    act(() => {
+      useWorkoutSessionStore.getState().editCompletedSet(0, 0)
+      useWorkoutSessionStore.getState().completeSet(0, { weight: 62, reps: 10 })
+    })
+    const before = useWorkoutSessionStore.getState().draftExercises[0]
+    expect(before.cardState).toBe('idle')
+    expect(before.pendingSet).toEqual({ weight: 62, reps: 10 })
+    expect(before.pendingSetDirty).toBe(false)
+    const editedBefore = readIntentFeedback().filter(
+      (e) => e.kind === 'record-edited',
+    ).length
+    await act(async () => {
+      await result.current.sendMessage('ベンチプレス80kg')
+    })
+    const after = useWorkoutSessionStore.getState().draftExercises[0]
+    expect(after.sets).toEqual([{ weight: 62, reps: 10 }])
+    // カードが活性化され、言及された重量が目に見える入力中セットへ入る
+    expect(after.cardState).toBe('recording')
+    expect(after.pendingSet).toEqual({ weight: 80, reps: 10 })
+    expect(lastMessage().content).toContain('記録しました')
+    expect(lastMessage().content).toContain('80kg')
+    // セット追加を押しても、引き継いだ重量が直前のセットで上書きされない
+    act(() => {
+      useWorkoutSessionStore.getState().activateExercise(0)
+    })
+    expect(useWorkoutSessionStore.getState().draftExercises[0].pendingSet).toEqual({
+      weight: 80,
+      reps: 10,
+    })
+    // 重量の引き継ぎ自体は「ユーザーの修正」として記録されない
+    expect(
+      readIntentFeedback().filter((e) => e.kind === 'record-edited').length,
+    ).toBe(editedBefore)
+  })
+
   test('既存カードで新しいセットを入力中の場合は重量だけの記録も適用せず、入力中の値を保持する', async () => {
     useWorkoutSessionStore.getState().startSession()
     const { result } = renderHook(() =>

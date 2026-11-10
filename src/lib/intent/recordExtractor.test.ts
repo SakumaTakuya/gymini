@@ -500,6 +500,14 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     expect(extractRecordExercises('3km歩いてきた', KNOWN)).toEqual([])
   })
 
+  it('距離先行でも丁寧体の複合動詞（5km走ってきました）は種目として作成しない', () => {
+    // 「ました／ます」を落とすと「走ってき」が残るが、〜てくるの連用形で
+    // 動詞そのもののため種目として作成しない
+    expect(extractRecordExercises('5km走ってきました', KNOWN)).toEqual([])
+    expect(extractRecordExercises('5km走ってきます', KNOWN)).toEqual([])
+    expect(extractRecordExercises('3km歩いてきました', KNOWN)).toEqual([])
+  })
+
   it('感嘆符で区切られた節は独立に扱い、後続の計画に引きずられない', () => {
     expect(
       extractRecordExercises('ベンチプレス70kg8回できた！次は72.5kgでやろう', KNOWN),

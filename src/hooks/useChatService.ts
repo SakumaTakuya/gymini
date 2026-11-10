@@ -161,9 +161,13 @@ function applyMentionedWeightToExistingDraft(
   if (draft.editingSetIndex != null || draft.pendingSetDirty) return false
   const resume = suspendRoutedRecordTracking()
   try {
-    if (draft.pendingSet === null) {
+    if (draft.pendingSet === null || draft.cardState !== 'recording') {
       // 完了セットのみのカードは入力中セットが無いため、直前のセットを
       // 下敷きにした入力中セットを作ってから重量を入れる。
+      // セット編集の完了直後は入力中セットが残ったままカードが idle の
+      // ため、pendingSet の有無だけでなくカードの状態でも判断する。
+      // 残った入力中セットへ直接書くと隠れた値になり、次にセット追加を
+      // 押したときに直前のセットで上書きされて消えてしまう。
       useWorkoutSessionStore.getState().activateExercise(index)
     }
     useWorkoutSessionStore.getState().updatePendingSet(index, {
