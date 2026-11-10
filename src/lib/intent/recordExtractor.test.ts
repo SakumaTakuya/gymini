@@ -410,6 +410,20 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('過去の願望・試行の意図（やってみたかった）は抽出しない', () => {
+    // 過去の願望（〜たかった）は未実施の表明なので、数値があっても記録として保存しない
+    expect(
+      extractRecordExercises('ベンチプレス70kg8回やってみたかった', KNOWN),
+    ).toEqual([])
+    expect(
+      extractRecordExercises('ベンチプレス70kg8回やりたかった', KNOWN),
+    ).toEqual([])
+    // 完了した記録は従来どおり抽出する
+    expect(extractRecordExercises('ベンチプレス70kg8回やった', KNOWN)).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 70, reps: 8 }] },
+    ])
+  })
+
   it('助詞を含む散文の接頭辞（今朝はジムでプルオーバー）は種目として作成しない', () => {
     expect(
       extractRecordExercises('今朝はジムでプルオーバー30kg12回', KNOWN),
