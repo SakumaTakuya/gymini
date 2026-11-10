@@ -1,0 +1,621 @@
+import type { WorkoutSet } from '../../schemas/workout'
+import { indexOfStandaloneMention } from './exerciseMention'
+
+// record 意図のルールベース数値抽出（docs/prd/intent-router/index.md §6 の
+// 決定範囲 C のうちルールベース分）。LLM を使わず、定型パターン・×表記・
+// 時間・距離・自重/回数のみ・「、」区切りの複数種目を扱う。
+// 抽出できなかった項目は呼び出し側で空欄カードとして挿入される（FR_004）。
+
+export interface ExtractedRecordExercise {
+  exerciseName: string
+  /** 完了セットとして挿入できるセット（reps > 0 のものだけ） */
+  sets: WorkoutSet[]
+  /** 回数が取れずセットを materialize できなかった場合に言及された重量 */
+  mentionedWeight?: number
+  /** 時間パターン（例: '60秒' / '3分'）。セット形式に保持欄がないため表示用 */
+  durationText?: string
+  /** 距離パターン（例: '5km'）。セット形式に保持欄がないため表示用 */
+  distanceText?: string
+  /** 時間・距離のみで言及されたセット数 */
+  mentionedSets?: number
+}
+
+// ユーザー入力のセット数をそのまま配列長にすると、誤入力や貼り付けで
+// 巨大な配列を作ってしまうため、現実的な上限で丸める。
+const MAX_SETS_PER_EXERCISE = 100
+
+function clampSetCount(count: number): number {
+  if (!Number.isFinite(count) || count < 0) return 0
+  return Math.min(Math.floor(count), MAX_SETS_PER_EXERCISE)
+}
+
+interface ParsedNumbers {
+  weight?: number
+  reps?: number
+  setCount?: number
+  durationText?: string
+  distanceText?: string
+}
+
+// 完了を表す語尾。これらを含むセグメントは数値がなくても種目の開始とみなす。
+const COMPLETION_SUFFIXES = [
+  '終わった',
+  'やった',
+  'した',
+  'できた',
+  '完了',
+  'こなした',
+  'やれた',
+  'いけた',
+  '引けた',
+  '上がった',
+  'キープ',
+  '終わり',
+  'おわり',
+]
+
+// 種目名の末尾に付く助詞。isPlausibleNewExerciseName の助詞判定
+// （は・が・を・に・で・へ・の）と揃え、末尾の助詞は cleanNameToken で
+// 落とす。2文字以下の名前は語の一部（「よが」の「が」）の可能性がある
+// ため、cleanNameToken 側で落とすのは残りが2文字以上になる場合だけ。
+const TRAILING_PARTICLES = ['は', 'を', 'が', 'も', 'の', 'に', 'で', 'へ']
+
+// 種目名ではありえない語。これらが先行する節（「次は72.5kgでやろう」等）は
+// 記録ではなく計画・感想なので、種目として自動作成しない。
+const NON_EXERCISE_TOKENS = new Set([
+  '次',
+  '次回',
+  '今度',
+  '明日',
+  '昨日',
+  'あと',
+  'それ',
+  'これ',
+  'ここ',
+])
+
+// 動詞形の語尾（過去形・完了形・〜てくるの連用形）。「5km走った」の「走った」や
+// 「5km走ってきた」のように、動詞そのものを種目名として
+// 自動作成しないための判定。「走ってきました」のように丁寧語尾を落とすと
+// 「走ってき」が残るため、〜てくるの連用形（てき）も含める。
+const VERB_FORM_PATTERN = /(った|いだ|んだ|した|えた|いた|きた|れた|てき)$/
+
+// 動詞の連用形そのもの（「走りました」から丁寧語尾を落とした残り等）。
+const VERB_STEM_TOKENS = new Set([
+  '走り',
+  '泳ぎ',
+  '歩き',
+  '漕ぎ',
+  '登り',
+  '蹴り',
+  '投げ',
+  '打ち',
+  '引き',
+  '押し',
+  '曲げ',
+  '伸ばし',
+  '回し',
+  '飛び',
+])
+
+// 動詞の辞書形（終止形）。連用形と同じ動詞群で、「5km走る」のように
+// 距離の直後に置かれた未完了の動作そのものを種目名として採用しない。
+const VERB_DICTIONARY_TOKENS = new Set([
+  '走る',
+  '泳ぐ',
+  '歩く',
+  '漕ぐ',
+  '登る',
+  '蹴る',
+  '投げる',
+  '打つ',
+  '引く',
+  '押す',
+  '曲げる',
+  '伸ばす',
+  '回す',
+  '飛ぶ',
+])
+
+/** マスター未登録のトークンを新規種目名として採用してよいか。 */
+function isPlausibleNewExerciseName(token: string): boolean {
+  if (token.length < 2) return false
+  if (NON_EXERCISE_TOKENS.has(token)) return false
+  // 格助詞は後続の語との境界にある場合だけ数える。語の末尾にある助詞文字
+  // （例: 「よが」の「が」）は語の一部なので、単なる出現では弾かない。
+  // 「今朝はジムでプルオーバー」の「は」「で」は後続の語があるため弾く。
+  if (/[はがをにでへの](?=.)/.test(token)) return false
+  // 完了語尾そのもの（「やった」「できた」等）は種目名ではない
+  if (COMPLETION_SUFFIXES.includes(token)) return false
+  if (VERB_STEM_TOKENS.has(token)) return false
+  if (VERB_DICTIONARY_TOKENS.has(token)) return false
+  // 動詞の活用語尾で終わる語は長さによらず種目名として採用しない
+  // （「走ってきた」のような複合形も動詞そのもののため）
+  if (VERB_FORM_PATTERN.test(token)) return false
+  return true
+}
+
+function normalizeText(text: string): string {
+  return text
+    .replace(/[０-９]/g, (d) => String.fromCharCode(d.charCodeAt(0) - 0xff10 + 0x30))
+    .replace(/．/g, '.')
+    .replace(/[✕✖ｘＸ]/g, '×')
+}
+
+/** 種目名候補トークンの後片付け（日付接頭辞・助詞・完了語尾の除去）。 */
+// 名前トークンから落とす語尾。丁寧体（〜しました／〜ました／〜ます）も
+// 含め、長いものから試す（「した」より先に「しました」を落とすため）。
+const NAME_STRIP_SUFFIXES = [
+  ...COMPLETION_SUFFIXES,
+  'やりました',
+  'しました',
+  'ました',
+  'ます',
+].sort((a, b) => b.length - a.length)
+
+function cleanNameToken(raw: string): string {
+  let token = raw.trim()
+  token = token.replace(/^(今日の|今日は|今日)/, '')
+  let changed = true
+  while (changed && token !== '') {
+    changed = false
+    for (const suffix of NAME_STRIP_SUFFIXES) {
+      if (token.length > suffix.length && token.endsWith(suffix)) {
+        token = token.slice(0, -suffix.length)
+        changed = true
+      }
+    }
+    // 末尾の助詞は落とすが、落とした結果が1文字になる場合は落とさない
+    // （「よが」の「が」のように語の一部である場合に名前が壊れるため）。
+    // 1文字の名前は isPlausibleNewExerciseName でも採用されない。
+    if (
+      token.length > 2 &&
+      TRAILING_PARTICLES.some((p) => token.endsWith(p))
+    ) {
+      token = token.slice(0, -1)
+      changed = true
+    }
+  }
+  return token
+}
+
+/**
+ * 種目名トークンをマスター名へ解決する。
+ * 完全一致 → 前方一致（一意） → 部分一致（一意）の順に探し、
+ * 決まらなければトークンをそのまま返す（未登録種目として作成される）。
+ */
+function resolveExerciseName(token: string, knownNames: string[]): string {
+  if (token === '') return token
+  if (knownNames.includes(token)) return token
+  const byPrefix = knownNames.filter((n) => n.startsWith(token))
+  if (byPrefix.length === 1) return byPrefix[0]
+  // 末尾一致のみを部分一致として扱う（「カール」→「アームカール」）。
+  // 単なる部分一致だと「ラン」が「プランク」に誤マッチするため使わない。
+  const bySuffix = knownNames.filter((n) => n.endsWith(token))
+  if (bySuffix.length === 1) return bySuffix[0]
+  return token
+}
+
+/**
+ * トークンが複数の既存種目への前方一致／末尾一致になる曖昧な省略形か。
+ * 曖昧な場合はどれを指すか決められないため、新規種目としても作成しない
+ * （例: ダンベルプレスとダンベルフライがある状態での「ダンベル」）。
+ */
+function isAmbiguousAbbreviation(token: string, knownNames: string[]): boolean {
+  if (knownNames.filter((n) => n.startsWith(token)).length > 1) return true
+  return knownNames.filter((n) => n.endsWith(token)).length > 1
+}
+
+/** 数値部分文字列から重量・回数・セット数・時間・距離を取り出す（抽出箇所は除去しながら進める）。 */
+function parseNumbers(input: string): ParsedNumbers {
+  let s = input
+  const out: ParsedNumbers = {}
+
+  const duration = s.match(/(\d+(?:\.\d+)?)\s*(秒|分)/)
+  if (duration) {
+    out.durationText = `${duration[1]}${duration[2]}`
+    s = s.replace(duration[0], ' ')
+  }
+  const distance = s.match(/(\d+(?:\.\d+)?)\s*km/i)
+  if (distance) {
+    out.distanceText = `${distance[1]}km`
+    s = s.replace(distance[0], ' ')
+  }
+
+  // 「×3セット」のように × の直後の数値に「セット」が続く場合はセット数。
+  // ×チェーンより先に取り出さないと、チェーン側が回数として消費してしまい
+  // セット数が失われる（例: 60kg×3セット → 60kg 3回1セット と化ける）。
+  const crossSet = s.match(/×\s*(\d+)\s*セット/)
+  if (crossSet) {
+    out.setCount = Number(crossSet[1])
+    s = s.replace(crossSet[0], ' ')
+  }
+
+  // ×チェーンより先に、チェーンに繋がっていない明示の重量・回数を取る。
+  // 先に取らないと、裸のチェーン（例: 「60kg 10×3」の「10×3」）が
+  // 重量・回数へ割り当てられ、後からの明示の値が捨てられて記録が化ける
+  // （10kg×3回）。×に直結する値（「60kg×10×3」の60kg）はチェーン側で
+  // 扱うため対象外。
+  const explicitWeight = s.match(/(\d+(?:\.\d+)?)\s*(?:kg|キロ)(?!\s*×)/)
+  if (explicitWeight) {
+    if (out.weight === undefined) out.weight = Number(explicitWeight[1])
+    s = s.replace(explicitWeight[0], ' ')
+  }
+  const explicitReps = s.match(/(\d+)\s*(?:回|reps)(?!\s*×)/)
+  if (explicitReps) {
+    if (out.reps === undefined) out.reps = Number(explicitReps[1])
+    s = s.replace(explicitReps[0], ' ')
+  }
+
+  // ×チェーン: 単位付きの数値が × でつながる列（例: 60kg×10×3 / 10回×3）
+  const chain = s.match(
+    /(\d+(?:\.\d+)?)\s*(kg|キロ|回|reps)?\s*×\s*(\d+(?:\.\d+)?)\s*(kg|キロ|回|reps)?(?:\s*×\s*(\d+(?:\.\d+)?))?/,
+  )
+  if (chain) {
+    const parts: Array<{ value: number; unit?: string }> = [
+      { value: Number(chain[1]), unit: chain[2] },
+      { value: Number(chain[3]), unit: chain[4] },
+    ]
+    if (chain[5] !== undefined) parts.push({ value: Number(chain[5]) })
+    // 単位付きの数値はその役割に固定し、裸の数値は出現位置に応じて
+    // 重量 → 回数 → セット数 の空きスロットを順に埋める。
+    const slots = ['weight', 'reps', 'setCount'] as const
+    type Slot = (typeof slots)[number]
+    const filled: Partial<Record<Slot, number>> = {}
+    let pointer = 0
+    for (const part of parts) {
+      let slot: Slot | null = null
+      if (part.unit === 'kg' || part.unit === 'キロ') slot = 'weight'
+      else if (part.unit === '回' || part.unit === 'reps') slot = 'reps'
+      if (slot !== null) {
+        if (filled[slot] === undefined) filled[slot] = part.value
+        pointer = Math.max(pointer, slots.indexOf(slot) + 1)
+      } else {
+        // 裸の数値は空きスロットを順に埋める。先に取り出した明示の値の
+        // スロットも空きではない（「60kg 10×3」では 10→回数、3→セット数）。
+        while (
+          pointer < slots.length &&
+          (filled[slots[pointer]] !== undefined ||
+            out[slots[pointer]] !== undefined)
+        ) {
+          pointer++
+        }
+        if (pointer < slots.length) {
+          filled[slots[pointer]] = part.value
+          pointer++
+        }
+      }
+    }
+    if (out.weight === undefined) out.weight = filled.weight
+    if (out.reps === undefined) out.reps = filled.reps
+    if (out.setCount === undefined) out.setCount = filled.setCount
+    s = s.replace(chain[0], ' ')
+  }
+
+  // 時間・距離の後に残る「×2」はセット数として解釈する
+  if (
+    out.setCount === undefined &&
+    (out.durationText !== undefined || out.distanceText !== undefined)
+  ) {
+    const times = s.match(/×\s*(\d+)/)
+    if (times) {
+      out.setCount = Number(times[1])
+      s = s.replace(times[0], ' ')
+    }
+  }
+
+  const setMatch = s.match(/(\d+)\s*セット/)
+  if (setMatch) {
+    if (out.setCount === undefined) out.setCount = Number(setMatch[1])
+    s = s.replace(setMatch[0], ' ')
+  }
+
+  const weightMatch = s.match(/(\d+(?:\.\d+)?)\s*(?:kg|キロ)/)
+  if (weightMatch) {
+    if (out.weight === undefined) out.weight = Number(weightMatch[1])
+    s = s.replace(weightMatch[0], ' ')
+  }
+
+  const repsMatch = s.match(/(\d+)\s*(?:回|reps)/)
+  if (repsMatch) {
+    if (out.reps === undefined) out.reps = Number(repsMatch[1])
+    s = s.replace(repsMatch[0], ' ')
+  }
+
+  // 単位なしの裸の数値: 片方だけ既知なら残りを補う。両方不明なら先行を重量とする。
+  // 時間・距離のみの文脈では裸の数値を重量/回数に誤読しない。
+  if (out.durationText === undefined && out.distanceText === undefined) {
+    const bares = [...s.matchAll(/(\d+(?:\.\d+)?)/g)].map((m) => Number(m[1]))
+    for (const value of bares) {
+      if (out.weight === undefined && out.reps !== undefined) {
+        out.weight = value
+      } else if (out.reps === undefined && out.weight !== undefined) {
+        out.reps = value
+      } else if (out.weight === undefined && out.reps === undefined) {
+        out.weight = value
+      }
+    }
+  }
+
+  return out
+}
+
+function buildExercise(
+  exerciseName: string,
+  parsed: ParsedNumbers,
+): ExtractedRecordExercise {
+  const exercise: ExtractedRecordExercise = { exerciseName, sets: [] }
+  if (parsed.reps !== undefined && parsed.reps > 0) {
+    const count = clampSetCount(parsed.setCount ?? 1)
+    const weight = parsed.weight ?? 0
+    exercise.sets = Array.from({ length: count }, () => ({
+      weight,
+      reps: parsed.reps as number,
+    }))
+  } else if (parsed.weight !== undefined) {
+    exercise.mentionedWeight = parsed.weight
+  }
+  if (parsed.durationText !== undefined) {
+    exercise.durationText = parsed.durationText
+  }
+  if (parsed.distanceText !== undefined) {
+    exercise.distanceText = parsed.distanceText
+  }
+  if (
+    exercise.sets.length === 0 &&
+    parsed.setCount !== undefined &&
+    (parsed.durationText !== undefined || parsed.distanceText !== undefined)
+  ) {
+    exercise.mentionedSets = clampSetCount(parsed.setCount)
+  }
+  return exercise
+}
+
+/** 数値だけのセグメントを、直前の種目の追加セットとして解釈する。 */
+function applyToCurrent(
+  current: ExtractedRecordExercise,
+  parsed: ParsedNumbers,
+): void {
+  if (parsed.reps !== undefined && parsed.reps > 0) {
+    const lastWeight =
+      current.sets.length > 0
+        ? current.sets[current.sets.length - 1].weight
+        : (current.mentionedWeight ?? 0)
+    const weight = parsed.weight ?? lastWeight
+    // 1節あたりの上限に加え、種目ごとの累積上限も守る
+    const room = Math.max(0, MAX_SETS_PER_EXERCISE - current.sets.length)
+    const count = Math.min(clampSetCount(parsed.setCount ?? 1), room)
+    for (let i = 0; i < count; i++) {
+      current.sets.push({ weight, reps: parsed.reps })
+    }
+    return
+  }
+  if (parsed.weight !== undefined && current.mentionedWeight === undefined) {
+    current.mentionedWeight = parsed.weight
+  }
+  if (parsed.durationText !== undefined && current.durationText === undefined) {
+    current.durationText = parsed.durationText
+  }
+  if (parsed.distanceText !== undefined && current.distanceText === undefined) {
+    current.distanceText = parsed.distanceText
+  }
+  if (parsed.setCount !== undefined && current.mentionedSets === undefined) {
+    current.mentionedSets = parsed.setCount
+  }
+}
+
+/**
+ * セグメント中のマスター名を探す。カタカナ語の途中に埋め込まれた一致は
+ * 別の種目名の一部とみなして拾わない（exerciseMention の境界規則を共有）。
+ * 例: マスターの「ラン」が「プランク」の一部に一致するケース。
+ */
+function findKnownExerciseName(
+  segment: string,
+  sortedKnown: string[],
+): string | undefined {
+  return sortedKnown.find(
+    (name) => indexOfStandaloneMention(segment, name) !== -1,
+  )
+}
+
+/**
+ * 指定の接続助詞で節を分ける。分けるのは直前の部分に完了語尾があり、
+ * 完了した記録と分かる場合だけ。直前に完了語尾が無い場合は計画の節と
+ * 一体の可能性があるため分けない（計画ガードが全体を見て弾く）。
+ * 「から」: 「ベンチプレス60kg10回からやってみよう」の計画を守る。
+ * 「が」: 「ベンチプレス60kg10回やったが次は〜やろう」の記録を守る
+ * （分けないと計画ガードが記録ごと弾いてしまう）。
+ */
+function splitOnParticleIfCompleted(
+  segment: string,
+  particle: string,
+): string[] {
+  const parts: string[] = []
+  let current = ''
+  let rest = segment
+  while (true) {
+    const idx = rest.indexOf(particle)
+    if (idx === -1) {
+      current += rest
+      break
+    }
+    const before = current + rest.slice(0, idx)
+    if (COMPLETION_SUFFIXES.some((suffix) => before.includes(suffix))) {
+      parts.push(before)
+      current = ''
+      rest = rest.slice(idx + particle.length)
+    } else {
+      current += rest.slice(0, idx + particle.length)
+      rest = rest.slice(idx + particle.length)
+    }
+  }
+  if (current !== '') parts.push(current)
+  return parts
+}
+
+export function extractRecordExercises(
+  text: string,
+  knownNames: string[],
+): ExtractedRecordExercise[] {
+  const normalized = normalizeText(text)
+  // 読点・句点に加え、接続助詞「けど／けれど」「ので」でも節を分ける。
+  // 「…できたけど次は〜やろう」のように完了した記録と計画が句読点なしで
+  // 繋がると、計画ガードが記録ごと弾いてしまうため。
+  // 「から」「が」は直前に完了語尾がある場合だけ分ける
+  // （splitOnParticleIfCompleted）。
+  const segments = normalized
+    .split(/[、。，！!\n]|けれども|けれど|けど|ので/)
+    .map((seg) => seg.trim())
+    .filter((seg) => seg !== '')
+    .flatMap((seg) => splitOnParticleIfCompleted(seg, 'から'))
+    .flatMap((seg) => splitOnParticleIfCompleted(seg, 'が'))
+
+  const results: ExtractedRecordExercise[] = []
+  const sortedKnown = [...knownNames].sort((a, b) => b.length - a.length)
+
+  const pushExercise = (exercise: ExtractedRecordExercise) => {
+    const existing = results.find((e) => e.exerciseName === exercise.exerciseName)
+    if (existing) {
+      // 同一種目の節が繰り返されても、累積セット数が上限を超えないようにする
+      const room = Math.max(0, MAX_SETS_PER_EXERCISE - existing.sets.length)
+      existing.sets.push(...exercise.sets.slice(0, room))
+      if (existing.mentionedWeight === undefined) {
+        existing.mentionedWeight = exercise.mentionedWeight
+      }
+      if (existing.durationText === undefined) {
+        existing.durationText = exercise.durationText
+      }
+      if (existing.distanceText === undefined) {
+        existing.distanceText = exercise.distanceText
+      }
+      if (existing.mentionedSets === undefined) {
+        existing.mentionedSets = exercise.mentionedSets
+      }
+      return existing
+    }
+    results.push(exercise)
+    return exercise
+  }
+
+  for (const segment of segments) {
+    // 計画・意図の節（「次はベンチプレス72.5kg8回やろう」「〜する予定」）と
+    // 疑問の節（「ベンチプレス何kgだった？」）は実施済みの記録ではないため、
+    // 種目名が含まれていても抽出しない。
+    const isPlanClause =
+      // 試行の意図（〜てみよう／〜てみます）も未実施の表明として含める
+      /(やろう|しよう|みよう|みます|つもり|予定)/.test(segment) ||
+      /(やる|やります)$/.test(segment) ||
+      /(みる)$/.test(segment) ||
+      // 願望（〜たい）も未実施の表明。「みたいに」の「たい」は対象外。
+      // 過去の願望（〜たかった／〜てみたかった）も同様に未実施の表明。
+      /(たい|たかった|たく)(です|な|けど)?$/.test(segment) ||
+      // 否定の意図（〜たくない／〜ない／〜ません）も未実施の表明。
+      // 完了形の否定（〜なかった／〜ませんでした＝やらなかった）も同様。
+      /(たくない|たくありません)(です)?$/.test(segment) ||
+      /(ない|なかった|ません|ませんでした)(です)?$/.test(segment)
+    // 疑問符なしでも、疑問語（何+単位・どれくらい・いくつ・〜っけ）を含む
+    // 節は問いかけとして扱う。疑問語のない過去形（〜だった）は報告なので
+    // 対象に含めない。
+    const isQuestion =
+      /[？?]/.test(segment) ||
+      /何(?:kg|キロ|回|セット|分|秒|km|つ|日|月|年|曜日)/.test(segment) ||
+      /(どれくらい|どのくらい|いくつ|っけ)/.test(segment)
+    // マスター名がそのまま含まれる場合はそれを種目名とする
+    const knownHit =
+      isPlanClause || isQuestion
+        ? undefined
+        : findKnownExerciseName(segment, sortedKnown)
+
+    let exerciseName: string | null = null
+    let rest = segment
+    // 距離先行の節で種目名を採用しなかった場合は、直前の種目への
+    // 追加情報としても扱わない（計画・疑問などの独立した節のため）。
+    let skipAsContinuation = false
+
+    if (knownHit) {
+      exerciseName = knownHit
+      rest = segment.replace(knownHit, ' ')
+    } else {
+      // 「5kmラン」のように距離が先行する形は、後続トークンを種目名とする
+      const distanceFirst = segment.match(
+        /^(\d+(?:\.\d+)?\s*km)\s*([^0-9×\s]+)/i,
+      )
+      const leadMatch = segment.match(/^[^0-9×\s]+/)
+      if (distanceFirst) {
+        const token = cleanNameToken(distanceFirst[2])
+        const resolved = resolveExerciseName(token, knownNames)
+        if (
+          token !== '' &&
+          !isQuestion &&
+          !isPlanClause &&
+          (resolved !== token ||
+            (isPlausibleNewExerciseName(token) &&
+              !isAmbiguousAbbreviation(token, knownNames)))
+        ) {
+          exerciseName = resolved
+          rest = segment.slice(distanceFirst[1].length).replace(distanceFirst[2], ' ')
+          // 距離そのものは parseNumbers で拾い直すため rest に戻す
+          rest = `${distanceFirst[1]} ${rest}`
+        } else {
+          skipAsContinuation = true
+        }
+      } else if (leadMatch) {
+        const token = cleanNameToken(leadMatch[0])
+        const hasDigits = /[0-9]/.test(segment)
+        const hasCompletion = COMPLETION_SUFFIXES.some((sfx) =>
+          segment.includes(sfx),
+        )
+        const resolved = resolveExerciseName(token, knownNames)
+        // マスター名（略称含む）に一意に解決できる場合は種目として扱う。
+        // 未登録名は「種目らしい接頭辞」の場合だけ新規種目として採用する。
+        // 複数の既存種目に一致する曖昧な省略形は、どちらとも決められない
+        // ため新規種目としても作成しない。
+        const acceptable =
+          resolved !== token ||
+          (isPlausibleNewExerciseName(token) &&
+            !isAmbiguousAbbreviation(token, knownNames))
+        if (
+          token !== '' &&
+          !isQuestion &&
+          !isPlanClause &&
+          (hasDigits || hasCompletion) &&
+          acceptable
+        ) {
+          exerciseName = resolved
+          rest = segment.slice(leadMatch[0].length)
+        }
+      }
+    }
+
+    const parsed = parseNumbers(rest)
+
+    if (exerciseName !== null) {
+      pushExercise(buildExercise(exerciseName, parsed))
+    } else if (
+      results.length > 0 &&
+      !skipAsContinuation &&
+      !isPlanClause &&
+      !isQuestion &&
+      !/^[^0-9×\s]/.test(segment)
+    ) {
+      // 数値から始まる名前なしセグメントは、直前の種目への追加情報として
+      // 解釈する（例: 「…60kgで10回、9回、8回」の 9回・8回）。
+      // 文字から始まる節は独立した文（計画・感想など）なので、
+      // 種目として採用しなかったものを直前の種目へも付けない。
+      // 数値から始まっていても計画・疑問の節（「60kg12回やってみたい」等）は
+      // 実施済みの追加セットではないため付けない。
+      // 数値が何もなければ感想・質問などの文として無視する。
+      const hasNumbers =
+        parsed.weight !== undefined ||
+        parsed.reps !== undefined ||
+        parsed.setCount !== undefined ||
+        parsed.durationText !== undefined ||
+        parsed.distanceText !== undefined
+      if (hasNumbers) {
+        applyToCurrent(results[results.length - 1], parsed)
+      }
+    }
+  }
+
+  return results
+}

@@ -10,12 +10,20 @@ const toolCallResultSchema = z.object({
 const proposedActionSchema = z.object({
   id: z.string(),
   label: z.string(),
-  kind: z.enum(['start-exercise', 'ask-followup', 'show-history']),
+  kind: z.enum([
+    'start-exercise',
+    'ask-followup',
+    'show-history',
+    'intent-route',
+    'edit-target',
+  ]),
   payload: z
     .object({
       exerciseName: z.string().optional(),
       exerciseId: z.string().optional(),
       prompt: z.string().optional(),
+      intent: z.string().optional(),
+      text: z.string().optional(),
     })
     .optional(),
 })
