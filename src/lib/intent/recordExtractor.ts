@@ -417,18 +417,50 @@ function findKnownExerciseName(
   )
 }
 
+/**
+ * 「から」で節を分ける。分けるのは直前の部分に完了語尾があり、完了した
+ * 記録と分かる場合だけ。「ベンチプレス60kg10回からやってみよう」のように
+ * 直前に完了語尾が無い場合は計画の節と一体のため分けない（計画ガードが
+ * 全体を見て弾く）。分けない「から」はそのまま残して次を探す。
+ */
+function splitKaraSegments(segment: string): string[] {
+  const parts: string[] = []
+  let current = ''
+  let rest = segment
+  while (true) {
+    const idx = rest.indexOf('から')
+    if (idx === -1) {
+      current += rest
+      break
+    }
+    const before = current + rest.slice(0, idx)
+    if (COMPLETION_SUFFIXES.some((suffix) => before.includes(suffix))) {
+      parts.push(before)
+      current = ''
+      rest = rest.slice(idx + 2)
+    } else {
+      current += rest.slice(0, idx + 2)
+      rest = rest.slice(idx + 2)
+    }
+  }
+  if (current !== '') parts.push(current)
+  return parts
+}
+
 export function extractRecordExercises(
   text: string,
   knownNames: string[],
 ): ExtractedRecordExercise[] {
   const normalized = normalizeText(text)
-  // 読点・句点に加え、接続助詞「けど／けれど」「ので」「から」でも節を分ける。
+  // 読点・句点に加え、接続助詞「けど／けれど」「ので」でも節を分ける。
   // 「…できたけど次は〜やろう」のように完了した記録と計画が句読点なしで
   // 繋がると、計画ガードが記録ごと弾いてしまうため。
+  // 「から」は直前に完了語尾がある場合だけ分ける（splitKaraSegments）。
   const segments = normalized
-    .split(/[、。，！!\n]|けれども|けれど|けど|ので|から/)
+    .split(/[、。，！!\n]|けれども|けれど|けど|ので/)
     .map((seg) => seg.trim())
     .filter((seg) => seg !== '')
+    .flatMap(splitKaraSegments)
 
   const results: ExtractedRecordExercise[] = []
   const sortedKnown = [...knownNames].sort((a, b) => b.length - a.length)

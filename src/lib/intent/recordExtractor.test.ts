@@ -546,6 +546,23 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('「から」の前に完了語尾が無い計画は、記録として抽出しない', () => {
+    // 「60kg10回からやってみよう」は計画の節と一体で、数値だけを
+    // 切り出して完了した記録として保存してはいけない
+    expect(
+      extractRecordExercises('ベンチプレス60kg10回からやってみよう', KNOWN),
+    ).toEqual([])
+    // 完了した記録の後の「から」は従来どおり分離して記録を残す
+    expect(
+      extractRecordExercises(
+        'ベンチプレス60kg10回やったから次は62.5kgでやる',
+        KNOWN,
+      ),
+    ).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+  })
+
   it('試行の意図（やってみよう／やってみます）は計画として抽出しない', () => {
     expect(
       extractRecordExercises('ベンチプレス70kg8回やってみよう', KNOWN),
