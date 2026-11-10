@@ -101,6 +101,34 @@ describe('extractRecordExercises: ×表記', () => {
     ])
   })
 
+  it('「60kg 10×3」は明示の重量を保ち、裸のチェーンを回数×セット数として抽出する', () => {
+    // 「10×3」の裸の数値を重量・回数へ先に割り当ててしまうと、
+    // 60kg が捨てられて 10kg×3回 と化けるため、明示の重量を先に取る
+    expect(extractRecordExercises('ベンチプレス 60kg 10×3', KNOWN)).toEqual([
+      {
+        exerciseName: 'ベンチプレス',
+        sets: [
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+        ],
+      },
+    ])
+  })
+
+  it('「10回 60kg×3」は明示の回数を保ち、チェーンを重量×セット数として抽出する', () => {
+    expect(extractRecordExercises('ベンチプレス 10回 60kg×3', KNOWN)).toEqual([
+      {
+        exerciseName: 'ベンチプレス',
+        sets: [
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+          { weight: 60, reps: 10 },
+        ],
+      },
+    ])
+  })
+
   it('「120kg×5回」を抽出する', () => {
     expect(extractRecordExercises('デッドリフト120kg×5回', KNOWN)).toEqual([
       { exerciseName: 'デッドリフト', sets: [{ weight: 120, reps: 5 }] },

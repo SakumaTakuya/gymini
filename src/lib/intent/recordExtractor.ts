@@ -230,6 +230,22 @@ function parseNumbers(input: string): ParsedNumbers {
     s = s.replace(crossSet[0], ' ')
   }
 
+  // ×チェーンより先に、チェーンに繋がっていない明示の重量・回数を取る。
+  // 先に取らないと、裸のチェーン（例: 「60kg 10×3」の「10×3」）が
+  // 重量・回数へ割り当てられ、後からの明示の値が捨てられて記録が化ける
+  // （10kg×3回）。×に直結する値（「60kg×10×3」の60kg）はチェーン側で
+  // 扱うため対象外。
+  const explicitWeight = s.match(/(\d+(?:\.\d+)?)\s*(?:kg|キロ)(?!\s*×)/)
+  if (explicitWeight) {
+    if (out.weight === undefined) out.weight = Number(explicitWeight[1])
+    s = s.replace(explicitWeight[0], ' ')
+  }
+  const explicitReps = s.match(/(\d+)\s*(?:回|reps)(?!\s*×)/)
+  if (explicitReps) {
+    if (out.reps === undefined) out.reps = Number(explicitReps[1])
+    s = s.replace(explicitReps[0], ' ')
+  }
+
   // ×チェーン: 単位付きの数値が × でつながる列（例: 60kg×10×3 / 10回×3）
   const chain = s.match(
     /(\d+(?:\.\d+)?)\s*(kg|キロ|回|reps)?\s*×\s*(\d+(?:\.\d+)?)\s*(kg|キロ|回|reps)?(?:\s*×\s*(\d+(?:\.\d+)?))?/,
@@ -254,7 +270,13 @@ function parseNumbers(input: string): ParsedNumbers {
         if (filled[slot] === undefined) filled[slot] = part.value
         pointer = Math.max(pointer, slots.indexOf(slot) + 1)
       } else {
-        while (pointer < slots.length && filled[slots[pointer]] !== undefined) {
+        // 裸の数値は空きスロットを順に埋める。先に取り出した明示の値の
+        // スロットも空きではない（「60kg 10×3」では 10→回数、3→セット数）。
+        while (
+          pointer < slots.length &&
+          (filled[slots[pointer]] !== undefined ||
+            out[slots[pointer]] !== undefined)
+        ) {
           pointer++
         }
         if (pointer < slots.length) {
