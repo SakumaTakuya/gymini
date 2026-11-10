@@ -40,6 +40,7 @@ const CATEGORY_KEYWORDS: Array<{
       'プルアップ',
       'シュラッグ',
       'ロー',
+      'ロウ',
     ],
   },
   {

@@ -38,6 +38,11 @@ describe('inferExerciseCategory（種目名からの部位推定）', () => {
     expect(inferExerciseCategory('ローププレスダウン')).toBe('arms')
   })
 
+  it('「ロウ」表記のローイング種目も背中と判定する', () => {
+    expect(inferExerciseCategory('シーテッドロウ')).toBe('back')
+    expect(inferExerciseCategory('ベントオーバーロウ')).toBe('back')
+  })
+
   it('判断できない種目名は undefined（未分類に委ねる）', () => {
     expect(inferExerciseCategory('プルオーバー')).toBeUndefined()
     expect(inferExerciseCategory('ダンベルプレス')).toBeUndefined()
