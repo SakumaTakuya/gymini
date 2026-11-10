@@ -418,17 +418,22 @@ function findKnownExerciseName(
 }
 
 /**
- * 「から」で節を分ける。分けるのは直前の部分に完了語尾があり、完了した
- * 記録と分かる場合だけ。「ベンチプレス60kg10回からやってみよう」のように
- * 直前に完了語尾が無い場合は計画の節と一体のため分けない（計画ガードが
- * 全体を見て弾く）。分けない「から」はそのまま残して次を探す。
+ * 指定の接続助詞で節を分ける。分けるのは直前の部分に完了語尾があり、
+ * 完了した記録と分かる場合だけ。直前に完了語尾が無い場合は計画の節と
+ * 一体の可能性があるため分けない（計画ガードが全体を見て弾く）。
+ * 「から」: 「ベンチプレス60kg10回からやってみよう」の計画を守る。
+ * 「が」: 「ベンチプレス60kg10回やったが次は〜やろう」の記録を守る
+ * （分けないと計画ガードが記録ごと弾いてしまう）。
  */
-function splitKaraSegments(segment: string): string[] {
+function splitOnParticleIfCompleted(
+  segment: string,
+  particle: string,
+): string[] {
   const parts: string[] = []
   let current = ''
   let rest = segment
   while (true) {
-    const idx = rest.indexOf('から')
+    const idx = rest.indexOf(particle)
     if (idx === -1) {
       current += rest
       break
@@ -437,10 +442,10 @@ function splitKaraSegments(segment: string): string[] {
     if (COMPLETION_SUFFIXES.some((suffix) => before.includes(suffix))) {
       parts.push(before)
       current = ''
-      rest = rest.slice(idx + 2)
+      rest = rest.slice(idx + particle.length)
     } else {
-      current += rest.slice(0, idx + 2)
-      rest = rest.slice(idx + 2)
+      current += rest.slice(0, idx + particle.length)
+      rest = rest.slice(idx + particle.length)
     }
   }
   if (current !== '') parts.push(current)
@@ -455,12 +460,14 @@ export function extractRecordExercises(
   // 読点・句点に加え、接続助詞「けど／けれど」「ので」でも節を分ける。
   // 「…できたけど次は〜やろう」のように完了した記録と計画が句読点なしで
   // 繋がると、計画ガードが記録ごと弾いてしまうため。
-  // 「から」は直前に完了語尾がある場合だけ分ける（splitKaraSegments）。
+  // 「から」「が」は直前に完了語尾がある場合だけ分ける
+  // （splitOnParticleIfCompleted）。
   const segments = normalized
     .split(/[、。，！!\n]|けれども|けれど|けど|ので/)
     .map((seg) => seg.trim())
     .filter((seg) => seg !== '')
-    .flatMap(splitKaraSegments)
+    .flatMap((seg) => splitOnParticleIfCompleted(seg, 'から'))
+    .flatMap((seg) => splitOnParticleIfCompleted(seg, 'が'))
 
   const results: ExtractedRecordExercise[] = []
   const sortedKnown = [...knownNames].sort((a, b) => b.length - a.length)

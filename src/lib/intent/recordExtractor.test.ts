@@ -563,6 +563,23 @@ describe('extractRecordExercises: 数値なし・名前解決', () => {
     ])
   })
 
+  it('「が」で繋がれた完了した記録は計画の節と分離して残す', () => {
+    // 完了した記録と計画が「が」で繋がる場合、分離しないと計画ガードが
+    // 記録ごと弾いてしまう
+    expect(
+      extractRecordExercises(
+        'ベンチプレス60kg10回やったが次は62.5kgでやろう',
+        KNOWN,
+      ),
+    ).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+    // 「が」の前に完了語尾が無い場合（主語の「が」）は分けない
+    expect(extractRecordExercises('ベンチプレスが60kg10回やれた', KNOWN)).toEqual([
+      { exerciseName: 'ベンチプレス', sets: [{ weight: 60, reps: 10 }] },
+    ])
+  })
+
   it('試行の意図（やってみよう／やってみます）は計画として抽出しない', () => {
     expect(
       extractRecordExercises('ベンチプレス70kg8回やってみよう', KNOWN),
