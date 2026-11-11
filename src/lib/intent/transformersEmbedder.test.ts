@@ -78,9 +78,14 @@ beforeEach(() => {
 })
 
 describe('createTransformersEmbedder', () => {
-  it('load でローカルモデルを q8 で読み込み、リモート取得を無効化する', async () => {
+  it('load でローカルモデルを有効化し q8 で読み込み、リモート取得を無効化する', async () => {
     const emb = createTransformersEmbedder({ baseUrl: '/gymini/' })
     await emb.load()
+    // transformers.js はブラウザ環境で allowLocalModels が既定 false
+    // （allowLocalModels: !(IS_BROWSER_ENV || ...)）。リモートだけ無効化
+    // すると両方無効になり from_pretrained が全て失敗するため、
+    // ローカルは明示的に有効化する（A-002 はリモート無効化で維持）。
+    expect(env.allowLocalModels).toBe(true)
     expect(env.allowRemoteModels).toBe(false)
     expect(env.localModelPath).toBe('/gymini/')
     expect(env.backends.onnx.wasm?.wasmPaths).toBe('/gymini/ort/')
@@ -92,8 +97,13 @@ describe('createTransformersEmbedder', () => {
   it('同一オリジン配信用の WASM 資産が public/ort に揃っている', () => {
     // wasmPaths が指す先の実ファイル。依存更新時に再コピーし忘れると
     // 実行時に初めて落ちるため、テストで存在を保証する。
+    // transformers.js 4.3.2 の Web ビルドが実際に読み込むのは asyncify 版
+    // （ort-wasm-simd-threaded.asyncify.mjs）。jsep 版は #146 で同梱した
+    // ものだが現行ビルドは要求しないため、asyncify 版の存在が必須。
     // eslint-disable-next-line no-undef -- vitest 実行時の作業ディレクトリ（リポジトリルート）
     const ortDir = join(process.cwd(), 'public/ort')
+    expect(existsSync(join(ortDir, 'ort-wasm-simd-threaded.asyncify.mjs'))).toBe(true)
+    expect(existsSync(join(ortDir, 'ort-wasm-simd-threaded.asyncify.wasm'))).toBe(true)
     expect(existsSync(join(ortDir, 'ort-wasm-simd-threaded.jsep.wasm'))).toBe(true)
     expect(existsSync(join(ortDir, 'ort-wasm-simd-threaded.jsep.mjs'))).toBe(true)
   })

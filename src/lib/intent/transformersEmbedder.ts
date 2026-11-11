@@ -29,6 +29,7 @@ type TfModel = (inputs: Record<string, TfTensor>) => Promise<{ last_hidden_state
 interface TfModule {
   env: {
     allowRemoteModels: boolean
+    allowLocalModels: boolean
     localModelPath: string
     backends: {
       onnx: {
@@ -52,11 +53,20 @@ export function createTransformersEmbedder(options: { baseUrl: string }): TextEm
   async function doLoad(): Promise<void> {
     const tf = (await import('@huggingface/transformers')) as unknown as TfModule
     tf.env.allowRemoteModels = false
+    // transformers.js はブラウザ環境で allowLocalModels が既定 false
+    // （allowLocalModels: !(IS_BROWSER_ENV || ...)）。Node では既定 true
+    // のためスパイクでは気付かなかった。リモートだけ無効化すると両方
+    // 無効になり from_pretrained が全て失敗するため、ローカルは明示的に
+    // 有効化する。リモート無効化は維持し、取得先は同一オリジンに限る。
+    tf.env.allowLocalModels = true
     tf.env.localModelPath = options.baseUrl
     // ONNX Runtime の WASM 一式も同一オリジン（public/ort/）から読む。
     // 既定では jsDelivr CDN を参照してしまい、A-002（外部通信は Gemini のみ）
     // に反する。public/ort/ のファイルは @huggingface/transformers が内包する
     // onnxruntime-web の dist からコピーしたもので、依存を更新したら再コピーする。
+    // transformers.js 4.3.2 の Web ビルドが実際に読み込むのは asyncify 版
+    // （ort-wasm-simd-threaded.asyncify.mjs）で、jsep 版だけでは 404 になる。
+    // 依存更新時はバンドルが要求するファイル名を確認して揃えること。
     tf.env.backends.onnx.wasm.wasmPaths = `${options.baseUrl}ort/`
     tokenizer = await tf.AutoTokenizer.from_pretrained(MODEL_ID)
     model = await tf.AutoModel.from_pretrained(MODEL_ID, { dtype: 'q8' })
