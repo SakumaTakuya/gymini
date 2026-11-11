@@ -617,6 +617,7 @@ export function useChatService(options: UseChatServiceOptions = {}) {
         )
       }
 
+      let needsEditLlmTurn = false
       if (intents.includes('edit')) {
         const drafts = useWorkoutSessionStore.getState().draftExercises
         const target = findEditTargetExercise(text, drafts)
@@ -631,6 +632,10 @@ export function useChatService(options: UseChatServiceOptions = {}) {
             timestamp: nowISODateTimeString(),
             actions: buildEditTargetActions(drafts),
           }
+        } else if (hasApiKey) {
+          // 対象を特定できず下書きも無い edit は、種目マスター追加など
+          // 分類器では処理できない入力の可能性があるため LLM へ委譲する
+          needsEditLlmTurn = true
         } else {
           parts.push(EDIT_NO_DRAFT_MESSAGE)
         }
@@ -678,6 +683,9 @@ export function useChatService(options: UseChatServiceOptions = {}) {
           // やり直して同じセットがマージで重複する。再送は登録しない
           registerRetryOnFailure: !insertedAnyRecord,
         })
+      } else if (needsEditLlmTurn) {
+        // 対象を特定できず下書きも無い edit の LLM 委譲（キーあり）
+        await runLlmTurn({ failedInput: text, appendUserMessage: false })
       }
     },
     [runLlmTurn, stopResponse],

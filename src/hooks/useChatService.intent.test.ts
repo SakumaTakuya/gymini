@@ -19,6 +19,7 @@ import {
 } from '../lib/intent/feedbackLog'
 import {
   ADVICE_KEYLESS_MESSAGE,
+  EDIT_NO_DRAFT_MESSAGE,
   OTHER_KEYLESS_MESSAGE,
   RECORD_NAME_MISSING_MESSAGE,
 } from '../lib/intent/intentResponses'
@@ -609,6 +610,47 @@ describe('useChatService: ローカル意図ルーティング (Phase 5)', () =>
     })
     expect(lastMessage().content).toContain('ベンチプレス')
     expect(lastMessage().content).toContain('カード')
+  })
+
+  test('edit 確定で対象が特定できず下書きも無い場合、キーありなら LLM へ委譲する', async () => {
+    useSettingsStore.setState({ apiKey: 'k', hasApiKey: true })
+    useWorkoutSessionStore.getState().startSession()
+    const client = mockClient([
+      { text: 'ラットプルダウンを種目マスターに追加しました', functionCalls: null },
+    ])
+    const { result } = renderHook(() =>
+      useChatService({
+        createClient: () => client,
+        classifier: classifierFor(['edit']),
+      }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('ラットプルダウンを種目に追加して')
+    })
+    expect(client.generate).toHaveBeenCalledTimes(1)
+    expect(lastMessage().role).toBe('assistant')
+    expect(lastMessage().content).toBe(
+      'ラットプルダウンを種目マスターに追加しました',
+    )
+    expect(lastMessage().content).not.toContain(EDIT_NO_DRAFT_MESSAGE)
+    expect(useChatStore.getState().error).toBeNull()
+  })
+
+  test('edit 確定で対象が特定できず下書きも無い場合、キーなしなら従来の案内文を返す', async () => {
+    useWorkoutSessionStore.getState().startSession()
+    const client = mockClient([])
+    const { result } = renderHook(() =>
+      useChatService({
+        createClient: () => client,
+        classifier: classifierFor(['edit']),
+      }),
+    )
+    await act(async () => {
+      await result.current.sendMessage('ラットプルダウンを種目に追加して')
+    })
+    expect(client.generate).not.toHaveBeenCalled()
+    expect(lastMessage().role).toBe('assistant')
+    expect(lastMessage().content).toBe(EDIT_NO_DRAFT_MESSAGE)
   })
 
   test('分類器が例外を投げたら従来経路にフォールバックする', async () => {

@@ -58,12 +58,16 @@ test.describe('AI 書き込みの即時カード挿入 (REQ_008 / FR_013)', () =
     await page.reload()
   })
 
-  test('AI が sets 付きで呼ぶと、承認なしで通常カードが即時挿入される', async ({
+  test('記録の発話はローカルルーティングで承認なしに通常カードが即時挿入される', async ({
     page,
   }) => {
+    // 分類器が record と判定した発話は LLM を呼ばずローカルで処理される
+    // （FR_037 の分担）。Gemini へのリクエスト回数を数えて確認する。
+    let geminiCalls = 0
     await page.route(
       '**/generativelanguage.googleapis.com/**',
       async (route: Route) => {
+        geminiCalls++
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -88,13 +92,17 @@ test.describe('AI 書き込みの即時カード挿入 (REQ_008 / FR_013)', () =
     await input.fill('ベンチ60kg10回3セットで追加')
     await page.keyboard.press('Enter')
 
-    // AI 応答テキストと、手入力と同じ通常カードが即時挿入される
+    // ローカル記録の確認文と、手入力と同じ通常カードが即時挿入される
+    await expect(page.getByText('記録しました！')).toBeVisible({
+      timeout: 10000,
+    })
     await expect(
-      page.getByText('ベンチプレスを以下の内容で追加しました'),
-    ).toBeVisible({ timeout: 10000 })
+      page.getByText('ベンチプレス: 60kg×10回 ×3セット'),
+    ).toBeVisible()
     await expect(
       page.getByRole('button', { name: 'ベンチプレス', exact: true }),
     ).toBeVisible()
+    expect(geminiCalls).toBe(0)
 
     // 承認/破棄 UI は存在しない（バッジ・保存ボタン無し）
     await expect(page.getByText(/AI 提案/)).toHaveCount(0)
@@ -173,7 +181,7 @@ test.describe('AI 書き込みの即時カード挿入 (REQ_008 / FR_013)', () =
     expect(draftCount).toBe(0)
   })
 
-  test('種目追加 → AI 発話 → タイムラインに時系列で並ぶ', async ({ page }) => {
+  test('種目追加 → ローカル記録 → タイムラインに時系列で並ぶ', async ({ page }) => {
     // 1. 手動で「ベンチプレス」を draft に追加（過去の timestamp）
     await page.evaluate(() => {
       const raw = localStorage.getItem('gymini:workout-session')!
@@ -194,10 +202,13 @@ test.describe('AI 書き込みの即時カード挿入 (REQ_008 / FR_013)', () =
     })
     await page.reload()
 
-    // 2. AI チャットで「スクワット 100kg 5回」発話 → AI が addExerciseToSession を呼ぶ
+    // 2. チャットで「スクワット100kg5回」発話 → 分類器が record と判定し
+    //    ローカルで挿入する（LLM は呼ばれない）
+    let geminiCalls = 0
     await page.route(
       '**/generativelanguage.googleapis.com/**',
       async (route: Route) => {
+        geminiCalls++
         await route.fulfill({
           status: 200,
           contentType: 'application/json',
@@ -231,27 +242,29 @@ test.describe('AI 書き込みの即時カード挿入 (REQ_008 / FR_013)', () =
     const input = page.getByPlaceholder('メッセージ or 種目名')
     await input.fill('スクワット100kg5回')
     await page.keyboard.press('Enter')
-    await expect(page.getByText('スクワットを追加しました')).toBeVisible({
+    await expect(page.getByText('記録しました！')).toBeVisible({
       timeout: 10000,
     })
+    await expect(page.getByText('スクワット: 100kg×5回')).toBeVisible()
+    expect(geminiCalls).toBe(0)
 
     // 順序検証：ベンチプレス（手動, 19:00）が最上部にあり、
-    // AI 応答メッセージと AI が挿入したスクワットカードはそのあとに並ぶ。
-    // useChatService.emitWriteResult は executeWriteTool（カード挿入）→ addMessage の順で
-    // 呼ぶため draft.timestamp <= message.timestamp となり、スクワットカードが
-    // 応答メッセージより先（または同位置）になることに注意。
+    // ローカル記録の確認文と挿入されたスクワットカードはそのあとに並ぶ。
+    // routeLocally は executeWriteTool（カード挿入）→ addMessage の順で
+    // 処理するため draft.timestamp <= message.timestamp となり、スクワットカードが
+    // 確認文より先（または同位置）になることに注意。
     const benchY = await page
       .getByRole('button', { name: 'ベンチプレス', exact: true })
       .first()
       .evaluate((el) => el.getBoundingClientRect().top)
-    const aiTextY = await page
-      .getByText('スクワットを追加しました')
+    const confirmTextY = await page
+      .getByText('記録しました！')
       .evaluate((el) => el.getBoundingClientRect().top)
     const squatY = await page
       .getByRole('button', { name: 'スクワット', exact: true })
       .evaluate((el) => el.getBoundingClientRect().top)
     expect(benchY).toBeLessThan(squatY)
-    expect(benchY).toBeLessThan(aiTextY)
+    expect(benchY).toBeLessThan(confirmTextY)
   })
 
   test('種目カードはそのセクション内をスクロール中、上部にピン留めされる（stacking sticky）', async ({
